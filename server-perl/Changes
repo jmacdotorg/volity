@@ -1,8 +1,11 @@
-0.3.5
+0.4.0
 
 	- Expanded the Bot base class's usefulness.
 
- 	- Made service disocvery support actually work.
+ 	- Made service disocvery support actually work. Friv now uses
+	  uses it to discover game UI files, and automatically fetch
+	  and install them (unless the user has manually loaded local UI
+	  files).
 
 	- Nice, configurable logging is now supported throughout the
 	  modules. As a result, the module now requires the Log::Log4perl
@@ -10,6 +13,13 @@
 
 	- The game server daemon program is now named volityd, not
       	  server.pl. And it's documented! And supports logging!
+
+	- Improved Friv's documentation, including clarification of how
+	  one actually plays a game with it.
+
+	- Lots of bugfixes. Prior to this version, you could not
+          successfully run a game server using the most recent version
+          of the RPC::XML module... whoops.
 	
 0.3.0
 
