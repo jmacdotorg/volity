@@ -44,7 +44,6 @@ sub call_ui_function {
   my $self = shift;
   my ($function, @args) = @_;
   my $rpc_request_name = "game.$function";
-#  warn "Gonna call the ui function $rpc_request_name with args @args.\n";
   $self->referee->send_rpc_request({
                                     id=>$self->next_rpc_id,
 				    methodname=>$rpc_request_name,
@@ -52,6 +51,73 @@ sub call_ui_function {
 				    args=>\@args,
 				   });
 }
+
+sub start_game {
+  my $self = shift;
+  $self->referee->send_rpc_request({
+      id=>'start_game',
+				    methodname=>'volity.start_game',
+				    to=>$self->jid,
+				   });
+}
+
+sub end_game {
+  my $self = shift;
+  $self->referee->send_rpc_request({
+      id=>'end_game',
+				    methodname=>'volity.end_game',
+				    to=>$self->jid,
+				   });
+}
+
+sub player_ready {
+    my $self = shift;
+    my ($other_player) = @_;
+    my $nick = $other_player->nick;
+    $self->referee->send_rpc_request({
+	id=>'ready',
+	methodname=>'volity.player_ready',
+	to=>$self->jid,
+	args=>[$nick],
+    });
+}
+
+sub player_stood {
+    my $self = shift;
+    my ($other_player) = @_;
+    my $nick = $other_player->nick;
+    $self->referee->send_rpc_request({
+	id=>'ready',
+	methodname=>'volity.player_stood',
+	to=>$self->jid,
+	args=>[$nick],
+    });
+}
+
+sub player_sat {
+    my $self = shift;
+    my ($other_player) = @_;
+    my $nick = $other_player->nick;
+    $self->referee->send_rpc_request({
+	id=>'ready',
+	methodname=>'volity.player_sat',
+	to=>$self->jid,
+	args=>[$nick],
+    });
+}
+
+sub player_unready {
+    my $self = shift;
+    my ($other_player) = @_;
+    my $nick = $other_player->nick;
+    $self->referee->send_rpc_request({
+	id=>'unready',
+	methodname=>'volity.player_unready',
+	to=>$self->jid,
+	args=>[$nick],
+    });
+}
+
 
 # next_rpc_id: Simple method that returns a unique (for this object) RPC id.
 sub next_rpc_id {
