@@ -1,7 +1,7 @@
 /*
  * JavolinApp.java
  *
- * Copyright 2004 Karl von Laudermann
+ * Copyright 2004-2005 Karl von Laudermann
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import org.jivesoftware.smack.*;
@@ -35,10 +36,12 @@ import org.volity.javolin.roster.*;
 /**
  * The main application class of Javolin.
  */
-public class JavolinApp extends JFrame implements ActionListener, ConnectionListener
+public class JavolinApp extends JFrame implements ActionListener, ConnectionListener,
+    RosterPanelSelectionListener
 {
     private final static String APPNAME = "Javolin";
     private final static String NODENAME = "MainAppWin";
+    private final static String SHOW_OFFLINE_USERS_KEY = "ShowOfflineUsers";
 
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";
@@ -46,11 +49,18 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
 
+    private final static ImageIcon CONNECTED_ICON;
+    private final static ImageIcon DISCONNECTED_ICON;
+    private final static ImageIcon SHOW_UNAVAIL_ICON;
+    private final static ImageIcon HIDE_UNAVAIL_ICON;
+
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache();
 
-    private ImageIcon mConnectedIcon;
-    private ImageIcon mDisconnectedIcon;
+    private JButton mShowHideUnavailBut;
+    private JButton mAddUserBut;
+    private JButton mDelUserBut;
+    private JButton mChatBut;
 
     private WindowMenu mWindowMenu;
     private JMenuItem mConnectMenuItem;
@@ -65,6 +75,19 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private XMPPConnection mConnection;
     private java.util.List mMucWindows;
     private java.util.List mTableWindows;
+    private boolean mShowUnavailUsers;
+
+    static
+    {
+        SHOW_UNAVAIL_ICON =
+            new ImageIcon(JavolinApp.class.getResource("ShowUnavail_ButIcon.png"));
+        HIDE_UNAVAIL_ICON =
+            new ImageIcon(JavolinApp.class.getResource("HideUnavail_ButIcon.png"));
+        CONNECTED_ICON =
+            new ImageIcon(JavolinApp.class.getResource("Connected_Icon.png"));
+        DISCONNECTED_ICON =
+            new ImageIcon(JavolinApp.class.getResource("Disconnected_Icon.png"));
+    }
 
     /**
      * Constructor.
@@ -80,6 +103,15 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
         mMucWindows = new Vector();
         mTableWindows = new Vector();
+
+        // Set roster to show/hide unavailable users based on prefs
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+        mShowUnavailUsers = prefs.getBoolean(SHOW_OFFLINE_USERS_KEY, true);
+        mRosterPanel.setShowUnavailableUsers(mShowUnavailUsers);
+        updateToolBarButtons();
+
+        // Add self as listener for RosterPanel selection events
+        mRosterPanel.addRosterPanelSelectionListener(this);
 
         // Handle closing the window to quit the app
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -234,6 +266,21 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         else if (e.getSource() == mJoinMucMenuItem)
         {
             doJoinMuc();
+        }
+        else if (e.getSource() == mShowHideUnavailBut)
+        {
+            doShowHideUnavailBut();
+        }
+        else if (e.getSource() == mAddUserBut)
+        {
+            doAddUserBut();
+        }
+        else if (e.getSource() == mDelUserBut)
+        {
+            doDeleteUserBut();
+        }
+        else if (e.getSource() == mChatBut)
+        {
         }
     }
 
@@ -411,6 +458,69 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
+     * Handler for Show/Hide Unavailable Users button.
+     */
+    private void doShowHideUnavailBut()
+    {
+        mShowUnavailUsers = !mShowUnavailUsers;
+
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+        prefs.putBoolean(SHOW_OFFLINE_USERS_KEY, mShowUnavailUsers);
+
+        mRosterPanel.setShowUnavailableUsers(mShowUnavailUsers);
+        updateToolBarButtons();
+    }
+
+    /**
+     * Handler for the Add User button.
+     */
+    private void doAddUserBut()
+    {
+        AddUserDialog addUserDlg = new AddUserDialog(this, mConnection.getRoster());
+        addUserDlg.show();
+    }
+
+    /**
+     * Handler for the Delete User button.
+     */
+    private void doDeleteUserBut()
+    {
+        UserTreeItem selUser = mRosterPanel.getSelectedUserItem();
+
+        if (selUser == null)
+        {
+            return;
+        }
+
+        // The user name string in the message box will be "Joe Blow (joe@volity.net)" or
+        // "joe@volity.net" depending on whether the user has a nickname
+        String userStr = selUser.getId();
+
+        if (!selUser.getNickname().equals(""))
+        {
+            userStr = selUser.getNickname() + " (" + userStr + ")";
+        }
+
+        // Show confrimation dialog
+        String message = "Delete " + userStr + " from your roster?";
+
+        int result = JOptionPane.showConfirmDialog(this, message,
+            JavolinApp.getAppName() + ": Confirm Delete User", JOptionPane.YES_NO_OPTION);
+
+        // Delete user from roster
+        if (result == JOptionPane.YES_OPTION)
+        {
+            Roster theRoster = mConnection.getRoster();
+            RosterEntry entry = theRoster.getEntry(selUser.getId());
+
+            if (entry != null)
+            {
+                theRoster.removeEntry(entry);
+            }
+        }
+    }
+
+    /**
      * Helper method for setUpMenus. Assigns a keyboard mnemonic to a menu or menu item,
      * but only if not running on the Mac platform.
      *
@@ -433,17 +543,46 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         // Update connected/disconnected icon
         if (isConnected())
         {
-            mConnectedLabel.setIcon(mConnectedIcon);
+            mConnectedLabel.setIcon(CONNECTED_ICON);
             mConnectedLabel.setToolTipText("Connected");
         }
         else
         {
-            mConnectedLabel.setIcon(mDisconnectedIcon);
+            mConnectedLabel.setIcon(DISCONNECTED_ICON);
             mConnectedLabel.setToolTipText("Disconnected");
         }
 
+        // Do toolbar buttons
+        updateToolBarButtons();
+
         // Do menu items
         updateMenuItems();
+    }
+
+    /**
+     * Updates the state and appearance of the toolbar buttons depending on the program
+     * state.
+     */
+    private void updateToolBarButtons()
+    {
+        // Toggle icon and tool tip text of show/hide unavailable users button
+        if (mShowUnavailUsers)
+        {
+            mShowHideUnavailBut.setIcon(HIDE_UNAVAIL_ICON);
+            mShowHideUnavailBut.setToolTipText("Hide offline users");
+        }
+        else
+        {
+            mShowHideUnavailBut.setIcon(SHOW_UNAVAIL_ICON);
+            mShowHideUnavailBut.setToolTipText("Show offline users");
+        }
+
+        // Enable/disable appropriate buttons
+        UserTreeItem selectedUser = mRosterPanel.getSelectedUserItem();
+
+        mAddUserBut.setEnabled(isConnected());
+        mDelUserBut.setEnabled(selectedUser != null);
+        mChatBut.setEnabled((selectedUser != null) && selectedUser.isAvailable());
     }
 
     /**
@@ -491,6 +630,17 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             ex.toString(), getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
 
         doDisconnect();
+    }
+
+    /**
+     * RosterPanelSelectionListener interface method implementation. Updates the toolbar
+     * buttons when the roster selection has changed.
+     *
+     * @param e  The RosterPanelSelectionEvent.
+     */
+    public void valueChanged(RosterPanelSelectionEvent e)
+    {
+        updateToolBarButtons();
     }
 
     /**
@@ -559,6 +709,34 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         Container cPane = getContentPane();
         cPane.setLayout(new BorderLayout());
 
+        // Create toolbar
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        cPane.add(toolbar, BorderLayout.NORTH);
+
+        mShowHideUnavailBut = new JButton(HIDE_UNAVAIL_ICON);
+        mShowHideUnavailBut.addActionListener(this);
+        toolbar.add(mShowHideUnavailBut);
+
+        ImageIcon image =
+            new ImageIcon(getClass().getResource("AddUser_ButIcon.png"));
+        mAddUserBut = new JButton(image);
+        mAddUserBut.setToolTipText("Add user");
+        mAddUserBut.addActionListener(this);
+        toolbar.add(mAddUserBut);
+
+        image = new ImageIcon(getClass().getResource("DeleteUser_ButIcon.png"));
+        mDelUserBut = new JButton(image);
+        mDelUserBut.setToolTipText("Delete user");
+        mDelUserBut.addActionListener(this);
+        toolbar.add(mDelUserBut);
+
+        image = new ImageIcon(getClass().getResource("Chat_ButIcon.png"));
+        mChatBut = new JButton(image);
+        mChatBut.setToolTipText("Chat with user");
+        mChatBut.addActionListener(this);
+        toolbar.add(mChatBut);
+
         // Create roster panel
         mRosterPanel = new RosterPanel();
         cPane.add(mRosterPanel, BorderLayout.CENTER);
@@ -567,12 +745,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
-        mConnectedIcon =
-            new ImageIcon(JavolinApp.class.getResource("Connected_Icon.png"));
-        mDisconnectedIcon =
-            new ImageIcon(JavolinApp.class.getResource("Disconnected_Icon.png"));
-
-        mConnectedLabel = new JLabel(mDisconnectedIcon);
+        mConnectedLabel = new JLabel(DISCONNECTED_ICON);
         mConnectedLabel.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
         mConnectedLabel.setToolTipText("Disconnected");
         panel.add(mConnectedLabel, BorderLayout.WEST);

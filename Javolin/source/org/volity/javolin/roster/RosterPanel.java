@@ -1,7 +1,7 @@
 /*
  * RosterPanel.java
  *
- * Copyright 2004 Karl von Laudermann
+ * Copyright 2004-2005 Karl von Laudermann
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,38 +30,20 @@ import org.volity.javolin.*;
 /**
  * JPanel subclass which contains the roster list and related controls.
  */
-public class RosterPanel extends JPanel implements ActionListener, RosterListener,
-    TreeSelectionListener
+public class RosterPanel extends JPanel implements RosterListener, TreeSelectionListener
 {
-    private final static String NODENAME = "Roster";
-    private final static String SHOW_OFFLINE_USERS_KEY = "ShowOfflineUsers";
-    private final static ImageIcon SHOW_UNAVAIL_ICON;
-    private final static ImageIcon HIDE_UNAVAIL_ICON;
-
-    private JButton mShowHideUnavailBut;
-    private JButton mAddUserBut;
-    private JButton mDelUserBut;
-    private JButton mChatBut;
-
     private JTree mTree;
     private DefaultTreeModel mTreeModel;
-
+    private java.util.List mSelectionListeners;
     private boolean mShowUnavailUsers;
     private Roster mRoster;
-
-    static
-    {
-        SHOW_UNAVAIL_ICON =
-            new ImageIcon(RosterPanel.class.getResource("ShowUnavail_ButIcon.png"));
-        HIDE_UNAVAIL_ICON =
-            new ImageIcon(RosterPanel.class.getResource("HideUnavail_ButIcon.png"));
-    }
 
     /**
      * Constructor.
      */
     public RosterPanel()
     {
+        mSelectionListeners = new ArrayList();
         buildUI();
 
         // Set up tree
@@ -74,11 +56,45 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
             (TreeSelectionModel.SINGLE_TREE_SELECTION);
         mTree.setRootVisible(false);
         mTree.addTreeSelectionListener(this);
+    }
 
-        // Finish setting up UI
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
-        mShowUnavailUsers = prefs.getBoolean(SHOW_OFFLINE_USERS_KEY, true);
-        updateToolBarButtons();
+    /**
+     * Adds a listener for RosterPanel selection events.
+     *
+     * @param listener  A RosterPanelSelectionListener that will be notified when a node
+     * is selected or deselected.
+     */
+    public void addRosterPanelSelectionListener(RosterPanelSelectionListener listener)
+    {
+        mSelectionListeners.add(listener);
+    }
+
+    /**
+     * Removes a RosterPanel selection event listener.
+     *
+     * @param listener  The RosterPanelSelectionListener to remove.
+     */
+    public void removeRosterPanelSelectionListener(
+        RosterPanelSelectionListener listener)
+    {
+        mSelectionListeners.remove(listener);
+    }
+
+    /**
+     * Notifies all listeners that have registered interest for notification on this
+     * event type.
+     *
+     * @param e  The RosterPanelSelectionEvent to be fired; generated when a node is
+     * selected or deselected.
+     */
+    private void fireRosterPanelSelection(RosterPanelSelectionEvent e)
+    {
+        Iterator iter = mSelectionListeners.iterator();
+
+        while (iter.hasNext())
+        {
+            ((RosterPanelSelectionListener)iter.next()).valueChanged(e);
+        }
     }
 
     /**
@@ -105,7 +121,6 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
         }
 
         repopulate();
-        updateToolBarButtons();
     }
 
     /**
@@ -118,9 +133,9 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
         // Save selected user ID so we can reselect the node for that user after
         // repopulating
         String selUserId = null;
-        if (getSelectedUser() != null)
+        if (getSelectedUserItem() != null)
         {
-            selUserId = getSelectedUser().getId();
+            selUserId = getSelectedUserItem().getId();
         }
 
         TreeNode nodeToSelect = null;
@@ -180,37 +195,11 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
     }
 
     /**
-     * Updates the state and appearance of the toolbar buttons depending on the program
-     * state.
-     */
-    private void updateToolBarButtons()
-    {
-        // Toggle icon and tool tip text of show/hide unavailable users button
-        if (mShowUnavailUsers)
-        {
-            mShowHideUnavailBut.setIcon(HIDE_UNAVAIL_ICON);
-            mShowHideUnavailBut.setToolTipText("Hide offline users");
-        }
-        else
-        {
-            mShowHideUnavailBut.setIcon(SHOW_UNAVAIL_ICON);
-            mShowHideUnavailBut.setToolTipText("Show offline users");
-        }
-
-        // Enable/disable appropriate buttons
-        UserTreeItem selectedUser = getSelectedUser();
-
-        mAddUserBut.setEnabled(mRoster != null);
-        mDelUserBut.setEnabled(selectedUser != null);
-        mChatBut.setEnabled((selectedUser != null) && selectedUser.isAvailable());
-    }
-
-    /**
-     * Gets the user whose tree node is selected.
+     * Gets the UserTreeItem for the selected tree node.
      *
-     * @return   The selected user item, or null if no item is selected.
+     * @return   The selected UserTreeItem, or null if no item is selected.
      */
-    private UserTreeItem getSelectedUser()
+    public UserTreeItem getSelectedUserItem()
     {
         UserTreeItem retVal = null;
 
@@ -227,90 +216,14 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
     }
 
     /**
-     * ActionListener interface method implementation.
+     * Sets whether to display users that are unavailable.
      *
-     * @param e  The action event that occurred.
+     * @param show  true to show unavailable users, false to hide them.
      */
-    public void actionPerformed(ActionEvent e)
+    public void setShowUnavailableUsers(boolean show)
     {
-        if (e.getSource() == mShowHideUnavailBut)
-        {
-            doShowHideUnavailBut();
-        }
-        else if (e.getSource() == mAddUserBut)
-        {
-            doAddUserBut();
-        }
-        else if (e.getSource() == mDelUserBut)
-        {
-            doDeleteUserBut();
-        }
-        else if (e.getSource() == mChatBut)
-        {
-        }
-    }
-
-    /**
-     * Handler for Show/Hide Unavailable Users button.
-     */
-    private void doShowHideUnavailBut()
-    {
-        mShowUnavailUsers = !mShowUnavailUsers;
-
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
-        prefs.putBoolean(SHOW_OFFLINE_USERS_KEY, mShowUnavailUsers);
-
+        mShowUnavailUsers = show;
         repopulate();
-        updateToolBarButtons();
-    }
-
-    /**
-     * Handler for the Delete User button.
-     */
-    private void doDeleteUserBut()
-    {
-        UserTreeItem selUser = getSelectedUser();
-
-        if (selUser == null)
-        {
-            return;
-        }
-
-        // The user name string in the message box will be "Joe Blow (joe@volity.net)" or
-        // "joe@volity.net" depending on whether the user has a nickname
-        String userStr = selUser.getId();
-
-        if (!selUser.getNickname().equals(""))
-        {
-            userStr = selUser.getNickname() + " (" + userStr + ")";
-        }
-
-        // Show confrimation dialog
-        String message = "Delete " + userStr + " from your roster?";
-
-        int result = JOptionPane.showConfirmDialog(this, message,
-            JavolinApp.getAppName() + ": Confirm Delete User", JOptionPane.YES_NO_OPTION);
-
-        // Delete user from roster
-        if (result == JOptionPane.YES_OPTION)
-        {
-            RosterEntry entry = mRoster.getEntry(selUser.getId());
-
-            if (entry != null)
-            {
-                mRoster.removeEntry(entry);
-            }
-        }
-    }
-
-    /**
-     * Handler for the Add User button.
-     */
-    private void doAddUserBut()
-    {
-        AddUserDialog addUserDlg =
-            new AddUserDialog(JOptionPane.getFrameForComponent(this), mRoster);
-        addUserDlg.show();
     }
 
     /**
@@ -338,7 +251,8 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
      */
     public void valueChanged(TreeSelectionEvent e)
     {
-        updateToolBarButtons();
+        fireRosterPanelSelection(new RosterPanelSelectionEvent(this,
+            getSelectedUserItem()));
     }
 
     /**
@@ -347,35 +261,6 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
     private void buildUI()
     {
         setLayout(new BorderLayout());
-
-        // Create toolbar at the top of the panel
-        JToolBar toolbar = new JToolBar();
-        toolbar.setFloatable(false);
-        add(toolbar, BorderLayout.NORTH);
-
-        // Create toolbar buttons
-        mShowHideUnavailBut = new JButton(HIDE_UNAVAIL_ICON);
-        mShowHideUnavailBut.addActionListener(this);
-        toolbar.add(mShowHideUnavailBut);
-
-        ImageIcon image =
-            new ImageIcon(RosterPanel.class.getResource("AddUser_ButIcon.png"));
-        mAddUserBut = new JButton(image);
-        mAddUserBut.setToolTipText("Add user");
-        mAddUserBut.addActionListener(this);
-        toolbar.add(mAddUserBut);
-
-        image = new ImageIcon(RosterPanel.class.getResource("DeleteUser_ButIcon.png"));
-        mDelUserBut = new JButton(image);
-        mDelUserBut.setToolTipText("Delete user");
-        mDelUserBut.addActionListener(this);
-        toolbar.add(mDelUserBut);
-
-        image = new ImageIcon(RosterPanel.class.getResource("Chat_ButIcon.png"));
-        mChatBut = new JButton(image);
-        mChatBut.setToolTipText("Chat with user");
-        mChatBut.addActionListener(this);
-        toolbar.add(mChatBut);
 
         // Create roster item tree
         mTree = new JTree();
