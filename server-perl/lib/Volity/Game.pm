@@ -35,6 +35,9 @@ Volity::Game - base class for Volity game modules
  __PACKAGE__->min_allowed_players(2);
  __PACKAGE__->max_allowed_players(4);
  __PACKAGE__->uri("http://mydomain.com/games/mygame");
+ __PACKAGE__->name("MyGame");
+ __PACKAGE__->description("This is my awesome game. It's great.");
+ __PACKAGE__->ruleset_version("1.2");
 
 # Then we define a bunch of rpc-reacting methods, as described in the
 # developers' guide...!
@@ -109,6 +112,14 @@ instance thereof.
 
 =over
 
+=item name
+
+A I<brief> name of this game module, which the game server will use to advertise itself through service discovery and other means. If left undefined, a boring default value will be used (probably the JID that this server is running under.
+
+=item description
+
+A longer text description of this game module.
+
 =item max_allowed_players
 
 An integer specifying the maximum number of players this game
@@ -122,9 +133,15 @@ for play. Defaults to 1.
 
 =item uri
 
-I<Required.> The game URI that this particular game module
-"provides". Consult the core Volity documentation for more information
+I<Required.> The URI of the ruleset that this particular game module
+implements. Consult the core Volity documentation for more information
 on how this works.
+
+=item ruleset_version
+
+I<Required.> The version number of the ruleset that this particular
+game module implements. A client-side UI file consults this number to
+determine its own compatibility with a game server.
 
 =back
 
@@ -137,7 +154,7 @@ use base qw(Volity Class::Data::Inheritable);
 
 use fields qw(players winners quitters current_player current_player_index referee player_jids);
 
-foreach (qw(uri name max_allowed_players min_allowed_players player_class)) {
+foreach (qw(uri name description ruleset_version website max_allowed_players min_allowed_players player_class)) {
   __PACKAGE__->mk_classdata($_);
 }
 
