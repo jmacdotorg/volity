@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 use strict;
 #use warnings;
 #         sub POE::Kernel::ASSERT_DEFAULT () { 1 }
