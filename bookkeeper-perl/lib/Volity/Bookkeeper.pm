@@ -22,13 +22,15 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(dbh);
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 use DBIx::Abstract;
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
+use Volity::Info::Server;
+use Volity::Info::Game;
+use Volity::Info::Player;
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -37,16 +39,6 @@ use POE qw(
 	   Driver::SysRW
 	   Component::Jabber;
 	  );
-
-sub initialize {
-  my $self = shift;
-  unless (defined($self->dbh)) {
-    my $class = ref($self);
-    croak("A new $class object must be initialized with a database handle!");
-  }
-  return $self->SUPER::initialize(@_);
-
-}
 
 ####################
 # Jabber event handlers
@@ -85,6 +77,7 @@ sub handle_rpc_request {
 sub _rpc_record_game {
   my $self = shift;
   my ($sender_jid, $rpc_id_attr, $game_record_hashref) = @_;
+  use Data::Dumper;
   my $game_record = Volity::GameRecord->new_from_hashref($game_record_hashref->value);
   unless (defined($game_record)) {
     warn "Got bad game struct from $sender_jid.\n";
@@ -100,7 +93,53 @@ sub _rpc_record_game {
   }
 
   # Looks good. Store it.
-  $game_record->store_in_db($self->dbh);
+  $self->store_record_in_db($game_record);
+  
+}
+
+sub store_record_in_db {
+  my $self = shift;
+  my ($game_record) = @_;
+  use Data::Dumper;
+  warn Dumper($game_record);
+  my ($server) = Volity::Info::Server->search({jid=>$game_record->server});
+  unless ($server) {
+      warn "Bizarre... got a record with server JID " . $game_record->server . ", but couldn't get a server object from the DB from it. No record stored.";
+  }
+  my ($ruleset) = Volity::Info::Ruleset->search({uri=>$game_record->game_uri});
+  unless ($ruleset) {
+      warn "Bizarre... got a record with server JID " . $game_record->game_uri . ", but couldn't get a server object from the DB from it. No record stored.";
+  }
+  my $game;			# Volity::Info::Game object
+  if (defined($game_record->id)) {
+    $game = Volity::Info::Game->retrieve($self->id);
+    # XXX Confirm that the record's owner is legit.
+    # XXX Do other magic here to update the values.
+    # XXX This is all kinds of not implemented yet.
+  } else {
+    $game = Volity::Info::Game->create({start_time=>$game_record->start_time,
+					end_time=>$game_record->end_time,
+					server_id=>$server->id,
+					ruleset_id=>$ruleset->id,
+					signature=>$game_record->signature,
+				       });
+					
+    $game_record->id($game->id);
+  }
+  # Now go through the player lists. It's always a case of drop-and-insert,
+  # for they're all many-to-many linking tables.
+  foreach my $player_list (qw(players winners quitters)) {
+    my $class = "Volity::Info::Game" . ucfirst(substr($player_list, 0, length($player_list) - 1));
+    foreach ($class->search({game_id=>$game->id})) {
+      $_->delete;
+    }
+    my @players = map(Volity::Info::Player->search({jid=>$_}),
+		      $game_record->$player_list);
+    for my $player (@players) {
+      $class->create({game_id=>$game->id, player_id=>$player->id});
+    }
+  }
+  return $game;
 }
 
 sub _rpc_set_my_attitude_toward_player {
