@@ -18,20 +18,21 @@ sub player_class {
 sub handle_normal_message {
   my $self = shift;
   my ($message) = @_;
-  print "Whoop, got a normal message.";
+#  print "Whoop, got a normal message.";
+  return $self->handle_chat_message(@_);
 }
 
 sub handle_groupchat_message {
   my $self = shift;
   my ($message) = @_;
-  print "Whoop, got a groupchat message";
+#  print "Whoop, got a groupchat message";
 }
 
 sub handle_chat_message {
   my $self = shift;
   my ($message)  = @_;
   my $body = $$message{body};
-  print "I got a message!! $body";
+#  print "I got a message!! $body";
   unless (ref($self)) {
     # Eh, just a class method.
     warn "Eh, just a class method.\n";
@@ -39,30 +40,29 @@ sub handle_chat_message {
   }
   my $player = $self->get_player_with_jid($$message{from});
   unless ($player) {
-    use Data::Dumper;
-    die "I'm stupid. The message was from $$message{from}. Here is some junk:\n" . Dumper($self->{player_jids});
+      # XXX Put nice error message here...
   }
   if (substr("rock", 0, length($body)) eq lc($body)) {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"Good old rock! Nothing beats rock.",
 			       });
     $player->hand_type('rock');
     
   } elsif (substr("paper", 0, length($body)) eq lc($body)) {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"Paper it is.",
 			       });
     $player->hand_type('paper');
   } elsif (substr("scissors", 0, length($body)) eq lc($body)) {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"You chose scissors.",
 			       });
     $player->hand_type('scissors');
   } else {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"No idea what you just said. Please choose one of 'rock', 'paper' or 'scissors'.",
 			       });
@@ -99,10 +99,7 @@ sub handle_chat_message {
       $victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
       $self->winners($players[0]);
     }
-    $self->server->send_message({
-				 to=>$self->muc_jid,
-				 body=>$victory_message,
-			       });
+    $self->referee->groupchat($victory_message);
     $self->end_game;
   }
   
