@@ -133,10 +133,9 @@ on how this works.
 use warnings; no warnings qw(deprecated);
 use strict;
 
-#use base qw(Class::Accessor::Fields Class::Data::Inheritable);
 use base qw(Volity Class::Data::Inheritable);
 
-use fields qw(players winners quitters current_player current_player_index referee player_jids debug);
+use fields qw(players winners quitters current_player current_player_index referee player_jids);
 
 foreach (qw(uri max_allowed_players min_allowed_players player_class)) {
   __PACKAGE__->mk_classdata($_);
@@ -296,11 +295,6 @@ sub end_game {
   $self->referee->end_game;
 }
 
-
-sub debug {
-  my $self = shift;
-  warn "@_\n" if $self->{debug};
-}
 
 ############
 # Callbacks

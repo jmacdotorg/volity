@@ -171,7 +171,6 @@ sub new_table {
   
   my $referee_class = $self->referee_class || "Volity::Referee";
 
-
   my $ref = $referee_class->new(
 				      {
 				       starting_request_jid=>$from_jid,
@@ -183,7 +182,6 @@ sub new_table {
 				       muc_host=>$self->muc_host,
 				       game_class=>$self->game_class,
 				       alias=>$resource,
-				       debug=>$self->debug,
 				       bookkeeper_jid=>$self->bookkeeper_jid,
 				      }
 				     );
@@ -191,21 +189,19 @@ sub new_table {
   $self->add_referee($ref);
   $ref->server($self);
 
-  # XXX OK, I'm really confused. I don't know where the following repsonse
-  # is being sent. Something else _is_ sending it, which is why I'm
-  # commenting out the following line. Whaaaaaaaaa?
-
-  $self->send_rpc_response($from_jid, $id, $ref->muc_jid);
+  $self->logger->info("New referee (" . $ref->jid . ") initialized, based on table-creation request from $from_jid.");
 }
 
 # start: run the kernel.
 sub start {
   my $self = shift;
+  $self->logger->info("Server started.");
   $self->kernel->run;
 }
 
 sub stop {
   my $self = shift;
+  $self->logger->info("Server stopped.");
   $self->kernel->post($self->alias, 'shutdown_socket', 0);
   foreach (grep (defined($_), $self->referees)) {
     $_->stop;

@@ -22,6 +22,13 @@ use Carp;
 # This is a superclass for Volity objects, giving them super-duper Jabber
 # powers. Poe::Component::Jabber powers, actually.
 
+=begin TODO
+
+The roster should be easier to use, by way of more methods. Make
+methods for retrieving the online and offline JIDS.
+
+=cut
+
 =head1 NAME
 
 Volity::Jabber - a base class for Jabber-speaking Volity objects
@@ -45,7 +52,7 @@ Volity::Jabber - a base class for Jabber-speaking Volity objects
    my $self = shift;
    my ($message) = @_;  # A hashref with info about the incoming message.
    # Send a debug message.
-   $self->debug(sprintf("%s says, '%s'\n", $$message{from}, $$message{body}));
+   $self->logger->debug(sprintf("%s says, '%s'\n", $$message{from}, $$message{body}));
    # More use message-handling code goes here.
  }
 
@@ -141,6 +148,7 @@ use PXR::NS qw(:JABBER :IQ);
 use Scalar::Util qw(weaken);
 use Carp qw(croak);
 use RPC::XML::Parser;
+use Log::Log4perl;
 
 =head1 METHODS
 
@@ -195,15 +203,9 @@ After connection, this will return the connection's JID.
 
 Like C<jid>, except it returns the non-resource part of the JID. (e.g. C<foo@bar.com> versus C<foo@bar.com/bazzle>.)
 
-=item debug
-
-Set this to a true value to display verbose debugging messages on STDERR.
-
-=back
-
 =cut
 
-use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification);
+use fields qw(kernel alias host port user resource password jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification);
 
 sub initialize {
   my $self = shift;
@@ -212,16 +214,22 @@ sub initialize {
 #  }
   $self->{kernel} = $poe_kernel;
   $self->{port} ||= 5222;
-  $self->debug("STARTING init. Password is " . $self->password);
+  $self->logger->debug("STARTING init. Password is " . $self->password);
   POE::Session->create(
 		       object_states=>
 		       [$self=>
-			[qw(jabber_iq jabber_presence _start jabber_message input_event init_finish )],
+			[qw(jabber_iq jabber_presence _start jabber_message input_event init_finish error_event)],
 		       ],
 		      );
   # Weaken some variables to prevent circularities & such.
   foreach (qw(kernel)) {
     weaken($self->{$_});
+  }
+
+  foreach (qw(user host resource)) {
+      unless ($self->$_) {
+	  die "Failed to make a Jabber connection with $self, because the $_ field is empty.";
+      }
   }
 
   $self->jid(sprintf("%s@%s/%s", $self->user, $self->host, $self->resource));
@@ -258,11 +266,6 @@ sub set_iq_notification {
     croak("The second arg to set_iq_notification must be a hashref.");
   }
   $self->{iq_notification}->{$id} = $methods;
-}
-
-sub debug {
-  my $self = shift;
-  warn ("@_\n") if $self->{debug};
 }
 
 sub next_id {
@@ -305,7 +308,6 @@ sub _start {
 			      IP=>$self->host,
 			      HOSTNAME=>$self->host,
 			      PORT=>$self->port,
-			      DEBUG=>$self->debug,
 			      USERNAME=>$self->user,
                               PASSWORD=>$self->password,
                               RESOURCE=>$self->resource,
@@ -318,7 +320,7 @@ sub _start {
 
 sub init_finish {
   my $self = $_[OBJECT];
-  $self->debug("In init_finish. Password is " . $self->password);
+  $self->logger->debug("In init_finish. Password is " . $self->password);
   $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
 }
 
@@ -384,7 +386,7 @@ IQ elements, such as handling RPC requests and responses.
 # say, "transitional".
 sub jabber_iq {
   my $self = shift;
-  $self->debug("I ($self) got an IQ object.\n");
+  $self->logger->debug("I ($self) got an IQ object.\n");
   my ($node) = @_;
 #  warn $node->to_str;
   my $id = $node->attr('id'); my $from_jid = $node->attr('from');
@@ -399,8 +401,8 @@ sub jabber_iq {
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
       # We should be getting only RPC responses, not requests.
       my $response_obj = $self->rpc_parser->parse($raw_xml);
-      $self->debug("Finally, got $response_obj.\n");
-      $self->debug("The response is: " . $response_obj->value->value . "\n");
+      $self->logger->debug("Finally, got $response_obj.\n");
+      $self->logger->debug("The response is: " . $response_obj->value->value . "\n");
       if ($response_obj->value->is_fault) {
 	$self->handle_rpc_fault({
 				 id=>$id,
@@ -423,15 +425,15 @@ sub jabber_iq {
 
       # Hack, to deal with apparent RPC::XML bug?
       $raw_xml =~ s/<int\/>/<int>0<\/int>/g;
-      $self->debug("Got Apparent RPC XML: $raw_xml\n");
+      $self->logger->debug("Got Apparent RPC XML: $raw_xml\n");
       my @kids = @{$query->get_children};
-      $self->debug("Got " . scalar(@kids) . " kids.\n");
-      $self->debug("I like cheeze. Also: " . $kids[0]->get_id . "\n");
+      $self->logger->debug("Got " . scalar(@kids) . " kids.\n");
+      $self->logger->debug("I like cheeze. Also: " . $kids[0]->get_id . "\n");
       my $rpc_obj = $self->rpc_parser->parse($raw_xml);
       unless (ref($rpc_obj)) {
 	  die "Got bad rpc.\n$raw_xml";
       }
-      $self->debug( "Finally, got $rpc_obj.\n");
+      $self->logger->debug( "Finally, got $rpc_obj.\n");
       my $method = $rpc_obj->name;
       $self->handle_rpc_request({
 				 rpc_object=>$rpc_obj,
@@ -470,7 +472,7 @@ sub jabber_message {
   my ($node) = @_;
   my $info_hash;		# Will be the argument to the delegate method.
   my $type;			# What type of chat is this?
-  $self->debug( "I ($self) received a message...\n");
+  $self->logger->debug( "I ($self) received a message...\n");
 
   foreach (qw(to from)) {
     $$info_hash{$_} = $node->attr($_);
@@ -484,7 +486,7 @@ sub jabber_message {
   }
   $type = $node->attr('type') || 'normal';
   my $method = "handle_${type}_message";
-  $self->debug( "Delegating it to the $method method.");
+  $self->logger->debug( "Delegating it to the $method method.");
   $self->$method($info_hash);
 }
 
@@ -496,7 +498,7 @@ sub jabber_message {
 sub jabber_stream_error { 
   my $self = shift;
   my ($node) = @_;
-  $self->debug("Got a jabber stream error. " . $node->to_str);
+  $self->logger->debug("Got a jabber stream error. " . $node->to_str);
 }
   
 
@@ -637,12 +639,12 @@ sub handle_query_element_ns {
   }  
   return unless defined($query_ns);
 
-  $self->debug("In handle_query_element_ns, for $query_ns...");
+  $self->logger->debug("In handle_query_element_ns, for $query_ns...");
   return unless defined($query_ns);
   return unless defined($self->query_handlers);
   return unless defined($self->query_handlers->{$query_ns});
 
-  $self->debug("I'm handling a query of the $query_ns namespace.");
+  $self->logger->debug("I'm handling a query of the $query_ns namespace.");
 
   if ($element_type eq 'iq') {
     # Locate a dispatch method, depending upon the type of the iq.
@@ -652,7 +654,7 @@ sub handle_query_element_ns {
       croak("No type attribute defined in query's parent node! Gak!");
     }
     $method = $self->query_handlers->{$query_ns}->{$type};
-    $self->debug("Trying to call the $method method.");
+    $self->logger->debug("Trying to call the $method method.");
     if (defined($method)) {
       if ($self->can($method)) {
 	$self->$method($node);
@@ -729,7 +731,7 @@ with the response as their argument.
 *make_rpc_request = \&send_rpc_request;
 sub send_rpc_request {
   my $self = shift;
-  $self->debug("in make_rpc_request\n");
+  $self->logger->debug("in make_rpc_request\n");
   my ($args) = @_;
   my $iq = POE::Filter::XML::Node->new('iq');
   foreach (qw(to id)) {
@@ -789,7 +791,7 @@ sub send_rpc_response {
   $response_xml = substr($response_xml, 22);
   $rpc_iq->insert_tag(query=>[xmlns=>'jabber:iq:rpc'])
     ->rawdata($response_xml);
-  $self->debug("Sending response: " . $rpc_iq->to_str);
+  $self->logger->debug("Sending response: " . $rpc_iq->to_str);
   $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
   return 1;
 }
@@ -926,12 +928,12 @@ sub join_muc {
 			      $$config{room}, $$config{server}, $$config{nick}
 		      );
   }
-  $self->debug( "I want to join this muc: $muc_jid\n");
+  $self->logger->debug( "I want to join this muc: $muc_jid\n");
   my $presence = POE::Filter::XML::Node->new('presence');
   $presence->attr(to=>$muc_jid);
   $presence->insert_tag('x', [xmlns=>'http://jabber.org/protocol/muc']);
   $self->kernel->post($self->alias, 'output_handler', $presence);
-  $self->debug("Presence sent.\n");
+  $self->logger->debug("Presence sent.\n");
   return $muc_jid;
 }
 

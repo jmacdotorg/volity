@@ -36,9 +36,9 @@ sub new {
 
 sub init_finish {
     my $self = $_[OBJECT];
-    $self->debug("THE BOT LIVES!!!");
-    $self->debug("Its password is: " . $self->password);
-    $self->debug("I will try to join the MUC at this JID: " . $self->muc_jid);
+    $self->logger->debug("THE BOT LIVES!!!");
+    $self->logger->debug("Its password is: " . $self->password);
+    $self->logger->debug("I will try to join the MUC at this JID: " . $self->muc_jid);
     $self->join_muc({jid=>$self->muc_jid});
 }
 

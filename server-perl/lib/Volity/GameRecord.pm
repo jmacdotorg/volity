@@ -307,26 +307,28 @@ sub sign {
 
   # XXX Very hacky, but good enough for now.
   my $filename = "/tmp/volity_record_$$";
-  open (SERIALIZED, ">$filename") or die "Can't write to $filename: $!";
+  unless (open (SERIALIZED, ">$filename")) {
+      $self->expire("Can't write to $filename: $!");
+  }
   print SERIALIZED $serialized;
-  close (SERIALIZED) or die "Could not close $filename: $!";
+  close (SERIALIZED) or $self->expire("Could not close $filename: $!");
 
   my $out_filename = "/tmp/volity_signature_$$";
 
   my $gpg_command = sprintf("%s --no-tty --default-key %s -sba --passphrase-fd 0 --yes --output $out_filename $filename", $gpg_bin, $gpg_secretkey);
-  open (GPG, "|$gpg_command") or die "Can't open a pipe into the gpg command: $!\nCommand was: $gpg_command";
+  open (GPG, "|$gpg_command") or $self->expire("Can't open a pipe into the gpg command: $!\nCommand was: $gpg_command");
   print GPG $gpg_passphrase . "\n";
-  close (GPG) or die "Couldn't close gpg command pipe: $!";
+  close (GPG) or $self->expire("Couldn't close gpg command pipe: $!");
 
-  open (SIG, $out_filename) or die "Can't read $out_filename: $!";
+  open (SIG, $out_filename) or $self->expire("Can't read $out_filename: $!");
 #  local $/ = undef; my $signature = <SIG>;
   my $signature = '';
   while (<SIG>) { $signature .= $_ }
-  close (SIG) or die "Can't close $out_filename: $!";
+  close (SIG) or $self->expire("Can't close $out_filename: $!");
 
   # Clean up our messy mess...
   foreach ($filename, $out_filename) {
-    unlink ($_) or die "Couldn't unlink $_: $!";
+      unlink ($_) or $self->expire("Couldn't unlink $_: $!");
   }
 
   # Finally, attach the signature to the object.
@@ -361,14 +363,14 @@ sub verify {
   }
   # XXX Very hacky, but good enough for now.
   my $serialized_filename = "/tmp/volity_record_$$";
-  open (SERIALIZED, ">$serialized_filename") or die "Can't write to $serialized_filename: $!";
+  open (SERIALIZED, ">$serialized_filename") or $self->expire( "Can't write to $serialized_filename: $!");
   print SERIALIZED $serialized;
-  close (SERIALIZED) or die "Could not close $serialized_filename: $!";
+  close (SERIALIZED) or $self->expire( "Could not close $serialized_filename: $!");
 
   my $signature_filename = "/tmp/volity_signature_$$";
-  open (SIGNATURE, ">$signature_filename") or die "Can't write to $signature_filename: $!";
+  open (SIGNATURE, ">$signature_filename") or $self->expire( "Can't write to $signature_filename: $!");
   print SIGNATURE $self->signature;
-  close (SIGNATURE) or die "Could not close $signature_filename: $!";
+  close (SIGNATURE) or $self->expire ("Could not close $signature_filename: $!");
 
   
   my $gpg_command = $gpg_bin . " --verify $signature_filename $serialized_filename";
@@ -377,7 +379,7 @@ sub verify {
 
   # Clean up my messy mess.
   foreach ($signature_filename, $serialized_filename) {
-    unlink($_) or die "Can't unlink $_: $!";
+    unlink($_) or $self->expire( "Can't unlink $_: $!");
   }
 
   if ($result) {
