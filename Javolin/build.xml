@@ -1,4 +1,4 @@
-<project name="Javolin" default="dist" basedir=".">
+<project name="Javolin" default="archive" basedir=".">
     <description>
         Build file for Javolin app
     </description>
@@ -24,9 +24,9 @@
     	deprecation="on"/>
   </target>
 
-  <target name="dist" depends="compile"
-        description="generate the distribution" >
-    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+  <target name="archive" depends="compile"
+        description="generate the jar file" >
+    <!-- Put everything in ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfile}" basedir="${build}">
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
