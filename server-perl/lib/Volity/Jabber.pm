@@ -148,7 +148,6 @@ use PXR::NS qw(:JABBER :IQ);
 use Scalar::Util qw(weaken);
 use Carp qw(croak);
 use RPC::XML::Parser;
-use Log::Log4perl;
 
 =head1 METHODS
 
@@ -968,6 +967,8 @@ Sets the type attribute. See the XMPP-IM protocol for more information as to the
 
 These all set sub-elements on the outgoing presence element. See the XMPP-IM protocol for more information as to their use. You may set these to localized values by setting their values to hashrefs instead of strings, as described in L<"Localization">.
 
+=back
+
 =begin not_yet
 
 =item x
@@ -979,8 +980,6 @@ A POE::Filter::XML::Node object representing a Jabber <<x/>> element, for presen
 A POE::Filter::XML::Node object representing a Jabber <<error/> element.
 
 =end not_yet
-
-=back
 
 You can leave out the hashref entirely to send a blank <<presence/>>
 element.
@@ -1161,7 +1160,7 @@ sub handle_disco_info_request { }
 sub receive_disco {
   my $self = shift;
   my ($iq) = @_;
-  my @return;
+  my @return = ($iq->attr('from'), $iq->attr('id'));
   for my $child (@{$iq->get_tag('query')->get_children}) {
     my $class = "Volity::Jabber::Disco::" . ucfirst($child->name);
     bless($child, $class);
@@ -1715,6 +1714,15 @@ sub new {
 sub set {
   my $self = shift;
   my ($key, $value) = @_;
+  
+  # Apply XML escapes to the given value.
+  $value =~ s/&/&amp;/g;
+  $value =~ s/</&lt;/g;
+  $value =~ s/>/&gt;/g;
+  $value =~ s/'/&apos;/g;
+  $value =~ s/"/&quot;/g;
+
+  # Now make it an attribute on the current object.
   $self->attr($key=>$value);
   return $value;
 }
