@@ -1,8 +1,65 @@
 package Volity;
 
-our $VERSION = '0.3.0';
+our $VERSION = '0.2.2';
+
+use warnings; use strict;
+no warnings qw(deprecated);
+
+use base qw(Class::Accessor Class::Fields);
+
+sub new {
+  my($proto, $fields) = @_;
+  my($class) = ref $proto || $proto;
+
+  if (defined($fields)) {
+    croak("Second argument to constructor must be a hash reference!") unless ref($fields) eq 'HASH';
+  } else {
+    $fields = {};
+  }
+
+  my $self = fields::new($class);
+  while (my ($key, $val) = each %$fields) {
+    eval {$self->{$key} = $val;};
+    if ($@) {
+      Carp::confess "COuldn't set the $key key of $self: $@";
+    }
+  }
+  $self->create_accessors;
+  $self->initialize;
+  return $self;
+}
+
+sub initialize {
+  return $_[0];
+}
+
+sub create_accessors {
+    my $self = shift;
+    my $class = ref($self)? ref($self): $self;
+    my @fields = $class->show_fields('Public');
+    @fields = grep(not($self->can($_)), @fields);
+    $class->mk_accessors(@fields);
+}
+
+
+# get: this overrides C::A's get() to act smarter about returning internal
+# arrayrefs as lists of a lists is what we want.
+sub get {
+  my $self = shift;
+  my ($field) = @_;
+  if (wantarray) {
+    if (defined($self->{$field}) and ref($self->{$field}) eq 'ARRAY') {
+      return @{$self->SUPER::get(@_)};
+    } else {
+      return ($self->SUPER::get(@_));
+    }
+  }
+  return $self->SUPER::get(@_);
+}
 
 =pod
+
+
 
 =head1 NAME
 
