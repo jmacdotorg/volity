@@ -22,7 +22,6 @@ foreach (qw(name description user host password)) {
 # insert additional config information based on class data.
 sub new {
   my $invocant = shift;
-  warn("***A bot is being created.***");
   my $class = ref($invocant) || $invocant;
   my ($config) = @_;
   foreach (qw(user host password resource)) {
@@ -35,9 +34,7 @@ sub new {
       $$config{$_} = $class->$_;
     }
   }
-  warn("Bot constructor about to be called.");
   my $self = $class->SUPER::new($config);
-  warn("Bot constructor called.");
   $self->name_modifier('');
   return $self;
 }
