@@ -1,3 +1,19 @@
+************************************
+************ IMPORTANT!!! **********
+************************************
+
+THIS ENTIRE MODULE IS DEPRECATED. Its functionality has been replaced and
+superceded by individual, separate game module packages. For the games that
+used to be here, seek ye out Volity::Game::RPS and Volity::Game::CrazyEights.
+
+One way to get these is via CVS; see the 'games-perl' repository in the
+Voliy project on SourceForge.
+
+This lump of code will continue to hang out on SourceForge for archival
+purposes. The original README content follows this line.
+
+------(this is this line)---------------------------------------------------
+
 This module is a catch-all for a few simple, testworthy Volity games
 written in Perl, intended for distribution with the FriVolity software
 package.
