@@ -118,7 +118,7 @@ you will be sad.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -172,6 +172,8 @@ sub new_table {
 				       password=>$self->password,
 				       resource=>$resource,
 				       host=>$self->host,
+				       muc_host=>$self->muc_host,
+				       game_class=>$self->game_class,
 				       alias=>$resource,
 				       debug=>$self->debug,
 				       bookkeeper_jid=>$self->bookkeeper_jid,
@@ -179,9 +181,6 @@ sub new_table {
 				     );
   $self->add_referee($ref);
   $ref->server($self);
-  if (defined($self->game_class)) {
-    $ref->game_class($self->game_class);
-  }
 
   # XXX OK, I'm really confused. I don't know where the following repsonse
   # is being sent. Something else _is_ sending it, which is why I'm
