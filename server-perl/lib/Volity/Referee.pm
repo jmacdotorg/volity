@@ -39,31 +39,44 @@ detailed description of how this works.
 In the Frivolity system, a Volity::Server object automatically makes a
 referee object and sends it to the appropriate MUC when a game
 starts. The class of referee it makes depends upon the value of the
-server object's C<referee_class> instance variable, and varies from
-game to game. Each Frivolity game implementation must define its own
-referee class, which should inherit from Volity::Referee if it knows
-what's good for it.
+server object's C<referee_class> instance variable, but most games can
+get away with using this default class, and putting all their game
+logic in a Volity::Game subclass.
 
 =head1 USAGE
 
-Just create a new package for your game's referee
+=head2 For game programmers
 
- package MyGame::Referee;
+After being instanced, your game object will have a referee object as
+its C<referee> instance variable, accessible through the C<referee()>
+accessor. You can call all the methods on it defined in this
+manpage. However, you should avoid doing anything that would mess up
+the game, such as having the referee leave the table! It's probably
+more useful for accessing methods like C<groupchat()>.
 
- use base qw(Volity::Referee);
+In many cases, you can program your game module without ever directly
+referring to the referee. It's just there if you need it (and for the
+use of the lower-level Volity::Game base class, which does carry on a
+continual conversation with its embedded referee object).
 
-...and now your package may use (or override) all the methods
-described below. For simple games, you can just use some of the
-accessors (see L<"Object accessors">) to set some configuration
-options, and let the Volity::Referee superclass handle everything
-else.
+=head2 For everyone else
 
-At any rate, most of your code and effort will probably go into your
-actual game class; see L<Volity::Game> for more information.
+Unless you're writing a game module, you can probably happily ignore
+this module. The game server will use it just fine, all by itself.
 
 =head1 METHODS
 
-=head1 Object accessors
+The following methods describe this module's public API (insofar as
+Perl modules can say that they have any public/private
+distinction). You are welcome to snoop around in the code to see what
+the other, internal methods do, but you probably wouldn't need to call
+them during a game.
+
+It's worth noting that this module suclasses from Volity::Jabber, and
+therefore enjoys all the methods that it defines, as well as the ones
+listed here.
+
+=head2 Object accessors
 
 All these are simple accessors which return the named object
 attribute. If an argument is passed in, then the attribute's value is
@@ -114,6 +127,10 @@ into action: if C<game> is defined, then a game is underway. (The
 referee will undefine this variable after a game ends.)
 
 =back
+
+=head2 Other Methods
+
+=over
 
 =cut
 
@@ -431,6 +448,11 @@ sub look_up_jid_with_nickname {
   return $self->{nicks}{$nick};
 }
 
+=item groupchat ( $message )
+
+Sends the given message string as a groupchat to the referee's table.
+
+=cut
 
 # groupchat:
 # Convenience method for sending a message to the game's MUC.
@@ -822,6 +844,8 @@ sub DESTROY {
   my $self = shift;
   $self->server(undef);
 }
+
+=back
 
 =head1 AUTHOR
 

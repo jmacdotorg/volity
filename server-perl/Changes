@@ -17,6 +17,13 @@
 
 	- Added (most of) the above to Friv, too.
 
+	- Implemented support for ECMAScript throughout Friv and the
+	  server modules. Friv now requires the JavaScript::SpiderMonnkey
+	  module.
+
+	- All RPC calls are now in either the 'volity.*' or 'game.*'
+          namespaces.
+
 0.2.2
 
 	- (distribution) Improved the test.pl script. It now more

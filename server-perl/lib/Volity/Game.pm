@@ -20,14 +20,6 @@ package Volity::Game;
 
 # This is a base class for Volity game classes.
 
-=begin TODO
-
-Document how to use this module. Write some use cases.
-
-Document how the 'winners' list actually works.
-
-=end TODO
-
 =head1 NAME
 
 Volity::Game - base class for Volity game modules
@@ -42,30 +34,10 @@ Volity::Game - base class for Volity game modules
 
  __PACKAGE__->min_allowed_players(2);
  __PACKAGE__->max_allowed_players(4);
-
  __PACKAGE__->uri("http://mydomain.com/games/mygame");
 
- # Override some Volity::Jabber methods.
-
- sub handle_chat_message {
-   my $self = shift;
-   my ($message) = @_;
-   if (ref($self)) {
-     # I'm an active game object! Talk back to the player!
-     $self->send_message({to=>$$message{from}, body=>"Duh, hello!"});
-   }
- }
-
- # ... later on ...
-
- sub end_game {
-   my $self = shift;
-   # If our end condition is met (whatever that may be), tell the ref.
-   # It will take care of the rest.
-   if ($greeble = 42) {
-     $self->end_game;
-   }
- }
+# Then we define a bunch of rpc-reacting methods, as described in the
+# developers' guide...!
 
 =head1 DESCRIPTION
 
@@ -73,7 +45,7 @@ This class provides a framework for writing Volity game modules in Perl.
 
 If you downloaded and installed the Frivolity system (all these Perl
 modules under the C<Volity> namespace) primarily so you could write
-Volity game modules in Perl, then this is the man page you should show
+Volity game modules in Perl, then this is the class you should show
 the most interest in! If you'd like to I<run> your game as a server
 once you've written it, please direct your subsequent attention to
 L<Volity::Server>.
@@ -83,6 +55,16 @@ L<Volity::Server>.
 Create your own Perl package for your game, and have it inherit from
 C<Volity::Game>. You can then have it do whatever you like, calling
 the C<end_game> method when you're all done.
+
+OK, that's a bit of a simiplifaction. Fortunately, I've written a
+developer's guide that should teach and show you everything you need
+to know about writing Volity games in Perl. You can always find the latest
+edition here:
+
+http://www.volity.org/docs/devguide_perl/
+
+The remainder of this manpage serves as a reference to the specific
+fields and methods that this class offers to programmers.
 
 =head1 METHODS
 
@@ -349,17 +331,6 @@ sub handle_chat_message { }
 sub handle_headline_message { }
 sub handle_error_message { }
 
-
-=head1 BUGS
-
-Volity is, at the time of this writing, waddling through its early
-alpha stages. As such, this framework only does so much; you'll note
-the lack of any graphics-handling features, since the
-graphics-handling protocols of Volity have yet to be defined. For one
-thing.
-
-For the latest Volity news, please see the project's homepage, at
-http://volity.sf.net .
 
 =head1 AUTHOR
 

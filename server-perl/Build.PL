@@ -17,6 +17,7 @@ my $build = Module::Build->new
 	       'Class::Accessor'=>undef,
 	       'Class::Fields'=>undef,
 	       'Time::HiRes'=>undef,
+	       'JavaScript::SpiderMonkey'=>undef,
 	     },
    script_files=>[glob("bin/*.pl")],
    install_path=>{script=>'/usr/local/volity/bin'},
