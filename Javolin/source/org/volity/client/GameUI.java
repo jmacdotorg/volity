@@ -76,6 +76,26 @@ public class GameUI implements RPCHandler, PacketFilter {
 	    }
 	  }
 	});
+      scope.put("start_game", scope, new Callback() {
+	  public Object run(Object[] args) {
+	    try {
+	      table.getReferee().startGame();
+	    } catch (Exception e) {
+	      errorHandler.error(e);
+	    }
+	    return Undefined.instance;
+	  }
+	});
+      scope.put("add_bot", scope, new Callback() {
+	  public Object run(Object[] args) {
+	    try {
+	      table.getReferee().addBot();
+	    } catch (Exception e) {
+	      errorHandler.error(e);
+	    }
+	    return Undefined.instance;
+	  }
+	});
     } catch (JavaScriptException e) {
       errorHandler.error(e);
     } finally {
@@ -100,13 +120,12 @@ public class GameUI implements RPCHandler, PacketFilter {
     }
     Scriptable opponents;
     public Object getOpponents() throws JavaScriptException {
-      if (opponents == null) {
-	Context context = Context.getCurrentContext();
-	opponents = context.newObject(scope);
-	for (Iterator it = table.getOpponents().iterator(); it.hasNext();) {
-	  String nickname = (String) it.next();
-	  opponents.put(nickname, opponents, context.newObject(scope));
-	}
+      List nicknames = table.getOpponents();
+      Context context = Context.getCurrentContext();
+      opponents = context.newArray(scope, nicknames.size());
+      for (Iterator it = nicknames.iterator(); it.hasNext();) {
+	String nickname = (String) it.next();
+	opponents.put(nickname, opponents, context.newObject(scope));
       }
       return opponents;
     }
