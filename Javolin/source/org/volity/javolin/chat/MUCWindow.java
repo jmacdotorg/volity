@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
@@ -43,13 +44,14 @@ public class MUCWindow extends JFrame implements PacketListener
     protected JSplitPane mUserListSplitter;
     protected LogTextPanel mMessageText;
     protected JTextArea mInputText;
-    protected JTextArea mUserListText;
+    protected JTextPane mUserListText;
     protected AbstractAction mSendMessageAction;
 
     protected UserColorMap mUserColorMap;
-    protected SizeAndPositionSaver mSizePosSaver;
-
     protected SimpleDateFormat mTimeStampFormat;
+    protected SimpleAttributeSet mBaseUserListStyle;
+    
+    protected SizeAndPositionSaver mSizePosSaver;
     protected MUC mMucObject;
 
     /**
@@ -65,6 +67,11 @@ public class MUCWindow extends JFrame implements PacketListener
         mUserColorMap.getUserNameColor(aMUC.getNickname()); // Give user first color
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
+        
+        mBaseUserListStyle = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(mBaseUserListStyle, "SansSerif");
+        StyleConstants.setFontSize(mBaseUserListStyle, 12);
+
 
         buildUI();
 
@@ -166,8 +173,21 @@ public class MUCWindow extends JFrame implements PacketListener
 
         while (iter.hasNext())
         {
-            mUserListText.append(StringUtils.parseResource(iter.next().toString()) +
-                "\n");
+            String userName = StringUtils.parseResource(iter.next().toString());
+
+            SimpleAttributeSet style = new SimpleAttributeSet(mBaseUserListStyle);
+            StyleConstants.setForeground(style,
+                mUserColorMap.getUserNameColor(userName));
+
+            Document doc = mUserListText.getDocument();
+
+            try
+            {
+                doc.insertString(doc.getLength(), userName + "\n", style);
+            }
+            catch (BadLocationException ex)
+            {
+            }
         }
     }
 
@@ -289,7 +309,7 @@ public class MUCWindow extends JFrame implements PacketListener
 
         mUserListSplitter.setLeftComponent(mChatSplitter);
 
-        mUserListText = new JTextArea();
+        mUserListText = new JTextPane();
         mUserListText.setEditable(false);
         mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
 
