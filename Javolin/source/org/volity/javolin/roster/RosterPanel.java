@@ -159,8 +159,10 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 
                 newNode = new DefaultMutableTreeNode(item);
 
-                // Remember node if it's the one to select after populating
-                if ((selUserId != null) && (item.getId().equals(selUserId)))
+                // Remember node if it's the one to select after populating, and the item
+                // will be visible in the tree
+                if (((selUserId != null) && (item.getId().equals(selUserId))) && 
+                    (item.isAvailable() || mShowUnavailUsers))
                 {
                     nodeToSelect = newNode;
                 }
