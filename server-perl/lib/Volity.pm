@@ -1,6 +1,6 @@
 package Volity;
 
-our $VERSION = '0.2.1';
+our $VERSION = '0.3.0';
 
 =pod
 
