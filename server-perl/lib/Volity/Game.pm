@@ -20,6 +20,14 @@ package Volity::Game;
 
 # This is a base class for Volity game classes.
 
+=begin TODO
+
+Document how to use this module. Write some use cases.
+
+Document how the 'winners' list actually works.
+
+=end TODO
+
 =head1 NAME
 
 Volity::Game - base class for Volity game modules
@@ -202,38 +210,6 @@ sub player_class {
   return $player_class;
 }
 
-=begin old
-
-XXX
-
-I think these methods are obsolete and may deserve deletion before the next
-package release.
-
-#################
-# Subclass-overridable stub methods
-#################
-
-sub receive_normal_message { }
-
-# XXX The following method will break if called; it uses Net::Jabber syntax!
-sub receive_chat_message {
-  my $self = shift;
-  my ($message, $j)  = @_;
-  unless (ref($self)) {
-    my $reply_body = "Hi! I am a Volity game referee.";
-    $self->referee->send_message({
-				 to=>$message->GetFrom,
-				 body=>$reply_body,
-			       });
-  }
-}
-  
-sub receive_groupchat_message { }
-
-=end old
-
-=cut
-
 #################
 # Basic player management
 #################
@@ -325,9 +301,16 @@ sub get_player_with_jid {
   return $player;
 }
 
+###################
+# Game actions
+###################
+
 =head2 end_game
 
-Ends the game! The referee and referee will handle cleanup.
+Ends the game. The referee will automatically handle player
+notification. The bookkeeper will be sent a record of the game's
+results at this time, so be sure you have the game's winner-list
+arranged correctly.
 
 =cut
 
@@ -339,10 +322,34 @@ sub end_game {
   $self->referee->end_game;
 }
 
+
 sub debug {
   my $self = shift;
   warn "@_\n" if $self->{debug};
 }
+
+############
+# Callbacks
+############
+
+=head1 Callback methods
+
+C<Volity::Game> provides default handlers for these methods, called on the game object by different parts of Frivolity. You may override these methods if you want your game module to behave in some way other than the default (usually a no-op).
+
+=head2 start_game
+
+Called by the referee after it creates the game object and is ready to
+begin play. It gives the object a chance to perform whatever it would
+like to do as its first actions, prior to players starting to send
+messages to it.
+
+The default behavior is a no-op. A common reason to override
+this method is the need to send a set-up function call to the game's
+players.
+
+=cut
+
+sub start_game { }
 
 =head1 BUGS
 
