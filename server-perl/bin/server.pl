@@ -1,4 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
+
+eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
 
 use warnings;
 use strict;
@@ -8,7 +11,7 @@ use Getopt::Std;
 use Volity::GameRecord;
 
 my %opts;
-getopts('u:p:h:r:d:g:o:b:G:K:P:', \%opts);
+getopts('u:p:h:r:d:g:o:b:G:K:P:R:', \%opts);
 
 foreach ('user', 'host', 'password', 'resource', 'bookkeeper_jid') {
   unless (defined($opts{substr($_, 0, 1)})) {
@@ -23,8 +26,8 @@ foreach ('key id (GPG)', 'passphrase (GPG)', 'GPG binary path',) {
 }
 
 
-unless (defined($opts{substr('g', 0, 1)})) {
-  die "You must define a game class, with the g switch\n";
+unless (defined($opts{g}) or defined($opts{R})) {
+  die "You must define either a game class (-g) or a referee class (-R).\n";
 }
 
 # Hardcoded default bookkeeper JID.
@@ -43,6 +46,7 @@ my $server = Volity::Server->new(
 				  debug=>$opts{d} || 0,
 				  alias=>$alias,
 				  game_class=>$opts{g},
+				  referee_class=>$opts{R},
 				  bookkeeper_jid=>$opts{b} || $default_bkp,
 				}
 				);
