@@ -111,7 +111,7 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes active_bots);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes active_bots active_bot_registry);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -181,6 +181,8 @@ sub initialize {
   $self->query_handlers->{'volity:iq:botchoice'} = {set=>'choose_bot'};
 
   $self->{active_bots} = [];
+
+  $self->debug("By the way, here's my password: " . $self->password);
 
   return $self;
 
@@ -324,6 +326,14 @@ sub players {
   return values (%{$self->{players}});
 }
 
+# look_up_player_with_jid:
+# Takesa  JID, and returns the corresponding player object, or undef.
+sub look_up_player_with_jid {
+  my $self = shift;
+  my ($jid) = @_;
+  return $self->{players}{$jid};
+}
+
 # look_up_jid_with_nickname:
 # Takes a nickname, and returns the full JID of the player using it.
 # Returns undef if there's no such nick.
@@ -453,9 +463,18 @@ sub start_game {
   my $self = shift;
   my ($from_jid, $id, @args) = @_;
   # Make sure the player who sent us this request is in the MUC.
-  my ($from_nick) = $from_jid =~ /\/(.*)$/;
-  my $requester_jid = $self->{nicks}{$from_nick};
-  die "I have no record of a nickname '$from_nick'" unless $requester_jid;
+  my $requester_jid;
+  if ($self->look_up_player_with_jid($from_jid)) {
+    $requester_jid = $from_jid;
+  } else {
+    my ($from_nick) = $from_jid =~ /\/(.*)$/;
+    $requester_jid = $self->{nicks}{$from_nick};
+  }
+  unless (defined($requester_jid)) {
+    $self->debug("Not starting a game, because I don't recognize JID $requester_jid.");
+    $self->send_rpc_fault($id, 999, "I'm sorry, but you don't seem to be sitting at my table, so I won't start a game for you.");
+    return;
+  }
   if ($requester_jid ne $self->starting_request_jid) {
     $self->send_rpc_fault($from_jid, $id, 2, "You asked to start a game, but you did not initiate the game.");
     $self->debug( "Weird... expected a start_game request from $self->{starting_request_jid} but got one from $requester_jid instead.\n");
@@ -465,6 +484,7 @@ sub start_game {
 
   # Look at the sender funny, if we're already playing a game.
   if (defined($self->game)) {
+    $self->debug("Not starting a game, because I think one is already running.");
     $self->send_rpc_fault($from_jid, $id, 1, "Can't start a new game, because we're playing one already.");
     return;
   }
@@ -472,6 +492,7 @@ sub start_game {
   # Time for a sanity check.
   unless ($self->check_sanity) {
     # Something seems to have gone awry. Alas!
+    $self->debug("Not starting a game; failed sanity check.");
     $self->send_message({
 			 to=>$self->muc_jid,
 			 type=>"groupchat",
@@ -506,9 +527,11 @@ sub add_bot {
   }
   
   # If we offer only one flavor of bot, then Bob's your uncle.
-  if ($self->bot_classes == 1) {
-    if ($self->create_bot(($self->bot_classes)[0])) {
+  my @bot_classes = $self->bot_classes;
+  if (@bot_classes == 1) {
+    if (my $bot = $self->create_bot(($self->bot_classes)[0])) {
       $self->send_rpc_response($from_jid, $id, "ok");
+      $bot->kernel->run;
     } else {
       $self->send_rpc_fault($from_jid, $id, 4, "I couldn't create a bot for some reason.");
     }
@@ -559,8 +582,9 @@ sub choose_bot {
     return;
   }
 
-  if ($self->create_bot(($chosen_bot_class))) {
+  if (my $bot = $self->create_bot(($chosen_bot_class))) {
     # It's all good.
+    $bot->kernel->run;
     return;
   } else {
     # Oh no, the bot didn't get added.
@@ -574,16 +598,24 @@ sub create_bot {
   my ($bot_class) = @_;
   # Generate a resource for this bot to use.
   my $resource = $bot_class->name . gettimeofday();
-  my $bot = $bot_class->new(
+  return $bot_class->new(
 			    {
 			     password=>$self->password,
 			     resource=>$resource,
 			     alias=>$resource,
 			     debug=>$self->debug,
+			     muc_jid=>$self->muc_jid,
+			     referee=>$self,
 			    }
-			   );
-  push (@{$self->active_bots}, $bot);
-  return $bot;
+			 );
+  # XXXXXXXX Everything under this line is ignored....
+#  push (@{$self->active_bots}, $bot);
+#   $self->debug("***New bot has a jid of " . $bot->jid . "****\n");
+#  $self->{active_bot_registry}->{$bot->jid} = $bot;
+#  # Now command the bot to join the table.
+##  $bot->muc_to_join($self->muc_jid);
+#  return $bot;
+  # XXXXXXXX Move the above somewhere useful, thx.
 }
 
 # end_game: Not really an RPC call, but putting it here for now for
@@ -598,6 +630,7 @@ sub end_game {
   # Time to register this game with the bookkeeper!
   # Create an initialize a new game record object.
 
+  $self->debug("Preparing game record.");
   my $record = Volity::GameRecord->new({
 					server=>$self->basic_jid,
 				      });
