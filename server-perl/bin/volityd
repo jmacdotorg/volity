@@ -11,7 +11,7 @@ use Getopt::Std;
 use Volity::GameRecord;
 
 my %opts;
-getopts('u:p:h:r:g:o:b:l:G:K:P:m:B:f:', \%opts);
+getopts('u:p:h:r:g:o:b:l:G:K:P:m:B:f:c:v:j:', \%opts);
 
 foreach ('user', 'host', 'password',) {
   unless (defined($opts{substr($_, 0, 1)})) {
@@ -81,6 +81,9 @@ my $server = Volity::Server->new(
 				  referee_class=>$opts{R},
 				  bookkeeper_jid=>$opts{b} || $default_bkp,
 				  muc_host=>$opts{m} || 'conference.volity.net',
+				  volity_version=>$opts{v} || '1.0',
+				  contact_email=>$opts{c},
+				  contact_jid=>$opts{j},
 				}
 				);
 
@@ -163,12 +166,29 @@ The JabberID of the Volity network's bookkeeper.
 
 B<Default>: bookkeeper@volity.org
 
+=item c
+
+The contact email address of the person responsible for this server
+(you, probably).
+
+Polite servers set either this or the C<j> switch (or both).
+
+B<Default>: None.
+
 =item f
 
 The filesystem pathname of the pidfile to be created when the server
 starts.
 
 B<Default>: None, and no pidfile is used.
+
+=item j
+
+The contact Jabber ID of the person responsible for this server (you, probably).
+
+Polite servers set either this or the C<c> switch (or both).
+
+B<Default>: None.
 
 =item l
 
@@ -201,6 +221,16 @@ choice for 'live' game servers; use something like 'testing'
 otherwise.
 
 B<Default>: 'volity'
+
+=item v
+
+The version number of the Volity platform protcol that this server supports.
+
+Unless you're doing something highly unusual with the Volity Perl
+libraries, you're probably best sticking with the default value on
+this one.
+
+B<Default>: 1.0
 
 =item B
 
