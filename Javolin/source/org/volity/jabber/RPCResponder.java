@@ -45,8 +45,8 @@ public class RPCResponder implements PacketListener {
    * Start listening for requests.
    */
   public void start() {
-    PacketFilter filter =
-      new AndFilter(new PacketTypeFilter(RPCRequest.class), this.filter);
+    PacketFilter filter = new PacketTypeFilter(RPCRequest.class);
+    if (this.filter != null) filter = new AndFilter(filter, this.filter);
     connection.addPacketListener(this, filter);
   }
 
