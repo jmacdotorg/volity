@@ -811,6 +811,7 @@ var current_player;
 set_up();
 
 function set_up() {
+    clean_up();
     add_start_button();
     add_bot_button();
 }
@@ -860,6 +861,15 @@ game.start_turn = function(player) {
 game.receive_hand = function(cards) {
   hand = cards;
   display_hand();
+}
+
+function clean_up() {
+  remove("top-card");
+  remove("player-list");
+  for (card_index in hand) {
+     card_id = hand[card_index];
+     remove("hand-" + card_id);
+  }
 }
 
 // Todo: sort hand into a local array, and display _that_.
@@ -928,11 +938,12 @@ function put_card(symbol_id, x, y, use_id) {
       }
       card.setAttribute("x", x);
       card.setAttribute("y", y);
+//	window.alert(card+' '+x+' '+y+' '+use_id);
       return card;
 }
 
 game.starter_card = function(card_id) {
-  card = put_card(card_id, 300, 300, "starter");
+  card = put_card(card_id, 300, 300, "top-card");
   top_card = card;
 }
 
@@ -973,9 +984,6 @@ function play_card(evt) {
     card_symbol = clicked.parentNode;
     card_name = card_symbol.getAttribute("id");
     rpc("play_card", card_name);
-    var rank = card_name.substr(0,1);
-    if (rank - 0 == 8)
-       show_suit_panel();
 }
 
 function highlight_card(evt) {
@@ -1018,21 +1026,34 @@ function choose_suit(evt) {
 
 game.player_played_card = function(player, card_id) {
     var new_top_card;
+    // Remove the previous turn's top-card graphics.
     remove("suit-balloon");
+    remove("top-card");
+
+    // Decrement the player's card count.
     players[player].card_count = players[player].card_count - 1;
+
     if (player == info.nickname) {
-       new_top_card = document.getElementById("hand-" + card_id);
-       animate_card_play(new_top_card);
-       // Eliminate the highlight animations.
-       new_top_card.setAttribute("onmouseout", "");
-       new_top_card.setAttribute("onmouseover", "");
+       // Remove the card from the player's hand.
        remove_card_from_hand(card_id);
+       // Remove the <use> element, too.
+       remove("hand-" + card_id);
        display_hand();
-    } else {
-       new_top_card = put_card(card_id, 300, 300);
-       players[player].last_card = card_id;
-       display_players();
     }
+
+    // Create the new top-card graphics.
+    new_top_card = put_card(card_id, 300, 300, "top-card");
+
+    // If this is our card, and an 8, display the suit-choice panel.
+    var rank = card_id.substr(0,1);
+    if ((rank - 0 == 8) && (player == info.nickname))
+       show_suit_panel();
+
+    // Update the player list.
+    players[player].last_card = card_id;
+    display_players();
+
+    // Recignise the new top card.
     replace_top_card(new_top_card);
 }
 
@@ -1073,6 +1094,10 @@ replace_top_card = function(card) {
 function remove(id) {
   element = document.getElementById(id);
   if (element != null) {
+    // I find it necessary to erase the ID attribute, even though the element
+    // is going away; otherwise, future ID collisions sometimes result.
+    // This doesn't seem right to me, though.
+    element.setAttribute("id", "");
     document.firstChild.removeChild(element);
   }
 }
@@ -1082,31 +1107,6 @@ game.set_player_hand_size = function(player, hand_size) {
 	players[player] = {};
     }
     players[player].card_count = hand_size;
-}
-
-function animate_card_play(card) {
-    frames = 5;
-    dest_x = 300;
-    dest_y = 300;
-    teleport_card(card, dest_x, dest_y);
-}
-
-function teleport_card(card, x, y) {
-    card.setAttribute("x", x);
-    card.setAttribute("y", y);
-}
-
-function move_card(card, x_step, y_step) {
-    if (!movement_done) {
-      current_x = card.getAttribute("x");
-      current_y = card.getAttribute("y");
-      card.setAttribute("x", current_x - 0 + x_step);
-      card.setAttribute("y", current_y - 0 + y_step);
-      if (card.getAttribute("x") >= 300) {
-          clearInterval(movement_id);
-       	  movement_done = 1;
-      }
-    }
 }
 
 // I don't know how to do this for real!! :(
@@ -1120,6 +1120,9 @@ game.scores = function(scores) {
     for (player in scores) {
 	window.alert(player + " got " + scores[player] + " points.");
     }
+    match_card = null;
+    match_suit = null;
+    set_up();
 }
 
 
@@ -1127,6 +1130,7 @@ function end_game() {
     window.alert("Game over!");
     match_card = null;
     match_suit = null;
+    set_up();
 }
 
 
