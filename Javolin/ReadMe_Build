@@ -31,6 +31,6 @@ Javolin relies on third party libraries. If you don't have these libraries, you 
 ---
 Name: Smack
 Version: 1.2.1
-Download: http://www.jivesoftware.com/xmpp/smack/smack-1.2.1.zip
+Download: http://www.jivesoftware.com/builds/docs/smack/smack-1.2.1.zip
 Lib file(s): smack.jar
 ---
