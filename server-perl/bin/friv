@@ -25,7 +25,7 @@ use Archive::Zip::MemberRead;
 use Tie::ExecHash;
 
 my %opts;
-getopts('u:h:p:r:o:f:b:c:d', \%opts);
+getopts( 'u:h:p:r:o:f:b:c:d', \%opts );
 # u == username
 # h == host
 # p == password
@@ -41,23 +41,22 @@ getopts('u:h:p:r:o:f:b:c:d', \%opts);
 ################
 my $next_rpc_request_id = 0;
 my $last_message_recipient;
-my $working_dir = $opts{'f'} || File::Spec->catdir($ENV{HOME}, ".friv");
-my $command_list = File::Spec->catdir($working_dir,"client.yaml");
-our @cmd_hist = eval { @{ YAML::LoadFile($command_list) } };
-my $ui_dir = File::Spec->catdir($working_dir, "ui");
+my $working_dir  = $opts{'f'} || File::Spec->catdir( $ENV{HOME}, ".friv" );
+my $command_list = File::Spec->catdir( $working_dir, "client.yaml" );
+our @cmd_hist    = eval { @{ YAML::LoadFile($command_list) } };
+my $ui_dir       = File::Spec->catdir( $working_dir, "ui" );
 
 # Make sure the working dir exists and is usable.
 unless (-e $working_dir) {
     foreach ($working_dir, $ui_dir) {
 	mkdir $_ or die "Tried to create working directory $_ but failed: $!";
     }
-    
 }
 
 # Crank up the POE session that will manage our Jabber connection.
 POE::Session->create(
     inline_states => {
-        _start => \&start,
+        _start     => \&start,
         user_input => \&user_input,
         }
     );
@@ -66,10 +65,10 @@ POE::Kernel->run;
 
 
 sub start {
-    my($session,$heap) = @_[SESSION,HEAP];
+    my( $session, $heap ) = @_[ SESSION, HEAP ];
     $heap->{'user'} = POE::Wheel::ReadLine->new(
         InputEvent => 'user_input',
-        PutMode => 'immediate',
+        PutMode    => 'immediate',
         );
     foreach (@cmd_hist) {
         $heap->{'user'}->addhistory($_);
@@ -85,7 +84,8 @@ sub start {
     my @poe = &POE;
     $heap->{'env'}{'current_connection'} = [
         sub { cmd_use( @poe, $_[0] ) },
-        sub { $heap->{'default_player'} ? 
+        sub {
+            $heap->{'default_player'} ? 
               $heap->{'default_player'}->jid :
               ''
             },
@@ -95,17 +95,19 @@ sub start {
     $heap->{'env'}{'port'}       = $opts{'o'} || 5222;
     $heap->{'env'}{'host'}       = $opts{'h'};
     $heap->{'env'}{'bookkeeper'} = $opts{'b'} || 'bookkeeper@volity.net/volity';
+
     if ( $heap->{'env'}{'username'} and $heap->{'env'}{'host'} ) {
         act_connect( &POE, undef, $opts{'p'} );
     }
+
     if ( $opts{'c'} ) {
         run_command( &POE, $opts{c} );
     }
 }
 
 sub is_jid {
-    my ($jid) = @_;
-    if ($jid =~ /^[\w-]+@[\w-]+(?:\.[\w-]+)*(?:\/[\w-]+)?/) {
+    my( $jid ) = @_;
+    if ( $jid =~ /^[\w-]+@[\w-]+(?:\.[\w-]+)*(?:\/[\w-]+)?/ ) {
         return $jid;
     } else {
         return;
@@ -113,18 +115,18 @@ sub is_jid {
 }
 
 sub check_jid {
-    my ($heap, $jid) = @_;
-    if (is_jid($jid)) {
+    my( $heap, $jid ) = @_;
+    if ( is_jid( $jid ) ) {
         return $jid;
     } else {
-        output($heap,"The string '$jid' doesn't look like a JabberID to me!");
-        output($heap,"Command ignored.");
+        output( $heap, "The string '$jid' doesn't look like a JabberID to me!" );
+        output( $heap, "Command ignored." );
         return;
     }
 }
 
 END {
-    YAML::DumpFile($command_list,\@cmd_hist);
+    YAML::DumpFile( $command_list, \@cmd_hist );
 }
 
 ######################
@@ -132,16 +134,16 @@ END {
 ######################
 
 sub run_command {
-    my( $heap, $line ) = @_[HEAP, &ARGS];
-    my($cmd,@args) = tokenize($line,$heap->{'env'});
+    my( $heap, $line ) = @_[ HEAP, &ARGS ];
+    my( $cmd, @args ) = tokenize( $line, $heap->{'env'} );
     $cmd = lc( $cmd );
     $cmd =~ s{\.}{_}g;
-    return -1 if not(defined($cmd)) or $cmd eq '';
-    if (my $sub = __PACKAGE__->can("cmd_$cmd")) {
-        &$sub(&POE,@args);
+    return -1 if (not defined $cmd or $cmd eq '');
+    if ( my $sub = __PACKAGE__->can( "cmd_$cmd" ) ) {
+        &$sub( &POE, @args );
         return 1;
     }
-    if ($heap->{'commands'}) {
+    if ( $heap->{'commands'} ) {
        foreach (@{ $heap->{'commands'} }) {
            if ( $$_[0] eq $cmd ) {
                js_call( $heap->{'default_player'}->js, "client.$cmd", @args );
@@ -153,19 +155,19 @@ sub run_command {
 }
 
 sub user_input {
-    my($heap,$input,$exception) = @_[HEAP, &ARGS];
-    if (defined $input) {
+    my( $heap, $input, $exception ) = @_[ HEAP, &ARGS ];
+    if ( defined $input ) {
         $heap->{'user'}->get('Volity> ');
         my $result = run_command( &POE, $input );
         if ( $result ) {
             return if $result == -1;
-            $heap->{'user'}->addhistory($input);
-            push(@cmd_hist,$input);
+            $heap->{'user'}->addhistory( $input );
+            push( @cmd_hist, $input );
         } else {
-            output($heap,"Unknown command: $input");
+            output( $heap, "Unknown command: $input" );
         }
     } else {
-        output($heap,"Exception: $exception");
+        output( $heap, "Exception: $exception" );
         exit;
     }
 }
@@ -173,7 +175,7 @@ sub user_input {
 sub js_call {
     my( $js, $cmd, @args ) = @_;
     my $script = "$cmd(";
-    foreach (@args) {
+    foreach ( @args ) {
         next if /^-?\d*(?:\.\d+)?$/;
 	next if ref($_);
         s/'/\\'/g;
@@ -182,10 +184,10 @@ sub js_call {
     # Convert the @args into a list of JS-safe strings.
     my @js_args;
     for my $arg (@args) {
-	if (ref($arg)) {
-	    push (@js_args, Data::JavaScript::Anon->anon_dump($arg));
+	if ( ref $arg ) {
+	    push( @js_args, Data::JavaScript::Anon->anon_dump($arg) );
 	} else {
-	    push (@js_args, $arg);
+	    push( @js_args, $arg );
 	}
     }
     $script .= join ', ', @js_args;
@@ -194,18 +196,32 @@ sub js_call {
 }
 
 sub tokenize {
-    my($str,$vars) = @_;
+    my( $str, $vars ) = @_;
     my @tokens;
     my $tok_count = 0;
     my $last = 0;
-    while ($str =~ /\G(?:"([^"]+)(?<!\\)"|'([^']+)(?<!\\)'|((?:[^\s"']|(?<=\\)'|(?<=\\)"|(?<=\\)\s)+)|((?:(?<!\\)\s)+))/g) {
-        $last = pos($str);
-        my($dq,$sq,$nq,$sp) = ($1,$2,$3,$4);
-        my $val = $dq||$sq||$nq||$sp;
-        if ($dq or $nq) {
-            $val = expand($val,$vars);
+    my $re = qr{\G(?:
+        "([^"]+)(?<!\\)" | #1 Double quoted segment
+        '([^']+)(?<!\\)' | #2 Single quoted segment
+        (                  #3 Unquoted segment
+          (?:               # one or more subsegments
+            [^\s"']   |      # non-space/quote char
+            (?<=\\)'  |      # escaped single quote
+            (?<=\\)"  |      # escaped double quote
+            (?<=\\)\s        # escaped double quote
+          )+
+        ) |
+        ((?:(?<!\\)\s)+)   #4 One or more unescaped spaces
+        )}x;
+        #" quote is here to fix stupid joe syntax highlighter bug
+    while ( $str =~ /$re/g ) {
+        $last = pos( $str );
+        my( $dq, $sq, $nq, $sp ) = ( $1, $2, $3, $4 );
+        my $val = $dq || $sq || $nq || $sp;
+        if ( $dq or $nq ) {
+            $val = expand( $val, $vars );
         } else {
-            $val = unescape($val);
+            $val = unescape( $val );
         }
         if ($sp) {
             $tok_count ++ if $#tokens == $tok_count;
@@ -214,19 +230,19 @@ sub tokenize {
         }
     }
     if ($last < length($str)) {
-        $tokens[$tok_count] .= substr($str,$last);
+        $tokens[$tok_count] .= substr( $str, $last );
     }
     return @tokens;
 }
 
 sub unescape {
-    my($str) = @_;
+    my( $str ) = @_;
     $str =~ s/\\(.)/$1/g;
     return $str;
 }
 
 sub expand {
-    my($str,$vars) = @_;
+    my( $str, $vars ) = @_;
     $str =~ s{
             (?:
             (?<!\\)\$(\w+) |
@@ -243,13 +259,13 @@ sub expand {
                 $2
             }
         }gxe;
-    $str = unescape($str);
+    $str = unescape( $str );
     return $str;
 }
 
 sub find_player {
-    my($heap,$jid) = @_;
-    my $plist = $heap->{players};
+    my( $heap, $jid ) = @_;
+    my $plist = $heap->{'players'};
     return $$plist{$jid} if exists $$plist{$jid};
     my @matches;
     foreach (keys %$plist) {
@@ -269,15 +285,16 @@ sub find_player {
 sub output {
     my( $heap, @line ) = @_;
     $heap->{'user'}->put( join '', @line );
+    return;
 }
 
 sub user_output {
-    my($self,$heap,@line) = @_[OBJECT,HEAP,&ARGS];
+    my( $self, $heap, @line ) = @_[ OBJECT, HEAP, &ARGS ];
     output( $heap, @line );
 }
 
 sub act_connect {
-    my($heap,$jid,$password) = @_[HEAP,&ARGS];
+    my( $heap, $jid, $password ) = @_[ HEAP, &ARGS ];
     my( $username, $host, $resource );
     if ( $jid ) {
         ($username,$host,$resource) = 
@@ -288,7 +305,7 @@ sub act_connect {
         $host     = $heap->{'env'}{'host'};
     }
     $resource ||= $heap->{'env'}{'resource'};
-    my $user = Volity::User->new( {
+    my $user = Volity::User->new({
         host           => $host,
         password       => $password,
         resource       => $resource,
@@ -299,26 +316,27 @@ sub act_connect {
         bookkeeper_jid => $heap->{'env'}{'bookkeeper'},
         });
     $jid = $user->jid;
-    $heap->{'players'}{$jid} = $user;
+    $heap->{'players'}{$jid}  = $user;
     $heap->{'default_player'} = $user;
+
     my @args = &POE;
     $args[OBJECT] = undef;
     $user->output( sub { $args[OBJECT] = shift; user_output( @args, @_ ); } );
 }
 
 sub cmd_echo {
-    my($heap,@args) = @_[HEAP,&ARGS];
+    my( $heap, @args ) = @_[ HEAP, &ARGS ];
     output( $heap, join ' ', @args );
 }
 
 sub cmd_set {
-    my($heap,$var_value) = @_[HEAP,&ARGS];
+    my( $heap, $var_value ) = @_[ HEAP, &ARGS ];
     if ( $var_value ) {
-        my( $var, $value ) = split(/=/,$var_value,2);
+        my( $var, $value ) = split /=/, $var_value, 2;
         $heap->{'env'}{$var} = $value;
     } else {
         foreach ( sort keys %{ $heap->{'env'} } ) {
-            output($heap,"$_=".$heap->{'env'}{$_})
+            output( $heap, "$_=".$heap->{'env'}{$_} )
                 if defined $heap->{'env'}{$_};
         }
     } 
@@ -327,71 +345,69 @@ sub cmd_set {
 sub cmd_env { cmd_set( &POE ) }
 
 sub cmd_connect {
-    my($heap,$session,$jid,$password) = @_[HEAP,SESSION,&ARGS];
-    if (!$jid and (!$heap->{username} or !$heap->{host})) {
-        output($heap,"connect: Must specify JID");
-        return;
+    my( $heap, $session, $jid, $password ) = @_[ HEAP, SESSION, &ARGS ];
+    if ( !$jid and (!$heap->{username} or !$heap->{host}) ) {
+        return output( $heap, "connect: Must specify JID" );
     }
-    if (!$password) {
-        output($heap,"connect: Must specify password");
-        return;
+    if ( !$password ) {
+        return output( $heap, "connect: Must specify password" );
     }
     eval {
         act_connect( @_ );
     };
     if ($@) {
-        output($heap, 'connect: '.$@ );
-        return;
+        return output( $heap, 'connect: '.$@ );
     }
 }
 
 sub act_disconnect {
-    my($heap,$jid) = @_[HEAP,&ARGS];
+    my( $heap, $jid ) = @_[ HEAP, &ARGS ];
+
     $jid ||= $heap->{'default_player'}->jid;
+
     die "Can't disconnect $jid: Not connected.\n"
         unless exists $heap->{'players'}{$jid};
 
-    $heap->{'players'}{$jid}->send_presence({type=>'unavailable'});
+    $heap->{'players'}{$jid}->send_presence( {type=>'unavailable'} );
 
     delete $heap->{'players'}{$jid};
     delete $heap->{'default_player'}
         if $heap->{'default_player'} and
            $heap->{'default_player'}->jid eq $jid;
-    
 }
 
 sub cmd_disconnect {
-    my($heap,$session,$jid) = @_[HEAP,SESSION,&ARGS];
+    my( $heap, $session, $jid ) = @_[ HEAP, SESSION, &ARGS ];
     if ( !$jid and !$heap->{'default_player'} ) {
-        output($heap,"disconnect: Must specify JID");
+        return output( $heap, "disconnect: Must specify JID" );
         return;
     }
     $jid ||= $heap->{'default_player'}->jid;
     my $player;
-    unless ( $player = find_player($heap,$jid) ) {
-        output($heap,"disconnect: Couldn't find single JID matching $jid.");
-        return;
+    unless ( $player = find_player( $heap, $jid ) ) {
+        return output( $heap, 
+            "disconnect: Couldn't find single JID matching $jid."
+            );
     }
 
     eval {
         act_disconnect( &POE,  );
     };
     if ($@) {
-        output($heap,'disconect: '.$@);
-        return;
+        return output( $heap, "disconect: $@" );
     }
 }
 
 sub cmd_source {
-    my($heap,$file) = @_[HEAP, &ARGS];
+    my( $heap, $file ) = @_[ HEAP, &ARGS ];
     my $fh;
     open( $fh, $file )
         or open( $fh, File::Spec->catdir($working_dir, $file) )
         or return output($heap,"source: Could not open $file: $!");
-    while (<$fh>) {
+    while ( <$fh> ) {
         my $result = run_command( &POE, $_ );
         unless ( $result ) {
-            output($heap,"source: Unknown command: $_");
+            output( $heap, "source: Unknown command: $_" );
         }
     }
     close( $fh );
@@ -402,7 +418,7 @@ BEGIN { *{'cmd__'} = \&cmd_source; }
 use strict 'refs';
 
 sub cmd_connections {
-    my($heap,$session) = @_[HEAP,SESSION,&ARGS];
+    my( $heap, $session ) = @_[ HEAP, SESSION, &ARGS ];
     foreach ( sort keys %{ $heap->{'players'} } ) {
         my $active = ($heap->{'default_player'}->jid eq $_)?'* ':'';
         output($heap,"${active}$_");
@@ -410,34 +426,32 @@ sub cmd_connections {
 }
 
 sub cmd_use {
-    my($heap,$session,$jid) = @_[HEAP,SESSION,&ARGS];
+    my( $heap, $session, $jid ) = @_[ HEAP, SESSION, &ARGS ];
     if ( !$jid ) {
-        output($heap,"use: Must specify JID");
-        return;
+        return output( $heap, "use: Must specify JID" );
     }
     my $player;
-    unless ( $player = find_player($heap,$jid) ) {
-        output($heap,"use: Couldn't find single JID matching $jid.");
-        return;
+    unless ( $player = find_player( $heap, $jid ) ) {
+        return output( $heap, "use: Couldn't find single JID matching $jid." );
     }
     $heap->{'default_player'} = $player;
 }
 
 sub cmd_info {
-    my($heap) = $_[HEAP];
-    no warnings qw(uninitialized);
+    my( $heap ) = $_[ HEAP ];
+    no warnings 'uninitialized';
     my $user = $heap->{'default_player'};
-    output($heap,$_) for
-      "Status information:",
-      "  JID: ".$user->jid,
-      "  Nickname: ".$user->nick,
-      "  Table JID: ".$user->table_jid,
-      "  Referee JID: ".$user->referee_jid;
+    output( $heap, $_ ) for
+        "Status information:",
+        "  JID        : ".$user->jid,
+        "  Nickname   : ".$user->nick,
+        "  Table JID  : ".$user->table_jid,
+        "  Referee JID: ".$user->referee_jid;
 }
 
 sub cmd_quit {
-    my($heap) = $_[HEAP];
-    output($heap,'Be seeing you.');
+    my( $heap ) = $_[ HEAP ];
+    output( $heap, 'Be seeing you.' );
     foreach (keys %{ $heap->{'players'} }) {
     	act_disconnect( &POE, $_ );
     }
@@ -445,61 +459,55 @@ sub cmd_quit {
 }
 
 sub cmd_invite {
-    my ($heap, $invited) = @_[HEAP, ARG0];
-    my $user = $heap->{user_obj};
-    unless ($user->referee_jid) {
-	output($heap,"Create or join a table first!");
-	return;
+    my( $heap, $invited ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'user_obj'};
+    unless ( $user->referee_jid ) {
+        return output( $heap, "Create or join a table first!" );
     }
-    unless ($invited) {
-	output($heap,"Usage: invite [jid]");
-	return;
+    unless ( $invited ) {
+        return output( $heap, "Usage: invite [jid]" );
     }
     my $rpc_id = ++$next_rpc_request_id;
-    $user->make_rpc_request(
-			    {
-				to=>$user->referee_jid,
-				id=>$rpc_id,
-				methodname=>'volity.invite_player',
-				args=>[$invited],
-				handler=>'invite_player',
-			    }
-			    );
+    $user->make_rpc_request({
+        to         => $user->referee_jid,
+        id         => $rpc_id,
+        methodname => 'volity.invite_player',
+        args       => [$invited],
+        handler    => 'invite_player',
+        });
 
 }
 
 sub cmd_accept {
-    my ($heap) = $_[HEAP];
-    my $user = $heap->{user_obj};
-    if (my $invitation = $user->invitation) {
-	$user->current_command('accept_invitation');
-	$user->discover_uis_for_ruleset($$invitation{ruleset});
+    my( $heap ) = $_[ HEAP ];
+    my $user = $heap->{'user_obj'};
+    if ( my $invitation = $user->invitation ) {
+        $user->current_command( 'accept_invitation' );
+        $user->discover_uis_for_ruleset( $$invitation{ruleset} );
     }
 }
 
 sub cmd_nick {
-    my($heap,$nickname) = @_[HEAP,&ARGS];
-    unless ($nickname) {
-        output($heap,"Form: nick <nickname>");
-        return;
+    my( $heap, $nickname ) = @_[ HEAP, &ARGS ];
+    unless ( $nickname ) {
+        return output( $heap, "Form: nick <nickname>" );
     }
-    $heap->{'nick'} = $nickname;
-    $heap->{'default_player'}->nick($nickname);
-    output($heap,"Nickname set.");
+    $heap->{'default_player'}->nick( $nickname );
+    output( $heap, "Nickname set." );
 }
 
 sub cmd_debug {
-  my ($heap) = $_[HEAP];
-  my $user = $heap->{'default_player'};
-  output($heap,"Current user object: $user");
-  if ($user->referee_jid) {
-      output($heap,"Current ref JID: " . $user->referee_jid);
-  }
+    my( $heap ) = $_[ HEAP ];
+    my $user = $heap->{'default_player'};
+    output( $heap, "Current user object: $user" );
+    if ( $user->referee_jid ) {
+        output( $heap, "Current ref JID: ".$user->referee_jid );
+    }
 }
 
 sub cmd_help {
-  my($heap,$on) = @_[HEAP,&ARGS];
-  output($heap, $_ ) for split /\n/, <<CMDLIST;
+    my( $heap, $on ) = @_[ HEAP, &ARGS ];
+    output( $heap, $_ ) for split /\n/, <<CMDLIST;
 Volity client commands:
   connect [(JID) [(password)]] - creates a new connection.  If this is
                              the only connection then it is made
@@ -531,62 +539,56 @@ Volity client commands:
   quit             - log off from Volity and exit this program
 CMDLIST
   return unless $heap->{'commands'};
-  output($heap, "" );
+  output( $heap, "" );
   foreach (@{ $heap->{'commands'} }) {
-    output($heap, sprintf("  %-16s - %s",$$_[0],$$_[1]) );
+    output( $heap, sprintf( "  %-16s - %s", $$_[0], $$_[1] ) );
   }
 }
 
 sub cmd_clear_ui {
     my $heap = $_[HEAP];
     my $user = $heap->{'default_player'};
-    if (defined($user->js)) {
-	$user->js(undef);
-		$user->print_message("OK, UI cleared.");
+    if ( defined $user->js ) {
+        $user->js( undef );
+        output( $heap, "OK, UI cleared." );
     } else {
-	$user->print_message("Hmm, there wasn't any UI set.");
+        output( $heap, "Hmm, there wasn't any UI set." );
     }
 }
 
 sub cmd_load_ui {
-  my ($heap, $filename) = @_[HEAP, ARG0];
+    my( $heap, $filename ) = @_[ HEAP, &ARGS ];
 
-  my $term = $heap->{'user'};
-  
-  unless (open FILE, $filename) {
-      output($heap,"Couldn't open $filename: $!");
-      return;
-  }
-  my $source = join '', <FILE>;
-  close FILE;
+    open( FILE, $filename )
+        or return output( $heap, "Couldn't open $filename: $!" );
+    my $source = join '', <FILE>;
+    close FILE;
 
-  $heap->{'default_player'}->load_js_from_source($source);
-  $heap->{'default_player'}->manual_ui_load(1);
+    $heap->{'default_player'}->load_js_from_source( $source );
+    $heap->{'default_player'}->manual_ui_load( 1 );
 
 }
 
 sub js_writeln {
-    my ($term, @output) = @_;
+    my( $term, @output ) = @_;
     $term->put( "@output" );
 }
 
 sub js_rpc {
-    my ($user, $cmd, @args) = @_;
+    my( $user, $cmd, @args ) = @_;
     
 #    warn "Da command is: $cmd\n";
 #    warn "Da args are: @args\n";
 
 # XXX
 #    $user->print_message( "Making RPC call to $cmd..." );
-    $user->make_rpc_request(
-                            {
-                             to=>$user->referee_jid,
-                             id=>"$cmd.".time,
-                             methodname=>"game.$cmd",
-			     args=>\@args,
-                             handler=>sub {},
-                            }
-                           );
+    $user->make_rpc_request({
+        to         => $user->referee_jid,
+        id         => "$cmd.".time,
+        methodname => "game.$cmd",
+        args       => \@args,
+        handler    => sub {},
+        });
 }
 
 sub js_registerCommand {
@@ -595,165 +597,153 @@ sub js_registerCommand {
 }
 
 sub cmd_new_table {
-  my ($heap, $server_jid) = @_[HEAP, ARG0];
-  my $user = $heap->{'default_player'};
-  unless (defined($server_jid)) {
-    output($heap,"Usage: new_table [game-server-jid]");
-    return;
-  }
-  unless (is_jid($server_jid)) {
-    output($heap,"That doesn't look like a JID to me!");
-    return;
-  }
-  
-  $user->server_jid($server_jid);
-  $user->current_command('new_table');
-  if ($user->js and $user->manual_ui_load) {
-      $user->print_message("UI file manually loaded, so I won't fetch another over the network.");
-      $user->print_message("To force a fetch, use the clear_ui command, then rejoin this table.");
-      $user->request_new_table($server_jid);
-  } else {
-      $user->print_message("Requesting UI file from the Volity network.");
-      $user->manual_ui_load(undef);
-      $user->request_disco_info({to=>$server_jid, id=>"server"});
-  }
+    my( $heap, $server_jid ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $server_jid ) {
+        return output( $heap, "Usage: new_table [game-server-jid]" );
+    }
+    unless ( is_jid( $server_jid ) ) {
+        return output( $heap, "That doesn't look like a JID to me!" );
+    }
+    
+    $user->server_jid( $server_jid );
+    $user->current_command( 'new_table' );
+    if ( $user->js and $user->manual_ui_load ) {
+        output( $heap, "UI file manually loaded, so I won't fetch another over the network." );
+        output( $heap, "To force a fetch, use the clear_ui command, then rejoin this table." );
+        $user->request_new_table( $server_jid );
+    } else {
+        output( $heap, "Requesting UI file from the Volity network." );
+        $user->manual_ui_load( undef );
+        $user->request_disco_info({ to=>$server_jid, id=>"server" });
+    }
 }
 
 sub cmd_add_bot {
-  my $user = $_[HEAP]->{'default_player'};
-  my $rpc_id = ++$next_rpc_request_id;
-  $user->make_rpc_request(
-                          {
-                           to=>$user->referee_jid,
-                           id=>$rpc_id,
-                           methodname=>'volity.add_bot',
-                           handler=>'add_bot',
-                          }
-                         );
+    my $user = $_[HEAP]->{'default_player'};
+    my $rpc_id = ++$next_rpc_request_id;
+    $user->make_rpc_request({
+        to         => $user->referee_jid,
+        id         => $rpc_id,
+        methodname => 'volity.add_bot',
+        handler    => 'add_bot',
+        });
 }
 
 sub cmd_join_table {
-  my $user = $_[HEAP]->{'default_player'};
-  my $table_jid = $_[ARG0];
-  return unless check_jid($_[HEAP], $table_jid);
-  if ($user->js and $user->manual_ui_load) {
-      $user->print_message("UI file manually loaded, so I won't fetch another over the network.");
-      $user->print_message("To force a fetch, use the clear_ui command, then rejoin this table.");
+  my( $heap, $table_jid ) = @_[ HEAP, &ARGS ];
+  my $user = $heap->{'default_player'};
+  return unless check_jid( $heap, $table_jid );
+  if ( $user->js and $user->manual_ui_load ) {
+      output( $heap, "UI file manually loaded, so I won't fetch another over the network.");
+      output( $heap, "To force a fetch, use the clear_ui command, then rejoin this table.");
       $user->join_table($table_jid);
   } else {
-      $user->print_message("You must load a UI file (with the load_ui command) before joining a table.");
-      $user->print_message("(Friv does not yet support automatic UI fetching outside of table creation.)");
+      output( $heap,"You must load a UI file (with the load_ui command) before joining a table.");
+      output( $heap,"(Friv does not yet support automatic UI fetching outside of table creation.)");
   }
 }
 
 sub cmd_tmsg {
-  my ($user, @message) = ($_[HEAP]->{'default_player'}, @_[&ARGS]);
-  my $message = join(' ', @message);
-  unless (defined($user->table_jid)) {
-    $user->print_message("Can't send a message to the table, since you're not at a table right now.");
-    return;
-  }
-  unless (defined($message)) {
-    $user->print_message("Beg your pardon? (Usage: tmsg [message-text])");
-    return;
-  }
-  $user->send_message(
-                      {
-                       type=>'groupchat',
-                       body=>$message,
-                       to=>$user->table_jid,
-                      }
-                     );
+    my( $heap, @message ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    my $message = join(' ', @message);
+    unless ( defined $user->table_jid ) {
+        return output( $heap,"Can't send a message to the table, since you're not at a table right now.");
+    }
+    unless ( defined $message ) {
+        return output( $heap,"Beg your pardon? (Usage: tmsg [message-text])");
+    }
+    $user->send_message({
+        type => 'groupchat',
+        body => $message,
+        to   => $user->table_jid,
+        });
 }
 
 sub cmd_msg {
-  my ($user, $to, @message) = ($_[HEAP]->{'default_player'}, @_[&ARGS]);
-  my $message = join(' ', @message);
-  unless (defined($message)) {
-    $user->print_message("Beg your pardon? (Usage: msg [to-jid] [message-text])");
-    return;
-  }
-  return unless check_jid($_[HEAP], $to);
-  $user->send_message(
-                      {
-                       type=>'normal',
-                       body=>$message,
-                       to=>$to,
-                      }
-                     );
+    my( $heap, $to, @message ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    my $message = join(' ', @message);
+    unless ( defined $message ) {
+        return output( $heap,"Beg your pardon? (Usage: msg [to-jid] [message-text])");
+    }
+    return unless check_jid($_[HEAP], $to);
+    $user->send_message({
+        type => 'normal',
+        body => $message,
+        to   => $to,
+        });
 }
 
 sub cmd_start_game {
-  my $user = $_[HEAP]->{'default_player'};
-  unless (defined($user->table_jid)) {
-    $user->print_message("Can't start a new game, because you're not seated at a table.");
-    return;
-  }
-  my $rpc_id = ++$next_rpc_request_id;
-  $user->make_rpc_request(
-                          {
-                           id=>$rpc_id,
-                           to=>$user->referee_jid,
-                           methodname=>'volity.start_game',
-                           handler=>'start_game',
-                          }
-                         );
+    my( $heap ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $user->table_jid ) {
+      return output( $heap,"Can't start a new game, because you're not seated at a table.");
+    }
+    my $rpc_id = ++$next_rpc_request_id;
+    $user->make_rpc_request({
+        id         => $rpc_id,
+        to         => $user->referee_jid,
+        methodname => 'volity.start_game',
+        handler    => 'start_game',
+        });
 }
 
 sub cmd_rmsg {
-  my ($user, @message) = ($_[HEAP]->{'default_player'}, @_[&ARGS]);
-  my $message = join(' ', @message);
-  unless (defined($user->referee_jid)) {
-    $user->print_message("Can't send a message to the referee, since you're not at a table right now.");
-    return;
-  }
-  unless (defined($message)) {
-    $user->print_message("Beg your pardon? (Usage: rmsg [message-text])");
-    return;
-  }
-  $user->send_message(
-                      {
-                       type=>'normal',
-                       body=>$message,
-                       to=>$user->referee_jid,
-                      }
-                     );
+    my( $heap, @message ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    my $message = join(' ', @message);
+    unless (defined($user->referee_jid)) {
+        return output( $heap,"Can't send a message to the referee, since you're not at a table right now.");
+    }
+    unless (defined($message)) {
+        return output( $heap,"Beg your pardon? (Usage: rmsg [message-text])");
+    }
+    $user->send_message({
+        type => 'normal',
+        body => $message,
+        to   => $user->referee_jid,
+        });
 }
 
 sub cmd_roster {
-  my $user = $_[HEAP]->{'default_player'};
-  my $roster = $user->roster;
-  my @jids = sort($roster->jids);
-  my @available_jids; my @unavailable_jids;
-  for my $jid (@jids) {
-    my @presence_list = $roster->presence($jid);
-    if (@presence_list and grep(((not(defined($$_{type}))) or ($$_{type} ne 'unavailable')), @presence_list)) {
-      push (@available_jids, $jid);
-    } else {
-      push (@unavailable_jids, $jid);
-    }
-  }
-  $user->print_message("----AVAILABLE----");
-  if (@available_jids) {
-    for my $jid (@available_jids) {
-#      $user->print_message($_);
-      for my $presence ($roster->presence($jid)) {
-        my $full_jid = $jid;
-        if (defined $$presence{'resource'}) {
-            $full_jid .= "/$$presence{resource}";
+    my( $heap ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    my $roster = $user->roster;
+    my @jids = sort( $roster->jids );
+    my @available_jids;
+    my @unavailable_jids;
+    for my $jid ( @jids ) {
+        my @presence_list = $roster->presence( $jid );
+        if ( @presence_list and grep { not defined $$_{type} or $$_{type} ne 'unavailable'} @presence_list ) {
+            push @available_jids, $jid;
+        } else {
+            push @unavailable_jids, $jid;
         }
-        $user->print_message( $full_jid );
-      }
     }
-  } else {
-    $user->print_message("Nobody in your roster is online.");
-  }
-  if (@unavailable_jids) {
-    $user->print_message("----UNAVAILABLE----");
-    foreach (@unavailable_jids) {
-      $user->print_message($_);
+    output( $heap, "----AVAILABLE----" );
+    if ( @available_jids ) {
+        for my $jid ( @available_jids ) {
+#          output( $heap,$_);
+          for my $presence ( $roster->presence( $jid ) ) {
+            my $full_jid = $jid;
+            if ( defined $$presence{'resource'} ) {
+                $full_jid .= "/$$presence{resource}";
+            }
+            output( $heap, $full_jid );
+          }
+        }
+    } else {
+        output( $heap,"Nobody in your roster is online.");
     }
-  }
+    if ( @unavailable_jids ) {
+        output( $heap, "----UNAVAILABLE----" );
+        foreach ( @unavailable_jids ) {
+            output( $heap,$_);
+        }
+    }
 }
 
 package Volity::User;
@@ -833,18 +823,18 @@ sub fetch_ui_file {
     close (ZIP) or die "Can't close zipfile $local_zipfile: $!\n";
     my $zip_reader;
     unless ($zip_reader = Archive::Zip->new($local_zipfile)) {
-	$self->print_message("Oh, there was a problem reading the zipfile $local_zipfile. Sorry.");
-	return;
+        $self->print_message("Oh, there was a problem reading the zipfile $local_zipfile. Sorry.");
+        return;
     }
     my $js_fh;
     my @js_source;
     if ($js_fh = Archive::Zip::MemberRead->new($zip_reader, "main")) {
-	while (defined(my $line = $js_fh->getline)) { 
-	    push (@js_source, $line);
-	}
+        while (defined(my $line = $js_fh->getline)) { 
+            push (@js_source, $line);
+        }
     } else {
-	$self->print_message("The archive $local_zipfile doesn't seem to have a main file. I can't use it. Sorry...");
-	return;
+        $self->print_message("The archive $local_zipfile doesn't seem to have a main file. I can't use it. Sorry...");
+        return;
     }
     
     # Having done all that, create the JS interpreter.
@@ -854,9 +844,9 @@ sub fetch_ui_file {
     # Now make the actual RPC request.
 
     if ($self->current_command eq 'new_table') {
-	$self->request_new_table($self->server_jid);
+        $self->request_new_table($self->server_jid);
     } elsif ($self->current_command eq 'accept_invitation') {
-	$self->join_table($self->invitation->{table});
+        $self->join_table($self->invitation->{table});
     }
 
 }
@@ -866,13 +856,13 @@ sub request_new_table {
     my ($server_jid) = @_;
     my $rpc_id = 'new-table';
     $self->make_rpc_request(
-			    {
-				to=>$self->server_jid,
-				id=>$rpc_id,
-				methodname=>'volity.new_table',
-				handler=>'new_table',
-			    }
-			    );
+                            {
+                                to=>$self->server_jid,
+                                id=>$rpc_id,
+                                methodname=>'volity.new_table',
+                                handler=>'new_table',
+                            }
+                            );
 }
 
 sub join_table {
@@ -901,18 +891,18 @@ sub load_js_from_source {
     $js->function_set("writeln", sub { main::js_writeln( $self->terminal, @_) } );
     $js->function_set("rpc", sub { main::js_rpc( $self, @_ ) } );
     $js->function_set("registerCommand", 
-		      sub { main::js_registerCommand( $commands, @_ ) } , $referee );
+                      sub { main::js_registerCommand( $commands, @_ ) } , $referee );
     
     $js->eval( $js_source );
 
     $js->eval( "info.nickname = '" . ($self->nick || $self->user) . "'" );
     $js->eval( "info.opponents = {}" );
     for my $nickname ($self->opponent_nicknames) {
-	$js->eval( "info.opponents['$nickname'] = {}" );
+        $js->eval( "info.opponents['$nickname'] = {}" );
     }
     
     if ($self->js) {
-	$self->js->destroy;
+        $self->js->destroy;
     }
     $self->js( $js );
 }
@@ -967,14 +957,14 @@ sub handle_rpc_request {
       my $local_method = "_rpc_$rpc_method";
       my $return_value;
       if ($self->can($local_method)) {
-	  my @return_values = $self->$local_method($$req{from}, @{$$req{args}});
-	  if (@return_values < 2) {
-	      $self->send_rpc_response($$req{from}, $$req{id}, @return_values);
-	  } else {
-	      $self->send_rpc_fault($$req{from}, $$req{id}, @return_values);
-	  }
+          my @return_values = $self->$local_method($$req{from}, @{$$req{args}});
+          if (@return_values < 2) {
+              $self->send_rpc_response($$req{from}, $$req{id}, @return_values);
+          } else {
+              $self->send_rpc_fault($$req{from}, $$req{id}, @return_values);
+          }
       } else {
-	  $self->warn("Got bogus RPC request, '$$req{method}'");
+          $self->warn("Got bogus RPC request, '$$req{method}'");
       }
   } elsif ($$req{'method'} =~ /^game\.(\w+)/) {
 # XXX
@@ -1033,12 +1023,12 @@ sub jabber_presence {
     } else {
       # This is a potential opponent!
       unless ($node->attr('type')) {
-	# No 'type' attribute means they're joining us...
-	# Save the nickname. We'll pass it to the UI file later.
-	$self->add_opponent_nickname($node->attr('from'));
+        # No 'type' attribute means they're joining us...
+        # Save the nickname. We'll pass it to the UI file later.
+        $self->add_opponent_nickname($node->attr('from'));
       } elsif ($node->attr('type') eq 'unavailable') {
-	# Oh, they're leaving...
-	$self->remove_opponent_nickname($node->attr('from'));
+        # Oh, they're leaving...
+        $self->remove_opponent_nickname($node->attr('from'));
       }
     }
   } elsif ($self->roster->has_jid( $node->attr('from') )) {
@@ -1061,41 +1051,41 @@ sub handle_disco_info {
 
     # The value of $id indicates what sort of Volity entity sent the packet.
     if ($id =~ /^ruleset-ui(\d+)$/) {
-	my $id_number = $1;
-	my $current_ui_url = $self->current_ui_url->{$id_number};
-	my @types = @{$$fields{"client-type"}};
-	if (grep($_ eq 'http://volity.org/protocol/ui/text', @types)) {
-	    # Good, this one is available to us.
-	    push (@{$self->{available_uis}},
-		  {
-		      url=>$current_ui_url,
-		      description=>$$fields{description}->[0],
-		      reputation=>$$fields{reputation}->[0],
-		  },
-		  );
-	}
-	$self->{uis_to_check} -= 1;
-	unless ($self->uis_to_check) {
-	    if (@{$self->available_uis} > 1) {
-#		use Data::Dumper; die Dumper($self->available_uis);
-		$self->show_ui_menu;
-	    } elsif (@{$self->available_uis}) {
-		my $ui = $self->available_uis->[0];
-#		use Data::Dumper; die (Dumper($ui));
-		$self->print_message("Fetching game UI file from $$ui{url}...");
-		$self->fetch_ui_file($$ui{url});
-	    } else {
-		$self->print_message("No text UIs available for this game. Sorry.");
-	    }
-	}
+        my $id_number = $1;
+        my $current_ui_url = $self->current_ui_url->{$id_number};
+        my @types = @{$$fields{"client-type"}};
+        if (grep($_ eq 'http://volity.org/protocol/ui/text', @types)) {
+            # Good, this one is available to us.
+            push (@{$self->{available_uis}},
+                  {
+                      url=>$current_ui_url,
+                      description=>$$fields{description}->[0],
+                      reputation=>$$fields{reputation}->[0],
+                  },
+                  );
+        }
+        $self->{uis_to_check} -= 1;
+        unless ($self->uis_to_check) {
+            if (@{$self->available_uis} > 1) {
+#                use Data::Dumper; die Dumper($self->available_uis);
+                $self->show_ui_menu;
+            } elsif (@{$self->available_uis}) {
+                my $ui = $self->available_uis->[0];
+#                use Data::Dumper; die (Dumper($ui));
+                $self->print_message("Fetching game UI file from $$ui{url}...");
+                $self->fetch_ui_file($$ui{url});
+            } else {
+                $self->print_message("No text UIs available for this game. Sorry.");
+            }
+        }
 
     } elsif ($id eq 'server') {
-	my ($ruleset_uri) = @{$$fields{ruleset}};
-	my ($ruleset_version) = @{$$fields{"ruleset-version"}};
+        my ($ruleset_uri) = @{$$fields{ruleset}};
+        my ($ruleset_version) = @{$$fields{"ruleset-version"}};
 
-	$self->discover_uis_for_ruleset($ruleset_uri);
+        $self->discover_uis_for_ruleset($ruleset_uri);
     } else {
-	$self->print_message("Um... I got a disco info response with id $id. I'm not sure what to do about it.");
+        $self->print_message("Um... I got a disco info response with id $id. I'm not sure what to do about it.");
     }
 }
 
@@ -1108,9 +1098,9 @@ sub discover_uis_for_ruleset {
     my ($ruleset_uri) = @_;
     
     $self->request_disco_items({to=>$self->bookkeeper_jid,
-				id=>'ruleset',
-				node=>$ruleset_uri . "|uis",
-			    });
+                                id=>'ruleset',
+                                node=>$ruleset_uri . "|uis",
+                            });
 }
 
 sub handle_disco_items {
@@ -1119,17 +1109,17 @@ sub handle_disco_items {
     my @items = @$items;
     
     if ($id eq 'ruleset') {
-	$self->available_uis([]);
-	$self->uis_to_check(scalar(@items));
-	my $id_num = 0;
-	for my $item (@items) {
-	    my $iq_id = "ruleset-ui" . ++$id_num;
-	    $self->current_ui_url->{$id_num} = $item->node;
-	    $self->request_disco_info({to=>$item->jid, 
-				  id=>$iq_id,
-				  node=>$item->node,
-			      });
-	}
+        $self->available_uis([]);
+        $self->uis_to_check(scalar(@items));
+        my $id_num = 0;
+        for my $item (@items) {
+            my $iq_id = "ruleset-ui" . ++$id_num;
+            $self->current_ui_url->{$id_num} = $item->node;
+            $self->request_disco_info({to=>$item->jid, 
+                                  id=>$iq_id,
+                                  node=>$item->node,
+                              });
+        }
     }
 }
 
@@ -1409,4 +1399,3 @@ L<Volity>
 http://volity.org
 
 =cut
-					  
