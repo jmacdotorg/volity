@@ -835,6 +835,7 @@ sub invite_player {
   $invitation_id++; $self->last_rpc_id($invitation_id);
   $self->invitations->{$invitation_id} = [$rpc_id, $from_jid];
   $self->logger->debug("$from_jid will invite $args[0]. New ID is $invitation_id. Old id was $rpc_id.");
+  $self->send_rpc_response($from_jid, $rpc_id, "ok");			    
   $self->make_rpc_request({to=>$args[0],
 			   id=>$invitation_id,
 			   methodname=>'volity.receive_invitation',
