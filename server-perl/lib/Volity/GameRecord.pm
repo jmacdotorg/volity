@@ -18,6 +18,43 @@ package Volity::GameRecord;
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
 
+=head1 NAME
+
+Volity::GameRecord - Information about a completed Volity game.
+
+=head1 SYNOPSIS
+
+use Volity::GameRecord;
+
+=head1 DESCRIPTION
+
+An object of this class represents an information record about. In
+practical terms, it's an abstraction of the information that a game
+server passes to a . Through the methods this class provides, it's
+easy for a server to build and sign this RPC call, and just as easy
+for the receiving bookkeeper.
+
+Note that, since RPC is the neutral middle ground, a Frivolity game
+server (a.k.a. a Perl object of a Volity::Game::Server subclass) can
+pass a Volity::GameRecord object to any Volity bookkeeper, regardless
+of its platform. Similarly, A Volity::Bookkeeper object can knit a
+Volity::Gamerecord object out of any game server's RPC request,
+whether or not that server runs Frivolity. (In reality, this latter
+situation will probably be quite common.)
+
+=head1 USAGE
+
+Game module designers don't have to worry about using this module at
+all. Records are automatically created by Volity::Referee objects when
+a game wraps up, and incoming records are automatically parsed by the
+bookkeeper.
+
+The following doucmentation is really here for completeness' sake, but
+those wishing to modify the Frivolity referee or bookkeeper behavior
+might find it interesting.
+
+=cut
+
 use warnings;
 use strict;
 
@@ -39,6 +76,20 @@ our ($gpg_bin, $gpg_secretkey, $gpg_passphrase);
 # Special Constructors (Class methods)
 ########################
 
+=head1 METHODS
+
+=head2 Class methods (constructors)
+
+=over
+
+=item new_from_xml($xml)
+
+Returns a new Volity::GameRecord object, given a scalar containing an XML document representation of same.
+
+For the opposite functionality, see C<render_as_xml> under L<"Object methods">.
+
+=cut
+
 sub new_from_xml {
   my $class = shift;
   my $self = $class->new;
@@ -51,6 +102,10 @@ sub new_from_xml {
   $parser->parse_string($xml_string);
   return $handler->record;
 }
+
+=item new_from_db
+
+=cut
 
 sub new_from_db {
   my $class = shift;
@@ -99,10 +154,67 @@ sub new_from_db {
   return $self;
 }
 
+=item new_from_hashref($hashref)
+
+Creates a new object based on the given hash reference, typically one
+that has been freshly translated from an RPC E<lt>structE<gt>
+argument. 
+
+For the opposite functionality, see C<render_into_hashref> under L<"Object Methods">.
+
+=back
+
+=head2 Object accessors
+
+All these are simple accessors which return the named object
+attribute. If an argument is passed in, then the attribute's value is
+first set to that argument.
+
+In the case of lists, either an array or an array reference is
+returned, depending upon context.
+
+This module inherits from Class::Accessor, so all the tips and tricks
+detailed in L<Class::Accessor> apply here as well.
+
+=over
+
+=item id
+
+=item players
+
+=item signature
+
+=item winners
+
+=item quitters
+
+=item start_time
+
+=item end_time
+
+=item game_uri
+
+=item game_name
+
+=item server
+
+=back
+
+=cut
 
 ######################
 # Object methods
 ######################
+
+=head2 Object methods
+
+=over
+
+=item render_as_xml
+
+Returns a string holding the game record as an XML document.
+
+=cut
 
 sub render_as_xml {
   my $self = shift;
@@ -183,6 +295,16 @@ sub game_uri {
 
 # These methods all deal with the attached signature somehow.
 
+=begin unimplemented
+
+=item confirm_record_owner
+
+I<Bookkeeper only.> Confirms that the existing, DB-stored copy of this record assets the same server relationship as this record, and then re-verifies its signature (as per C<verify()>. Returns truth if everything looks OK, and falsehood otherwise.
+
+=end unimplemented
+
+=cut
+
 # confirm_record_owner: Make sure that the stored copy of this record agrees
 # with what this record asserts is its server, and that the record's signature
 # is valid. This is a necessary step before performing an SQL UPDATE on this
@@ -195,6 +317,16 @@ sub confirm_record_owner {
   }
   return $self->verify_signature;
 }
+
+=item sign
+
+I<Referee only.>Generates a signature for this record, and attaches it.
+
+The signature is based on a specific subset of the record's
+information, which both sender and receiver agree upon. Refer to the
+Volity protocol documentation for more information on this procedure.
+
+=cut
 
 # sign: generate a signature based on the serialized version of this record,
 # and sign the sucker.
@@ -234,6 +366,13 @@ sub sign {
   $self->signature($signature);
   return $signature;
 }
+
+=item verify
+
+Verifies that the record is signed, and that said signature is
+valid. Returns truth if everything looks OK, and falsehood otherwise.
+
+=cut
 
 sub verify {
   my $self = shift;
@@ -287,6 +426,12 @@ sub check_gpg_attributes {
   }
   return 1;
 }
+
+=item unsign
+
+Removes the signature from the record, if it has one.
+
+=cut
 
 # unsign: toss out the key. Just a hey-why-not synonym.
 sub unsign {
@@ -426,6 +571,15 @@ sub get_last_insert_id {
 # RPC param prep
 #########################
 
+=item render_as_hashref
+
+Returns an unblessed hash reference describing the game record. It
+just so happens that this hash reference is in the very same format
+that the Volity C<record_game> RPC request requires as its
+E<lt>sructE<gt> argument. Fancy that!
+
+=cut
+
 sub render_as_hashref {
   my $self = shift;
   my $hashref = {};
@@ -505,5 +659,16 @@ sub end_element {
     undef(@current_player_list);
   }
 }
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2003 by Jason McIntosh.
+
+=cut
+
     
 1;
