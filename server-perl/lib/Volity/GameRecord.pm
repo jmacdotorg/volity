@@ -6,13 +6,16 @@ use strict;
 use XML::Writer;
 use XML::SAX::ParserFactory;
 use URI;
-use Carp qw(croak);
+use Carp qw(croak carp);
 use IO::Scalar;
 use Date::Parse;
 use Date::Format;
 
 use base qw(Class::Accessor::Fields);
 use fields qw(id players signature winners quitters start_time end_time game_uri_object game_name server);
+
+# Set up package variables for GPG config.
+our ($gpg_bin, $gpg_secretkey, $gpg_passphrase);
 
 ########################
 # Special Constructors (Class methods)
@@ -53,13 +56,14 @@ sub new_from_db {
   my $data = $dbh->fetchrow_hashref;
   my $self;
   if ($$data{id}) {
-    $self = $class->new({id=>$id, start_time=>$$data{started},
-			    end_time=>$$data{finished},
+    $self = $class->new({id=>$id,
 			    server=>$$data{server_jid},
 			    signature=>$$data{server_signature},
 			    game_name=>$$data{game_name},
 			  });
     $self->game_uri($$data{uri});
+    $self->end_time($$data{finished});
+    $self->start_time($$data{started});
   } else {
     carp("Could not find a DB record for game with ID '$id'.");
     return;
@@ -124,7 +128,7 @@ sub render_as_xml {
     $w->dataElement('signature', $self->signature);
     $w->endTag('signed-record');
   }
-  return $xml_string;
+  return "$xml_string";
 }
 
 ########################
@@ -153,17 +157,7 @@ sub game_uri {
   return $self->game_uri_object->as_string if defined($self->game_uri_object);
 }
 
-# 'sign' and 'unsign' are just sexy alternatives to the 'signature' accessor.
 
-sub sign {
-  my $self = shift;
-  return $self->signature(@_);
-}
-
-sub unsign {
-  my $self = shift;
-  return $self->signature(undef);
-}
 
 ##############################
 # Security methods
@@ -176,15 +170,125 @@ sub unsign {
 # is valid. This is a necessary step before performing an SQL UPDATE on this
 # record's DB entry, lest stupid/evil servers stomp other servers' records.
 sub confirm_record_owner {
-  # XXX !!!HACK!!! Since jmac can't get Perl-PGP stuff to work yet on his
-  # Mac OS X machine, this always returns truth. This shouldn't be the case.
   my $self = shift;
   unless ($self->id) {
     carp("This record has no ID, and thus no owner at all. You shouldn't have called confirm_record_owner on it!");
     return 0;
   }
-  # XXX Signature checking junk goes here.
+  return $self->verify_signature;
+}
+
+# sign: generate a signature based on the serialized version of this record,
+# and sign the sucker.
+sub sign {
+  my $self = shift;
+  my $serialized = $self->serialize;
+  unless ($serialized) {
+    carp("Not signing, because I couldn't get a good serialization of this reciord.");
+    return;
+  }
+
+  return unless $self->check_gpg_attributes;
+
+  # XXX Very hacky, but good enough for now.
+  my $filename = "/tmp/volity_record_$$";
+  open (SERIALIZED, ">$filename") or die "Can't write to $filename: $!";
+  print SERIALIZED $serialized;
+  close (SERIALIZED) or die "Could not close $filename: $!";
+
+  my $out_filename = "/tmp/volity_signature_$$";
+
+  my $gpg_command = sprintf("%s --default-key %s -sba --passphrase-fd 0 --yes --output $out_filename $filename", $gpg_bin, $gpg_secretkey);
+  open (GPG, "|$gpg_command") or die "Can't open a pipe into the gpg command: $!\nCommand was: $gpg_command";
+  print GPG $gpg_passphrase . "\n";
+  close (GPG) or die "Couldn't close gpg command pipe: $!";
+
+  open (SIG, $out_filename) or die "Can't read $out_filename: $!";
+  local $/ = undef; my $signature = <SIG>;
+  close (SIG) or die "Can't close $out_filename: $!";
+
+  # Clean up our messy mess...
+  foreach ($filename, $out_filename) {
+    unlink ($_) or die "Couldn't unlink $_: $!";
+  }
+
+  # Finally, attach the signature to the object.
+  $self->signature($signature);
+  return $signature;
+}
+
+sub verify {
+  my $self = shift;
+  unless (defined($gpg_bin)) {
+    carp("Can't verify the record, because the path to the GPG binary isn't set!");
+    return;
+  }
+  unless (defined($self->signature)) {
+    carp("Can't verify the record, because there doesn't appear to be a signature attached to this record!!");
+    return;
+  }
+  my $serialized = $self->serialize;
+  unless (defined($serialized)) {
+    carp("Can't verify this record, since it won't serialize.");
+    return;
+  }
+  # XXX Very hacky, but good enough for now.
+  my $serialized_filename = "/tmp/volity_record_$$";
+  open (SERIALIZED, ">$serialized_filename") or die "Can't write to $serialized_filename: $!";
+  print SERIALIZED $serialized;
+  close (SERIALIZED) or die "Could not close $serialized_filename: $!";
+
+  my $signature_filename = "/tmp/volity_signature_$$";
+  open (SIGNATURE, ">$signature_filename") or die "Can't write to $signature_filename: $!";
+  print SIGNATURE $self->signature;
+  close (SIGNATURE) or die "Could not close $signature_filename: $!";
+
+  
+  my $gpg_command = $gpg_bin . " --verify $signature_filename $serialized_filename";
+  my $result = system($gpg_command);
+
+  # Clean up my messy mess.
+  foreach ($signature_filename, $serialized_filename) {
+    unlink($_) or die "Can't unlink $_: $!";
+  }
+
+  if ($result) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+sub check_gpg_attributes {
+  my $self = shift;
+  foreach ($gpg_bin, $gpg_secretkey, $gpg_passphrase,) {
+    unless (defined($_)) {
+      carp("You can't perform GPG actions unless you set all three package variables on Volity::Gamerecord: \$gpg_bin, \$gpg_secretkey and \$gpg_passphrase.");
+      return 0;
+    }
+  }
   return 1;
+}
+
+# unsign: toss out the key. Just a hey-why-not synonym.
+sub unsign {
+  my $self = shift;
+  return $self->signature(undef);
+}
+
+# serialize: return a string that represents a signable (and, after sending,
+# verifyable version of this record. Fails if the record lacks certain
+# information.
+# XXX For now, it just returns the end_time timestamp!! It will be more
+# complex when the Volity standard for this is made.
+sub serialize {
+  my $self = shift;
+  if (defined($self->end_time)) {
+    return $self->end_time;
+  } else {
+    carp("This record lacks the information needed to serialize it!");
+    return;
+  }
 }
 
 ##############################
@@ -207,7 +311,7 @@ sub set {
 sub massage_jid {
   my $self = shift;
   my ($jid) = @_;
-  if ($jid =~ /^(\w+@\w+\.\w+)(\/\w+)?/) {
+  if ($jid =~ /^(\w+@\w+[\.\w]+)(\/\w+)?/) {
     my ($main_jid, $resource) = ($1, $2);
     return $main_jid;
   } else {
@@ -218,10 +322,12 @@ sub massage_jid {
 sub massage_time {
   my $self = shift;
   my ($time) = @_;
-#  if (my ($ss,$mm,$hh,$day,$month,$year,$zone) = Date::Parse::strptime($time)) {
+  # Cure possible MySQLization that Date::Parse can't handle.
+  #  $time = '1979-12-31 19:00:00';
+  $time =~ s/^(\d\d\d\d-\d\d-\d\d) (\d\d:\d\d:\d\d)$/$1T$2/;
   if (my $parsed = Date::Parse::str2time($time)) {
     # Transform it into W3C datetime format.
-    return (Date::Format::time2str("%Y-%m-%dT%H:%M:%S%z"));
+    return (Date::Format::time2str("%Y-%m-%dT%H:%M:%S%z", $parsed));
   } else {
     croak("I can't parse this timestamp: $time\nPlease use a time string that Date::Parse can understand.");
   }
@@ -243,6 +349,7 @@ sub store_in_db {
 		finished=>$self->end_time,
 		server_jid=>$self->server,
 		server_signature=>$self->signature,
+		uri=>$self->game_uri,
 	      };  if (defined($self->id)) {
     unless ($self->confirm_record_owner($self)) {
       carp("Yikes... I can't store this record because its ownership claims seem suspect.");
@@ -295,6 +402,36 @@ sub get_last_insert_id {
   # XXX This is MySQL-specific ONLY. Make this shmarter later on, yo.
   my ($id) = $dbh->select("last_insert_id()", $table)->fetchrow_array;
   return $id;
+}
+
+#########################
+# RPC param prep
+#########################
+
+sub render_as_hashref {
+  my $self = shift;
+  my $hashref = {};
+  foreach (qw(id players winners quitters start_time end_time game_uri server signature)) {
+    $$hashref{$_} = $self->$_ if defined($self->$_);
+  }
+  return $hashref;
+}
+
+# This here's a class method...
+sub new_from_hashref {
+  my $class = shift;
+  my ($hashref) = @_;
+  my $self = Volity::GameRecord->new;
+  foreach (qw(id players winners quitters start_time end_time game_uri server signature)) {
+    if (defined($$hashref{$_}) and ref($$hashref{$_}) eq 'ARRAY') {
+      warn "Sip - a -sup wit $_";
+      $self->$_(@{$$hashref{$_}});
+    } elsif (defined($$hashref{$_})) {
+      warn "Zup up wit $_";
+      $self->$_($$hashref{$_});
+    }
+  }
+  return $self;
 }
 
 #########################
