@@ -61,10 +61,10 @@ sub new_from_db {
 			    uri
 			   )],
 		fields=>['game.id',
-			 'game.started',
-			 'game.finished',
+			 'game.start_time',
+			 'game.end_time',
 			 'game.server_jid',
-			 'game.server_signature',
+			 'game.signature',
 			 'game.uri',
 			 'uri.name as game_name',
 			],
@@ -76,12 +76,12 @@ sub new_from_db {
   if ($$data{id}) {
     $self = $class->new({id=>$id,
 			    server=>$$data{server_jid},
-			    signature=>$$data{server_signature},
+			    signature=>$$data{signature},
 			    game_name=>$$data{game_name},
 			  });
     $self->game_uri($$data{uri});
-    $self->end_time($$data{finished});
-    $self->start_time($$data{started});
+    $self->end_time($$data{end_time});
+    $self->start_time($$data{start_time});
   } else {
     carp("Could not find a DB record for game with ID '$id'.");
     return;
@@ -363,10 +363,10 @@ sub store_in_db {
   }
   # Decide: insert or update?
   # It's based on whether or not the game record has an ID.
-  my $values = {started=>$self->start_time,
-		finished=>$self->end_time,
+  my $values = {start_time=>$self->start_time,
+		end_time=>$self->end_time,
 		server_jid=>$self->server,
-		server_signature=>$self->signature,
+		signature=>$self->signature,
 		uri=>$self->game_uri,
 	      };  if (defined($self->id)) {
     unless ($self->confirm_record_owner($self)) {
