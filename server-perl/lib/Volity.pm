@@ -18,13 +18,17 @@ sub new {
   }
 
   my $self = fields::new($class);
+  $self->create_accessors;
   while (my ($key, $val) = each %$fields) {
-    eval {$self->{$key} = $val;};
+      if ($key eq 'debug') {
+	  $self->{debug} = $val;
+      } else {
+	  eval {$self->$key($val);};
+      }
     if ($@) {
-      Carp::confess "COuldn't set the $key key of $self: $@";
+      Carp::confess "Couldn't set the $key key of $self: $@";
     }
   }
-  $self->create_accessors;
   $self->initialize;
   return $self;
 }
