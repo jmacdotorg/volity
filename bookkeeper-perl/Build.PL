@@ -8,6 +8,7 @@ my $build = Module::Build->new
    license=>'lgpl',
    requires=> {
 	       'Volity'=>undef,
+	       'Class::DBI'=>undef,
 	     }
   );
 $build->create_build_script;

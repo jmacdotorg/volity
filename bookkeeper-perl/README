@@ -1,1 +1,16 @@
-This is a Perl implementation of the Volity bookkeeper.
+This is the very first release of the Volity bookkeeper software. The
+bookkeeper serves as informational center for the Jabber-based Volity
+network, acting as front-end to a database of player and game
+information.
+
+This release offers no documentation. It's probably of very little use
+to anyone but the core Volity development team, at present.
+
+For more information about Volity:
+Volity Developers' Site:
+http://www.volity.org
+
+Volity at SourceForge:
+http://volity.sf.net
+
+
