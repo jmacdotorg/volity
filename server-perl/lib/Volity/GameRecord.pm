@@ -12,7 +12,11 @@ use Date::Parse;
 use Date::Format;
 
 use base qw(Class::Accessor::Fields);
-use fields qw(players signature winners quitters start_time end_time game_uri_object game_name server);
+use fields qw(id players signature winners quitters start_time end_time game_uri_object game_name server);
+
+########################
+# Special Constructors (Class methods)
+########################
 
 sub new_from_xml {
   my $class = shift;
@@ -29,12 +33,55 @@ sub new_from_xml {
 
 sub new_from_db {
   my $class = shift;
-  $class = ref($class) if defined(ref($class));
   my ($dbh, $id) = @_;
-  # XXX Incomplete!!
+  $dbh->select({
+		tables=>[qw(
+			    game
+			    uri
+			   )],
+		fields=>['game.id',
+			 'game.started',
+			 'game.finished',
+			 'game.server_jid',
+			 'game.server_signature',
+			 'game.uri',
+			 'uri.name as game_name',
+			],
+		where=>{id=>$id},
+		join=>"game.uri = uri.uri",
+	      });
+  my $data = $dbh->fetchrow_hashref;
+  my $self;
+  if ($$data{id}) {
+    $self = $class->new({id=>$id, start_time=>$$data{started},
+			    end_time=>$$data{finished},
+			    server=>$$data{server_jid},
+			    signature=>$$data{server_signature},
+			    game_name=>$$data{game_name},
+			  });
+    $self->game_uri($$data{uri});
+  } else {
+    carp("Could not find a DB record for game with ID '$id'.");
+    return;
+  }
+  # Fetch the various player lists.
+  foreach my $player_list (qw(players winners quitters)) {
+    my $table = 'game_' . substr($player_list, 0, length($player_list) - 1);
+    $dbh->select('player_jid', $table, {game_id=>$id});
+    my @player_jids;
+    while (my ($player_jid) = $dbh->fetchrow_array) {
+      push (@player_jids, $player_jid);
+    }
+    $self->$player_list(@player_jids) if @player_jids;
+  }
+  return $self;
 }
 
-# OBJECT METHODS
+
+######################
+# Object methods
+######################
+
 sub render_as_xml {
   my $self = shift;
   my $xml_string = IO::Scalar->new;
@@ -80,6 +127,12 @@ sub render_as_xml {
   return $xml_string;
 }
 
+########################
+# Special Accessors
+########################
+
+# Most accessors are automatically defined by Class::Accessors::Fields.
+
 sub game_uri {
   my $self = shift;
   # We store URI-class objects, and return stringy-dings.
@@ -110,6 +163,28 @@ sub sign {
 sub unsign {
   my $self = shift;
   return $self->signature(undef);
+}
+
+##############################
+# Security methods
+##############################
+
+# These methods all deal with the attached signature somehow.
+
+# confirm_record_owner: Make sure that the stored copy of this record agrees
+# with what this record asserts is its server, and that the record's signature
+# is valid. This is a necessary step before performing an SQL UPDATE on this
+# record's DB entry, lest stupid/evil servers stomp other servers' records.
+sub confirm_record_owner {
+  # XXX !!!HACK!!! Since jmac can't get Perl-PGP stuff to work yet on his
+  # Mac OS X machine, this always returns truth. This shouldn't be the case.
+  my $self = shift;
+  unless ($self->id) {
+    carp("This record has no ID, and thus no owner at all. You shouldn't have called confirm_record_owner on it!");
+    return 0;
+  }
+  # XXX Signature checking junk goes here.
+  return 1;
 }
 
 ##############################
@@ -150,6 +225,76 @@ sub massage_time {
   } else {
     croak("I can't parse this timestamp: $time\nPlease use a time string that Date::Parse can understand.");
   }
+}
+
+#########################
+# DB Access methods
+#########################
+
+sub store_in_db {
+  my $self = shift;
+  my ($dbh) = @_;
+  unless ($dbh) {
+    croak("You must call store_in_db with a database handle.");
+  }
+  # Decide: insert or update?
+  # It's based on whether or not the game record has an ID.
+  my $values = {started=>$self->start_time,
+		finished=>$self->end_time,
+		server_jid=>$self->server,
+		server_signature=>$self->signature,
+	      };  if (defined($self->id)) {
+    unless ($self->confirm_record_owner($self)) {
+      carp("Yikes... I can't store this record because its ownership claims seem suspect.");
+      return;
+    }
+    $dbh->update('game', $values, {id=>$self->id},);
+  } else {
+    $self->id($self->insert($dbh, 'game', $values));
+  }
+  # Now go through the player lists. It's always a case of drop-and-insert,
+  # for they're all many-to-many linking tables.
+  foreach my $player_list (qw(players winners quitters)) {
+    my $table = 'game_' . substr($player_list, 0, length($player_list) - 1);
+    $dbh->delete($table, {game_id=>$self->id});
+    my @player_jids = $self->$player_list;
+    for (@player_jids) {
+      $dbh->insert($table, {game_id=>$self->id, player_jid=>$_}) if defined($_);
+    }
+  }
+}
+
+# insert: utility method to perform an SQL insert and retrun the ID of the
+# new row. Performs chicken-waving appropriate to the DBI driver in use.
+sub insert {
+  my $self = shift;
+  # $table is just the table name, $values is a hashref of column=>value.
+  my ($dbh, $table, $values) = @_;
+  my $id;			# Return value.
+  # This subroutine assumes that table IDs are are kept in columns called
+  # 'id', and have sequences named "${table}_id_seq" (if Oracle).
+  # If this isn't the case, then the tables are insane. Shrug.
+  if (substr($dbh->{connect}{data_source}, 0, 11) eq 'dbi:Oracle:') {
+    # We're connected to an Oracle database.
+    # Check for a table id seq.
+    my $seq_name = "${table}_id_seq.nextval";
+    ($id) = $dbh->select($seq_name, 'dual')->fetchrow_array;
+    $$values{id} = $id;
+    $dbh->insert($table, $values);
+  } else {
+    # We're connect to some other database.
+    $dbh->insert($table, $values);
+    $id = $self->get_last_insert_id($dbh, $table);
+  }
+  return $id;
+}
+
+sub get_last_insert_id {
+  my $self = shift;
+  my ($dbh, $table) = @_;
+  # XXX This is MySQL-specific ONLY. Make this shmarter later on, yo.
+  my ($id) = $dbh->select("last_insert_id()", $table)->fetchrow_array;
+  return $id;
 }
 
 #########################
