@@ -1,24 +1,20 @@
 --- WHAT IS THIS? ---
 
-This is a very early alpha release of the Frivolity programming
-libraries. 
-
-It will, by default, install several Perl modules into your
-site-perl location under the Volity namespace, and place a server
-script (server.pl) and a command-line client (client.pl) in
-/usr/local/volity/bin. If these location do not suit you, edit Build.PL
-appropriately. (See the Module::Build manpage for instructions on
-modifying this file.)
-
---- WHAT IS FRIVOLITY? ---
-
 Frivolity is a free, Perl-based reference implementation of the Volity
-protocol for Internet-based game play. It is released under the LGPL
+platform for Internet-based game play. It is released under the LGPL
 open-source license. (See the accompanying LICENSE file.)
 
-This release offers very little documentation. It's probably of very
-little use to anyone but the core Volity development team, at
-present. Future releases will have more, certainly.
+This release offers some embedded POD documentation. However, you can
+find a more complete reference on the Web, here:
+
+http://www.volity.org/docs/devguide_perl/
+
+This release will probably be of little use to anyone but the core
+Volity development team, and the handful of friends who have elected
+to try programming the platform's first few "third-party" game
+modules. Their feedback is sure to make future releases more mature,
+and of wider reach.
+
 
 For more information about Volity:
 Volity Developers' Site:
@@ -27,39 +23,49 @@ http://www.volity.org
 Volity at SourceForge:
 http://volity.sf.net
 
+If, after learning a bit about Volity, you'd like to try your hand at
+being a pioneering game developer during these the platform's early
+days, do drop me a line: jmac@jmac.org.
+
 --- PREREQUISITES ---
 
 Frivolity requires several Perl modules to work; the Build script
 checks for their presence on your system.
 
-All are available from CPAN, except one: version 0.3.x of
-POE::Component::Jabber. As of this writing (January 2004), its CPAN
+All are available from CPAN, except one: version 1.0 (tentative) of
+POE::Component::Jabber. As of this writing (May 2004), its CPAN
 version, 0.2.x, is not compatible with Frivolity. You will have to
-download the more recent version from Jabber
-Studio. http://www.jabberstudio.org/projects/pcj/project/view.php
+download the more recent version from Jabber Studio. Fortunately, this
+is pretty easy; it's a tarball that you can find here:
+
+http://www.jabberstudio.org/projects/pcj/project/view.php
 
 --- INSTALLATION ---
 
-This package uses the Module::Build installation style. You should be
-able to set everything up like so:
+This package uses the Module::Build installation style.
+
+It will, by default, install several Perl modules into your
+site-perl location under the Volity namespace, and place a server
+script (server.pl) and a command-line client (friv) in
+/usr/local/volity/bin. If these locations do not suit you, edit Build.PL
+appropriately. (See the Module::Build manpage for instructions on
+modifying this file.)
+
+Once you've set up things as you liked it (or decided you are happy
+with the defaults, which is likely), you should be able to create the
+build script like so:
 
  perl Build.PL
 
-This will prompt you for various bits of information that the test
-script requires, including some Jabber login information. You can
-provide _any_ account information here; Volity doesn't need anything
-other than ordinary Jabber magic to work, and the test suite will not
-modify the given account in any way.
-
  ./Build
 
-In theory you can then run:
  ./Build test
 
-But that might not work, so you may have to instead do a 
- perl test.pl
+You'll note there's not much in the way of testing now... it just
+makes sure everything compiles. We will add some nice test suites in
+the near future.
 
-This will work in a saner fashion soon. (Sorry.)
+ sudo ./Build install
 
 --- CONTACT ---
 
