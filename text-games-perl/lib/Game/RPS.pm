@@ -7,6 +7,10 @@ use base qw(Volity::Game);
 
 our $player_class = "Volity::Player::RPS";
 
+__PACKAGE__->max_allowed_players(2);
+__PACKAGE__->min_allowed_players(2);
+__PACKAGE__->uri("http://volity.org/games/rps");
+
 sub player_class {
   return $player_class;
 }
