@@ -154,7 +154,7 @@ sub jabber_authed {
   }
 }
 
-sub new_game {
+sub new_table {
   my $self = shift;
   # Start a new session to play this game.
 
@@ -208,9 +208,9 @@ sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
   # For security's sake, we explicitly accept only a few method names.
-  # In fact, the only one we care about right now is 'new_game'.
-  if ($$rpc_info{'method'} eq 'new_game') {
-    $self->new_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+  # In fact, the only one we care about right now is 'new_table'.
+  if ($$rpc_info{'method'} eq 'new_table') {
+    $self->new_table($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } else {
 #    warn "I received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?";
   }
