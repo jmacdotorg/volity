@@ -200,7 +200,11 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             if (isConnected())
             {
-                doDisconnect();
+                if (confirmCloseTableWindows("Disconnect"))
+                {
+
+                    doDisconnect();
+                }
             }
             else
             {
@@ -250,6 +254,43 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
+     * If any game table windows are open, this method asks the user for confirmation of
+     *  an action that would cause all table windows to be closed.
+     *
+     * @param action  The name of the action to take. It will appear in the message.
+     * @return        true if the user has confirmed the action (or if the user was
+     *  never asked since no table windows were open), false if the action should be
+     *  cancled.
+     */
+    private boolean confirmCloseTableWindows(String action)
+    {
+        boolean retVal = true;
+        int tableWinCount = mTableWindows.size();
+
+        if (tableWinCount > 0)
+        {
+            String message;
+
+            if (tableWinCount == 1)
+            {
+                message = "There is a game table open. " + action + " anyway?";
+            }
+            else
+            {
+                message = "There are " + tableWinCount + " game tables open. " + action +
+                    " anyway?";
+            }
+
+            int result = JOptionPane.showConfirmDialog(this, message,
+                getAppName() + ": Confirm " + action, JOptionPane.YES_NO_OPTION);
+
+            retVal = (result == JOptionPane.YES_OPTION);
+        }
+
+        return retVal;
+    }
+
+    /**
      * Closes the current connection. This method can also be called to clean up the
      * application state after the connection has been closed or lost via some other
      * means.
@@ -291,8 +332,11 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     private void doQuit()
     {
-        doDisconnect();
-        System.exit(0);
+        if (confirmCloseTableWindows("Exit"))
+        {
+            doDisconnect();
+            System.exit(0);
+        }
     }
 
     /**
