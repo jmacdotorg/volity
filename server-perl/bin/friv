@@ -597,8 +597,7 @@ sub handle_rpc_request {
   }
 # XXX
   $self->print_message( "Handling RPC call $$req{'method'}..." );
-#  main::js_call( $self->js, $$req{'method'}, @{ $$req{'req'} } );
-  main::js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
+  js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
 }
 
 sub handle_normal_message {
