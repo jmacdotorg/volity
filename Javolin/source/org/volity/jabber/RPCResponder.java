@@ -13,7 +13,7 @@ import java.util.*;
  *
  * @author Doug Orleans (dougo@place.org)
  */
-public abstract class RPCResponder implements PacketListener {
+public class RPCResponder implements PacketListener {
   static {
     // Register the provider so that request packets get parsed correctly.
     ProviderManager.addIQProvider("query", "jabber:iq:rpc", new RPCProvider());
@@ -23,22 +23,39 @@ public abstract class RPCResponder implements PacketListener {
    * @param connection an authenticated connection to an XMPP server
    * @throws IllegalStateException if the connection has not been authenticated
    */
-  public RPCResponder(XMPPConnection connection) {
+  public RPCResponder(XMPPConnection connection, RPCHandler handler) {
     if (!connection.isAuthenticated())
       throw new IllegalStateException("Not logged in.");
     this.connection = connection;
-    connection.addPacketListener(this, new PacketTypeFilter(RPCRequest.class));
+    this.handler = handler;
   }
 
   protected XMPPConnection connection;
   public XMPPConnection getConnection() { return connection; }
+
+  protected RPCHandler handler;
+  public RPCHandler getHandler() { return handler; }
+
+  /**
+   * Start listening for requests.
+   */
+  public void start() {
+    connection.addPacketListener(this, new PacketTypeFilter(RPCRequest.class));
+  }
+
+  /**
+   * Stop listening for requests.
+   */
+  public void stop() {
+    connection.removePacketListener(this);
+  }
 
   // Inherited from PacketListener.
   public void processPacket(Packet packet) {
     RPCRequest req = (RPCRequest) packet;
     RPCResponse resp;
     try {
-      Object value = handleRPC(req.getMethodName(), req.getParams());
+      Object value = handler.handleRPC(req.getMethodName(), req.getParams());
       resp = new RPCResult(value);
     } catch (RPCException e) {
       resp = e.getFault();
@@ -47,14 +64,4 @@ public abstract class RPCResponder implements PacketListener {
     resp.setPacketID(req.getPacketID());
     connection.sendPacket(resp);
   }
-
-  /**
-   * Handle a remote procedure call.
-   * @param methodName the name of the called procedure
-   * @param params the list of parameter values
-   * @return the resulting value of the call
-   * @throws RPCException if a fault occurs
-   */
-  public abstract Object handleRPC(String methodName, List params)
-    throws RPCException;
 }
