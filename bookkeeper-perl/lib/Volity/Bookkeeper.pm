@@ -65,6 +65,128 @@ sub handle_rpc_request {
   }
 }
 
+# This presence handler takes care of auto-approving all subscription
+# requests. Volity servers are very social like that.
+sub jabber_presence {
+  my $self = shift;
+  my ($presence) = @_;		# POE::Filter::XML::Node object
+  if ($presence->attr('type') and $presence->attr('type') eq 'subscribe') {
+    # A subscription request! Shoot back approval.
+    $self->send_presence(
+			 {
+			  to=>$presence->attr('from'),
+			  type=>'subscribed',
+			 }
+			);
+  }
+}
+
+sub handle_disco_info_request {
+    my $self = shift;
+    my ($iq) = @_;
+    $self->logger->debug("I got a disco info request from " . $iq->attr('from'));
+    $self->send_disco_info({
+	to=>$iq->attr('from'),
+	id=>$iq->attr('id'),
+	# I'm making up my own category and type stuff, here.
+	# I'll have to ask the Jabber folks what I actually ought to be doing.
+	items=>[Volity::Jabber::Disco::Identity->new({category=>'volity',
+						      type=>'bookkeeper',
+						      name=>'The volity.org bookkeeper',
+						  }),
+		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#info'}),
+		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'}),
+		],
+    });
+}
+
+sub handle_disco_items_request {
+    my $self = shift;
+    my ($iq) = @_;
+    $self->logger->debug("I got a disco items request.");
+    my $query = $iq->get_tag('query');
+    my @nodes;
+    if (defined($query->attr('node'))) {
+	@nodes = split(/\//, $query->attr('node'));
+    }
+    
+    my @items;			# Disco items to return to the requester.
+
+    # The logic in the following section is dirty and yukky coz I dunno
+    # what I'm doing yet.
+    if (@nodes) {
+	if ($nodes[0] eq 'games') {
+	    if (defined($nodes[1])) {
+		my $ruleset_name = $nodes[1];
+		my ($ruleset) = Volity::Info::Ruleset->search({name=>$ruleset_name});
+		if ($nodes[2]) {
+		    if ($nodes[2] eq 'servers') {
+			my @servers = Volity::Info::Server->search({
+			    ruleset_id=>$ruleset->id,
+			    });
+			for my $server (@servers) {
+			    push (@items, Volity::Jabber::Disco::Item->new({
+				jid=>$server->jid . "/volity",
+				name=>$server->jid,
+			    }),
+				  );
+			}
+		    } elsif ($nodes[2] eq 'uis') {
+			# Not really sure yet.
+			# Not sure if this should even be here.
+		    } else {
+			# There should be a disco-error here.
+		    }
+		} else {
+		    push (@items, 
+			  Volity::Jabber::Disco::Item->new({
+			      jid=>$self->jid,
+			      node=>"games/$ruleset_name/servers",
+			      name=>"List of servers for this game",
+			  }),
+			  Volity::Jabber::Disco::Item->new({
+			      jid=>$self->jid,
+			      node=>"games/$ruleset_name/uis",
+			      name=>"List of uis for this game",
+			  }),
+			  );
+		}
+	    } else {	
+		# 'games' node requested, but nothing else.
+		# So let's return a list of all known rulesets.
+		# NOTE: This isn't a scalable solution!!
+		my @rulesets = Volity::Info::Ruleset->retrieve_all;
+		for my $ruleset (@rulesets) {
+		    push (@items, Volity::Jabber::Disco::Item->new({
+			jid=>$self->jid,
+			node=>"games/" . $ruleset->name,
+			name=>$ruleset->description,
+		    }),
+			  );
+		}
+	    }
+	} else {
+	    # Should be a disco-error here; we don't support nodes
+	    # other than 'games' right now.
+	}
+	    
+    } else {
+	# No nodes defined; this is a top-level request.
+	push (@items, Volity::Jabber::Disco::Item->new({
+	    jid=>$self->jid,
+	    node=>"games",
+	    name=>"List of known Volity rulesets",
+	})
+	      );
+    }
+    
+    $self->send_disco_items({to=>$iq->attr('from'),
+			     id=>$iq->attr('id'),
+			     items=>\@items});
+}
+
+
+
 ####################
 # RPC methods
 ####################
@@ -378,8 +500,8 @@ sub start {
 sub jabber_authed {
   my $self = $_[OBJECT];
   my $node = $_[ARG0];
-  $self->debug("We have authed!\n");
-  $self->debug("My jid: " . $self->jid);
+  $self->logger->info("The bookkeeper has logged in!\n");
+  $self->logger->info("Its JID: " . $self->jid);
   unless ($node->name eq 'handshake') {
 #    warn $node->to_str;
   }
