@@ -1,4 +1,4 @@
-bin/client.pl
+bin/friv
 bin/server.pl
 Build.PL
 lib/Volity.pm
@@ -7,7 +7,6 @@ lib/Volity/GameRecord.pm
 lib/Volity/Jabber.pm
 lib/Volity/Player.pm
 lib/Volity/Referee.pm
-lib/Volity/Referee/RPS.pm
 lib/Volity/Server.pm
 test.pl
 t/TestRPS.pm
