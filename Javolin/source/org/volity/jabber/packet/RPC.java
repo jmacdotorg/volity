@@ -59,7 +59,7 @@ public abstract class RPC extends IQ {
       xml += "</array>";
     } else
       throw new RuntimeException("Don't know how to serialize " + v.getClass() +
-				 "to Jabber-RPC.");
+				 " to Jabber-RPC.");
     return xml + "</value>";
   }
 
