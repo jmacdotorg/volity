@@ -689,7 +689,7 @@ sub handle_query_element_ns {
 
 These methods will send messages and other data to the Jabber server.
 
-=head2 make_rpc_request($args_hashref)
+=head2 send_rpc_request($args_hashref)
 
 Send an RPC request. The single argument is a hashref with the following keys:
 
@@ -736,6 +736,7 @@ with the response as their argument.
 =cut
 
 *make_rpc_request = \&send_rpc_request;
+
 sub send_rpc_request {
   my $self = shift;
   $self->logger->debug("in make_rpc_request\n");
@@ -1156,16 +1157,27 @@ sub handle_disco_info { }
 sub handle_disco_items_request { }
 sub handle_disco_info_request { }
 
-
+# receive_disco:
+# Given a disco-response IQ, return its origin JID, the IQ's ID,
+# a listref of disco items, and a hashref of JEP-0128 form fields.
 sub receive_disco {
   my $self = shift;
   my ($iq) = @_;
   my @return = ($iq->attr('from'), $iq->attr('id'));
+  my (@items, %fields);
   for my $child (@{$iq->get_tag('query')->get_children}) {
-    my $class = "Volity::Jabber::Disco::" . ucfirst($child->name);
-    bless($child, $class);
-    push (@return, $child);
+      if ($child->name eq 'x') {
+	  for my $field ($child->get_tag('field')) {
+	      bless ($field, "Volity::Jabber::Form::Field");
+	      $fields{$field->var} = $field->values;
+	  }
+      } else {
+	  my $class = "Volity::Jabber::Disco::" . ucfirst($child->name);
+	  bless($child, $class);
+	  push (@items, $child);
+      }
   }
+  push (@return, \@items, \%fields);
   return @return;
 }
 
@@ -1180,33 +1192,44 @@ sub send_disco_info {
 }
 
 sub send_disco {
-  my $self = shift;
-  my ($type, $info) = @_;
-  if (not($info) or not(ref($info) eq 'HASH')) {
-    croak("You must call send_disco_$type with a hashref argument.");
-  }
-
-  my $iq = POE::Filter::XML::Node->new('iq');
-  $iq->attr(type=>'result');
-  $iq->attr(id=>$$info{id}) if (defined($$info{id}));
-  if ($$info{to}) {
-    $iq->attr(to=>$$info{to});
-  } else {
-    $self->expire("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
-  }
-
-  my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
-  my @items_to_add;
-  if (defined($$info{items})) {
-    @items_to_add = ref($$info{items})? @{$$info{items}} : ($$info{items});
-  }
-  for my $item (@items_to_add) {
-    unless ($item->isa("Volity::Jabber::Disco::Node")) {
-      croak("The items you add must be objects belonging to one of the Volity::Jabber::Disco::* classes. But you passed me this: $item");
+    my $self = shift;
+    my ($type, $info) = @_;
+    if (not($info) or not(ref($info) eq 'HASH')) {
+	croak("You must call send_disco_$type with a hashref argument.");
     }
-    $query->insert_tag($item);
-  }
-  $self->post_node($iq);
+    
+    my $iq = POE::Filter::XML::Node->new('iq');
+    $iq->attr(type=>'result');
+    $iq->attr(id=>$$info{id}) if (defined($$info{id}));
+    if ($$info{to}) {
+	$iq->attr(to=>$$info{to});
+    } else {
+	$self->expire("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
+    }
+    
+    my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
+    if (defined($$info{items})) {
+	my @items_to_add = ref($$info{items})? @{$$info{items}} : ($$info{items});
+	for my $item (@items_to_add) {
+	    unless ($item->isa("Volity::Jabber::Disco::Node")) {
+		croak("The items you add must be objects belonging to one of the Volity::Jabber::Disco::* classes. But you passed me this: $item");
+	    }
+	    $query->insert_tag($item);
+	}
+    }
+    
+    # There may also be a data form, as per JEP-0128.
+    if (defined($$info{fields})) {
+	my $form = $query->insert_tag('x', [xmlns=>'jabber:x:data', type=>'result']);
+	my @fields_to_add = ref($$info{fields})? @{$$info{fields}} : ($$info{fields});
+	for my $field (@fields_to_add) {
+	    unless ($field->isa("Volity::Jabber::Form::Field")) {
+		croak("The fields you add must be objects belonging to the Volity::Jabber::Form::Field class. But you passed me this: $field");
+	    }
+	    $form->insert_tag($field);
+	}
+    }
+    $self->post_node($iq);
 }
 
 sub send_registration {
@@ -1442,6 +1465,8 @@ Copyright (c) 2003 by Jason McIntosh.
 
 1;
 
+=begin OLD_CRUFT
+
 package Volity::Jabber::Form;
 
 use warnings; use strict;
@@ -1544,6 +1569,10 @@ sub label {
   my $self = shift;
   return $self->{field}->attr('label');
 }
+
+=end OLD_CRUFT
+
+=cut
 
 package Volity::Jabber::Roster;
 
@@ -1727,6 +1756,12 @@ sub set {
   return $value;
 }
 
+sub get {
+    my $self = shift;
+    my ($key) = @_;
+    return $self->attr($key);
+}
+
 package Volity::Jabber::Disco::Item;
 
 use warnings; use strict;
@@ -1747,5 +1782,33 @@ use warnings; use strict;
 use base qw(Volity::Jabber::Disco::Node);
 
 __PACKAGE__->mk_accessors(qw(var));
+
+package Volity::Jabber::Form::Field;
+
+use warnings; use strict;
+use base qw(Volity::Jabber::Disco::Node);
+
+__PACKAGE__->mk_accessors(qw(label var));
+
+# values: Accessor to this field's value elements.
+# Always returns a list of the current values, as simple strings.
+sub values {
+    my $self = shift;
+    my (@values) = @_;
+    if (@values) {
+	for my $value (@values) {
+	    $self->insert_tag('value')->data($value);
+	}
+    } else {
+	@values = map($_->data, grep(defined($_), $self->get_tag('value')));
+    }
+    return @values;
+}
+
+# clear_values: Drop all the value elements.
+sub clear_values {
+    my $self = shift;
+    map ($self->detatch_child($_), $self->get_tag('value'));
+}
 
 1;
