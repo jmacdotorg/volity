@@ -8,6 +8,7 @@
   <!-- set global properties for this build -->
   <property name="src" location="source"/>
   <property name="build" location="build"/>
+  <property name="doc" location="doc"/>
   <property name="classpath" value="lib/smack.jar"/>
 
   <target name="init">
@@ -18,7 +19,7 @@
   </target>
 
   <target name="compile" depends="init"
-        description="compile the source " >
+        description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpath="${classpath}"
     	deprecation="on"/>
@@ -34,11 +35,22 @@
       </manifest> 
     </jar>
   </target>
+  
+  <target name="doc"
+        description="generate Javadocs" >
+    <javadoc packagenames="org.volity.javolin.*"
+           sourcepath="source"
+           destdir="${doc}"
+           classpath="${classpath}"
+           windowtitle="Javolin API">
+    </javadoc>
+  </target>
 
   <target name="clean"
         description="clean up" >
     <!-- Delete the ${build} directory tree and .jar file -->
     <delete dir="${build}"/>
+    <delete dir="${doc}"/>    
     <delete file="${jarfile}"/>
   </target>
 </project>

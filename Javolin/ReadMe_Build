@@ -19,7 +19,9 @@ at the command line, where "command" is the desired command. The following comma
 
   archive - Compiles Javolin and builds the Javolin.jar file. This is the default, so you can just execute "ant" by itself, without specifying a command.
 
-  clean - Deletes everything created by the archive command: the build directory and the Javolin.jar file.
+  doc - Uses Javadoc to generate Javolin API documentation in a directory called "doc".
+
+  clean - Deletes everything created by the other commands: the build directory, the doc directory, and the Javolin.jar file.
 
 ---------
 Libraries
