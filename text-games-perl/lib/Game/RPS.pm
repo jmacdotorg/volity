@@ -5,74 +5,40 @@ use strict;
 
 use base qw(Volity::Game);
 
-our $player_class = "Volity::Player::RPS";
-
 __PACKAGE__->max_allowed_players(2);
 __PACKAGE__->min_allowed_players(2);
 __PACKAGE__->uri("http://volity.org/games/rps");
+__PACKAGE__->player_class("Volity::Player::RPS");
 
-sub player_class {
-  return $player_class;
-}
-
-sub handle_normal_message {
+sub start_game {
   my $self = shift;
-  my ($message) = @_;
-#  print "Whoop, got a normal message.";
-  return $self->handle_chat_message(@_);
-}
-
-sub handle_groupchat_message {
-  my $self = shift;
-  my ($message) = @_;
-#  print "Whoop, got a groupchat message";
-}
-
-sub handle_chat_message {
-  my $self = shift;
-  my ($message)  = @_;
-  my $body = $$message{body};
-#  print "I got a message!! $body";
-  unless (ref($self)) {
-    # Eh, just a class method.
-    warn "Eh, just a class method.\n";
-    return $self->SUPER::handle_chat_message(@_);
+  for my $player ($self->players) { 
+    $player->hand(undef);
   }
-  my $player = $self->get_player_with_jid($$message{from});
-  unless ($player) {
-      # XXX Put nice error message here...
-  }
-  if (substr("rock", 0, length($body)) eq lc($body)) {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"Good old rock! Nothing beats rock.",
-			       });
-    $player->hand_type('rock');
-    
-  } elsif (substr("paper", 0, length($body)) eq lc($body)) {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"Paper it is.",
-			       });
-    $player->hand_type('paper');
-  } elsif (substr("scissors", 0, length($body)) eq lc($body)) {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"You chose scissors.",
-			       });
-    $player->hand_type('scissors');
+}
+			      
+sub set_hand {
+  my $self = shift;
+  my ($player, $hand) = @_;
+#  warn "Got: $player, $hand";
+  if (substr("rock", 0, length($hand)) eq lc($hand)) {
+    $player->hand('rock');
+  } elsif (substr("paper", 0, length($hand)) eq lc($hand)) {
+    $player->hand('paper');
+  } elsif (substr("scissors", 0, length($hand)) eq lc($hand)) {
+    $player->hand('scissors');
   } else {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"No idea what you just said. Please choose one of 'rock', 'paper' or 'scissors'.",
-			       });
+    # I don't know what this hand type is.
+    return (fault=>901);
   }
-  
+
   # Has everyone registered a hand?
-  if (grep(defined($_), map($_->hand_type, $self->players)) == $self->players) {
-  # Yes! Time for BATTLE!
+  if (grep(defined($_), map($_->hand, $self->players)) == $self->players) {
+    # Yes! Time for BATTLE!
+    # Sort the players into winning order.
+      $self->referee->groupchat("Ok...");
     my @players = sort( {
-			 my $handa = $a->hand_type; my $handb = $b->hand_type;
+			 my $handa = $a->hand; my $handb = $b->hand;
 			 if ($handa eq $handb) {
 			   return 0;
 			 } elsif ($handa eq 'rock' and $handb eq 'scissors') {
@@ -86,41 +52,54 @@ sub handle_chat_message {
 			 }
 		       }
 			$self->players);
+    # Tell both players what their opponent chose
+    for my $player (@players) {
+      $self->call_ui_function_on_everyone('player_chose_hand',
+					  $player->nick,
+					  $player->hand,
+					 );
+    }
+    # Tell the players who won, using Jabber messaging (just because we can).
     my $victory_message;
-    if ($players[0]->hand_type eq $players[-1]->hand_type) {
-      $victory_message = sprintf("A tie! Both players chose %s.", $players[0]->hand_type);
+    if ($players[0]->hand eq $players[-1]->hand) {
+      $victory_message = sprintf("A tie! Both players chose %s.", $players[0]->hand);
       $self->winners([[@players]]);
-    } elsif ($players[0]->hand_type eq 'rock') {
-      $victory_message = sprintf("%s(rock) crushes %s(scissors)!", $players[0]->nick, $players[1]->nick);
-      $self->winners($players[0], $players[1]);
-    } elsif ($players[0]->hand_type eq 'scissors') {
-      $victory_message = sprintf("%s(scissors) shreds %s(paper)!", $players[0]->nick, $players[1]->nick);
-      $self->winners($players[0], $players[1]);
     } else {
-      $victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
-      $self->winners($players[0], $players[1]);
+      if ($players[0]->hand eq 'rock') {
+	$victory_message = sprintf("%s(rock) crushes %s(scissors)!", $players[0]->nick, $players[1]->nick);
+	$self->winners($players[0], $players[1]);
+      } elsif ($players[0]->hand eq 'scissors') {
+	$victory_message = sprintf("%s(scissors) shreds %s(paper)!", $players[0]->nick, $players[1]->nick);
+	$self->winners($players[0], $players[1]);
+      } else {
+	$victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
+	$self->winners($players[0], $players[1]);
+      }
     }
     $self->referee->groupchat($victory_message);
     $self->end_game;
-  }
+} else {
+    $self->referee->groupchat("Enh...");
+}
+
+  # At any rate, return undef, so the calling player gets a generic
+  # success response message.
+  return;
   
 }
 
-sub jid_name {
-  return "rps";
-}
+####################
+# Incoming RPC request handlers
+###################
 
-sub end_game {
+sub rpc_choose_hand {
   my $self = shift;
-  for my $player ($self->players) {
-    $player->hand_type(undef);
-  }
-  return $self->SUPER::end_game(@_);
+  $self->set_hand(@_);
 }
 
 package Volity::Player::RPS;
 
 use base qw(Volity::Player);
-use fields qw(hand_type);
+use fields qw(hand);
 
 1;
