@@ -48,6 +48,7 @@ sub init_finish {
     # to someone using its nickname already present in the MUC.
     # I'll need to add an error handler for when this happens.
     $self->join_table;
+
 }
 
 # This presence handler detects a table's referee through MUC attributes.
@@ -77,23 +78,28 @@ sub jabber_presence {
     return;
   }
   if (($node->get_tag('x')) and (($x) = grep($_->attr('xmlns') eq "http://jabber.org/protocol/muc#user", $node->get_tag('x')))) {
-    # Aha, someone has joined the table.
-    my $new_person_jid = $x->get_tag('item')->attr('jid');
-    my $affiliation = $x->get_tag('item')->attr('affiliation');
-    if ($affiliation eq 'owner') {
-      # This is the table's ref.
-      $self->referee_jid($new_person_jid);
-    } else {
-      # This is a potential opponent!
-      unless ($node->attr('type')) {
-	# No 'type' attribute means they're joining us...
-	# Save the nickname. We'll pass it to the UI file later.
-	$self->add_opponent_nickname($node->attr('from'));
-      } elsif ($node->attr('type') eq 'unavailable') {
-	# Oh, they're leaving...
-	$self->remove_opponent_nickname($node->attr('from'));
+      # Aha, someone has joined the table.
+#      my $new_person_jid = $x->get_tag('item')->attr('jid');
+      my $affiliation = $x->get_tag('item')->attr('affiliation');
+      $self->logger->debug("I see presence from " . $node->attr('from'));
+      my ($nickname) = $node->attr('from') =~ m|/(.*)$|;
+      if ($nickname eq $self->nickname) {
+	  if ($nickname eq $self->nickname) {
+	      # Oh, it's me.
+	      $self->referee_jid($self->muc_jid . "/volity");
+	      $self->declare_readiness;
+	  } else {
+	      # This is a potential opponent!
+	      unless ($node->attr('type')) {
+		  # No 'type' attribute means they're joining us...
+		  # Save the nickname. We'll pass it to the UI file later.
+		  $self->add_opponent_nickname($node->attr('from'));
+	      } elsif ($node->attr('type') eq 'unavailable') {
+		  # Oh, they're leaving...
+		  $self->remove_opponent_nickname($node->attr('from'));
+	      }
+	  }
       }
-    }
   }
 }
 
@@ -162,6 +168,31 @@ sub is_jid {
   }
 }
 
+sub declare_readiness {
+    my $self = shift;
+    $self->logger->debug("Sending a declaration of readiness to " . $self->referee_jid);
+    $self->send_rpc_request({
+	to=>$self->referee_jid,
+	id=>'ready',
+	methodname=>'volity.ready',
+    });
+}
+
+sub handle_rpc_request {
+  my $self = shift;
+  my ($rpc_info) = @_;
+  my $method = $$rpc_info{method};
+  if ($method eq 'volity.end_game') {
+      # I wanna play again!!!
+      $self->declare_readiness;
+  } elsif ($method eq 'volity.player_unready') {
+      if ($rpc_info->{args}->[0] eq $self->nickname) {
+	  # The config must have changed, since I just lost readiness.
+	  # I don't care! I'm still ready!!      
+	  $self->declare_readiness;
+      }
+  }
+}
 
 1;
 
