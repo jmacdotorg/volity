@@ -518,10 +518,6 @@ Volity::Referee magic will be taken care of. This includes passing
 chat messages along to the contained game object or class (see L<"The
 Game Object">).
 
-=for comment
-
-ARRGH I HATE THIS. The class/object thing... FOOEY. Think of a prettier way!!
-
 =cut
 
  
