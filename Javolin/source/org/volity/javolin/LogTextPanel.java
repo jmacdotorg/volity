@@ -20,6 +20,7 @@ package org.volity.javolin;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.*;
 
 /**
  * A read-only, vertically-scrolling text pane, which text can only be appended to the
@@ -27,16 +28,21 @@ import javax.swing.event.*;
  */
 public class LogTextPanel extends JPanel implements ChangeListener
 {
-    protected JTextArea mLogTextPane;
-    protected JScrollPane mLogScroller;
+    private JTextPane mLogTextPane;
+    private JScrollPane mLogScroller;
 
-    protected boolean mShouldScroll;
+    private SimpleAttributeSet mBaseStyle;
+    private boolean mShouldScroll;
 
     /**
      * Constructor.
      */
     public LogTextPanel()
     {
+        mBaseStyle = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(mBaseStyle, "SansSerif");
+        StyleConstants.setFontSize(mBaseStyle, 12);
+
         buildUI();
     }
 
@@ -44,8 +50,9 @@ public class LogTextPanel extends JPanel implements ChangeListener
      * Appends the given text to the text pane.
      *
      * @param text  The text to append.
+     * @param color The text color.
      */
-    public void append(String text)
+    public void append(String text, Color color)
     {
         // Scroll to the bottom of the text pane unless the user is dragging the
         // scroll thumb
@@ -54,7 +61,18 @@ public class LogTextPanel extends JPanel implements ChangeListener
             mShouldScroll = true;
         }
 
-        mLogTextPane.append(text);
+        Document doc = mLogTextPane.getDocument();
+
+        SimpleAttributeSet style = new SimpleAttributeSet(mBaseStyle);
+        StyleConstants.setForeground(style, color);
+        
+        try
+        {
+            doc.insertString(doc.getLength(), text, style);
+        }
+        catch (BadLocationException ex)
+        {
+        }
     }
 
     /**
@@ -82,10 +100,8 @@ public class LogTextPanel extends JPanel implements ChangeListener
     {
         setLayout(new BorderLayout());
 
-        mLogTextPane = new JTextArea();
+        mLogTextPane = new JTextPane();
         mLogTextPane.setEditable(false);
-        mLogTextPane.setLineWrap(true);
-        mLogTextPane.setWrapStyleWord(true);
 
         mLogScroller = new JScrollPane(mLogTextPane);
         mLogScroller.getVerticalScrollBar().getModel().addChangeListener(this);

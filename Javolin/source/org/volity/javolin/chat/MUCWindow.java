@@ -45,6 +45,7 @@ public class MUCWindow extends JFrame implements PacketListener
     protected JTextArea mUserListText;
     protected AbstractAction mSendMessageAction;
 
+    protected UserColorMap mUserColorMap;
     protected SizeAndPositionSaver mSizePosSaver;
     protected MUC mMucObject;
 
@@ -56,7 +57,10 @@ public class MUCWindow extends JFrame implements PacketListener
     public MUCWindow(MUC aMUC)
     {
         super(JavolinApp.getAppName() + ": " + aMUC.getRoom());
-
+        
+        mUserColorMap = new UserColorMap();
+        mUserColorMap.getUserNameColor(aMUC.getNickname()); // Give user first color
+        
         buildUI();
 
         setSize(500, 400);
@@ -236,9 +240,16 @@ public class MUCWindow extends JFrame implements PacketListener
     protected void writeMessageText(String nickname, String message)
     {
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
+        
         String nickText = hasNick ? nickname + ":" : "***";
 
-        mMessageText.append(nickText + " " + message + "\n");
+        Color nameColor =
+            hasNick ? mUserColorMap.getUserNameColor(nickname) : Color.BLACK;
+        Color textColor = 
+            hasNick ? mUserColorMap.getUserTextColor(nickname) : Color.BLACK;
+
+        mMessageText.append(nickText + " ", nameColor);
+        mMessageText.append(message + "\n", textColor);
     }
 
     /**
