@@ -423,7 +423,6 @@ sub jabber_iq {
 
       # Hack, to deal with apparent RPC::XML bug?
       $raw_xml =~ s/<int\/>/<int>0<\/int>/g;
-
       $self->debug("Got Apparent RPC XML: $raw_xml\n");
       my @kids = @{$query->get_children};
       $self->debug("Got " . scalar(@kids) . " kids.\n");
@@ -754,7 +753,6 @@ sub send_rpc_request {
       $self->add_response_handler( $$args{'id'}, $$args{'handler'} );
   }
 
-#  my $request = RPC::XML::request->new($$args{methodname}, RPC::XML::smart_encode(@args));
   my $request = RPC::XML::request->new($$args{methodname}, @args);
 
 
@@ -762,10 +760,7 @@ sub send_rpc_request {
   # I don't like this so much, sliding in the request as raw data.
   # But then, I can't see why it would break.
   my $request_xml = $request->as_string;
-#  warn "$request_xml\n";
-#  die;
 #  # The susbtr() chops off the XML prolog. I know, I know.
-#  $request_xml = substr($request_xml, 21);
   $request_xml =~ s/^<\?\s*xml\s+version="1.0"\s*\?>//;
   $iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])->
     rawdata($request_xml);
