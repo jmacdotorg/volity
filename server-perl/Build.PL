@@ -20,6 +20,7 @@ my $build = Module::Build->new
 	       'JavaScript::SpiderMonkey'=>undef,
 	       'Data::JavaScript::Anon'=>undef,
 	       'YAML'=>undef,
+	       'Log::Log4perl'=>undef,
 	     },
    script_files=>['bin/server.pl', 'bin/friv'],
    install_path=>{script=>'/usr/local/volity/bin'},
