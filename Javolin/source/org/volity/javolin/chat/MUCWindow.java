@@ -32,7 +32,7 @@ import org.volity.javolin.*;
 /**
  * A window for participating in a MUC.
  */
-public class MUCWindow extends JFrame implements PacketListener
+public class MUCWindow extends JFrame implements PacketListener, ChangeListener
 {
     private final static String NODENAME = "MUCWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -48,6 +48,7 @@ public class MUCWindow extends JFrame implements PacketListener
 
     protected SizeAndPositionSaver mSizePosSaver;
     protected MUC mMucObject;
+    protected boolean mShouldScroll;
 
     /**
      * Constructor.
@@ -239,13 +240,31 @@ public class MUCWindow extends JFrame implements PacketListener
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
         String nickText = hasNick ? nickname + ":" : "***";
 
-        mMessageText.append(nickText + " " + message + "\n");
-
         // Scroll to the bottom of the message area unless the user is dragging the
         // scroll thumb
         if (!mMessageScroller.getVerticalScrollBar().getValueIsAdjusting())
         {
-            mMessageText.setCaretPosition(mMessageText.getDocument().getLength());
+            mShouldScroll = true;
+        }
+
+        mMessageText.append(nickText + " " + message + "\n");
+    }
+
+    /**
+     * ChangeListener interface method implementation.
+     *
+     * @param e  The ChangeEvent that was received.
+     */
+    public void stateChanged(ChangeEvent e)
+    {
+        // Test for flag. Otherwise, if we scroll unconditionally, the scroll bar will be
+        // stuck at the bottom even when the user tries to drag it. So we only scroll
+        // when we know we've added text.
+        if (mShouldScroll)
+        {
+            JScrollBar vertBar = mMessageScroller.getVerticalScrollBar();
+            vertBar.setValue(vertBar.getMaximum());
+            mShouldScroll = false;
         }
     }
 
@@ -268,6 +287,7 @@ public class MUCWindow extends JFrame implements PacketListener
         mMessageText.setWrapStyleWord(true);
 
         mMessageScroller = new JScrollPane(mMessageText);
+        mMessageScroller.getVerticalScrollBar().getModel().addChangeListener(this);
         mChatSplitter.setTopComponent(mMessageScroller);
 
         mInputText = new JTextArea();
