@@ -1,4 +1,4 @@
-Copyright (C) 2002-2003 Jive Software. All rights reserved.
+Copyright (C) 2002-2004 Jive Software. All rights reserved.
 ====================================================================
 The Jive Software License (based on Apache Software License, Version 1.1)
 
