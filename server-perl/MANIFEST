@@ -9,6 +9,8 @@ lib/Volity/Player.pm
 lib/Volity/Referee.pm
 lib/Volity/Referee/RPS.pm
 lib/Volity/Server.pm
+test.pl
+t/TestRPS.pm
 LICENSE
 MANIFEST			This list of files
 README

@@ -18,3 +18,8 @@
 
 	- Added (unfortunately) "no warnings(deprecated)" to suppress
 	  whinging about bad pseudohashes. We'll eject phashes later.
+
+	- Volity::Game now inherits from Class::Data::Inheritable, and is
+	  now the place to set game configuration information such as the
+	  game's URI and allowed player range.
+	

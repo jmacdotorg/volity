@@ -24,7 +24,7 @@ foreach ('key id (GPG)', 'passphrase (GPG)', 'GPG binary path',) {
 
 
 unless (defined($opts{substr('g', 0, 1)})) {
-  die "You must define a referee class, with the g switch\n";
+  die "You must define a game class, with the g switch\n";
 }
 
 # Hardcoded default bookkeeper JID.
@@ -39,7 +39,7 @@ my $server = Volity::Server->new(
 				  resource=>$opts{r},
 				  debug=>$opts{d} || 0,
 				  alias=>'volity',
-				  referee_class=>$opts{g},
+				  game_class=>$opts{g},
 				  bookkeeper_jid=>$opts{b} || $default_bkp,
 				}
 				);
