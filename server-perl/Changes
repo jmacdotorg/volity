@@ -1,0 +1,20 @@
+0.2.1
+	- Servers now keep track of referees they create, and provide the
+	  appropriate accessor methods. A server that receives a 'stop'
+	  message will pass this along to its referees.
+
+	- Added a 'stop' method to Server and Referee classes.
+
+	- Added lots of POD docs throughout the package.
+
+	- Added this Changes file to the package!
+
+	- Added a test suite, which can be run through the 'test' command
+       	  of the Build script.
+
+	- Rubbed out various hardcoded settings in Server and Referee.
+
+	- Changed messy debug print()s into debug() method calls.
+
+	- Added (unfortunately) "no warnings(deprecated)" to suppress
+	  whinging about bad pseudohashes. We'll eject phashes later.

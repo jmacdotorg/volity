@@ -13,10 +13,28 @@ my $build = Module::Build->new
 	       'POE::Component::Jabber'=>'0.3.3',
 	       'XML::Writer'=>undef,
 	       'Data::Lazy'=>undef,
+	       'IPC::Shareable'=>undef,
 	     },
    script_files=>[glob("bin/*.pl")],
    install_path=>{script=>'/usr/local/volity/bin'},
   );
-$build->create_build_script;
 
+print "To run tests, I need to connect to a Jabber server.\n";
+print "Please provide me with some authentication info I can use.\n";
+$build->notes(jabber_host=>$build->prompt('Jabber host:'));
+$build->notes(jabber_user=>$build->prompt('Jabber user:'));
+$build->notes(jabber_password=>$build->prompt('Jabber password:'));
+
+print "You can specify the resources I'll use, or just hit RET to accept the deauts.\n";
+$build->notes(server_resource=>
+	      $build->prompt('Game server resource [game]:') || 'game');
+$build->notes(player_resource1=>
+	      $build->prompt('Test player resource [bot1]:') || 'bot1');
+$build->notes(player_resource2=>
+	      $build->prompt('Test player resource [bot2]:') || 'bot2');
+$build->notes(player_resource3=>
+	      $build->prompt('Test player resource [bot3]:') || 'bot3');
+
+
+$build->create_build_script;
 
