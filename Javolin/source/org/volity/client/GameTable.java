@@ -24,9 +24,11 @@ public class GameTable extends MultiUserChat {
 	  Presence presence = (Presence) packet;
 	  MUCUser user = getUser(presence);
 	  if (isReferee(user))
-	    if (presence.getType() == Presence.Type.AVAILABLE)
-	      referee = new Referee(GameTable.this, user.getItem().getJid());
-	    else if (presence.getType() == Presence.Type.UNAVAILABLE)
+	    if (presence.getType() == Presence.Type.AVAILABLE) {
+	      String jid = user.getItem().getJid();
+	      if (jid == null) jid = presence.getFrom();
+	      referee = new Referee(GameTable.this, jid);
+	    } else if (presence.getType() == Presence.Type.UNAVAILABLE)
 	      referee = null;
 	}
       });
