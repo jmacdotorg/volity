@@ -51,6 +51,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private ImageIcon mConnectedIcon;
     private ImageIcon mDisconnectedIcon;
 
+    private WindowMenu mWindowMenu;
     private JMenuItem mConnectMenuItem;
     private JMenuItem mQuitMenuItem;
     private JMenuItem mNewTableAtMenuItem;
@@ -313,6 +314,9 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             mTableWindows.remove(tableWin);
         }
 
+        // Clear the Window menu
+        mWindowMenu.clear();
+
         // Close connection if open
         if (mConnection != null)
         {
@@ -361,6 +365,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
                 tableWin.show();
                 mTableWindows.add(tableWin);
+                mWindowMenu.add(tableWin);
 
                 // Remove the table window from the list when it closes
                 tableWin.addWindowListener(
@@ -369,6 +374,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                         public void windowClosed(WindowEvent we)
                         {
                             mTableWindows.remove(we.getWindow());
+                            mWindowMenu.remove((JFrame)we.getWindow());
                         }
                     });
             }
@@ -395,6 +401,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             mucWin.show();
             mMucWindows.add(mucWin);
+            mWindowMenu.add(mucWin);
 
             // Remove the MUC window from the list when it closes
             mucWin.addWindowListener(
@@ -403,6 +410,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                     public void windowClosed(WindowEvent we)
                     {
                         mMucWindows.remove(we.getWindow());
+                        mWindowMenu.remove((JFrame)we.getWindow());
                     }
                 });
         }
@@ -537,11 +545,15 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_E);
         gameMenu.add(mNewTableAtMenuItem);
 
+        // Window menu
+        mWindowMenu = new WindowMenu();
+
         // Create menu bar
         JMenuBar theMenuBar = new JMenuBar();
         theMenuBar.add(fileMenu);
         theMenuBar.add(chatMenu);
         theMenuBar.add(gameMenu);
+        theMenuBar.add(mWindowMenu);
         setJMenuBar(theMenuBar);
     }
 
