@@ -1,21 +1,20 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
+
+eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
 
 use warnings;
 use strict;
 
 use Volity::Bookkeeper;
 use Getopt::Std;
-use DBIx::Abstract;
 use Volity::GameRecord;
+use Volity::Info;
 
 my %opts;
-getopts('u:p:h:r:d:o:K:G:P:D:U:W:', \%opts);
+getopts('u:p:h:r:d:o:K:G:P:D:U:W:f:', \%opts);
 
-my $dbh = DBIx::Abstract->connect({dsn=>$opts{D},
-				   user=>$opts{U},
-				   password=>$opts{W},})
-  or die "Failed to open a database connection.";
-
+Volity::Info->set_db('Main', $opts{D}, $opts{U}, $opts{W});
 
 foreach ('user', 'host', 'password', 'resource',) {
   unless (defined($opts{substr($_, 0, 1)})) {
@@ -23,11 +22,16 @@ foreach ('user', 'host', 'password', 'resource',) {
   }
 }
 
-# foreach ('key id (GPG)', 'passphrase (GPG)', 'GPG binary path',) {
 foreach ('GPG binary path',) {
   unless (defined($opts{uc(substr($_, 0, 1))})) {
     die "You must define a $_, with the " . uc(substr($_, 0, 1)) . " switch.\n";
   }
+}
+
+if (defined($opts{f})) {
+  open (PID, ">$opts{f}") or die "Can't write a PIDfile to $opts{f}: $!";
+  print PID $$;
+  close PID or die "Can't close PIDfile $opts{f}: $!";
 }
 
 my $bookkeeper = Volity::Bookkeeper->new(
@@ -39,12 +43,9 @@ my $bookkeeper = Volity::Bookkeeper->new(
 				  resource=>$opts{r},
 				  debug=>$opts{d} || 0,
 				  alias=>'bookkeeper',
-				  dbh=>$dbh,
 				}
 				);
 
 $Volity::GameRecord::gpg_bin = $opts{G};
-#$Volity::GameRecord::gpg_secretkey = $opts{K};
-#$Volity::GameRecord::gpg_passphrase = $opts{P};
 
 $bookkeeper->start;
