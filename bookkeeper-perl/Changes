@@ -1,3 +1,9 @@
+0.3     
+        - Added service discovery support.
+
+        - Added usage of the Log::Log4perl-based logging system that
+          Frivolity uses.
+
 0.2
 	- Added this Changes file.
 
@@ -8,4 +14,4 @@
 	- Obviated the need to pass in a database handle.
 
 	- Added code to store game records in the DB, since they no longer
-	have the ability to store themselves.
+	  have the ability to store themselves.
