@@ -12,18 +12,18 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 /**
- * The dialog for establishing a connection to a Jabber server
- *
- * @author   karlvonl
+ * The dialog for establishing a connection to a Jabber server.
  */
 public class ConnectDialog extends BaseDialog implements ActionListener
 {
     private final static String NODENAME = "ConnectDialog";
     private final static String HOSTNAME_KEY = "HostName";
     private final static String USERNAME_KEY = "UserName";
+    private final static String RESOURCE_KEY = "Resource";
 
     private JTextField mHostNameField;
     private JTextField mUserNameField;
+    private JTextField mResourceField;
     private JPasswordField mPasswordField;
     private JButton mCancelButton;
     private JButton mConnectButton;
@@ -31,9 +31,9 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private XMPPConnection mConnection = null;
 
     /**
-     * Constructor for the ConnectDialog object
+     * Constructor for the ConnectDialog object.
      *
-     * @param owner  Description of the Parameter
+     * @param owner  Description of the Parameter.
      */
     public ConnectDialog(Frame owner)
     {
@@ -45,12 +45,12 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         pack();
 
         // Restore saved window position
-        restoreSizeAndPosition();
+        mSizePosSaver.restoreSizeAndPosition();
 
         // Restore default field values
         restoreFieldValues();
 
-        // Set focus to first blank field
+        // Set focus to first blank field (except resource)
         if (mHostNameField.getText().equals(""))
         {
             mHostNameField.requestFocusInWindow();
@@ -95,7 +95,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Handles the Connect button
+     * Handles the Connect button.
      */
     private void doConnect()
     {
@@ -106,8 +106,18 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         try
         {
             mConnection = new XMPPConnection(mHostNameField.getText());
-            mConnection.login(mUserNameField.getText(),
-                new String(mPasswordField.getPassword()));
+
+            if (mResourceField.getText().equals(""))
+            {
+                mConnection.login(mUserNameField.getText(),
+                    new String(mPasswordField.getPassword()));
+            }
+            else
+            {
+                mConnection.login(mUserNameField.getText(),
+                    new String(mPasswordField.getPassword()), mResourceField.getText());
+            }
+
             dispose();
         }
         catch (XMPPException ex)
@@ -133,12 +143,15 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             JOptionPane.showMessageDialog(this, message,
                 JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+                
+            // Destroy connection object
+            mConnection = null;
         }
     }
 
     /**
      * Saves the current text of the host name and user name fields to the preferences
-     * storage
+     * storage.
      */
     private void saveFieldValues()
     {
@@ -146,11 +159,12 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         prefs.put(HOSTNAME_KEY, mHostNameField.getText());
         prefs.put(USERNAME_KEY, mUserNameField.getText());
+        prefs.put(RESOURCE_KEY, mResourceField.getText());
     }
 
     /**
      * Reads the default host name and user name values from the preferences storage and
-     * fills in the text fields
+     * fills in the text fields.
      */
     private void restoreFieldValues()
     {
@@ -158,6 +172,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         mHostNameField.setText(prefs.get(HOSTNAME_KEY, "volity.net"));
         mUserNameField.setText(prefs.get(USERNAME_KEY, ""));
+        mResourceField.setText(prefs.get(RESOURCE_KEY, ""));
     }
 
     /**
@@ -198,13 +213,31 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         c.anchor = GridBagConstraints.WEST;
         getContentPane().add(someLabel, c);
 
-        // Add user field
+        // Add user name field
         mUserNameField = new JTextField(15);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
         c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
         getContentPane().add(mUserNameField, c);
+        gridY++;
+
+        // Add resource label
+        someLabel = new JLabel("Resource:");
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = gridY;
+        c.insets = new Insets(SPACING, MARGIN, 0, 0);
+        c.anchor = GridBagConstraints.WEST;
+        getContentPane().add(someLabel, c);
+
+        // Add resource field
+        mResourceField = new JTextField(15);
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = gridY;
+        c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
+        getContentPane().add(mResourceField, c);
         gridY++;
 
         // Add password label
