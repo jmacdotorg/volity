@@ -17,6 +17,7 @@ my $build = Module::Build->new
 	       'Time::HiRes'=>undef,
 	       'JavaScript::SpiderMonkey'=>undef,
 	       'Data::JavaScript::Anon'=>undef,
+	       'Date::Parse'=>undef,
 	       'YAML'=>undef,
 	       'Log::Log4perl'=>undef,
 	       'LWP'=>undef,
