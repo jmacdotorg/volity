@@ -63,9 +63,6 @@ use Carp qw(croak);
 # little at this.)
 sub initialize {
   my $self = shift;
-  $self->max_allowed_players(2);
-  $self->min_allowed_players(2);
-  $self->uri('http://volity.org/games/rps');
   $self->game_class("TestRPS::Game");
   $self->muc_host('conference.localhost');
 
@@ -96,11 +93,10 @@ use strict;
 
 use base qw(Volity::Game);
 
-our $player_class = "TestRPS::Player";
-
-sub player_class {
-  return $player_class;
-}
+__PACKAGE__->max_allowed_players(2);
+__PACKAGE__->min_allowed_players(2);
+__PACKAGE__->uri('http://volity.org/games/rps');
+__PACKAGE__->player_class('TestRPS::Player');
 
 sub handle_normal_message {
   my $self = shift;
@@ -133,26 +129,26 @@ sub handle_chat_message {
   }
   if (substr("rock", 0, length($body)) eq lc($body)) {
     warn "ROCK";
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"Good old rock! Nothing beats rock.",
 			       });
     $player->hand_type('rock');
     
   } elsif (substr("paper", 0, length($body)) eq lc($body)) {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"Paper it is.",
 			       });
     $player->hand_type('paper');
   } elsif (substr("scissors", 0, length($body)) eq lc($body)) {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"You chose scissors.",
 			       });
     $player->hand_type('scissors');
   } else {
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"No idea what you just said. Please choose one of 'rock', 'paper' or 'scissors'.",
 			       });
@@ -189,7 +185,7 @@ sub handle_chat_message {
       $victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
       $self->winners($players[0]);
     }
-    $self->server->send_message({
+    $self->referee->send_message({
 				 to=>$self->muc_jid,
 				 body=>$victory_message,
 			       });
