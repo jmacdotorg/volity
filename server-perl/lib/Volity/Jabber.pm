@@ -1122,7 +1122,7 @@ sub update_roster {
 }
 
 
-sub request_disco {
+sub request_disco_items {
   my $self = shift;
   my ($info) = @_;
   my $iq = POE::Filter::XML::Node->new('iq');
@@ -1136,6 +1136,24 @@ sub request_disco {
   $iq->attr(to=>$$info{to});
   $iq->attr(id=>$$info{id}) if defined($$info{id});
   my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#items"]);
+  $query->attr(node=>$$info{node}) if defined($$info{node});
+  $self->post_node($iq);
+}
+
+sub request_disco_info {
+  my $self = shift;
+  my ($info) = @_;
+  my $iq = POE::Filter::XML::Node->new('iq');
+  $iq->attr(type=>'get');
+  if (not($info) or not(ref($info) eq 'HASH')) {
+    croak("You must call request_disco with a hashref argument.");
+  }
+  unless ($$info{to}) {
+    croak("The hash argument to request_disco() must contain at least a 'to' key, with a JID value.");
+  }
+  $iq->attr(to=>$$info{to});
+  $iq->attr(id=>$$info{id}) if defined($$info{id});
+  my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#info"]);
   $query->attr(node=>$$info{node}) if defined($$info{node});
   $self->post_node($iq);
 }
@@ -1169,7 +1187,7 @@ sub receive_disco {
       if ($child->name eq 'x') {
 	  for my $field ($child->get_tag('field')) {
 	      bless ($field, "Volity::Jabber::Form::Field");
-	      $fields{$field->var} = $field->values;
+	      $fields{$field->var} = [$field->values];
 	  }
       } else {
 	  my $class = "Volity::Jabber::Disco::" . ucfirst($child->name);
