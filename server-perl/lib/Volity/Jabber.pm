@@ -168,6 +168,10 @@ module handles different langauges.)
 
 After connection, this will return the connection's JID.
 
+=item basic_jid (read-only)
+
+Like C<jid>, except it returns the non-resource part of the JID. (e.g. C<foo@bar.com> versus C<foo@bar.com/bazzle>.)
+
 =item debug
 
 Set this to a true value to display verbose debugging messages on STDERR.
@@ -329,6 +333,10 @@ sub jabber_iq {
   } elsif ($node->attr('type') eq 'set') {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
+      print "Got Apparent RPC XML: $raw_xml\n";
+      my @kids = @{$query->get_children};
+      print "Got " . scalar(@kids) . " kids.\n";
+      print "I like cheeze. Also: " . $kids[0]->get_id . "\n";
       my $rpc_obj = $self->rpc_parser->parse($raw_xml);
       print "Finally, got $rpc_obj.\n";
       my $method = $rpc_obj->name;
@@ -463,23 +471,51 @@ The ID of this request. (The RPC result will have the same ID.)
 
 The name of the remote method to call.
 
+=item args
+
+The method's arguments, as a list reference. If there's only one
+argument, and it's not itself an array reference, you can optinally
+pass it in by itself. If there are no arguments, you can pass C<undef>
+or just skip this key.
+
+Each argument must be either a simple scalar, a hashref, or an
+arrayref. In the latter cases, the argument will turn into an RPC
+struct or array, respectively. All the datatyping magic is handled by
+the RPC::XML module (q.v.).
+
 =back
 
 =cut
 
 sub make_rpc_request {
   my $self = shift;
+  print "in make_rpc_request\n";
   my ($args) = @_;
   my $iq = PXR::Node->new('iq');
   foreach (qw(to id)) {
     $iq->attr($_, $$args{$_});
   }
   $iq->attr(type=>'set');
+  my @args;
+  if (defined($$args{args})) {
+    if (ref($$args{args}) and ref($$args{args}) eq 'ARRAY') {
+      @args = @{$$args{args}};
+    } else {
+      @args = ($$args{args});
+    }
+  } else {
+    @args = ();
+  }
+  
+  my $request = RPC::XML::request->new($$args{methodname}, @args);
+  # I don't like this so much, sliding in the request as raw data.
+  # But then, I can't see why it would break.
+  my $request_xml = $request->as_string;
+  # The susbtr() chops off the XML prolog. I know, I know.
+  $request_xml = substr($request_xml, 22);
   $iq->insert_tag('query', 'jabber:iq:rpc')->
-    insert_tag('methodCall')->insert_tag('methodName')->
-      data($$args{methodname});
+    rawdata($request_xml);
   $self->kernel->post($self->alias, 'output_handler', $iq);
-  print "*** exiting RPCCall. ***\n";
 }
 
 =head2 send_rpc_response ($receiver_jid, $response_id, $response_value)
@@ -540,10 +576,6 @@ I<Optional> The message's body. Can be either a string, or a hashref of the sort
 =back
 
 =cut
-
-# XXXXXXXXXX
-# Fix the docs above to reflect changes in subject & body
-# (and add stuff about thread and from)
 
 sub send_message {
   my $self = shift;
@@ -705,6 +737,21 @@ Post the given XML node object to the POE kernel, which will then send it off to
 
 This is the method that is ultimately called by all the other action methods. You can use it too, if you find yourself knitting up raw nodes for some reason.
 
+=cut
+
+###########################
+# Special accessors
+###########################
+
+# basic_jid: Return the non-resource part of my JID.
+sub basic_jid {
+  my $self = shift;
+  if (defined($self->jid) and $self->jid =~ /^(.*)\//) {
+    return $1;
+  }
+  return undef;
+}
+
 =head1 NOTES
 
 This class was originally written with the Volity internet game system
@@ -719,6 +766,10 @@ for a long time.
 =item *
 
 Jabber Protocol information: http://www.jabber.org/protocol/
+
+=item *
+
+L<RPC::XML>
 
 =back
 
