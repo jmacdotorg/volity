@@ -27,6 +27,17 @@ http://www.volity.org
 Volity at SourceForge:
 http://volity.sf.net
 
+--- PREREQUISITES ---
+
+Frivolity requires several Perl modules to work; the Build script
+checks for their presence on your system.
+
+All are available from CPAN, except one: version 0.3.x of
+POE::Component::Jabber. As of this writing (January 2004), its CPAN
+version, 0.2.x, is not compatible with Frivolity. You will have to
+download the more recent version from Jabber
+Studio. http://www.jabberstudio.org/projects/pcj/project/view.php
+
 --- INSTALLATION ---
 
 This package uses the Module::Build installation style. You should be
