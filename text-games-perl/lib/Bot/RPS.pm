@@ -24,6 +24,11 @@ sub take_turn {
 		       to=>$self->referee->jid,
 		       body=>$hand,
 		     });
+  $self->send_message({
+		       type=>'groupchat',
+		       to=>$self->muc_jid,
+		       body=>"I have made my move.",
+		      });
 }
 
 sub handle_groupchat_message {
