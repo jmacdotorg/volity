@@ -51,11 +51,17 @@ use POE qw(
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
-  my $method = "_rpc_" . $$rpc_info{method};
-  if ($self->can($method)) {
-    $self->$method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+  # Make sure that the namespace is correct...
+  if ($$rpc_info{method} =~ /^volity\.(.*)$/) {
+    my $method = $1;
+    $method = "_rpc_" . $method;
+    if ($self->can($method)) {
+      $self->$method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+    } else {
+      warn "I received a $$rpc_info{method} RPC request from $$rpc_info{from}, but I don't know what to do about it.\n";
+    }
   } else {
-    warn "I received a $$rpc_info{method} RPC request from $$rpc_info{from}, but I don't know what to do about it.\n";
+    warn "Received a $$rpc_info{method} RPC request; it's not in the volity namespace, so I'm ignoring it.";
   }
 }
 
