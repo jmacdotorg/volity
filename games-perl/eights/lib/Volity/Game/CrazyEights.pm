@@ -102,7 +102,6 @@ sub start_game {
 
 sub rpc_play_card {
   my $self = shift;
-  warn "In rpc_play_card.\n";
   my ($player, $card_name) = @_;
   unless ($player eq $self->current_player) {
     return(fault=>901, "It's not your turn!");
@@ -198,6 +197,29 @@ sub rpc_draw_card {
   map($_->call_ui_function(player_drew_card=>$player->nick), grep($_ ne $player, $self->players));
 }
 
+# get_full_state: The requesting player gets a reminder of its own cards,
+# and also is told about the card counts for all opponents.
+sub rpc_get_full_state {
+    my $self = shift;
+    my ($player) = @_;
+    # Send the player its hand.
+    my @card_names = map($_->name . $_->suit, @{$player->hand->cards});
+    $player->call_ui_function(receive_hand=>\@card_names);
+    # Now send it everyone's card counts.
+    # The order of sent players matches the play order, conveniently.
+    for my $opponent ($self->players) {
+	my $card_count = @{$player->hand->cards};
+	$self->logger->debug("I will now tell $player about $opponent, who has $card_count cards.");
+#	next if $player eq $opponent;
+	$self->logger->debug("yes, ok.");
+	$player->call_ui_function(set_player_hand_size=>$opponent->nick, $card_count);
+	$self->logger->debug("Done telling the player about its opponent.");
+    }
+    # Send whose turn it is.
+    $player->call_ui_function("set_current_player", $self->current_player->nick);
+    return 1;
+}
+
 ################
 # Internal Methods
 ################
@@ -208,8 +230,12 @@ sub deal_cards {
   my $hand_size = scalar($self->players) == 2? 7: 5;
   for my $player ($self->players) {
     $self->deck->give_cards($player->hand, $hand_size);
-    my @cardz = map($_->name . $_->suit, @{$player->hand->cards});
-    $player->call_ui_function(receive_hand=>\@cardz);
+#    my @cardz = map($_->name . $_->suit, @{$player->hand->cards});
+#    $player->call_ui_function(receive_hand=>\@cardz);
+  }
+  # Tell everyone what just happened.
+  for my $player ($self->players) {
+      $self->rpc_get_full_state($player);
   }
 }
 
