@@ -348,7 +348,7 @@ sub sign {
 
   my $out_filename = "/tmp/volity_signature_$$";
 
-  my $gpg_command = sprintf("%s --default-key %s -sba --passphrase-fd 0 --yes --output $out_filename $filename", $gpg_bin, $gpg_secretkey);
+  my $gpg_command = sprintf("%s --no-tty --default-key %s -sba --passphrase-fd 0 --yes --output $out_filename $filename", $gpg_bin, $gpg_secretkey);
   open (GPG, "|$gpg_command") or die "Can't open a pipe into the gpg command: $!\nCommand was: $gpg_command";
   print GPG $gpg_passphrase . "\n";
   close (GPG) or die "Couldn't close gpg command pipe: $!";
@@ -474,7 +474,8 @@ sub set {
 sub massage_jid {
   my $self = shift;
   my ($jid) = @_;
-  if ($jid =~ /^(\w+@\w+[\.\w]+)(\/\w+)?/) {
+#  if ($jid =~ /^(\w+@\w+[\.\w]+)(\/\w+)?/) {
+  if ($jid =~ /^[\w-]+@[\w-]+(?:\.[\w-]+)*(?:\/[\w-]+)?/) {
     my ($main_jid, $resource) = ($1, $2);
     return $main_jid;
   } else {
