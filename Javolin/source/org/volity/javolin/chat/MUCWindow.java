@@ -19,6 +19,7 @@ package org.volity.javolin.chat;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.text.*;
 import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
@@ -47,6 +48,8 @@ public class MUCWindow extends JFrame implements PacketListener
 
     protected UserColorMap mUserColorMap;
     protected SizeAndPositionSaver mSizePosSaver;
+
+    protected SimpleDateFormat mTimeStampFormat;
     protected MUC mMucObject;
 
     /**
@@ -57,10 +60,12 @@ public class MUCWindow extends JFrame implements PacketListener
     public MUCWindow(MUC aMUC)
     {
         super(JavolinApp.getAppName() + ": " + aMUC.getRoom());
-        
+
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(aMUC.getNickname()); // Give user first color
-        
+
+        mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
+
         buildUI();
 
         setSize(500, 400);
@@ -239,13 +244,18 @@ public class MUCWindow extends JFrame implements PacketListener
      */
     protected void writeMessageText(String nickname, String message)
     {
+        // Append time stamp
+        Date now = new Date();
+        mMessageText.append("[" + mTimeStampFormat.format(now) + "] ", Color.BLACK);
+
+        // Append received message
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
-        
+
         String nickText = hasNick ? nickname + ":" : "***";
 
         Color nameColor =
             hasNick ? mUserColorMap.getUserNameColor(nickname) : Color.BLACK;
-        Color textColor = 
+        Color textColor =
             hasNick ? mUserColorMap.getUserTextColor(nickname) : Color.BLACK;
 
         mMessageText.append(nickText + " ", nameColor);
