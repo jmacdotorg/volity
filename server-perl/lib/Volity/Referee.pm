@@ -601,6 +601,7 @@ sub create_bot {
   return $bot_class->new(
 			    {
 			     password=>$self->password,
+#			     password=>'foo',
 			     resource=>$resource,
 			     alias=>$resource,
 			     debug=>$self->debug,
@@ -639,7 +640,17 @@ sub end_game {
   foreach my $player_list (qw(players winners quitters)) {
     my @players = $game->$player_list;
     if (@players and defined($players[0])) {
-      $record->$player_list(map($_->basic_jid, @players));
+      my @player_jids;
+      for my $player (@players) {
+	if (ref($player) eq 'ARRAY') {
+	  push (@player_jids, [map($_->basic_jid, @$player)]);
+	} else {
+	  push (@player_jids, $player->basic_jid);
+	}
+      }
+#      $record->$player_list(map($_->basic_jid, @players));
+      # This is hacky... swerving around the accessor like this. OH WELL.
+      $record->{$player_list} = \@player_jids;
     }
   }
 

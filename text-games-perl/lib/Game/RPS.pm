@@ -89,15 +89,16 @@ sub handle_chat_message {
     my $victory_message;
     if ($players[0]->hand_type eq $players[-1]->hand_type) {
       $victory_message = sprintf("A tie! Both players chose %s.", $players[0]->hand_type);
+      $self->winners([[@players]]);
     } elsif ($players[0]->hand_type eq 'rock') {
       $victory_message = sprintf("%s(rock) crushes %s(scissors)!", $players[0]->nick, $players[1]->nick);
-      $self->winners($players[0]);
+      $self->winners($players[0], $players[1]);
     } elsif ($players[0]->hand_type eq 'scissors') {
       $victory_message = sprintf("%s(scissors) shreds %s(paper)!", $players[0]->nick, $players[1]->nick);
-      $self->winners($players[0]);
+      $self->winners($players[0], $players[1]);
     } else {
       $victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
-      $self->winners($players[0]);
+      $self->winners($players[0], $players[1]);
     }
     $self->referee->groupchat($victory_message);
     $self->end_game;

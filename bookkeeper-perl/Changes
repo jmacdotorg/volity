@@ -5,5 +5,7 @@
 
 	- Added several new Volity::Info subclass modules.
 
-	- Removed dependency on DBIx::Abstract.
-	
+	- Obviated the need to pass in a database handle.
+
+	- Added code to store game records in the DB, since they no longer
+	have the ability to store themselves.

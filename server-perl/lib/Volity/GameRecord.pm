@@ -165,6 +165,10 @@ Returns a string holding the game record as an XML document.
 
 =cut
 
+=begin OLD
+
+I think this sub is obsolete and deserves deletion....
+
 sub render_as_xml {
   my $self = shift;
   my $xml_string = IO::Scalar->new;
@@ -184,8 +188,18 @@ sub render_as_xml {
   # Winners!
   if ($self->winners) {
     $w->startTag('winners');
-    foreach my $player ($self->winners) {
-      $w->dataElement('player', $player);
+    foreach my $place ($self->winners) {
+      # Each member of this this array could be a JID (if a scalar),
+      # or a list of tied JIDs for this place (if an array ref).
+      $w->startTag('place');
+      my @players;
+      @players = ref($place)?
+        @$place :
+        ($place);
+      for my $player (@players) {
+	$w->dataElement('player', $player);
+      }
+      $w->endTag;
     }
     $w->endTag;
   }
@@ -209,6 +223,10 @@ sub render_as_xml {
   }
   return "$xml_string";
 }
+
+=end OLD
+
+=cut
 
 ########################
 # Special Accessors
@@ -236,15 +254,13 @@ sub game_uri {
   return $self->game_uri_object->as_string if defined($self->game_uri_object);
 }
 
-
-
 ##############################
 # Security methods
 ##############################
 
 # These methods all deal with the attached signature somehow.
 
-=begin unimplemented
+=Begin unimplemented
 
 =item confirm_record_owner
 
@@ -472,7 +488,7 @@ sub new_from_hashref {
   my $class = shift;
   my ($hashref) = @_;
   my $self = Volity::GameRecord->new;
-  foreach (qw(id players winners quitters start_time end_time game_uri server signature)) {
+  foreach (qw(id players quitters winners start_time end_time game_uri server signature)) {
     if (defined($$hashref{$_}) and ref($$hashref{$_}) eq 'ARRAY') {
       $self->$_(@{$$hashref{$_}});
     } elsif (defined($$hashref{$_})) {
