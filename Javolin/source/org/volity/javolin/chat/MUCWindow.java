@@ -32,7 +32,7 @@ import org.volity.javolin.*;
 /**
  * A window for participating in a MUC.
  */
-public class MUCWindow extends JFrame implements PacketListener, ChangeListener
+public class MUCWindow extends JFrame implements PacketListener
 {
     private final static String NODENAME = "MUCWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -40,15 +40,13 @@ public class MUCWindow extends JFrame implements PacketListener, ChangeListener
 
     protected JSplitPane mChatSplitter;
     protected JSplitPane mUserListSplitter;
-    protected JTextArea mMessageText;
-    protected JScrollPane mMessageScroller;
+    protected LogTextPanel mMessageText;
     protected JTextArea mInputText;
     protected JTextArea mUserListText;
     protected AbstractAction mSendMessageAction;
 
     protected SizeAndPositionSaver mSizePosSaver;
     protected MUC mMucObject;
-    protected boolean mShouldScroll;
 
     /**
      * Constructor.
@@ -240,32 +238,7 @@ public class MUCWindow extends JFrame implements PacketListener, ChangeListener
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
         String nickText = hasNick ? nickname + ":" : "***";
 
-        // Scroll to the bottom of the message area unless the user is dragging the
-        // scroll thumb
-        if (!mMessageScroller.getVerticalScrollBar().getValueIsAdjusting())
-        {
-            mShouldScroll = true;
-        }
-
         mMessageText.append(nickText + " " + message + "\n");
-    }
-
-    /**
-     * ChangeListener interface method implementation.
-     *
-     * @param e  The ChangeEvent that was received.
-     */
-    public void stateChanged(ChangeEvent e)
-    {
-        // Test for flag. Otherwise, if we scroll unconditionally, the scroll bar will be
-        // stuck at the bottom even when the user tries to drag it. So we only scroll
-        // when we know we've added text.
-        if (mShouldScroll)
-        {
-            JScrollBar vertBar = mMessageScroller.getVerticalScrollBar();
-            vertBar.setValue(vertBar.getMaximum());
-            mShouldScroll = false;
-        }
     }
 
     /**
@@ -281,14 +254,8 @@ public class MUCWindow extends JFrame implements PacketListener, ChangeListener
         mChatSplitter.setResizeWeight(1);
         mChatSplitter.setBorder(BorderFactory.createEmptyBorder());
 
-        mMessageText = new JTextArea();
-        mMessageText.setEditable(false);
-        mMessageText.setLineWrap(true);
-        mMessageText.setWrapStyleWord(true);
-
-        mMessageScroller = new JScrollPane(mMessageText);
-        mMessageScroller.getVerticalScrollBar().getModel().addChangeListener(this);
-        mChatSplitter.setTopComponent(mMessageScroller);
+        mMessageText = new LogTextPanel();
+        mChatSplitter.setTopComponent(mMessageText);
 
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);
