@@ -6,7 +6,7 @@ package Volity::Bot;
 use warnings;
 use strict;
 use base qw(Volity::Jabber Class::Data::Inheritable);
-use fields qw(muc_jid referee referee_jid opponents);
+use fields qw(muc_jid referee referee_jid opponents name_modifier nickname);
 # Why separate referee and referee_jid fields?
 # Because the 'referee' field is to hold a Volity::Referee object, if one
 # is available (i.e. this is being used as a Retainer-bot).
@@ -38,6 +38,7 @@ sub new {
   warn("Bot constructor about to be called.");
   my $self = $class->SUPER::new($config);
   warn("Bot constructor called.");
+  $self->name_modifier('');
   return $self;
 }
 
@@ -49,7 +50,7 @@ sub init_finish {
     # XXX This doesn't handle the case for when the bot fails to join, due
     # to someone using its nickname already present in the MUC.
     # I'll need to add an error handler for when this happens.
-    $self->join_muc({jid=>$self->muc_jid, nick=>$self->name});
+    $self->join_table;
 }
 
 # This presence handler detects a table's referee through MUC attributes.
@@ -63,9 +64,19 @@ sub jabber_presence {
     # Ruh roh. Just print an error message.
     my $error = $node->get_tag('error');
     my $code = $error->attr('code');
-    $self->terminal->put("Got an error ($code):");
+    $self->logger->debug("Got an error ($code):");
     my $message = $error->data || "Something went wrong.";
-    $self->terminal->put($message);
+    $self->logger->debug($message);
+    if ($code == 409) {
+	# Aha, we have failed to join the conf.
+	# Change our name and try again.
+	if ($self->name_modifier) {
+	    $self->name_modifier($self->name_modifier + 1);
+	} else {
+	    $self->name_modifier(1);
+	}
+	$self->join_table;
+    }
     return;
   }
   if (($node->get_tag('x')) and (($x) = grep($_->attr('xmlns') eq "http://jabber.org/protocol/muc#user", $node->get_tag('x')))) {
@@ -89,6 +100,16 @@ sub jabber_presence {
   }
 }
 
+sub join_table {
+    my $self = shift;
+    # Attempt to join the MUC with our best idea of a nickname.
+    # If this fails, the error handler will increment the nick-
+    # modifier.
+    my $nick = $self->name . $self->name_modifier;
+    $self->join_muc({jid=>$self->muc_jid, nick=>$nick});
+    $self->nickname($nick);
+}
+
 # add_opponent_nickname: Add the given nickname (either a full JID in MUC
 # format, or a bare string containing only the nickname) to our internal
 # list of known opponents at the current table.
@@ -96,7 +117,7 @@ sub add_opponent_nickname {
   my $self = shift;
   my ($name) = @_;
   my $nickname;
-  if (main::is_jid($name)) {
+  if (is_jid($name)) {
     ($nickname) = $name =~ /\/(.*)$/;
     unless ($nickname) {
       die "GACK. I couldn't tease a nickname out of the jid $name.";
@@ -104,7 +125,7 @@ sub add_opponent_nickname {
   } else {
     $nickname = $name;
   }
-  my $my_nickname = $self->name;
+  my $my_nickname = $self->nickname;
   unless ($my_nickname eq $nickname) {
     $self->{opponents}{$nickname} = 1;
   }
@@ -114,7 +135,7 @@ sub remove_opponent_nickname {
   my $self = shift;
   my ($name) = @_;
   my $nickname;
-  if (main::is_jid($name)) {
+  if (is_jid($name)) {
     ($nickname) = $name =~ /\/(.*)$/;
     unless ($nickname) {
       die "GACK. I couldn't tease a nickname out of the jid $name.";
@@ -134,6 +155,16 @@ sub clear_opponent_nicknames {
   my $self = shift;
   $self->{opponents} = {};
 }
+
+sub is_jid {
+  my ($jid) = @_;
+  if ($jid =~ /^[\w-]+@[\w-]+(?:\.[\w-]+)*(?:\/[\w-]+)?/) {
+    return $jid;
+  } else {
+    return;
+  }
+}
+
 
 1;
 
