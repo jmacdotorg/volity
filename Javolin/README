@@ -4,6 +4,9 @@ This is Javolin, a Volity client written in Java.
 
 See ReadMe_Build for information on building this application.
 
+Javolin is licensed under the Apache License Version 2.0. See 
+LICENSE-2.0.txt for details.
+
 --- WHAT IS VOLITY? ---
 
 Volity is a platform-independent system for playing, creating, and
