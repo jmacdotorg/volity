@@ -20,7 +20,7 @@ package Volity::Server;
 
 =head1 NAME
 
-Volity::Server - A Volity game server!
+Volity::Server - A Volity game server.
 
 =head1 SYNOPSIS
 
@@ -53,6 +53,12 @@ suggests, it's more or less a black-box application class. Construct
 the object with a configuratory hash reference, call the C<start>
 method, and you'd got a running server, unless you don't.
 
+See the C<volityd>. In fact, unless you are creating your own
+Perl-based Volity server front end, you can probably do everything you
+need through C<volityd>, with no need to use this module directly. The
+rest of this documentation is intended for programmers who wish to
+create and use Volity servers in their own Perl projects.
+
 =cut
 
 use warnings;
@@ -61,23 +67,11 @@ use strict;
 =head1 CONFIGURATION
 
 When constructing the object, you can use all the keys described in
-L<Volity::Jabber/"Accessors">, for this class inherits from that one, you see. You can also use any of the following keys:
+L<Volity::Jabber/"Accessors">, for this class inherits from that one,
+you see. You can also use any of the following keys, which also
+function as simple accessor methods after the object is created:
 
 =over
-
-=begin old
-
-=item referee_class
-
-The Perl class of the referee this server will use. When a new game
-starts, the server will call tshi constructor of this class, and then
-hurl the resulting referee object into its own MUC, ready for action!
-
-This value defaults to C<Volity::Referee>. If you set it to something
-else, it shoudl probably be a subclass of that. See L<Volity::Referee>
-for more information.
-
-=end old
 
 =item game_class
 
@@ -90,6 +84,23 @@ and L<Volity::Game>.
 The JID of the bookkeeper this server will use for fetching game
 records and such. Defaults to "bookkeeper@volity.net", which is
 probably exactly what you want.
+
+=item contact_email
+
+The email address of the person responsible for this server.
+
+=item contact_jid
+
+The Jabber ID of the person responsible for this server.
+
+=item bot_classes
+
+A list of the bot classes that this server's referees can use. See
+L<Volity::Bot>.
+
+=item volity_version
+
+The version number of the Volity protocol that this server supports.
 
 =back
 
@@ -356,12 +367,26 @@ sub handle_disco_items_request {
 
 1;
 
+=head1 NOTES
+
+=head2 Automatic roster acceptance
+
+When an object of this class receives an XMPP request, it will
+automatically and immediately . If you don't like this behavior,
+consider creating a subclass that overrides the C<jabber_presence>
+method. (That said, I can't think of a reason you'd want to have such an
+antisocial game server...)
+
+=head1 SEE ALSO
+
+L<Volity>
+
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Jason McIntosh.
+Copyright (c) 2003-2004 by Jason McIntosh.
 
 =cut

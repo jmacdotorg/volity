@@ -92,8 +92,9 @@ Frivolity - A Perl implementation of the Volity game system
 
 All the modules under the Volity namespace implement I<Frivolity>, an
 implementation of the Volity Internet game system. The C<Volity>
-module I<per se> holds only this manpage; other modules implement
-other system components, thus:
+module I<per se> holds only a few utility methods (see
+L<"METHODS">). More interesting are its subclasses, which implement
+other key system components, thus:
 
 =over
 
@@ -147,30 +148,60 @@ Volity modules (as they all happen to inherit from C<Volity::Jabber>).
 =head2 Creating new Volity games
 
 Perl hackers who wish to write Volity game modules can easily do so by
-creating an object class that inherits from C<Volity::Game>. Once
-that's done, you can then actually make it available to the world
-through C<Volity::Server>.
+creating an object class that inherits from C<Volity::Game>, and
+optionally an automated opponent through a C<Volity::Bot>
+subclass.
+
+Detailed information about creating new Volity games with these
+modules can be found in the Volity Developer's Guide, at
+<http://www.volity.org/docs/devguide_perl/>.
 
 =head2 Hosting Volity games
 
 As with any Volity implementation, you don't need to host any Internet
 services of your own to host a game module; you simply need a valid
-login to a Jabber server somewhere. With Frivolity, you pass this
-login information to the C<<Volity::Server->new()>> method, and it
-takes care of everything from there!
+login to a Jabber server somewhere. Frivolity includes a Perl program,
+C<volityd>, that creates a Volity server for you, using a
+C<Volity::Game> subclass that you provide it. See L<volityd(3)> for more
+information.
+
+=head1 METHODS
+
+First of all, see L<Class::Accessor>, from which this module inherits.
+
+In addition, the following object methods are, available to instances
+of all the classes listed in L<"DESCRIPTION">.
+
+=over
+
+=item logger
+
+Returns the object's attached Log::Log4perl object, whcih is
+automatically created and initialized as needed. This lets Volity
+subclasses easily add prioritized log and debug output to their
+code. See L<Log::Log4perl> for documentation on this object's use.
+
+=item expire ($message)
+
+A convenience method which calls the logger object's C<fatal> method
+using the given C<$message>, and then calls C<Carp:croak()> with the same
+message.
+
+=back
 
 =head1 SEE ALSO
 
 For more information about Volity from a hacker's point of view, see
-the Volity hacker site at http://www.volity.org.
+the Volity developers' website at http://www.volity.org.
 
 =head1 AUTHOR
 
-Jason McIntosh <jmac@jmac.org>
+Jason McIntosh <jmac@jmac.org> 
+Jabber ID: jmac@volity.net
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Jason McIntosh.
+Copyright (c) 2003-2004 by Jason McIntosh.
 
 =cut
 
