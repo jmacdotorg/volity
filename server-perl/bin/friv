@@ -1,0 +1,637 @@
+#!/usr/local/bin/perl
+
+=begin TODO
+
+* Fix history browsing so that the cursor snaps back to the end when ya done.
+
+=end TODO
+
+=cut
+
+use warnings;
+use strict;
+
+use POE;
+use POE::Wheel::ReadLine;
+use Getopt::Std;
+use YAML;
+
+my %opts;
+getopts('u:h:p:r:o:d:', \%opts);
+
+foreach (qw(user host password)) {
+  unless (defined($opts{substr($_,0,1)})) {
+#    die "You must define a $_, with the " . substr($_,0,1) . " flag.\n";
+    my $answer;
+    until (defined($answer) and $answer ne '') {
+      print "$_: ";
+      $answer = <STDIN>;
+      chomp($answer);
+    }
+    $opts{substr($_,0,1)} = $answer;
+  }
+}
+
+################
+# GLOBALS
+################
+our @cmd_hist = eval { @{ YAML::LoadFile("client.yaml") } };
+my $next_rpc_request_id = 0;
+my $last_message_recipient;
+
+POE::Session->create(
+		     inline_states => {
+				       _start => \&start,
+				       user_input => \&user_input,
+				      }
+		    );
+
+POE::Kernel->run;
+
+sub start {
+    my($session,$heap) = @_[SESSION,HEAP];
+    print "started...\n";
+    $heap->{'user'} = POE::Wheel::ReadLine->new(
+        InputEvent => 'user_input',
+        PutMode => 'immediate',
+        );
+   foreach (@cmd_hist) {
+       $heap->{'user'}->addhistory($_);
+   }
+   $heap->{'user'}->get( 'Volity> ' );
+   $heap->{'user'}->put("Connection successful. Weclome to Volity.");
+    $heap->{username} = $opts{u};
+    $heap->{resource} = $opts{r} || 'friv';
+    $heap->{port} = $opts{o} || 5222;
+    $heap->{host} = $opts{h};
+    my $user = Volity::User->new(
+				 {
+				  host=>$heap->{host},
+				  password=>$opts{p},
+				  resource=>$heap->{resource},
+				  port=>$heap->{port},
+				  alias=>$heap->{resource},
+				  debug=>$opts{d} || 0,
+				  user=>$heap->{username},
+				 }
+				);
+    $heap->{user_obj} = $user;
+    $user->terminal($heap->{user});
+    $user->kernel->run;
+}
+
+sub is_jid {
+  my ($jid) = @_;
+  if ($jid =~ /^\w+@\w+(?:\.\w+)*(?:\/\w+)?/) {
+    return $jid;
+  } else {
+    return;
+  }
+}
+
+sub check_jid {
+  my ($pipe, $jid) = @_;
+  if (is_jid($jid)) {
+    return $jid;
+  } else {
+    $pipe->put("The string '$jid' doesn't look like a JabberID to me!");
+    $pipe->put("Command ignored.");
+    return;
+  }
+}
+
+END {
+    YAML::DumpFile("client.yaml",\@cmd_hist);
+}
+
+######################
+# Input hanlding
+######################
+
+sub user_input {
+    my($heap,$input,$exception) = @_[HEAP, ARG0, ARG1];
+    if (defined $input) {
+        $heap->{'user'}->get('Volity> ');
+        $heap->{'user'}->addhistory($input);
+        push(@cmd_hist,$input);
+        my($cmd,@args) = tokenize($input,{});
+        if (defined($cmd) and my $sub = __PACKAGE__->can("cmd_$cmd")) {
+            &$sub(@_[0..(ARG0-1)],@args);
+        } elsif (not(defined($cmd)) or $cmd eq '') {
+            # Do nothing.
+        } else {
+            $heap->{'user'}->put("Unknown command: $input");
+        }
+    } else {
+        $heap->{'user'}->put("Exception: $exception");
+        exit;
+    }
+}
+
+sub tokenize {
+    my($str,$vars) = @_;
+    my @tokens;
+    my $tok_count = 0;
+    my $last = 0;
+    while ($str =~ /\G(?:"([^"]+)(?<!\\)"|'([^']+)(?<!\\)'|((?:[^\s"']|(?<=\\)'|(?<=\\)"|(?<=\\)\s)+)|((?:(?<!\\)\s)+))/g) {
+        $last = pos($str);
+        my($dq,$sq,$nq,$sp) = ($1,$2,$3,$4);
+        my $val = $dq||$sq||$nq||$sp;
+        if ($dq or $nq) {
+            $val = expand($val,$vars);
+        } else {
+            $val = unescape($val);
+        }
+        if ($sp) {
+            $tok_count ++ if $#tokens == $tok_count;
+        } else {
+            $tokens[$tok_count] .= $val;
+        }
+    }
+    if ($last < length($str)) {
+        $tokens[$tok_count] .= substr($str,$last);
+    }
+    return @tokens;
+}
+
+sub unescape {
+    my($str) = @_;
+    $str =~ s/\\(.)/$1/g;
+    return $str;
+}
+
+sub expand {
+    my($str,$vars) = @_;
+    $str =~ s{
+            (?:
+            (?<!\\)\$(\w+) |
+            \\(.)
+            )
+        }{
+            if ($1) {
+                $$vars{$1};
+            } else {
+                $2
+            }
+        }gxe;
+    $str = unescape($str);
+    return $str;
+}
+
+###########################
+# User commands
+###########################
+
+sub cmd_info {
+    my($heap) = $_[HEAP];
+    my $jid = $heap->{'username'}.'@'.$heap->{'host'};
+    $jid .= ':'.$heap->{'port'} if $heap->{'port'} != 5222;
+    $jid .= "/".$heap->{'resource'};
+    no warnings qw(uninitialized);
+    $heap->{'user'}->put($_) for
+      "Status information:",
+      "  JID: ".$jid,
+      "  Nickname: ".$heap->{'nick'},
+      "  Game JID: ".$heap->{'game'},
+      "  Referree JID: ".$heap->{'ref'};
+}
+
+sub cmd_quit {
+    my($heap) = $_[HEAP];
+    $heap->{'user'}->put('Be seeing you.');
+    $heap->{user_obj}->send_presence({type=>'unavailable'});
+    exit;
+}
+
+sub cmd_nick {
+    my($heap,$nickname) = @_[HEAP,ARG0..$#_];
+    unless ($nickname) {
+        $heap->{'user'}->put("Form: nick <nickname>");
+        return;
+    }
+    $heap->{'nick'} = $nickname;
+    $heap->{user_obj}->nick($nickname);
+    $heap->{'user'}->put("Nickname set.");
+}
+
+sub cmd_debug {
+  my ($heap) = $_[HEAP];
+  my $user = $heap->{user_obj};
+  $heap->{user}->put("Current user object: $user");
+}
+
+sub cmd_help {
+    my($heap,$on) = @_[HEAP,ARG0..$#_];
+    $heap->{'user'}->put("$_") for
+        'Volity client commands:',
+        '  help',
+        '  nick',
+        '  info',
+        '  presence',
+        '  new_table',
+	'  add_bot',
+        '  join_game',
+        '  start_game',
+        '  msg',
+#        '  gmsg',
+	'  tmsg',
+        '  game',
+        '  ref',
+        '  quit';
+}
+
+sub cmd_new_table {
+  my ($heap, $server_jid) = @_[HEAP, ARG0];
+  my $user = $heap->{user_obj};
+  unless (defined($server_jid)) {
+    $heap->{user}->put("Usage: new_table [game-server-jid]");
+    return;
+  }
+  unless (is_jid($server_jid)) {
+    $heap->{user}->put("That doesn't look like a JID to me!");
+    return;
+  }
+  my $rpc_id = ++$next_rpc_request_id;
+  $user->table_response_id($rpc_id);
+  $user->make_rpc_request(
+			  {
+			   to=>$server_jid,
+			   id=>$rpc_id,
+			   methodname=>'new_table',
+			  }
+			 );
+}
+
+sub cmd_add_bot {
+  my $user = $_[HEAP]->{user_obj};
+  my $rpc_id = ++$next_rpc_request_id;
+  $user->bot_rpc_id($rpc_id);
+  $user->make_rpc_request(
+			  {
+			   to=>$user->referee_jid,
+			   id=>$rpc_id,
+			   methodname=>'add_bot',
+			  }
+			 );
+}
+
+sub cmd_join_table {
+  my $user = $_[HEAP]->{user_obj};
+  my $table_jid = $_[ARG0];
+  return unless check_jid($_[HEAP]->{user}, $table_jid);
+  $user->join_muc(
+		  {
+		   jid=>$table_jid,
+		   nick=>$user->{nick},
+		  }
+		 );
+  # Tell the user that it's now seated at a table.
+  $user->table_jid($table_jid);
+#  $user->referee_jid("$table_jid/volity");
+}
+
+sub cmd_tmsg {
+  my ($user, @message) = ($_[HEAP]->{user_obj}, @_[ARG0..$#_]);
+  my $message = join(' ', @message);
+  unless (defined($user->table_jid)) {
+    $user->print_message("Can't send a message to the table, since you're not at a table right now.");
+    return;
+  }
+  unless (defined($message)) {
+    $user->print_message("Beg your pardon? (Usage: tmsg [message-text])");
+    return;
+  }
+  $user->send_message(
+		      {
+		       type=>'groupchat',
+		       body=>$message,
+		       to=>$user->table_jid,
+		      }
+		     );
+}
+
+sub cmd_msg {
+  my ($user, $to, @message) = ($_[HEAP]->{user_obj}, $_[ARG0], @_[ARG1..$#_]);
+  my $message = join(' ', @message);
+  unless (defined($message)) {
+    $user->print_message("Beg your pardon? (Usage: msg [to-jid] [message-text])");
+    return;
+  }
+  return unless check_jid($user->terminal, $to);
+  $user->send_message(
+		      {
+		       type=>'normal',
+		       body=>$message,
+		       to=>$to,
+		      }
+		     );
+}
+
+sub cmd_start_game {
+  my $user = $_[HEAP]->{user_obj};
+  unless (defined($user->table_jid)) {
+    $user->print_message("Can't start a new game, because you're not seated at a table.");
+    return;
+  }
+  my $rpc_id = ++$next_rpc_request_id;
+  $user->start_game_id($rpc_id);
+  $user->make_rpc_request(
+			  {
+			   id=>$rpc_id,
+			   to=>$user->referee_jid,
+			   methodname=>'start_game',
+			  }
+			 );
+}
+
+sub cmd_rmsg {
+  my ($user, @message) = ($_[HEAP]->{user_obj}, @_[ARG0..$#_]);
+  my $message = join(' ', @message);
+  unless (defined($user->referee_jid)) {
+    $user->print_message("Can't send a message to the referee, since you're not at a table right now.");
+    return;
+  }
+  unless (defined($message)) {
+    $user->print_message("Beg your pardon? (Usage: rmsg [message-text])");
+    return;
+  }
+  $user->send_message(
+		      {
+		       type=>'normal',
+		       body=>$message,
+		       to=>$user->referee_jid,
+		      }
+		     );
+}
+
+sub cmd_roster {
+  my $user = $_[HEAP]->{user_obj};
+  my $roster = $user->roster;
+  my @jids = sort($roster->jids);
+  my @available_jids; my @unavailable_jids;
+  for my $jid (@jids) {
+    my @presence_list = $roster->presence($jid);
+    if (@presence_list and grep(((not(defined($$_{type}))) or ($$_{type} ne 'unavailable')), @presence_list)) {
+      push (@available_jids, $jid);
+    } else {
+      push (@unavailable_jids, $jid);
+    }
+  }
+  $user->print_message("----AVAILABLE----");
+  if (@available_jids) {
+    for my $jid (@available_jids) {
+#      $user->print_message($_);
+      for my $presence ($roster->presence($jid)) {
+	$user->print_message("$jid/$$presence{resource}");
+      }
+    }
+  } else {
+    $user->print_message("Nobody in your roster is online.");
+  }
+  if (@unavailable_jids) {
+    $user->print_message("----UNAVAILABLE----");
+    foreach (@unavailable_jids) {
+      $user->print_message($_);
+    }
+  }
+}
+
+package Volity::User;
+
+use warnings;
+use strict;
+
+use lib qw(/Users/jmac/Documents/migs/cvs/sf-server-perl/lib/);
+use base qw(Volity::Jabber);
+use fields qw(table_response_id bot_rpc_id nick terminal table_jid referee_jid start_game_id);
+use POE;
+
+sub jabber_authed {
+  my $self = $_[OBJECT];
+  $self->request_roster;
+}
+
+sub receive_roster {
+  my $self = shift;
+  $self->SUPER::receive_roster(@_);
+  # Having built our roster, we'll now announce our presence to the server.
+  $self->send_presence;
+}
+
+sub print_message {
+  my $self = shift;
+  my ($message) = @_;
+  $self->terminal->put($message);
+}
+
+sub handle_rpc_response {
+  my $self = shift;
+  my ($response_hash) = @_;
+  if ($$response_hash{id} eq $self->table_response_id) {
+    $self->join_muc(
+		    {
+		     jid=>$$response_hash{response},
+		     nick=>$self->nick || $self->user,
+		    }
+		   );
+    my $table_jid = $$response_hash{response};
+    $self->table_jid($table_jid);
+    my ($ref_resource) = $table_jid =~ /^(.*?)@/;
+    my $ref_jid = $$response_hash{from};
+#    # XXX This, I'm not sure about. Should the Ref's JID be $table_jid/volity
+#    # (which I'm using for now), or its real JID?
+#    $ref_jid =~ s/\/.*//;
+#    $ref_jid .= "/$ref_resource";
+#    $ref_jid = "$table_jid/volity";
+#    print "The ref jid looks like $ref_jid.\n";
+#    $self->referee_jid($ref_jid);
+    $self->print_message("New table made, and joined. (Table JID: $table_jid)");
+  } elsif ($$response_hash{id} eq $self->bot_rpc_id) {
+    $self->print_message("Response from the bot-add request was: $$response_hash{response}");
+  } elsif ($$response_hash{id} eq $self->start_game_id) {
+    $self->print_message("The game has begun. Good luck!");
+  } else {
+    $self->print_message("Received an RPC response with id $$response_hash{id}, but I don't know how to handle it.");
+  }
+}
+
+sub handle_rpc_transmission_error {
+  my $self = shift;
+  my ($iq, $code, $error_message) = @_;
+  my $full_message = "Failed to send an RPC packet. Error: $code";
+  if (defined($error_message)) {
+    $full_message .= " - $error_message";
+  }
+  $self->print_message($full_message);
+}
+
+sub handle_rpc_fault {
+  my $self = shift;
+  my ($fault_hash) = @_;
+  my $full_message = "Received an RPC fault response: ";
+  $full_message .= join(' - ', $$fault_hash{fault_code}, $$fault_hash{fault_string});
+  $self->print_message($full_message);
+}
+
+sub handle_normal_message {
+  my $self = shift;
+  my ($message) = @_;
+  $self->terminal->put("From: $$message{from}");
+  $self->terminal->put("$$message{body}");
+}
+
+sub handle_chat_message {
+  my $self = shift;
+  my ($message) = @_;
+  $self->terminal->put("From: $$message{from}");
+  $self->terminal->put("$$message{body}");
+}
+
+sub handle_groupchat_message {
+  my $self = shift;
+  my ($message) = @_;
+  my ($sender_nickname) = $$message{from} =~ /\/(.*)$/;
+  $sender_nickname ||= $$message{from};
+  $$message{body} ||= '';
+  $self->terminal->put("$sender_nickname: $$message{body}");
+}
+
+# This presence handler detects a table's referee through MUC attributes.
+# It also watches for general presence updates, and updates the user's
+# internal roster object as needed.
+sub jabber_presence {
+  my $self = shift;
+  my ($node) = @_;
+  if (my $x = $node->get_tag(x=>"http://jabber.org/protocol/muc#user")) {
+    # Aha, someone has joined the table.
+    my $new_person_jid = $x->get_tag('item')->attr('jid');
+    my $affiliation = $x->get_tag('item')->attr('affiliation');
+    if ($affiliation eq 'owner') {
+      # This is the table's ref.
+      $self->referee_jid($new_person_jid);
+    }
+  } elsif (defined($node->attr('from')) and 
+	   $self->roster->has_jid($node->attr('from'))) {
+    # Someone on our roster just changed their presence.
+    my $roster = $self->roster;
+    my $jid = $node->attr('from');
+    my $presence_hash = {type=>$node->attr('type')};
+    foreach (qw(show status priority)) {
+      $$presence_hash{$_} = $node->get_tag($_)->data if $node->get_tag($_);
+    }
+    $roster->presence($jid, $presence_hash);
+    my $prez = $roster->presence($jid);
+  }
+}
+
+=head1 NAME
+
+Friv - A simple text-only Volity client
+
+=head1 SYNOPSIS
+
+$ friv -u myusername -p mypassword -h volity.net
+
+=head1 DESCRIPTION
+
+This program provides a very simple text-based interface to the Volity
+network. It will let you play at any game server that provides a
+text-only UI, over Jabber messaging (as opposed to SVG).
+
+For more about Volity, visit http://volity.org
+
+=head1 RUNNING
+
+Friv takes the following flags on launch:
+
+=head2 Required flags
+
+These flags set information that Friv needs to authenticate you with a
+Volity (Jabber) server.
+
+If you don't supply these as command flags, the program will prompt
+you for them. (Supplying your password in this way offers more
+security than supplying it on the command line.)
+
+=over
+
+=item u
+
+The account's username.
+
+=item h
+
+The account's host. Examples: volity.net, jabber.org.
+
+=item p
+
+The account's password.
+
+=back
+
+=head2 Optional flags
+
+=over
+
+=item r
+
+The resource to use with the Jabber account. Defaults to 'friv'.
+
+=item o
+
+The TCP port to connect to. Defaults to 5222 (Jabber's default port).
+
+=item d
+
+Set to a true value to display verbose and perhaps largely meaningless debug messages. Defaults to 0.
+
+=back
+
+=head1 COMMANDS
+
+=over
+
+=item new_table C<JID>
+
+Attempt to create a new table at the specified JID. If successful, you
+will immediately join the new table.
+
+=item join_table C<JID>
+
+Attempt to join the table (or Jabber groupchat) at the specifed JID.
+
+=item add_bot
+
+Summon a bot to the current table. Only works if the referee offers a
+single bot type. (Friv currently lacks the form-support needed to
+choose new bots.)
+
+=item start_game
+
+Request that the referee at the current table start the game.
+
+=item msg C<JID> C<Message body>
+
+Send the given text (as a 'normal'-type Jabber message) to the specifed JID.
+
+=item tmsg C<Message body>
+
+Send the given text (as a 'groupchat'-type Jabber message) to the table.
+
+=item rmsg C<Message body>
+
+Send the given text to the table's referee.
+
+=item quit
+
+Quits the program (and logs you out of the system).
+
+=back
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org> (Jabber: jmac@volity.net)
+
+=head1 SEE ALSO 
+
+=cut
