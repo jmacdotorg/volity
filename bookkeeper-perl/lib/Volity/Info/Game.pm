@@ -24,20 +24,25 @@ use strict;
 use base qw(Volity::Info);
 
 Volity::Info::Game->table('game');
-Volity::Info::Game->columns(All=>qw(id start_time end_time server_jid signature uri));
-Volity::Info::Game->has_a(uri=>"Volity::Info::URI");
+Volity::Info::Game->columns(All=>qw(id start_time end_time server_jid signature ruleset_id));
+Volity::Info::Game->has_a(ruleset_id=>"Volity::Info::Ruleset");
 Volity::Info::Game->has_many(players=>["Volity::Info::GamePlayer" => 'player_jid'], 'game_id');
 Volity::Info::Game->has_many(winners=>["Volity::Info::GameWinner" => 'player_jid'], 'game_id');
 Volity::Info::Game->has_many(quitters=>["Volity::Info::GameQuitter" => 'player_jid'], 'game_id');
 
+sub uri {
+  my $self = shift;
+  return $self->uri_id->uri;
+}
+
 sub name {
   my $self = shift;
-  return $self->uri->name;
+  return $self->uri_id->name;
 }
 
 sub description {
   my $self = shift;
-  return $self->uri->description;
+  return $self->uri_id->description;
 }
 
 1;

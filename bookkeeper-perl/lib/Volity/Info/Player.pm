@@ -32,9 +32,9 @@ sub initialize {
 }
 
 Volity::Info::Player->table('player');
-Volity::Info::Player->columns(All=>qw(jid name email));
-Volity::Info::Player->has_many(games=>["Volity::Info::GamePlayer" => 'game_id'], 'player_jid');
-Volity::Info::Player->has_many(wins=>["Volity::Info::GameWinner" => 'game_id'], 'player_jid');
-Volity::Info::Player->has_many(quits=>["Volity::Info::GameQuitter" => 'game_id'], 'player_jid');
+Volity::Info::Player->columns(All=>qw(id jid name email));
+Volity::Info::Player->has_many(games=>["Volity::Info::GamePlayer" => 'game_id'], 'player_id');
+Volity::Info::Player->has_many(wins=>["Volity::Info::GameWinner" => 'game_id'], 'player_id');
+Volity::Info::Player->has_many(quits=>["Volity::Info::GameQuitter" => 'game_id'], 'player_id');
 
 1;
