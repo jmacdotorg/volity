@@ -9,12 +9,10 @@ import org.volity.jabber.RPCException;
 public class Referee extends RPCRequester {
   /**
    * @param table the game table where the game will be played
-   * @throws IllegalStateException if the MUC has not been joined
+   * @param jid the full jid of the referee
    */
-  public Referee(GameTable table) {
-    super(table.getConnection(), table.getRefereeJID());
-    if (!table.isJoined())
-      throw new IllegalStateException("Not sitting at the table.");
+  Referee(GameTable table, String jid) {
+    super(table.getConnection(), jid);
   }
 
   /**

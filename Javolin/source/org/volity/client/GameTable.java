@@ -1,10 +1,14 @@
 package org.volity.client;
 
-import org.jivesoftware.smack.GroupChat;
+import org.volity.jabber.MUC;
+import org.volity.jabber.packet.MUCUser;
+import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.Presence;
 
 /** A game table (a Multi-User Chat room for playing a Volity game). */
-public class GameTable extends GroupChat {
+public class GameTable extends MUC {
   /**
    * @param connection an authenticated connection to an XMPP server.
    * @param room the JID of the game table.
@@ -12,6 +16,20 @@ public class GameTable extends GroupChat {
   public GameTable(XMPPConnection connection, String room) {
     super(connection, room);
     this.connection = connection;
+    addParticipantListener(new PacketListener() {
+	public void processPacket(Packet packet) {
+	  Presence presence = (Presence) packet;
+	  MUCUser user = MUCUser.getUserInfo(presence);
+	  if (user != null &&
+	      user.getAffiliation() == MUCUser.Affiliation.OWNER) {
+	    if (presence.getType() == Presence.Type.AVAILABLE) {
+	      referee = new Referee(GameTable.this, user.getJID());
+	    } else if (presence.getType() == Presence.Type.UNAVAILABLE) {
+	      referee = null;
+	    }
+	  }
+	}
+      });
   }
 
   XMPPConnection connection;
@@ -19,21 +37,10 @@ public class GameTable extends GroupChat {
 
   Referee referee;
 
-  /** The referee sitting at this table. */
+  /**
+   * The referee for this table, or null if no referee is connected.
+   */
   public Referee getReferee() {
-    // FIXME: should wait for ref to actually connect
-    if (referee == null) referee = new Referee(this);
     return referee;
-  }
-
-  /** The nickname of the game referee sitting at this table. */
-  public String getRefereeName() {
-    // FIXME: should look for MUC owner or moderator role
-    return "volity";
-  }
-
-  /** The JID of the game referee sitting at this table. */
-  public String getRefereeJID() {
-    return getRoom() + "/" + getRefereeName();
   }
 }
