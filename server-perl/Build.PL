@@ -13,7 +13,6 @@ my $build = Module::Build->new
 	       'POE::Component::Jabber'=>'1.0',
 	       'XML::Writer'=>undef,
 	       'Data::Lazy'=>undef,
-	       'IPC::Shareable'=>undef,
 	       'Class::Accessor'=>undef,
 	       'Class::Fields'=>undef,
 	       'Time::HiRes'=>undef,
