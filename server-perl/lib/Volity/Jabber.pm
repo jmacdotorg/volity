@@ -335,7 +335,7 @@ sub jabber_iq {
   my $self = shift;
   $self->debug("I ($self) got an IQ object.\n");
   my ($node) = @_;
-  warn $node->to_str;
+#  warn $node->to_str;
   my $id = $node->attr('id'); my $from_jid = $node->attr('from');
   my $query;
   if ($node->attr('type') eq 'result') {
