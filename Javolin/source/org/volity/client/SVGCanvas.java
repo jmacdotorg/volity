@@ -1,5 +1,7 @@
 package org.volity.client;
 
+import java.awt.Dimension;
+import java.awt.geom.Dimension2D;
 import java.net.URL;
 import java.util.List;
 import org.apache.batik.bridge.BridgeContext;
@@ -9,6 +11,8 @@ import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
 import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.apache.batik.swing.JSVGCanvas;
+import org.apache.batik.swing.svg.GVTTreeBuilderAdapter;
+import org.apache.batik.swing.svg.GVTTreeBuilderEvent;
 import org.jivesoftware.smack.XMPPConnection;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -27,6 +31,14 @@ public class SVGCanvas extends JSVGCanvas
     this.connection = connection;
     setDocumentState(ALWAYS_DYNAMIC);
     setURI(uiDocument.toString());
+    addGVTTreeBuilderListener(new GVTTreeBuilderAdapter() {
+	public void gvtBuildCompleted(GVTTreeBuilderEvent evt) {
+	  Dimension2D size = getSVGDocumentSize();
+	  setPreferredSize(new Dimension((int) size.getWidth(),
+					 (int) size.getHeight()));
+	  revalidate();
+	}
+      });
   }
 
   XMPPConnection connection;
