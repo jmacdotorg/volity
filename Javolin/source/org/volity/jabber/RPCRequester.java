@@ -19,7 +19,9 @@ import java.util.*;
 public class RPCRequester {
   static {
     // Register the provider so that response packets get parsed correctly.
-    ProviderManager.addIQProvider("query", "jabber:iq:rpc", new RPCProvider());
+    ProviderManager.addIQProvider(RPC.elementName,
+				  RPC.namespace,
+				  new RPCProvider());
   }
 
   /**

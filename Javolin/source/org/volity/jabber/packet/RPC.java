@@ -7,9 +7,14 @@ import java.util.*;
 
 /** A remote procedure call packet conforming to JEP-0009 (Jabber-RPC). */
 public abstract class RPC extends IQ {
+  public static final String elementName = "query", namespace = "jabber:iq:rpc";
+
   // Inherited from IQ.
   public String getChildElementXML() {
-    return "<query xmlns='jabber:iq:rpc'>" + getPayloadXML() + "</query>";
+    return
+      "<" + elementName + " xmlns='" + namespace + "'>" +
+      getPayloadXML() +
+      "</" + elementName + ">";
   }
 
   /** XML string representing the RPC payload (method call or response). */
