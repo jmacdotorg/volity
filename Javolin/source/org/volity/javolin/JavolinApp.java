@@ -46,7 +46,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
 
-    private static URI sClientTypeUri;
+    private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache();
 
     private ImageIcon mConnectedIcon;
@@ -65,18 +65,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private XMPPConnection mConnection;
     private java.util.List mMucWindows;
     private java.util.List mTableWindows;
-
-    static
-    {
-        try
-        {
-            sClientTypeUri = new URI("http://volity.org/protocol/ui/svg");
-        }
-        catch (URISyntaxException ex)
-        {
-            // Should never occur
-        }
-    }
 
     /**
      * Constructor.

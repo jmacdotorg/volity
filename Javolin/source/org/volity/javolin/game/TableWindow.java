@@ -47,6 +47,8 @@ public class TableWindow extends JFrame implements PacketListener
     private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
     private final static String BOARD_SPLIT_POS = "BoardSplitPos";
 
+    private static Map sLocalUiFileMap = new HashMap();
+
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
     private JSplitPane mBoardSplitter;
@@ -64,20 +66,54 @@ public class TableWindow extends JFrame implements PacketListener
     private GameTable mGameTable;
 
     /**
-     * Constructor. This form will create a new table.
+     * Factory method for a TableWindow. This form will create a new table.
      *
-     * @param connection                 The current active XMPPConnection.
+     * @param connection                 The current active XMPPConnection
      * @param serverId                   The ID of the game table to create and join.
      * @param nickname                   The nickname to use to join the table.
+     * @return                           A new TableWindow.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
      * @exception IOException            If a UI file could not be downloaded.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
-    public TableWindow(XMPPConnection connection, String serverId, String nickname)
-         throws XMPPException, RPCException, IOException, MalformedURLException
+    public static TableWindow makeTableWindow(XMPPConnection connection, String serverId,
+        String nickname) throws XMPPException, RPCException, IOException,
+        MalformedURLException
     {
-        this(new GameServer(connection, serverId), null, nickname);
+        GameServer server = new GameServer(connection, serverId);
+        GameTable table = server.newTable();
+
+        return makeTableWindow(server, table, nickname);
+    }
+
+    /**
+     * Factory method for a TableWindow. This form will join an existing table.
+     *
+     * @param server                     The GameServer.
+     * @param table                      The GameTable to join.
+     * @param nickname                   The nickname to use to join the table.
+     * @return                           A new TableWindow, or null if one could not be
+     *  created.
+     * @exception XMPPException          If the table could not be joined.
+     * @exception RPCException           If a new table could not be created.
+     * @exception IOException            If a UI file could not be downloaded.
+     * @exception MalformedURLException  If an invalid UI file URL was used.
+     */
+    public static TableWindow makeTableWindow(GameServer server, GameTable table,
+        String nickname) throws XMPPException, RPCException, IOException,
+        MalformedURLException
+    {
+        TableWindow retVal = null;
+
+        URL uiUrl = getUIURL(server);
+
+        if (uiUrl != null)
+        {
+            retVal = new TableWindow(server, table, nickname, uiUrl);
+        }
+
+        return retVal;
     }
 
     /**
@@ -87,12 +123,13 @@ public class TableWindow extends JFrame implements PacketListener
      * @param table                      The GameTable to join. If null, a new table will
      *  be created.
      * @param nickname                   The nickname to use to join the table.
+     * @param uiUrl                      The URL for the UI file.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
      * @exception IOException            If a UI file could not be downloaded.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
-    public TableWindow(GameServer server, GameTable table, String nickname)
+    protected TableWindow(GameServer server, GameTable table, String nickname, URL uiUrl)
          throws XMPPException, RPCException, IOException, MalformedURLException
     {
         mGameTable = table;
@@ -104,7 +141,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
 
-        mGameViewport = new SVGCanvas(mGameTable, getUIURL(server));
+        mGameViewport = new SVGCanvas(mGameTable, uiUrl);
 
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(nickname); // Give user first color
@@ -166,12 +203,18 @@ public class TableWindow extends JFrame implements PacketListener
 
 
     /**
-     * Helper method for the constructor. Returns the URL for the given game server's UI.
+     * Helper method for the makeTableWindow. Returns the URL for the given game server's
+     * UI.
      *
-     * @param server  The game server for which to retrieve the UI URL
-     * @return        The URL for the game UI.
+     * @param server                     The game server for which to retrieve the UI URL.
+     * @return                           The URL for the game UI, or null if none was
+     *  available.
+     * @exception XMPPException          If an XMPP error occurs.
+     * @exception MalformedURLException  If an error ocurred creating a URL for a local
+     *  file.
      */
-    private URL getUIURL(GameServer server) throws XMPPException
+    private static URL getUIURL(GameServer server) throws XMPPException,
+        MalformedURLException
     {
         URL retVal = null;
 
@@ -187,8 +230,26 @@ public class TableWindow extends JFrame implements PacketListener
         }
         else
         {
+            if (sLocalUiFileMap.containsKey(server.getRuleset()))
+            {
+                retVal = (URL)sLocalUiFileMap.get(server.getRuleset());
+            }
+            else if (JOptionPane.showConfirmDialog(null,
+                "No UI file is known for this game.\nChoose a local file?",
+                JavolinApp.getAppName(), JOptionPane.YES_NO_OPTION) ==
+                JOptionPane.YES_OPTION)
+            {
+                JFileChooser fDlg = new JFileChooser();
+                int val = fDlg.showOpenDialog(null);
+
+                if (val == JFileChooser.APPROVE_OPTION)
+                {
+                    retVal = fDlg.getSelectedFile().toURI().toURL();
+                    sLocalUiFileMap.put(server.getRuleset(), retVal);
+                }
+            }
         }
-        
+
         return retVal;
     }
 

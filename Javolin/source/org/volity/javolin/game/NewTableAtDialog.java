@@ -115,7 +115,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
                 serverID = serverID + "/volity";
             }
 
-            mTableWindow = new TableWindow(mConnection, serverID,
+            mTableWindow = TableWindow.makeTableWindow(mConnection, serverID,
                 mNicknameField.getText());
 
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
