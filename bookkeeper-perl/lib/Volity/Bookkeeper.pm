@@ -85,18 +85,24 @@ sub handle_disco_info_request {
     my $self = shift;
     my ($iq) = @_;
     $self->logger->debug("I got a disco info request from " . $iq->attr('from'));
+    # I'm making up my own category and type stuff, here.
+    # I'll have to ask the Jabber folks what I actually ought to be doing.
+    my @items = (
+		 Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#info'}),
+		 Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'}),
+		 );
+    my $identity = Volity::Jabber::Disco::Identity->new({category=>'volity',
+							 type=>'bookkeeper',
+						     });
+    unless ($iq->get_tag('query')->attr('node')) {
+	$identity->name('the volity.org bookkeeper');
+    }
+    push (@items, $identity);
+
     $self->send_disco_info({
 	to=>$iq->attr('from'),
 	id=>$iq->attr('id'),
-	# I'm making up my own category and type stuff, here.
-	# I'll have to ask the Jabber folks what I actually ought to be doing.
-	items=>[Volity::Jabber::Disco::Identity->new({category=>'volity',
-						      type=>'bookkeeper',
-						      name=>'The volity.org bookkeeper',
-						  }),
-		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#info'}),
-		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'}),
-		],
+	items=>\@items,
     });
 }
 
