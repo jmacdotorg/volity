@@ -17,9 +17,12 @@ use JavaScript::SpiderMonkey;
 use Data::JavaScript::Anon;
 use Getopt::Std;
 use YAML;
+use LWP;
+use File::Spec;
+use Archive::Zip::MemberRead;
 
 my %opts;
-getopts('u:h:p:r:o:d:', \%opts);
+getopts('u:h:p:r:o:d:f:b:', \%opts);
 
 foreach (qw( user host password )) {
     my $letter = substr( $_, 0, 1 );
@@ -39,7 +42,20 @@ foreach (qw( user host password )) {
 our @cmd_hist = eval { @{ YAML::LoadFile("client.yaml") } };
 my $next_rpc_request_id = 0;
 my $last_message_recipient;
+my $working_dir = $opts{f} || File::Spec->catdir($ENV{HOME}, ".friv");
+my $ui_dir = File::Spec->catdir($working_dir, "ui");
 
+# Make sure the working dir exists and is usable.
+# Then chdir into it.
+unless (-e $working_dir) {
+    foreach ($working_dir, $ui_dir) {
+	mkdir $_ or die "Tried to create working directory $_ but failed: $!";
+    }
+    
+}
+chdir $working_dir or die "I can't chdir to working directory $working_dir: $!";
+
+# Crank up the POE session that will manage our Jabber connection.
 POE::Session->create(
                      inline_states => {
                                        _start => \&start,
@@ -71,6 +87,8 @@ sub start {
                                   port=>$heap->{port},
                                   alias=>$heap->{resource},
                                   user=>$heap->{username},
+				  poe_heap=>$heap,
+				  bookkeeper_jid=>$opts{b} || 'bookkeeper@volity.net/testing',
                                  }
                                 );
     $heap->{user_obj} = $user;
@@ -265,10 +283,11 @@ Volity client commands:
   nick (nickname)  - set a new table nickname for yourself
   roster           - view your roster
 
+  load_ui (path)   - manually load a UI file
+  clear_ui         - clear the current UI file from memory
 
   new_table (JID)  - request a new table from the given server JID
   join_table (JID) - join an existing table
-  load_ui (file)   - load a ui control file (do this before starting a game)
   add_bot          - request a new bot for the current table
   start_game       - request a new game at the current table
 
@@ -283,6 +302,17 @@ CMDLIST
   }
 }
 
+sub cmd_clear_ui {
+    my $heap = $_[HEAP];
+    my $user = $heap->{user_obj};
+    if (defined($user->js)) {
+	$user->js(undef);
+	$user->print_message("OK, UI cleared.");
+    } else {
+	$user->print_message("Hmm, there wasn't any UI set.");
+    }
+}
+
 sub cmd_load_ui {
   my ($heap, $filename) = @_[HEAP, ARG0];
 
@@ -294,31 +324,10 @@ sub cmd_load_ui {
   }
   my $source = join '', <FILE>;
   close FILE;
-  
-  my $user = $heap->{'user_obj'};
-  my $commands = $heap->{'commands'} ||= [];
-  my $js = JavaScript::SpiderMonkey->new();
-  $js->init();
-  my $game = $js->object_by_path("game");
-  my $referee = $js->object_by_path("client");
-  my $info = $js->object_by_path("info");
-  $js->function_set("writeln", sub { js_writeln( $term, @_) } );
-  $js->function_set("rpc", sub { js_rpc( $user, @_ ) } );
-  $js->function_set("registerCommand", 
-    sub { js_registerCommand( $commands, @_ ) } , $referee );
 
-  $js->eval( $source );
+  $heap->{user_obj}->load_js_from_source($source);
+  $heap->{user_obj}->manual_ui_load(1);
 
-  $js->eval( "info.nickname = '" . ($user->nick || $user->user) . "'" );
-  $js->eval( "info.opponents = {}" );
-  for my $nickname ($user->opponent_nicknames) {
-    $js->eval( "info.opponents['$nickname'] = {}" );
-  }
-  
-  if ($user->js) {
-      $user->js->destroy;
-  }
-  $user->js( $js );
 }
 
 sub js_writeln {
@@ -361,19 +370,18 @@ sub cmd_new_table {
     $heap->{user}->put("That doesn't look like a JID to me!");
     return;
   }
-  unless ($user->js) {
-      $user->print_message("Load a UI file before starting a new table.");
-      return;
+  
+  $user->server_jid($server_jid);
+  $user->current_command('new_table');
+  if ($user->js and $user->manual_ui_load) {
+      $user->print_message("UI file manually loaded, so I won't fetch another over the network.");
+      $user->print_message("To force a fetch, use the clear_ui command, then rejoin this table.");
+      $user->request_new_table($server_jid);
+  } else {
+      $user->print_message("Requesting UI file from the Volity network.");
+      $user->manual_ui_load(undef);
+      $user->request_disco_info({to=>$server_jid, id=>"server"});
   }
-  my $rpc_id = ++$next_rpc_request_id;
-  $user->make_rpc_request(
-                          {
-                           to=>$server_jid,
-                           id=>$rpc_id,
-                           methodname=>'volity.new_table',
-                           handler=>'new_table',
-                          }
-                         );
 }
 
 sub cmd_add_bot {
@@ -393,20 +401,14 @@ sub cmd_join_table {
   my $user = $_[HEAP]->{user_obj};
   my $table_jid = $_[ARG0];
   return unless check_jid($_[HEAP]->{user}, $table_jid);
-  unless ($user->js) {
-      $user->print_message("Load a UI file before joining a table.");
-      return;
+  if ($user->js and $user->manual_ui_load) {
+      $user->print_message("UI file manually loaded, so I won't fetch another over the network.");
+      $user->print_message("To force a fetch, use the clear_ui command, then rejoin this table.");
+      $user->join_table($table_jid);
+  } else {
+      $user->print_message("You must load a UI file (with the load_ui command) before joining a table.");
+      $user->print_message("(Friv does not yet support automatic UI fetching outside of table creation.)");
   }
-  $user->clear_opponent_nicknames;
-  $user->join_muc(
-                  {
-                   jid=>$table_jid,
-                   nick=>$user->nick || $user->user,
-                  }
-                 );
-  # Tell the user that it's now seated at a table.
-  $user->table_jid($table_jid);
-#  $user->referee_jid("$table_jid/volity");
 }
 
 sub cmd_tmsg {
@@ -525,7 +527,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick terminal table_jid referee_jid js opponents);
+use fields qw(nick terminal poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load);
 use POE;
 
 sub init_finish {
@@ -555,15 +557,110 @@ sub rpc_response_new_table {
   my $self = shift;
   my( $message ) = @_;
   my $table_jid = $$message{'response'};
-  $self->clear_opponent_nicknames;
-  $self->join_muc( {
-    jid  => $table_jid,
-    nick => $self->nick || $self->user,
-    } );
-  $self->table_jid($table_jid);
+  $self->join_table($table_jid);
+
   my ($ref_resource) = $table_jid =~ /^(.*?)@/;
   my $ref_jid = $$message{'from'};
   $self->print_message("New table made, and joined. (Table JID: $table_jid)");
+}
+
+sub fetch_ui_file {
+    my $self = shift;
+    my ($url) = @_;
+
+    my $agent = LWP::UserAgent->new;
+
+    # Now, at this point, we can do sexy things, like look at what we already
+    # might have cached from previous forays to this URL.
+    # Today, no sexiness. We will grab the URI file blindly and crush
+    # whatever we last downloaded with the same name.
+    # Sexiness tomorrow, maybe.
+    my $request = HTTP::Request->new(GET=>$url);
+    my $response = $agent->request($request);
+    my $local_zipfile = File::Spec->catfile($working_dir, "ui.zip");
+    open (ZIP, ">$local_zipfile") or die "Can't write ui zipfile $local_zipfile: $!\n";
+    print ZIP $response->content;
+    close (ZIP) or die "Can't close zipfile $local_zipfile: $!\n";
+    my $zip_reader;
+    unless ($zip_reader = Archive::Zip->new($local_zipfile)) {
+	$self->terminal->("Oh, there was a problem reading the zipfile $local_zipfile. Sorry.");
+	return;
+    }
+    my $js_fh;
+    my @js_source;
+    if ($js_fh = Archive::Zip::MemberRead->new($zip_reader, "main")) {
+	while (defined(my $line = $js_fh->getline)) { 
+	    push (@js_source, $line);
+	}
+    } else {
+	$self->terminal->("The archive $local_zipfile doesn't seem to have a main file. I can't use it. Sorry...");
+	return;
+    }
+    
+    # Having done all that, create the JS interpreter.
+    
+    $self->load_js_from_source(join("\n", @js_source));
+
+    # Now make the actual RPC request.
+
+    $self->request_new_table($self->server_jid);
+
+}
+
+sub request_new_table {
+    my $self = shift;
+    my ($server_jid) = @_;
+    my $rpc_id = 'new-table';
+    $self->make_rpc_request(
+			    {
+				to=>$self->server_jid,
+				id=>$rpc_id,
+				methodname=>'volity.new_table',
+				handler=>'new_table',
+			    }
+			    );
+}
+
+sub join_table {
+    my $self = shift;
+    my ($table_jid) = @_;
+    $self->clear_opponent_nicknames;
+    $self->join_muc(
+                  {
+                   jid=>$table_jid,
+                   nick=>$self->nick || $self->user,
+                  }
+                 );
+  $self->table_jid($table_jid);
+}
+
+sub load_js_from_source {
+    my $self = shift;
+    my ($js_source) = @_;
+    my $commands = $self->poe_heap->{commands} ||= [];
+
+    my $js = JavaScript::SpiderMonkey->new();
+    $js->init();
+    my $game = $js->object_by_path("game");
+    my $referee = $js->object_by_path("client");
+    my $info = $js->object_by_path("info");
+    $js->function_set("writeln", sub { main::js_writeln( $self->terminal, @_) } );
+    $js->function_set("rpc", sub { main::js_rpc( $self, @_ ) } );
+    $js->function_set("registerCommand", 
+		      sub { main::js_registerCommand( $commands, @_ ) } , $referee );
+    
+    $js->eval( $js_source );
+
+    $js->eval( "info.nickname = '" . ($self->nick || $self->user) . "'" );
+    $js->eval( "info.opponents = {}" );
+    for my $nickname ($self->opponent_nicknames) {
+	$js->eval( "info.opponents['$nickname'] = {}" );
+    }
+    
+    if ($self->js) {
+	$self->js->destroy;
+    }
+    $self->js( $js );
 }
 
 sub rpc_response_add_bot {
@@ -683,6 +780,70 @@ sub jabber_presence {
   }
 }
 
+sub handle_disco_info {
+    my $self = shift;
+    my ($from, $id, $items, $fields) = @_;
+    my @items = @$items;
+
+    # The value of $id indicates what sort of Volity entity sent the packet.
+    if ($id eq 'ruleset-ui') {
+	my @types = @{$$fields{"client-type"}};
+	if (grep($_ eq 'http://volity.org/protocol/ui/text', @types)) {
+	    # Good, this one is available to us.
+	    push (@{$self->{available_uis}},
+		  {
+		      url=>$self->current_ui_url,
+		      description=>$$fields{description}->[0],
+		      reputation=>$$fields{reputation}->[0],
+		  },
+		  );
+	}
+	$self->{uis_to_check} -= 1;
+	unless ($self->uis_to_check) {
+	    if (@{$self->available_uis} > 1) {
+		use Data::Dumper; die Dumper($self->available_uis);
+		$self->show_ui_menu;
+	    } elsif (@{$self->available_uis}) {
+		my $ui = $self->available_uis->[0];
+		$self->print_message("Fetching game UI file from $$ui{url}...");
+		$self->fetch_ui_file($$ui{url});
+	    } else {
+		$self->print_message("No text UIs available for this game. Sorry.");
+	    }
+	}
+
+    } elsif ($id eq 'server') {
+	my ($ruleset_uri) = @{$$fields{ruleset}};
+	my ($ruleset_version) = @{$$fields{"ruleset-version"}};
+#	warn "Aha, the ruleset to use is $ruleset_uri, version $ruleset_version.\n";
+	$self->request_disco_items({to=>$self->bookkeeper_jid,
+			      id=>'ruleset',
+			      node=>$ruleset_uri . "|uis",
+			  });
+    } else {
+	$self->terminal->("Um... I got a disco info response with id $id. I'm not sure what to do about it.");
+    }
+}
+
+sub handle_disco_items {
+    my $self = shift;
+    my ($from, $id, $items) = @_;
+    my @items = @$items;
+    
+    if ($id eq 'ruleset') {
+#	warn "Got some Ruleset UI items!!!\n";
+	$self->available_uis([]);
+	$self->uis_to_check(scalar(@items));
+	for my $item (@items) {
+	    $self->current_ui_url($item->node);
+	    $self->request_disco_info({to=>$item->jid, 
+				  id=>'ruleset-ui',
+				  node=>$item->node,
+			      });
+	}
+    }
+}
+
 # add_opponent_nickname: Add the given nickname (either a full JID in MUC
 # format, or a bare string containing only the nickname) to our internal
 # list of known opponents at the current table.
@@ -735,17 +896,69 @@ Friv - A simple text-only Volity client
 
 =head1 SYNOPSIS
 
-$ friv -u myusername -p mypassword -h volity.net
+ $ friv -u myusername -p mypassword -h volity.net
+
+ Connection successful. Weclome to Volity.
+ Volity> new_table rps@volity.net/testing   
+ Requesting UI file from the Volity network.
+ Fetching game UI file from http://volity.org/games/rps/text/rps.zip...
+ rps.js Loaded!
+ New table made, and joined.
+ Volity> add_bot
+ Response from the bot-add request was: ok
+ Volity> start_game
+ The game has begun. Good luck!
+ RPS begins!  Have fun and good luck!
+ RandomBot: I have made my move.
+ Volity> select rock
+ Good old rock! Nothing beats rock.
+
+ [etc....]
 
 =head1 DESCRIPTION
 
 This program provides a very simple text-based interface to the Volity
-network. It will let you play at any game server, so long as you have
-local access to a text-based UI file for the ruleset that server
-runs. Friv does not yet support automatic fetching and loading of UI
-files.
+network. It will let you create or join tables at any game server, so
+long as a text-based UI file for that server's game is available.
 
-For more about Volity, visit http://volity.org
+Friv is part of I<Frivolity>, the Perl implementation of the Volity
+network game platform. While it aims to be a full-featured Volity
+client, it is more geared towards testing and hacking than general
+use. For a more user-friendly Volity experience, we recommend a
+GUI-based client, such as Javolin.
+
+To learn more about Volity, visit the Volity developers' webesite at
+http://volity.org.
+
+=head1 USAGE
+
+To play a game, use the C<new_table> command (see L<"COMMANDS">) to
+create a new Volity table. You can then call C<add_bot> to summon
+automated players (if the server supports them), or have your friends
+join through their own clients. (Friv does not support any sort of
+invitation mechanism yet.)  When you are ready to start playing, call
+C<start_game>.
+
+Like all Volity clients, Friv requires an appropriate set of
+user-interface files before you can play a game. When you request a
+new table, Friv will automatically negotiate with the specified server
+in an attempt to locate a text-friendly UI file to download and
+use. If successful, it transparently sets up everything it needs and
+escorts you to the new table. Otherwise, you'll receive an apologetic
+message.
+
+After joining a table, use the C<help> command to see both a summary
+of Friv's global commands I<and> the commands specific to the game UI
+currently laoded. For example, the "select" command shown in
+L<"SYNOPSIS"> was defined by the rock-paper-scissors UI file that Friv
+transparently loaded when that user created a table at a
+rock-paper-scissors game server.
+
+You can also use the C<join_table> command to join a game table that
+someone else has already created. Unfortunately, Friv currently lacks
+the ability to fetch UI files when joining tables in this fashion; you
+will have to have your own local copy of that file, and C<load_ui> on
+it before joining.
 
 =head1 RUNNING
 
@@ -780,13 +993,24 @@ The account's password.
 
 =over
 
-=item r
+=item b
 
-The resource to use with the Jabber account. Defaults to 'friv'.
+The Volity bookkeeper JID to use. Defaults to
+bookkeeper@volity.net. Unless you really know what you're doing, you
+probably shouldn't change this.
+
+=item f
+
+The working directory that Friv can use to store its scratch
+files. Defaults to "$ENV{HOME}/.friv".
 
 =item o
 
 The TCP port to connect to. Defaults to 5222 (Jabber's default port).
+
+=item r
+
+The resource to use with the Jabber account. Defaults to 'friv'.
 
 =back
 
@@ -806,21 +1030,37 @@ file (if there is one).
 
 =item load_ui C<filename>
 
-Loads an ECMAScript UI file. You must do this I<before> joining or
-creating a table.
+Loads an ECMAScript UI file from the local filesystem. Useful if
+you're testing a new UI file, or otherwise have a file that isn't
+available over the network. If you load a UI file manually,
+C<new_table> won't attempt to fetch a replacement over the network
+unless you C<clear_ui> first.
 
-Once you load an UI file, several new game-specific commands may
+Once you load a UI file, several new game-specific commands may
 before available. Use the C<help> command to see a list of them (along
 with all the other standard Friv commands).
+
+=item clear_ui
+
+Clears the currently loaded UI file from memory.
 
 =item new_table C<JID>
 
 Attempt to create a new table at the specified JID. If successful, you
 will immediately join the new table.
 
+If you have not manually loaded a UI file (with C<load_ui>), Friv will
+open negotiation with the specified server in order to find and load
+an appropriate UI file by itself. It it cannot do so, you'll recieve
+an explanatory error message, and no table will be created.
+
 =item join_table C<JID>
 
 Attempt to join the table (or Jabber groupchat) at the specifed JID.
+
+Unfortunately, you must load a UI file manually (with C<load_ui>)
+before calling this. Future versions of Friv will be able to fetch the
+appropriate UI file over the network, much as with C<new_table>.
 
 =item add_bot
 
@@ -850,8 +1090,26 @@ Quits the program (and logs you out of the system).
 
 =back
 
+=head1 BUGS
+
+The most recent version of Friv represents the most advanced state of
+the Volity platform. Since Volity is unfinished, so is Friv, and it
+just about the same ways. On the other hand, Friv will continue to
+develop so long as Volity does. Stay tuned.
+
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org> (Jabber: jmac@volity.net)
 
+=head1 COPYRIGHT
+
+Copyright (c) 2004 by Jason McIntosh
+
+=head1 SEE ALSO
+
+L<Volity>
+
+http://volity.org
+
 =cut
+					  
