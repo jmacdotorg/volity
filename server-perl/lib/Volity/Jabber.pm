@@ -199,7 +199,7 @@ Set this to a true value to display verbose debugging messages on STDERR.
 
 =cut
 
-use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language);
+use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers);
 
 sub initialize {
   my $self = shift;
@@ -224,6 +224,9 @@ sub initialize {
   $self->default_language('en') unless defined($self->default_language);
 
   return $self;
+
+  # Give initial values to instance variables what needs 'em.
+  $self->query_handlers = {};
 
 }
 
@@ -332,6 +335,8 @@ IQ elements, such as handling RPC requests and responses.
 # Subclasses that ovveride this method should take care to call
 # SUPER::jabber_iq in their own version of the method.
 
+# This is a little sloppy, with namespace-handling. Er, sloppy? I meant to 
+# say, "transitional".
 sub jabber_iq {
   my $self = shift;
   $self->debug("I ($self) got an IQ object.\n");
@@ -339,6 +344,9 @@ sub jabber_iq {
 #  warn $node->to_str;
   my $id = $node->attr('id'); my $from_jid = $node->attr('from');
   my $query;
+  # Check to see if we should dispatch this to a predefined NS handler
+  # method.
+  return if $self->handle_query_element_ns($node);
   if ($node->attr('type') eq 'result') {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
       # Yep, that's an RPC response.
@@ -369,6 +377,14 @@ sub jabber_iq {
 				 method=>$method,
 				 args=>$rpc_obj->args,
 			       });
+    }
+  } elsif ($node->attr('type') eq 'error') {
+    if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
+      # This isn't an RPC fault, but an apparet error in trying to send the
+      # RPC message at all.
+      my $error_message = $node->get_tag('error')->data;
+      my $code = $node->get_tag('error')->attr('code');
+      $self->handle_rpc_transmission_error($node, $code, $error_message);
     }
   } else {
     $self->debug("Didn't do nuthin with it. Twas this: ");
@@ -426,6 +442,18 @@ Called upon receipt of an RPC response. The argument is a hashref containing the
 
 Called upon receipt of an RPC request. The argument is a hashref containing the request's ID attribute, method, argument list (as an arrayref), and orginating JID, as well as an RPC::XML object representing the request.
 
+=item handle_rpc_transmission_error($iq_node, $error_code, $error_message);
+
+Called upon receipt of a Jabber IQ packet that's of type C<error>, but
+that seems to contain a Jabber-RPC element. This usually means that
+the RPC message failed to reach its destination for some reason. If
+this reason is known, it will show up as a code and (maybe) a text
+message in the callback's arguments.
+
+Note that this is distinct from an RPC fault, which is something
+returned from a network entity after successfully receiving an RPC
+request.
+
 =back
 
 =cut
@@ -433,6 +461,7 @@ Called upon receipt of an RPC request. The argument is a hashref containing the 
 # No default behavior for RPC stuff.
 sub handle_rpc_response { }
 sub handle_rpc_request { }
+sub handle_rpc_transmission_error { }
 
 =head2 Message handler methods
 
@@ -469,6 +498,47 @@ sub handle_groupchat_message { }
 sub handle_chat_message { }
 sub handle_headline_message { }
 sub handle_error_message { }
+
+# handle_query_element_ns:
+# Returns truth if it performed a dispatch, falsehood otherwise.
+sub handle_query_element_ns {
+  my $self = shift;
+  my ($node) = @_;
+  my $element_type = $node->name;
+  my $query_ns;
+  if (my $query = $node->get_tag('query')) {
+    $query_ns = $query->attr('xmlns');
+  }
+  return unless defined($query_ns);
+  return unless defined($self->query_handlers);
+  return unless defined($self->query_handlers->{$query_ns});
+
+  if ($element_type eq 'iq') {
+    # Locate a dispatch method, depending upon the type of the iq.
+    my $method;
+    my $type = $node->attr('type');
+    unless (defined($type)) {
+      croak("No type attribute defined in query's parent node! Gak!");
+    }
+    $method = $self->query_handlers->{$query_ns}->{$type};
+    if (defined($method)) {
+      if ($self->can($method)) {
+	$self->$method($node);
+	return 1;
+      } else {
+	croak("I wanted to dispatch to the $method method, but I have no such method defined!");
+      }
+    } else {
+      # No method for this situation is set; we'll return undef.
+      # This probably will return control to the jabber_iq method.
+      return;
+    }
+  } else {
+    croak("handle_query_element_ns called with a non-iq element. It was a $element_type.");
+  }
+}
+    
+
 
 ################################
 # Jabber element-sending methods
@@ -676,6 +746,8 @@ The name of the MUC.
 
 =back
 
+The return value is the JID of the MUC that presence was sent to.
+
 =cut
 
 sub join_muc {
@@ -708,7 +780,7 @@ sub join_muc {
   $presence->attr(to=>$muc_jid);
   $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
   $self->kernel->post($self->alias, 'output_handler', $presence);
-  $self->debug( "Theyah.\n");
+  return $muc_jid;
 }
 
 =head2 send_form
@@ -728,6 +800,32 @@ The type of form to send. Should be a URI appropriate to this form.
 =item fields
 
 A hashref containing the form's fields and their submitted values.
+
+The values can be simple scalars, in which case they're interpreted to be the simple values of unlabeled text fields, or they can be hash references, which allows more fine-tuned control over the fields. In the latter case, the hash reference may contain any or all of the following keys:
+
+=over
+
+=item value
+
+The actual data value for this field.
+
+=item type
+
+The type of field.
+
+=item label
+
+The human-readable label to use with this field.
+
+=item options
+
+An array reference specifying the options that a C<list-single> or
+C<list-multi> type of field can offer. Each list element can either be
+a simple scalar (in which case it will act as both label and option
+value), or list references (whose first element is the label to use,
+and whose second element is the value that this label represents).
+
+=back
 
 =back
 
@@ -760,8 +858,32 @@ sub send_form {
     # (We may support field lists in forms other than hashrefs later.)
     if (ref($$config{fields}) eq 'HASH') {
       while (my ($field, $value) = each(%{$$config{fields}})) {
+	my $type; my $label; my @options;
+	if (ref($value)) {
+	  # It's a hashref describing the field.
+	  $type = $$value{type} || '';
+	  $label = $$value{label} || '';
+	  @options = @{$$value{options}} || ();
+	  $value = $$value{value} || '';
+	} else {
+	  # It's a straight-up value already.
+	  $type = ''; $label = ''; @options = ();
+	}
 	my $field_element = $x->insert_tag('field');
 	$field_element->attr(var=>$field);
+	$field_element->attr(label=>$label);
+	$field_element->attr(type=>$type);
+	for my $option (@options) {
+	  my ($value, $label);
+	  if (ref($option)) {
+	    ($value, $label) = @$option;
+	  } else {
+	    ($value, $label) = ($option, $option);
+	  }
+	  my $option_element = $field_element->insert_tag("option");
+	  $option_element->attr(label=>$label);
+	  $option_element->insert_tag('value')->data($value);
+	  }
 	$field_element->insert_tag('value')->data($value);
       }
     } else {
@@ -826,3 +948,106 @@ Copyright (c) 2003 by Jason McIntosh.
 =cut
 
 1;
+
+package Volity::Jabber::Form;
+
+use warnings; use strict;
+use PXR;
+
+sub new_from_element {
+  my $invocant = shift;
+  my $class = ref($invocant) || $invocant;
+  my ($x_element) = @_;
+  unless (defined($x_element) or $x_element->isa("PXR::Node") or $x_element->name eq 'x') {
+    croak("You must call new_from_element with a PXR::Node representing an 'x' element.");
+  }
+  my $self = bless ({}, $class);
+  $self->{x} = $x_element;
+  return $self;
+}
+
+sub items {
+  my $self = shift;
+  my @items;
+  foreach ($self->{x}->get_tag('item')) {
+    push (@items, Volity::Jabber::Form::Item->new_from_element($_));
+  }
+  return @items;
+}
+
+sub fields { $_[0]->call_item_method('fields', @_) }
+sub field_with_var { $_[0]->call_item_method('field_with_var', @_) }
+
+sub call_item_method {
+  my $self = shift;
+  my @items = $self->items;
+  my $method = shift;
+  if (@items > 1) {
+    croak("Can't call $method on $self, since it contains more than one item.");
+  } elsif (@items == 0) {
+    croak("Can't call $method on $self, since it contains no items.");
+  }
+  return $items[0]->$method(@_);
+}
+
+package Volity::Jabber::Form::Item;
+
+use warnings; use strict;
+use PXR;
+
+sub new_from_element {
+  my $invocant = shift;
+  my $class = ref($invocant) || $invocant;
+  my ($item_element) = @_;
+  unless (defined($item_element) or $item_element->isa("PXR::Node") or $item_element->name eq 'item') {
+    croak("You must call new_from_element with a PXR::Node representing an 'item' element.");
+  }
+  my $self = bless ({}, $class);
+  $self->{item} = $item_element;
+  return $self;
+}
+
+sub fields {
+  my $self = shift;
+  my @fields;
+  foreach ($self->{item}->get_tag('field')) {
+    push (@fields, Volity::Jabber::Form::Item->new_from_element($_));
+  }
+  return @fields;
+}
+
+sub field_with_var {
+  my $self = shift;
+  my ($var) = @_;
+  my $field = grep($_->var eq $var, $self->fields);
+  return $field;
+}
+
+package Volity::Jabber::Form::Field;
+
+sub new_from_element {
+  my $invocant = shift;
+  my $class = ref($invocant) || $invocant;
+  my ($field_element) = @_;
+  unless (defined($field_element) or $field_element->isa("PXR::Node") or $field_element->name eq 'field') {
+    croak("You must call new_from_element with a PXR::Node representing an 'field' element.");
+  }
+  my $self = bless ({}, $class);
+  $self->{field} = $field_element;
+  return $self;
+}
+
+sub value {
+  my $self = shift;
+  return $self->{field}->get_tag('value')? $self->get_tag('value')->data: undef;
+}
+
+sub var {
+  my $self = shift;
+  return $self->{field}->attr('var');
+}
+
+sub label {
+  my $self = shift;
+  return $self->{field}->attr('label');
+}

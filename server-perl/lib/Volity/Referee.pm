@@ -81,7 +81,7 @@ depending upon its own configuration.
 
 =item muc_jid
 
-The JID of the MUC that the game is in. Set by various magic internal
+The JID of the table's MUC. Set by various magic internal
 methods, so you should treat this as read-only; things will probably
 not work well if you reset this value yourself.
 
@@ -111,7 +111,7 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes active_bots);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -124,6 +124,8 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 #   This referee's POE session.
 # kernel
 #   This referee's POE kernel.
+# bot_classes
+#   An array reference of retainer-bot classes.
 
 use warnings;  no warnings qw(deprecated);
 use strict;
@@ -142,8 +144,8 @@ use POE qw(
 	  );
 use PXR::Node;
 use Jabber::NS qw(:all);
-
 use Scalar::Util qw(weaken);
+use Time::HiRes qw(gettimeofday);
 
 ###################
 # Configgish variables 
@@ -172,6 +174,11 @@ sub initialize {
     croak ("You must define a muc_host on referee construction.");
   }
   $self->muc_jid($self->resource . '@' . $self->muc_host);
+
+  # Set some query namespace handlers.
+  $self->query_handlers->{'volity:iq:botchoice'} = {set=>'choose_bot'};
+
+  $self->active_bots = [];
 
   return $self;
 
@@ -484,6 +491,97 @@ sub start_game {
 		     });
 }
 
+sub add_bot {
+  my $self = shift;
+  my ($from_jid, $id, @args) = @_;
+
+  # First, check to see that we have bots, and return a fault if we don't.
+  unless ($self->bot_classes) {
+    $self->send_rpc_fault($from_jid, $id, 3, "Sorry, this game server doesn't host any bots.");
+    return;
+  }
+  
+  # If we offer only one flavor of bot, then Bob's your uncle.
+  if ($self->bot_classes == 1) {
+    if ($self->create_bot(($self->bot_classes)[0])) {
+      $self->send_rpc_response($from_jid, $id, "ok");
+    } else {
+      $self->send_rpc_fault($from_jid, $id, 4, "I couldn't create a bot for some reason.");
+    }
+    return;
+  }
+
+  # We seem to have more than one bot. Send back a form.
+  my @form_options;
+  my $default_name_counter;
+  for my $bot_class ($self->bot_classes) {
+    my $label = $bot_class->name || 'Bot' . ++$default_name_counter;
+    if (defined($bot_class->description)) {
+      $label .= ": " . $bot_class->description;
+    }
+    push (@form_options, [$bot_class, $label]);
+  }
+  $self->send_form({
+		    fields=>{bot=>{
+				   type=>'list-single',
+				   options=>\@form_options,
+				   label=>"Choose a bot to add...",
+				  }
+			    },
+		    to=>$from_jid,
+		    id=>'bot_form',
+		    type=>'form',
+		   });
+  # Form sent; we're done here.
+  $self->send_rpc_response($from_jid, $id, "ok");
+}
+
+# choose_bot: Called on receipt of a form with bot choice.
+sub choose_bot {
+  my $self = shift;
+  my ($iq) = @_;
+  my $form = Volity::Jabber::Form->new_from_element($iq->get_tag('query')->get_tag('x'));
+  my $chosen_bot_class = $form->field_with_var('bot');
+  unless (defined($chosen_bot_class)) {
+    carp("Received a bot-choosing form with no choice?");
+    # XXX Send an error message here?
+    return;
+  }
+
+  # Make sure that the chosen class is one that we actually offer...
+  unless (grep($_ eq $chosen_bot_class, $self->bot_classes)) {
+    carp("Got a request for bot class $chosen_bot_class, but I don't offer that?");
+    # XXX Send an error message here?
+    return;
+  }
+
+  if ($self->create_bot(($chosen_bot_class))) {
+    # It's all good.
+    return;
+  } else {
+    # Oh no, the bot didn't get added.
+    carp ("Failed to add a bot of class $chosen_bot_class.");
+    # XXX Do something errory here.
+  }
+}
+
+sub create_bot {
+  my $self = shift;
+  my ($bot_class) = @_;
+  # Generate a resource for this bot to use.
+  my $resource = $bot_class->name . gettimeofday();
+  my $bot = $bot_class->new(
+			    {
+			     password=>$self->password,
+			     resource=>$resource,
+			     alias=>$resource,
+			     debug=>$self->debug,
+			    }
+			   );
+  push (@{$self->active_bots}, $bot);
+  return $bot;
+}
+
 # end_game: Not really an RPC call, but putting it here for now for
 # symmetry's sake.
 # It's called by a game object.
@@ -539,6 +637,10 @@ sub send_record_to_bookkeeper {
 
 sub stop {
   my $self = shift;
+  # Kick out all the bots.
+  foreach ($self->active_bots) {
+    $_->stop;
+  }
   $self->kernel->post($self->alias, 'shutdown_socket', 0);
   $self->server->remove_referee($self);
 }
