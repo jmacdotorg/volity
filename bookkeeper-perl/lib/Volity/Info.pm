@@ -23,7 +23,4 @@ use strict;
 
 use base qw(Class::DBI);
 
-# XXX This will have to get its info from an outside source, eventually...
-Volity::Info->set_db('Main', 'dbi:mysql:migs', 'jmac', 'foo');
-
 1;

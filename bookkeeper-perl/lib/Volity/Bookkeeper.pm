@@ -29,8 +29,6 @@ use DBIx::Abstract;
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
-use Volity::Info::Player;
-use Volity::Info::Game;
 
 use POE qw(
 	   Wheel::SocketFactory

@@ -8,14 +8,14 @@ use Getopt::Std;
 use DBIx::Abstract;
 use Volity::GameRecord;
 
-my $dbh = DBIx::Abstract->connect({dbname=>'migs',
-				   user=>'jmac',
-				   password=>'foo',})
-  or die "Bleah.";
-
-
 my %opts;
-getopts('u:p:h:r:d:o:K:G:P:', \%opts);
+getopts('u:p:h:r:d:o:K:G:P:D:U:W:', \%opts);
+
+my $dbh = DBIx::Abstract->connect({dsn=>$opts{D},
+				   user=>$opts{U},
+				   password=>$opts{W},})
+  or die "Failed to open a database connection.";
+
 
 foreach ('user', 'host', 'password', 'resource',) {
   unless (defined($opts{substr($_, 0, 1)})) {

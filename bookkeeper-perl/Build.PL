@@ -9,7 +9,9 @@ my $build = Module::Build->new
    requires=> {
 	       'Volity'=>undef,
 	       'Class::DBI'=>undef,
-	     }
+	     },
+   script_files=>[glob("bin/*.pl")],
+   install_path=>{script=>'/usr/local/volity/bin'},
   );
 $build->create_build_script;
 
