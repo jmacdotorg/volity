@@ -1,0 +1,9 @@
+0.2
+	- Added this Changes file.
+
+	- Updated to take better advantage of the Volity::Info modules.
+
+	- Added several new Volity::Info subclass modules.
+
+	- Removed dependency on DBIx::Abstract.
+	
