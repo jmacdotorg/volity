@@ -313,6 +313,7 @@ sub _start {
 			      USERNAME=>$self->user,
                               PASSWORD=>$self->password,
                               RESOURCE=>$self->resource,
+#			      DEBUG=>1,
 			     );
 }
 
@@ -494,6 +495,7 @@ sub jabber_message {
   my $method = "handle_${type}_message";
   $self->logger->debug( "Delegating it to the $method method.");
   $self->$method($info_hash);
+  $self->logger->debug( "Done delegating to $method." );
 }
 
 =back
@@ -793,8 +795,9 @@ sub send_rpc_response {
   # I don't like this so much, sliding in the response as raw data.
   # But then, I can't see why it would break.
   my $response_xml = $response->as_string;
-  # The susbtr() chops off the XML prolog. I know, I know.
-  $response_xml = substr($response_xml, 22);
+  # This s/// chops off the XML prolog.
+  # (Ugly, yes. Suggestions welcome.)
+  $response_xml =~ s/^<\s*\?\s*xml\s*version\s*=\s*['"]1\.0['"]\s*\?\s*>//;
   $rpc_iq->insert_tag(query=>[xmlns=>'jabber:iq:rpc'])
     ->rawdata($response_xml);
   $self->logger->debug("Sending response: " . $rpc_iq->to_str);

@@ -355,19 +355,10 @@ sub jabber_presence {
 
       # Send the game-creating JID an RPC response letting them know
       # where the action is.
-      my $response = RPC::XML::response->new($self->muc_jid);
-      my $rpc_iq = POE::Filter::XML::Node->new('iq');
-      $rpc_iq->attr(type=>'result');
-      $rpc_iq->attr(to=>$self->starting_request_jid);
-      $rpc_iq->attr(id=>$self->starting_request_id) if defined($self->starting_request_id);
-      # I don't like this so much, sliding in the response as raw data.
-      # But then, I can't see why it would break.
-      my $response_xml = $response->as_string;
-      $response_xml = substr($response_xml, 22);
-      $rpc_iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])
-	->rawdata($response_xml);
-      $kernel->post($self->alias, 'output_handler', $rpc_iq);
-
+      $self->send_rpc_response($self->starting_request_jid,
+			       $self->starting_request_id,
+			       $self->muc_jid,
+			       );
     } else {
       # All right, some other yahoo has changed presence.
       # Note in my list of potential players, depending upon whether
