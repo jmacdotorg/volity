@@ -154,6 +154,22 @@ sub jabber_authed {
   }
 }
 
+# This presence handler takes care of auto-approving all subscription
+# requests. Volity servers are very social like that.
+sub jabber_presence {
+  my $self = shift;
+  my ($presence) = @_;		# PXR::Node object
+  if ($presence->attr('type') and $presence->attr('type') eq 'subscribe') {
+    # A subscription request! Shoot back approval.
+    $self->send_presence(
+			 {
+			  to=>$presence->attr('from'),
+			  type=>'subscribed',
+			 }
+			);
+  }
+}
+
 sub new_table {
   my $self = shift;
   # Start a new session to play this game.

@@ -199,7 +199,7 @@ Set this to a true value to display verbose debugging messages on STDERR.
 
 =cut
 
-use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers);
+use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster);
 
 sub initialize {
   my $self = shift;
@@ -224,11 +224,20 @@ sub initialize {
   $self->rpc_parser(RPC::XML::Parser->new);
   $self->default_language('en') unless defined($self->default_language);
 
-
   # Give initial values to instance variables what needs 'em.
-  $self->{query_handlers} = {};
+  $self->{query_handlers} = {
+			     'jabber:iq:roster'=>{
+						  result => 'receive_roster',
+						  set => 'update_roster',
+						 },
+			     'http://jabber.org/protocol/disco#items'=>{
+				  result => 'receive_disco_items',
+								       },
+			     'http://jabber.org/protocol/disco#info'=>{
+				  result => 'receive_disco_info',
+							              },
+			  };
 
-  $self->debug("LEAVING init. Password is " . $self->password);
   return $self;
 }
 
@@ -359,12 +368,21 @@ sub jabber_iq {
       my $response_obj = $self->rpc_parser->parse($raw_xml);
       $self->debug("Finally, got $response_obj.\n");
       $self->debug("The response is: " . $response_obj->value->value . "\n");
-      $self->handle_rpc_response({
-				  id=>$id,
-				  response=>$response_obj->value->value,
-				  rpc_object=>$response_obj,
-				  from=>$from_jid,
+      if ($response_obj->value->is_fault) {
+	$self->handle_rpc_fault({
+				 id=>$id,
+				 fault_code=>$response_obj->value->code,
+				 fault_string=>$response_obj->value->string,
+				 rpc_object=>$response_obj,
+				 from=>$from_jid,
 				});
+      } else {
+	$self->handle_rpc_response({id=>$id,
+				    response=>$response_obj->value->value,
+				    rpc_object=>$response_obj,
+				    from=>$from_jid,
+				   });
+      }
     }
   } elsif ($node->attr('type') eq 'set') {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
@@ -456,6 +474,10 @@ Called upon receipt of an RPC response. The argument is a hashref containing the
 
 Called upon receipt of an RPC request. The argument is a hashref containing the request's ID attribute, method, argument list (as an arrayref), and orginating JID, as well as an RPC::XML object representing the request.
 
+=item handle_rpc_fault({id=>$id, rpc_object=>$obj, from=>$from, fault_code=>$code, fault_string=>$string})
+
+Called upon receipt of an RPC fault response.
+
 =item handle_rpc_transmission_error($iq_node, $error_code, $error_message);
 
 Called upon receipt of a Jabber IQ packet that's of type C<error>, but
@@ -476,6 +498,7 @@ request.
 sub handle_rpc_response { }
 sub handle_rpc_request { }
 sub handle_rpc_transmission_error { }
+sub handle_rpc_fault { }
 
 =head2 Message handler methods
 
@@ -523,9 +546,13 @@ sub handle_query_element_ns {
   if (my $query = $node->get_tag('query')) {
     $query_ns = $query->attr('xmlns');
   }
+
+  $self->debug("In handle_query_element_ns, for $query_ns...");
   return unless defined($query_ns);
   return unless defined($self->query_handlers);
   return unless defined($self->query_handlers->{$query_ns});
+
+  $self->debug("I'm handling a query of the $query_ns namespace.");
 
   if ($element_type eq 'iq') {
     # Locate a dispatch method, depending upon the type of the iq.
@@ -535,6 +562,7 @@ sub handle_query_element_ns {
       croak("No type attribute defined in query's parent node! Gak!");
     }
     $method = $self->query_handlers->{$query_ns}->{$type};
+    $self->debug("Trying to call the $method method.");
     if (defined($method)) {
       if ($self->can($method)) {
 	$self->$method($node);
@@ -798,6 +826,256 @@ sub join_muc {
   $self->debug("Presence sent.\n");
   return $muc_jid;
 }
+
+=head2 send_presence ($info_hashref)
+
+Send a simple presence packet. Its optional argument is a hashref containing any of the following keys:
+
+=over
+
+=item to
+
+The destination of this presence packet (if it's a directed packet and not just a 'ping' to one's Jabber server).
+
+=item type
+
+Sets the type attribute. See the XMPP-IM protocol for more information as to their use and legal values.
+
+=item show
+
+=item status
+
+=item priority
+
+These all set sub-elements on the outgoing presence element. See the XMPP-IM protocol for more information as to their use. You may set these to localized values by setting their values to hashrefs instead of strings, as described in L<"Localization">.
+
+=begin not_yet
+
+=item x
+
+A PXR::Node object representing a Jabber <<x/>> element, for presence elements carrying additional payload.
+
+=item error
+
+A PXR::Node object representing a Jabber <<error/> element.
+
+=end not_yet
+
+=back
+
+You can leave out the hashref entirely to send a blank <<presence/>>
+element.
+
+=cut
+
+sub send_presence {
+  my $self = shift;
+  my $presence = PXR::Node->new('presence');
+  my ($config) = @_;
+  $config ||= {};
+  foreach (qw(to type)) {
+    $presence->attr($_=>$$config{$_}) if defined($$config{$_});
+  }
+  foreach (qw(show status priority)) {
+    $self->insert_localized_tags($presence, $_, $$config{$_}) if defined($$config{$_});
+  }
+  $self->kernel->post($self->alias, 'output_handler', $presence);
+}
+
+# insert_localized_tag: internal method. Receive a PXR::Node object, a child
+# element name, and a value that might be either a plain string or a hashref
+# containing localized text keyed on langauge abbreviation. Do the right thing.
+# No return value; it sticks the right elements right into the supplied
+# parent node.
+sub insert_localized_tags {
+  my $self = shift;
+  my ($parent_node, $child_name, $value) = @_;
+  if (ref($value) and ref($value) eq 'HASH') {
+    while (my($language, $text) = each(%$value)) {
+      unless ($language =~ /^\w\w$|^\w\w-\w\w$/) {
+	croak("Language must be of the form 'xx' or 'xx-xx', but you sent '$language'.");
+      }
+      my $tag = $parent_node->insert_tag($child_name);
+      $tag->attr("xml:lang"=>$language);
+      $tag->data($text);
+    }
+  } elsif (not(ref($value))) {
+    $parent_node->insert_tag($child_name)->data($value);
+  }
+}
+
+sub request_roster {
+  my $self = shift;
+  my $iq = PXR::Node->new('iq');
+  $iq->attr(type=>'get');
+  $iq->insert_tag('query', 'jabber:iq:roster');
+  $self->post_node($iq);
+}
+
+sub receive_roster {
+  my $self = shift;
+  my ($iq) = @_;		# PXR::Node object
+  my $items = $iq->get_tag('query')->get_children;
+  return unless defined($items);
+  my $roster = Volity::Jabber::Roster->new;
+  for my $item (@$items) {
+    my $item_hash = {};
+    foreach (qw(jid name subscription)) {
+      $$item_hash{$_} = $item->attr($_) if defined($item->attr($_));
+    }
+    if (my $groups = $item->get_children) {
+      $$item_hash{group} = [];
+      for my $group (@$groups) {
+	push (@{$$item_hash{group}}, $group->data)
+      }
+    }
+    $roster->add_item($item_hash);
+  }
+  $self->roster($roster);
+}
+
+# add_item_to_roster: Useful for both adding new stuff to the roster,
+# and updating existing items. The JID, as always, is the key value.
+sub add_item_to_roster {
+  my $self = shift;
+  unless (defined($self->roster)) {
+    croak("You must receive a roster from the server before you can modify it. Try calling request_roster() first.");
+  }
+  my $iq = PXR::Node->new('iq');
+  $iq->attr(type=>'set');
+  my $item = $iq->insert_tag('query', 'jabber:iq:roster')->insert_tag('item');
+  my ($item_hash) = @_;
+  foreach (qw(jid name subscription)) {
+    $item->attr($_=>$$item_hash{$_}) if defined($$item_hash{$_});
+  }
+  if (defined($$item_hash{groups})) {
+    $$item_hash{groups} = [$$item_hash{groups}] unless ref($$item_hash{groups});
+    for my $group_name (@{$$item_hash{groups}}) {
+      $item->insert_tag('group')->data($group_name);
+    }
+  }
+  $self->post_node($iq);
+}
+
+# XXX Unimplemented!! Because I don't care yet!!
+sub remove_item_from_roster {
+  my $self = shift;
+  unless (defined($self->roster)) {
+    croak("You must receive a roster from the server before you can modify it. Try calling request_roster() first.");
+  }
+
+}
+
+sub update_roster {
+  my $self = shift;
+  my ($iq) = @_;		# A PXR::Node object
+  my $item = $iq->get_tag('query')->get_tag('item');
+  my $roster = $self->roster;
+  unless (defined($roster)) {
+    croak("Uh oh, got a roster-modification result from the server, but I don't have a roster set. This is bizarre. Good night.");
+  }
+  my $item_hash = {};
+  foreach (qw(jid name subscription)) {
+    $$item_hash{$_} = $item->attr($_) if defined($item->attr($_));
+  }
+  if (my @groups = $item->get_children) {
+    $$item_hash{group} = [];
+    for my $group (@groups) {
+      push (@{$$item_hash{group}}, $group->data)
+    }
+  }
+  # Now that we've made a chewable data structure from this item,
+  # figure out how it applies to the roster.
+  # As it happens, we _always_ want to remove this item from the roster,
+  # as a first step. If it's an add or an update, we'll just re-add it,
+  # with this new item data.
+  $roster->remove_item($$item_hash{jid});
+  if ($$item_hash{subscription} ne 'remove') {
+    # OK, so it's either an add or an update.
+    # In either case, we will add it this new data to the roster.
+    $roster->add_item($item_hash);
+  }
+}
+
+
+sub request_disco {
+  my $self = shift;
+  my ($info) = @_;
+  my $iq = PXR::Node->new('iq');
+  $iq->attr(type=>'get');
+  if (not($info) or not(ref($info) eq 'HASH')) {
+    croak("You must call request_disco with a hashref argument.");
+  }
+  unless ($$info{to}) {
+    croak("The hash argument to request_disco() must contain at least a 'to' key, with a JID value.");
+  }
+  $iq->attr(to=>$$info{to});
+  $iq->attr(id=>$$info{id}) if defined($$info{id});
+  my $query = $iq->add_tag(query=>"http://jabber.org/protocol/disco#items");
+  $query->attr(node=>$$info{node}) if defined($$info{node});
+  $self->post_node($iq);
+}
+
+sub receive_disco_info {
+  my $self = shift;
+  $self->handle_disco_info($self->receive_disco(@_));
+}
+
+sub receive_disco_items {
+  my $self = shift;
+  $self->handle_disco_items($self->receive_disco(@_));
+}
+
+# Stubs, to override.
+sub handle_disco_items { }
+sub handle_disco_info { }
+
+sub receive_disco {
+  my $self = shift;
+  my ($iq) = @_;
+  my @return;
+  for my $child ($iq->get_tag('query')->get_children) {
+    my $class = "Volity::Jabber::Disco::" . ucfirst($child->name);
+    bless($child, $class);
+    push (@return, $child);
+  }
+  return @return;
+}
+
+sub send_disco_items {
+  my $self = shift;
+  $self->send_disco('items', @_);
+}
+
+sub send_disco_info {
+  my $self = shift;
+  $self->send_disco('info', @_);
+}
+
+sub send_disco {
+  my $self = shift;
+  my ($type, $info) = @_;
+  if (not($info) or not(ref($info) eq 'HASH')) {
+    croak("You must call send_disco_$type with a hashref argument.");
+  }
+  unless ($$info{to}) {
+    croak("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
+  }
+  my $iq = PXR::Node->new('iq');
+  my $query = $iq->add_tag('query', "http://jabber.org/protocol/disco#$type");
+  my @items_to_add;
+  if (defined($$info{items})) {
+    @items_to_add = ref($$info{items})? @{$$info{items}} : ($$info{items});
+  }
+  for my $item (@items_to_add) {
+    unless ($item->isa("Volity::Jabber::Disco::Node")) {
+      croak("The items you add must be objects belonging to one of the Volity::Jabber::Disco::* classes. But you passed me this: $item");
+    }
+    $query->add_tag($item);
+  }
+  $self->post_node($iq);
+}
+
 
 =head2 send_form
 
@@ -1067,3 +1345,189 @@ sub label {
   my $self = shift;
   return $self->{field}->attr('label');
 }
+
+package Volity::Jabber::Roster;
+
+use warnings;
+use strict;
+use base qw(Volity);
+use fields qw(jids groups names_by_jid jids_by_name groups_by_jid presence);
+use Carp qw(carp croak);
+
+sub initialize {
+  my $self = shift;
+  $self->{groups}->{_NONE} = [];
+  $self->{names_by_jid} = {};
+  $self->{jids_by_name} = {};
+  return $self;
+}
+
+sub add_item {
+  my $self = shift;
+  my ($item_hash) = @_;
+  $$item_hash{group} ||= ['_NONE'];
+  $$item_hash{group} = [$$item_hash{group}] unless ref($$item_hash{group});
+  my @current_groups_of_this_jid = $self->groups_for_jid($$item_hash{jid});
+  for my $group_name (@{$$item_hash{group}}) {
+    $group_name ||= '_NONE';
+    $self->{groups}->{$group_name} ||= [];
+    $self->{groups}->{$$item_hash{group}}->{$$item_hash{jid}} = 1;
+    $self->{groups_by_jid}->{$$item_hash{jid}} ||= [];
+    push (@{$self->{groups_by_jid}->{$$item_hash{jid}}}, $group_name);
+  }
+  if (defined($$item_hash{name})) {
+    $self->{jids_by_name}->{$$item_hash{name}} = $$item_hash{jid};
+    $self->{names_by_jid}->{$$item_hash{jid}} = $$item_hash{name};
+  }
+  $self->{jids}->{$$item_hash{jid}} = 1;
+}
+
+sub remove_item {
+  my $self = shift;
+  my ($jid) = @_;
+  # XXX A JID-syntax check would be nice here.
+  unless (defined($jid)) {
+    croak("You must call remove_item with a JID.");
+  }
+  if (defined($self->{names_by_jid}->{$jid})) {
+    delete($self->{jids_by_name}->{delete($self->{names_by_jid}->{$jid})});
+  }
+  for my $group_name ($self->groups_for_jid($jid)) {
+    delete($self->{groups}->{$group_name}->{$jid});
+  }
+  delete($self->{groups_by_jid}->{$jid});
+  delete($self->{jids}->{$jid});
+}
+
+sub jids {
+  my $self = shift;
+  return keys(%{$self->{jids}});
+}
+
+sub ungrouped_jids {
+  my $self = shift;
+  return keys(%{$self->{groups}->{_NONE}});
+}
+
+sub jids_in_group {
+  my $self = shift;
+  my ($group) = @_;
+  unless (defined($group)) {
+    croak("You must call jids_in_group with a group name.");
+  }
+  if (defined($self->{groups}->{$group})) {
+    return keys(%{$self->{groups}->{$group}});
+  }
+}
+
+sub jid_for_name {
+  my $self = shift;
+  my ($name) = @_;
+  unless (defined($name)) {
+    croak("You must call jid_for_name with a name to look up.");
+  }
+  return $self->{jids_by_name}->{$name};
+}
+
+sub name_for_jid {
+  my $self = shift;
+  my ($jid) = @_;
+  unless (defined($jid)) {
+    croak("You must call name_for_jid with a JID to look up.");
+  }
+  return $self->{names_by_jid}->{$jid};
+}
+
+sub groups_for_jid {
+  my $self = shift;
+  my ($jid) = @_;
+  unless (defined($jid)) {
+    croak("You must call groups_for_jid with a JID.");
+  }
+  if (defined($self->{groups_by_jid}->{$jid})) {
+    return @{$self->{groups_by_jid}->{$jid}};
+  } else {
+    return ();
+  }
+}
+
+sub has_jid {
+  my $self = shift;
+  my ($jid) = @_;
+  my $resource;
+  ($jid, $resource) = $jid =~ /^(.*)\/(.*)$/;
+  if (exists($self->{jids}->{$jid})) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+# presence: get or set a hashful of information about the given JID's presence.
+# Note that the roster object doesn't listen to presence and do this all by
+# itself; this method has to be called from outside.
+sub presence {
+  my $self = shift;
+  my ($jid, $presence_hash) = @_;
+  my $resource;
+  ($jid, $resource) = $jid =~ /^(.*?)(?:\/(.*))?$/;
+  if ($presence_hash) {
+    if (defined($resource)) {
+      $self->{presence}->{$jid}->{resources}->{$resource} = $presence_hash;
+    } else {
+      $self->{presence}->{$jid}->{general} = $presence_hash;
+    }
+  }
+  my @presence_list;
+  for my $resource (keys(%{$self->{presence}->{$jid}->{resources}})) {
+    my $presence_hash = $self->{presence}->{$jid}->{resources}->{$resource};
+    $$presence_hash{resource} = $resource;
+#    $$presence_hash{jid} = $jid;
+    push (@presence_list, $presence_hash);
+  }
+  push (@presence_list, $self->{presence}->{$jid}->{general}) if defined $self->{presence}->{$jid}->{general};
+#  use Data::Dumper;
+#  die Dumper(\@presence_list);
+  
+  return @presence_list;
+}
+
+package Volity::Jabber::Disco::Node;
+use warnings; use strict;
+use base qw(PXR::Node Class::Accessor);
+
+sub new {
+  my $class = shift;
+  my ($node_type) = $class =~ /^.*::(.*?)$/;
+  return PXR::Node->SUPER::new(lc($node_type));
+}
+
+sub set {
+  my $self = shift;
+  my ($key, $value) = @_;
+  $self->attr($key=>$value);
+  return $self->SUPER::set(@_);
+}
+
+package Volity::Jabber::Disco::Item;
+
+use warnings; use strict;
+use base qw(Volity::Jabber::Disco::Node);
+
+__PACKAGE__->mk_accessors(qw(jid node name));
+
+package Volity::Jabber::Disco::Identity;
+
+use warnings; use strict;
+use base qw(Volity::Jabber::Disco::Node);
+
+__PACKAGE__->mk_accessors(qw(category type name));
+
+package Volity::Jabber::Disco::Feature;
+
+use warnings; use strict;
+use base qw(Volity::Jabber::Disco::Node);
+
+__PACKAGE__->mk_accessors(qw(var));
+
+1;

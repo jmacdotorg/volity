@@ -2,6 +2,20 @@
 
 	- Added support for bot invitations.
 
+	- Greater support for forms in Volity::Jabber.
+	
+	- Added send_presence method to Volity::Jabber.
+
+	- Volity::Server objects now listen for incoming presence
+          subscriptions, and automatically approve of them.
+
+	- Rewrote and renamed the text client. It's now 'Friv', under
+          the executable 'friv'.
+
+	- Added basic roster and service discovery support to Volity::Jabber.
+
+	- Added the above to Friv, too.
+
 0.2.2
 
 	- (distribution) Improved the test.pl script. It now more
