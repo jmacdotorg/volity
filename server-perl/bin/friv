@@ -581,6 +581,10 @@ Set to a true value to display verbose and perhaps largely meaningless debug mes
 
 =over
 
+=item roster
+
+View your Jabber roster, including indicators of who's online and who's not.
+
 =item new_table C<JID>
 
 Attempt to create a new table at the specified JID. If successful, you
@@ -621,7 +625,5 @@ Quits the program (and logs you out of the system).
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org> (Jabber: jmac@volity.net)
-
-=head1 SEE ALSO 
 
 =cut
