@@ -28,7 +28,6 @@ Volity::Info::Game->columns(All=>qw(id start_time end_time server_id signature r
 Volity::Info::Game->has_a(ruleset_id=>"Volity::Info::Ruleset");
 Volity::Info::Game->has_a(server_id=>"Volity::Info::Server");
 Volity::Info::Game->has_many(players=>["Volity::Info::GamePlayer" => 'player_id'], 'game_id');
-Volity::Info::Game->has_many(winners=>["Volity::Info::GameWinner" => 'player_id'], 'game_id');
 Volity::Info::Game->has_many(quitters=>["Volity::Info::GameQuitter" => 'player_id'], 'game_id');
 
 sub uri {

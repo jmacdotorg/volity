@@ -5,7 +5,6 @@ lib/Volity/Info.pm
 lib/Volity/Info/Game.pm
 lib/Volity/Info/Player.pm
 lib/Volity/Info/GamePlayer.pm
-lib/Volity/Info/GameWinner.pm
 lib/Volity/Info/GameQuitter.pm
 lib/Volity/Info/Ruleset.pm
 LICENSE
