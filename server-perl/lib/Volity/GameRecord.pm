@@ -303,7 +303,10 @@ sub sign {
     return;
   }
 
-  return unless $self->check_gpg_attributes;
+  unless ($self->check_gpg_attributes) {
+      $self->logger->warn("The sign() method was called on a game record, but the GPG attrubutes aren't properly set on the Volity::GameRecord class.");
+      return;
+  }
 
   # XXX Very hacky, but good enough for now.
   my $filename = "/tmp/volity_record_$$";
