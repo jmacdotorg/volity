@@ -77,7 +77,7 @@ sub handle_rpc_request {
 sub _rpc_record_game {
   my $self = shift;
   my ($sender_jid, $rpc_id_attr, $game_record_hashref) = @_;
-  my $game_record = Volity::GameRecord->new_from_hashref($game_record_hashref->value);
+  my $game_record = Volity::GameRecord->new_from_hashref($game_record_hashref);
   unless (defined($game_record)) {
     warn "Got bad game struct from $sender_jid.\n";
     # XXX Error response here.
