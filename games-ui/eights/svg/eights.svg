@@ -1,0 +1,1108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500" preserveAspectRatio="none" zoomAndPan="magnify" version="1.0" contentScriptType="text/ecmascript" contentStyleType="text/css">
+  <defs>
+    <font id="game-font" horiz-adv-x="1375" ><font-face
+    font-family="Apple Symbols"
+    units-per-em="2048"
+    panose-1="2 0 0 0 0 0 0 0 0 0"
+    ascent="1365"
+    descent="-512"
+    alphabetic="0" />
+<missing-glyph horiz-adv-x="682" d="M68 0V1365H614V0H68ZM546 68V1297H136V68H546Z" />
+<glyph unicode="&#x2655;" glyph-name="gid372" horiz-adv-x="1756" d="M1255 111Q1101 162 920 162Q786 162 714 152T554 112L551 74Q739 56 873 56L986 58L1075 61Q1097 61 1261 74L1255 111ZM1245 238Q1078 296 907 296Q733 296 564 240L561 164Q723 215 893
+215Q1083 215 1252 159L1245 238ZM1245 362Q1062 419 904 419Q738 419 568 361V291Q733 345 895 345Q1063 345 1244 288L1245 362ZM1248 487Q1075 539 903 539Q739 539 564 487L568 406Q731 460 918 460Q1078 460 1246 403L1248 487ZM1277 535L1421 926L1183 565Q1233
+553 1277 535ZM1166 569L1190 1077L1007 596Q1087 587 1166 569ZM994 597L909 1200L822 599Q873 602 907 602Q932 602 994 597ZM807 597L625 1085L648 570Q727 588 807 597ZM628 567L393 935L535 533Q582 554 628 567ZM1531 1227Q1507 1228 1489 1211T1471 1170Q1471
+1145 1488 1128T1529 1110Q1553 1110 1570 1128T1588 1170Q1588 1224 1531 1227ZM1232 1375Q1210 1375 1194 1358T1177 1316Q1177 1256 1235 1256Q1260 1256 1278 1272T1296 1312Q1296 1338 1277 1356T1232 1375ZM908 1460Q883 1460 865 1443T847 1400Q847 1376
+865 1360T908 1343Q933 1343 950 1360T968 1400Q968 1425 951 1442T908 1460ZM581 1370Q555 1370 537 1353T518 1311Q518 1286 536 1269T579 1252Q604 1252 621 1269T639 1310Q639 1370 581 1370ZM286 1226Q262 1226 244 1209T226 1167Q226 1143 244 1125T286 1107Q311
+1107 328 1124T345 1167Q345 1226 286 1226ZM1341 25Q1108 1 903 1Q668 1 471 26Q506 236 506 375Q506 414 501 496L302 1053Q173 1053 173 1158Q173 1206 210 1246T293 1286Q335 1286 367 1251T400 1169Q400 1133 355 1081L587 729L573 1205Q468 1224 468 1315Q468
+1361 501 1394T582 1428Q627 1428 660 1395T694 1315Q694 1268 634 1218L795 781L871 1294Q796 1334 796 1399Q796 1446 828 1479T907 1513Q954 1513 989 1480T1024 1401Q1024 1335 944 1293L1021 781L1182 1219Q1123 1267 1123 1310Q1123 1361 1155 1395T1237
+1429Q1284 1429 1317 1397T1350 1317Q1350 1229 1241 1204L1226 728L1461 1081Q1417 1137 1417 1170Q1417 1214 1451 1246T1533 1279Q1580 1279 1612 1245T1645 1161Q1645 1068 1516 1060L1308 481Q1308 229 1341 25Z" />
+<glyph unicode="&#x2656;" glyph-name="gid373" horiz-adv-x="1626" d="M1452 2L211 0V193H304L303 327H351L505 482L506 1035L403 1137L327 1138V1425H524L525 1322L683 1323V1426H991V1324H1135L1134 1428H1341L1340 1137L1266 1139L1167 1038L1166 479L1316
+329L1359 327L1360 192H1450L1452 2ZM1383 55V138L277 137V55H1383ZM1291 191L1292 272H374L373 192L1291 191ZM1238 329L1165 404L509 405L432 328L1238 329ZM1096 459L1097 1022H575V457L1096 459ZM1282 1195L1281 1369H1189L1190 1268L934 1269L932 1369L739
+1368V1269L469 1267V1368H382L383 1196L1282 1195ZM1122 1074L1185 1138L484 1137L545 1074H1122Z" />
+<glyph unicode="&#x2657;" glyph-name="gid374" horiz-adv-x="1713" d="M1553 -1Q1474 58 1375 99T1215 140Q1207 140 1082 121Q1059 117 1039 117Q979 117 882 166V270L848 269V166Q751 119 692 119Q661 119 632 123Q519 140 510 140Q394 140 174 7L175 144Q372
+267 565 267Q581 267 602 263Q752 230 754 230Q770 232 810 270Q709 287 659 303T529 362L613 590Q442 728 442 924Q442 1079 548 1202T838 1384Q758 1417 758 1481Q758 1528 789 1560T865 1593Q911 1593 942 1562T974 1485Q974 1416 892 1385Q1103 1319 1205 1175Q1290
+1054 1290 919Q1290 827 1245 742T1116 592L1199 361Q1107 315 1058 300T915 275Q981 236 1010 236Q1018 236 1122 261Q1153 269 1187 269Q1341 269 1555 143L1553 -1ZM870 1546Q846 1546 828 1529T810 1487Q810 1431 867 1431Q893 1431 910 1448T927 1491Q924
+1546 870 1546ZM1093 633Q1235 771 1235 921Q1235 1070 1136 1181T869 1332Q680 1283 585 1161Q496 1048 496 921Q496 770 637 632Q765 679 865 679Q966 679 1093 633ZM917 799L810 800V906H651V1019L809 1017L810 1132L917 1133L919 1016H1068L1069 905L919 906L917
+799ZM1109 429L1055 579Q937 615 867 615Q791 615 673 579L618 430Q754 470 865 470Q964 470 1109 429ZM1119 377Q977 423 878 423Q765 423 608 377Q761 316 865 316Q969 316 1119 377ZM1516 79L1520 123Q1321 225 1194 225Q1156 225 1121 217Q1015 195 1006 195Q977
+195 912 220L913 182Q980 157 1023 157Q1048 157 1077 162Q1200 183 1210 183Q1318 183 1516 79ZM812 179L814 217Q758 193 738 193Q735 193 599 219Q570 225 539 225Q393 225 211 127V80Q393 179 533 179Q561 179 635 165Q680 157 713 157Q743 157 812 179Z" />
+<glyph unicode="&#x2658;" glyph-name="gid375" horiz-adv-x="1647" d="M1418 -3L492 -1Q488 54 488 84Q488 161 538 272T666 480L723 550Q778 618 816 737Q743 643 685 607T507 543Q449 391 369 391Q358 391 338 392Q375 420 394 472Q327 401 295 401Q257 401
+187 471Q130 528 130 579Q130 688 292 951Q328 1011 336 1038L357 1118Q369 1162 503 1245Q460 1327 440 1360Q426 1384 427 1400Q429 1425 453 1425Q510 1425 629 1303L648 1308Q654 1352 654 1372V1430Q654 1486 683 1490Q685 1490 710 1480Q758 1459 777 1428T822
+1303Q933 1263 992 1227T1117 1122Q1424 800 1424 182Q1424 123 1418 -3ZM1322 72Q1326 165 1326 215Q1326 380 1290 554T1194 842Q1109 1005 1015 1091T769 1228Q769 1307 758 1336T702 1399Q704 1368 704 1347Q704 1317 692 1260Q651 1254 613 1240Q580 1290
+536 1329Q527 1308 527 1297Q527 1280 546 1257Q565 1232 564 1225Q563 1212 522 1192Q472 1167 452 1141T401 1038Q374 971 299 851Q186 669 186 587Q186 522 300 456Q360 488 409 538L416 506L422 478Q441 513 449 531Q490 619 521 644T647 690Q584 660 541 610Q693
+646 760 738T848 1031Q862 963 862 930Q862 894 844 815Q864 753 864 723Q864 610 730 437Q641 322 613 262T557 73L1322 72ZM592 1126Q561 1096 559 1082L551 1034Q545 997 505 997Q494 997 474 1001L461 987Q458 1010 458 1023Q458 1117 592 1126ZM282 615Q282
+562 246 562Q238 562 224 567Q236 610 282 615Z" />
+<glyph unicode="&#x2659;" glyph-name="gid376" horiz-adv-x="1710" d="M1486 -8L180 -10L178 62Q178 264 286 425T588 670Q506 783 506 878Q506 1051 686 1177Q626 1262 626 1312Q626 1381 689 1442T825 1503Q895 1503 958 1444T1022 1321Q1022 1271 961 1179Q1073
+1106 1110 1024Q1150 938 1150 878Q1150 805 1069 675Q1326 558 1414 366Q1487 204 1487 45L1486 -8ZM1413 58Q1413 273 1277 439Q1148 596 899 643Q1077 714 1077 885Q1077 964 1020 1037T863 1160Q949 1245 949 1314Q949 1365 913 1401T824 1437Q773 1437 736
+1401T698 1315Q698 1252 781 1157Q575 1048 575 890Q575 802 617 743T753 640Q610 614 515 555T348 386Q250 239 250 58H1413Z" />
+<glyph unicode="&#x265a;" glyph-name="gid377" horiz-adv-x="1609" d="M1216 29Q1040 1 951 1L803 4H666Q589 4 397 30L419 468Q168 709 168 916Q168 1076 282 1160Q378 1230 478 1230Q558 1230 664 1146Q643 1203 643 1249Q643 1337 763 1347V1420L671 1421L669
+1490H763V1573L849 1572L851 1490L939 1489L940 1422H850L849 1343Q959 1331 959 1251Q959 1197 937 1134Q998 1187 1039 1204T1152 1221Q1279 1221 1357 1133T1435 902Q1435 681 1190 471L1216 29ZM1132 147L1123 231Q922 268 791 268Q664 268 488 233L480 146Q666
+180 791 180Q916 180 1132 147ZM1116 305L1107 411Q929 438 798 438Q660 438 505 416L495 306Q654 338 779 338Q925 338 1116 305ZM1094 512Q1233 632 1292 723T1351 909Q1351 1012 1294 1076T1144 1140Q1008 1140 931 988T854 569V527L976 520L1094 512ZM1089
+568L913 581Q913 803 976 941T1142 1079Q1210 1079 1251 1032T1292 905Q1292 786 1149 635Q1128 613 1089 568ZM754 528Q754 800 701 945Q630 1138 467 1138Q378 1138 316 1075T253 923Q253 821 311 727T506 514Q647 528 754 528ZM700 584L516 570Q316 782 316
+917Q316 988 357 1034T463 1081Q572 1081 636 947T700 584ZM805 844Q839 931 862 1029T885 1186Q885 1233 862 1265T804 1298Q777 1298 752 1271T726 1214Q726 1062 805 844ZM804 987Q771 1124 771 1172Q771 1200 781 1224T805 1249Q837 1251 837 1186Q837 1164
+831 1121L821 1056Q818 1038 804 987Z" />
+<glyph unicode="&#x265b;" glyph-name="gid378" horiz-adv-x="1688" d="M1200 160L1194 235Q1095 270 1032 281T856 292Q676 292 512 238L508 161Q672 213 855 213Q1018 213 1200 160ZM1192 287L1189 361Q1010 415 865 415Q704 415 516 359L513 288Q682 343 855
+343Q1013 343 1192 287ZM1193 402L1198 484Q1027 540 847 540Q682 540 509 485L514 405Q684 459 848 459Q1017 459 1193 402ZM1287 32Q1085 5 844 5Q673 5 419 29Q452 230 452 361L450 475L241 1058Q224 1056 211 1056Q176 1056 147 1091T117 1169Q117 1213 151
+1245T231 1278Q273 1278 308 1248T344 1182Q344 1142 297 1079L530 725L515 1206Q412 1224 412 1318Q412 1363 444 1396T522 1429Q569 1429 602 1395T636 1313Q636 1272 576 1217L739 777L814 1295Q739 1332 739 1396Q739 1446 771 1478T854 1511Q900 1511 932
+1480T964 1403Q964 1339 885 1294L964 781L1125 1220Q1066 1265 1066 1316Q1066 1364 1099 1397T1181 1430Q1229 1430 1261 1399T1294 1321Q1294 1233 1184 1206L1169 726L1403 1082Q1357 1138 1355 1175Q1353 1212 1391 1247T1472 1283Q1518 1283 1551 1250T1584
+1169Q1584 1081 1458 1061L1255 492Q1255 224 1287 32Z" />
+<glyph unicode="&#x265c;" glyph-name="gid379" horiz-adv-x="1574" d="M1390 0L150 1V193H243L241 328H293L448 482L445 1038L346 1135L272 1134V1425L468 1424L469 1322L626 1320V1425H936V1319H1081V1422L1283 1424V1137L1208 1136L1107 1033V473L1253 327H1300V190H1390V0ZM1321
+53V138H216L217 54L1321 53ZM1229 190L1230 273L313 274L314 192L1229 190ZM1176 328L1103 404L444 403L371 329L1176 328ZM1067 1073L1133 1137H424L488 1073H1067ZM1229 1193L1228 1266H326V1194L1229 1193Z" />
+<glyph unicode="&#x265d;" glyph-name="gid380" horiz-adv-x="1760" d="M1121 377Q978 421 888 421Q786 421 611 380Q757 320 865 320Q976 320 1121 377ZM1115 426L1059 581Q942 616 879 616Q808 616 677 581L624 430Q767 469 874 469Q973 469 1115 426ZM922 800V907H1071L1072
+1017H924L923 1132H814V1015L655 1016L653 907H815L816 802L922 800ZM1560 0Q1454 68 1375 99Q1266 140 1248 139L990 118Q970 116 888 166V271Q877 270 873 270Q865 270 853 272L852 166Q761 124 713 121Q708 121 587 135Q561 138 536 138Q453 138 377 110T181
+4L179 141Q282 205 375 237Q480 272 489 271L746 233Q758 231 816 272Q721 285 672 301T534 362L618 589Q523 675 486 750T449 936Q449 1088 547 1202T828 1380Q759 1443 759 1489Q759 1531 790 1561T866 1592Q910 1592 943 1562T976 1490Q976 1442 900 1377Q1001
+1350 1060 1314T1183 1203Q1293 1076 1293 924Q1293 733 1118 594L1203 363Q1080 308 1042 297T920 275Q978 235 990 237L1235 271Q1240 272 1292 255L1414 214Q1452 202 1559 142L1560 0Z" />
+<glyph unicode="&#x265e;" glyph-name="gid381" horiz-adv-x="1578" d="M1420 0L494 -1Q489 44 489 69Q489 144 535 255T651 455L721 545Q779 620 816 736Q749 648 682 606T509 546Q473 462 440 427T364 392Q356 392 335 393Q373 423 398 472Q322 402 293 402Q258
+402 194 471T129 577Q129 618 163 706T241 866L300 962Q325 1003 348 1065Q379 1151 404 1179T507 1248Q485 1293 473 1315L439 1372Q431 1387 431 1403Q431 1426 462 1426Q488 1426 539 1388T645 1292Q659 1351 659 1371L657 1442Q657 1474 668 1486Q674 1493
+685 1493Q775 1493 828 1303Q1011 1235 1121 1120Q1224 1011 1308 837Q1358 734 1392 557T1427 222L1423 117L1420 0ZM1357 74L1361 212Q1361 379 1332 537T1251 807Q1175 971 1084 1065T842 1233L852 1174Q1071 1056 1191 809T1311 229L1310 167L1308 74H1357ZM593
+1128Q516 1117 490 1090T464 991L477 1003Q528 1018 534 1030L570 1095Q576 1107 593 1128ZM288 612Q246 608 228 569Q242 565 252 565Q288 565 288 605Q288 606 288 612Z" />
+<glyph unicode="&#x265f;" glyph-name="gid382" horiz-adv-x="1563" d="M1422 1L116 0Q116 135 136 225T206 395Q268 496 336 555T525 671Q477 732 460 780T442 901Q442 986 490 1058T629 1181Q574 1260 574 1306Q574 1387 630 1443T767 1500Q843 1500 899 1444T955
+1310Q955 1257 899 1184Q1007 1128 1046 1060Q1095 975 1095 891Q1095 781 1013 673Q1141 609 1208 552T1328 402Q1423 239 1423 54L1422 1Z" />
+<glyph unicode="&#x2660;" glyph-name="gid383" horiz-adv-x="1248" d="M679 334L652 335Q652 199 664 134T713 -1H534Q572 42 588 102T604 266L606 333H574Q548 260 493 212T380 163Q295 163 233 235T171 406Q171 545 306 704Q326 729 361 773Q401 821 416 839Q548
+1000 619 1142Q649 1095 659 1080L717 997L786 898Q844 817 908 745Q1082 553 1082 407Q1082 309 1023 238T881 167Q810 167 764 205T679 334Z" />
+<glyph unicode="&#x2661;" glyph-name="gid384" horiz-adv-x="1430" d="M714 2L658 93Q540 286 352 467Q241 575 197 661T152 853Q152 973 235 1060T432 1147Q590 1147 716 907Q850 1142 1009 1142Q1125 1142 1201 1056T1278 838Q1278 749 1242 661T1146 520L1067
+449Q960 352 857 200L803 120Q790 101 714 2ZM716 70Q775 154 804 196Q936 393 1069 512Q1155 589 1195 669T1235 848Q1235 955 1170 1028T1010 1101Q857 1101 716 820Q585 1100 422 1100Q326 1100 261 1030T196 854Q196 678 339 539L402 478Q461 420 536 328L598
+251Q659 177 716 70Z" />
+<glyph unicode="&#x2662;" glyph-name="gid385" horiz-adv-x="1252" d="M1067 573L627 4L185 569L626 1141L1067 573ZM1016 572L625 1074L234 571L629 65L1016 572Z" />
+<glyph unicode="&#x2663;" glyph-name="gid386" horiz-adv-x="1420" d="M789 0L615 -1Q660 71 674 134T689 322Q629 225 571 185T431 145Q327 145 254 218T181 396Q181 513 268 586T494 659L552 658Q461 793 461 894Q461 998 534 1071T713 1144Q820 1144 894 1071T969
+891Q969 795 867 658Q919 661 936 661Q1067 661 1152 587T1237 399Q1237 297 1162 220T988 143Q903 143 843 185T728 328Q728 205 739 143T789 0Z" />
+<glyph unicode="&#x2664;" glyph-name="gid387" horiz-adv-x="1248" d="M689 334L662 335Q662 199 674 134T723 -1H544Q582 42 598 102T614 266L616 333H584Q558 260 503 212T390 163Q305 163 243 235T181 406Q181 545 316 704Q336 729 371 773Q411 821 426 839Q558
+1000 629 1142Q659 1095 669 1080L727 997L796 898Q854 817 918 745Q1092 553 1092 407Q1092 309 1033 238T891 167Q820 167 774 205T689 334ZM712 367Q774 204 886 204Q956 204 1004 261T1053 401Q1053 453 1024 526T958 640L895 710Q805 810 636 1069Q535 904
+407 757Q298 633 257 558T216 409Q216 327 267 265T386 202Q496 202 563 367H712ZM665 33L640 130Q631 78 614 33H665Z" />
+<glyph unicode="&#x2665;" glyph-name="gid388" horiz-adv-x="1430" d="M714 2L658 93Q540 286 352 467Q241 575 197 661T152 853Q152 973 235 1060T432 1147Q590 1147 716 907Q850 1142 1009 1142Q1125 1142 1201 1056T1278 838Q1278 749 1242 661T1146 520L1067
+449Q960 352 857 200L803 120Q790 101 714 2Z" />
+<glyph unicode="&#x2666;" glyph-name="gid389" horiz-adv-x="1252" d="M1057 573L617 4L175 569L616 1141L1057 573Z" />
+<glyph unicode="&#x2667;" glyph-name="gid390" horiz-adv-x="1420" d="M789 0L615 -1Q660 71 674 134T689 322Q629 225 571 185T431 145Q327 145 254 218T181 396Q181 513 268 586T494 659L552 658Q461 793 461 894Q461 998 534 1071T713 1144Q820 1144 894 1071T969
+891Q969 795 867 658Q919 661 936 661Q1067 661 1152 587T1237 399Q1237 297 1162 220T988 143Q903 143 843 185T728 328Q728 205 739 143T789 0ZM735 34L710 129Q697 78 679 35L735 34ZM781 616Q864 700 897 761T930 893Q930 984 868 1046T714 1109Q624 1109 561
+1048T498 900Q498 776 621 615Q540 630 495 630Q374 630 295 564T215 399Q215 309 280 244T433 178Q533 178 601 251T716 483Q745 334 814 256T986 178Q1075 178 1136 241T1198 395Q1198 497 1118 565T918 633Q872 633 781 616Z" />
+<glyph unicode="&#x263a;" glyph-name="gid345" horiz-adv-x="1786" d="M850 1296Q981 1296 1108 1240T1321 1088Q1489 898 1489 658Q1489 388 1300 196T845 4Q580 4 389 195T197 651Q197 921 387 1108T850 1296ZM847 1217Q610 1217 445 1050T279 644Q279 444
+417 281Q582 86 860 86Q965 86 1071 134T1257 265Q1405 422 1405 665Q1405 890 1240 1053T847 1217ZM1038 946Q1081 946 1110 916T1139 840Q1139 800 1109 772T1037 743Q995 743 966 773T936 846Q936 887 966 916T1038 946ZM627 946Q673 946 702 917T732 842Q732
+803 700 772T627 741Q587 741 557 773T527 846Q527 887 557 916T627 946ZM1169 609L1221 610Q1207 441 1106 341T847 240Q684 240 582 339T464 609H510Q590 338 845 338Q967 338 1055 412T1169 609Z" />
+<glyph unicode="&#x263b;" glyph-name="gid346" horiz-adv-x="1831" d="M1034 948Q989 948 960 920T931 847Q931 806 961 777T1033 748Q1073 748 1102 777T1132 846Q1132 889 1104 918T1034 948ZM629 948Q583 948 554 920T524 848Q524 806 553 776T623 745Q665
+745 696 775T727 847Q727 887 698 917T629 948ZM1139 606Q1113 485 1031 417T827 348Q714 348 632 417T527 604L437 603Q436 591 436 586Q436 551 459 492T513 392Q640 221 844 221Q989 221 1103 335T1231 606H1139ZM839 1290Q1106 1290 1294 1101T1482 644Q1482
+391 1306 204Q1216 109 1089 54T832 -2Q707 -2 580 55T362 211Q190 397 190 647Q190 914 380 1102T839 1290Z" />
+</font>		<symbol style="fill: black" id="AS">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="95" style="font-size: 100; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="74" style="font-size: 10; text-anchor: middle; stroke: white;" x="50">jmac.org</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="2S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="3S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="4S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="5S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="6S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="7S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="8S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="56.6666666666667" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="9S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="25">♠</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="10S">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♠</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♠</text>
+			<text y="52" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="52" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="JS">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♜</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="QS">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♛</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: black" id="KS">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♚</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♠</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♠</text>
+		</symbol>
+		<symbol style="fill: red" id="AD">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="95" style="font-size: 100; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="2D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="3D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="4D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="5D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="6D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="7D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="8D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="56.6666666666667" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="9D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="25">♦</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="10D">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♦</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♦</text>
+			<text y="52" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="52" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="JD">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♜</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="QD">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♛</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: red" id="KD">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♚</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♦</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♦</text>
+		</symbol>
+		<symbol style="fill: black" id="AC">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="95" style="font-size: 100; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="2C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="3C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="4C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="5C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="6C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="7C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="8C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="56.6666666666667" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="9C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="25">♣</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="10C">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♣</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♣</text>
+			<text y="52" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="52" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="JC">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♜</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="QC">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♛</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: black" id="KC">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♚</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♣</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♣</text>
+		</symbol>
+		<symbol style="fill: red" id="AH">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="95" style="font-size: 100; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">A</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="2H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">2</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="3H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">3</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="4H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">4</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="5H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">5</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="6H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">6</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="7H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">7</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="8H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="56.6666666666667" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="56.6666666666667" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">8</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="9H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="76" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle;  font-family: Apple Symbols;" x="25">♥</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">9</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="10H">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="38" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="66" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="25">♥</text>
+			<text y="66" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="75">♥</text>
+			<text y="52" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="52" transform="rotate(180, 50, 70)" style="font-size: 25.2; text-anchor: middle; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">10</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="JH">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♜</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">J</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="QH">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♛</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">Q</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: red" id="KH" x="" y="">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="110" style="font-size: 100; text-anchor: middle; fill: gray; font-family: Apple Symbols;" x="50">♚</text>
+			<text y="88" style="font-size: 45; text-anchor: middle; stroke: white; stroke-width: 2; font-family: Apple Symbols;" x="50">♥</text>
+			<text y="15" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: sans-serif;" x="5">K</text>
+			<text y="30" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols;" x="5">♥</text>
+		</symbol>
+		<symbol style="fill: blue" id="J1">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="95" style="font-size: 100; text-anchor: middle; font-family: Apple Symbols" x="50">☺</text>
+			<text y="15" style="font-size:15; font-family: Apple Symbols" x="5">☺</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols" x="5">☺</text>
+		</symbol>
+		<symbol style="fill: blue" id="J2">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: white;" height="140" />
+			<text y="95" style="font-size: 100; text-anchor: middle; font-family: Apple Symbols" x="50">☻</text>
+			<text y="15" style="font-size:15; font-family: Apple Symbols" x="5">☻</text>
+			<text y="15" transform="rotate(180, 50, 70)" style="font-size:15; font-family: Apple Symbols" x="5">☻</text>
+		</symbol>
+		<symbol id="BACK">
+			<rect width="100" ry="10" rx="10" style="stroke: black; fill: purple;" height="140" />
+		</symbol>
+  <symbol id="SCORECARD">
+  <rect width="100" height="200" style="stroke:green; fill:white;" />
+  </symbol>
+
+	<symbol id="C-BALLOON">
+<ellipse cx="50" cy="50" rx="50" ry="50"
+style="fill:white;
+stroke:black; stroke-width:2"/>
+<text x="50" y="90" style="fill:black; font-size:100; text-anchor:middle;">♣</text>
+<ellipse cx="70" cy="110" rx="20" ry="7"
+style="fill:white;
+stroke:black; stroke-width:1"/>
+<ellipse cx="90" cy="122" rx="10" ry="3"
+style="fill:white;
+stroke:black; stroke-width:1"/>		
+   	</symbol>
+
+	<symbol id="D-BALLOON">
+<ellipse cx="50" cy="50" rx="50" ry="50"
+style="fill:white;
+stroke:black; stroke-width:2"/>
+<text x="50" y="90" style="fill:red; font-size:100; text-anchor:middle;">♦</text>
+<ellipse cx="70" cy="110" rx="20" ry="7"
+style="fill:white;
+stroke:black; stroke-width:1"/>
+<ellipse cx="90" cy="122" rx="10" ry="3"
+style="fill:white;
+stroke:black; stroke-width:1"/>		
+   	</symbol>
+	<symbol id="H-BALLOON">
+<ellipse cx="50" cy="50" rx="50" ry="50"
+style="fill:white;
+stroke:black; stroke-width:2"/>
+<text x="50" y="90" style="fill:red; font-size:100; text-anchor:middle;">♥</text>
+<ellipse cx="70" cy="110" rx="20" ry="7"
+style="fill:white;
+stroke:black; stroke-width:1"/>
+<ellipse cx="90" cy="122" rx="10" ry="3"
+style="fill:white;
+stroke:black; stroke-width:1"/>		
+   	</symbol>
+	<symbol id="S-BALLOON">
+<ellipse cx="50" cy="50" rx="50" ry="50"
+style="fill:white;
+stroke:black; stroke-width:2"/>
+<text x="50" y="90" style="fill:black; font-size:100; text-anchor:middle;">♠</text>
+<ellipse cx="70" cy="110" rx="20" ry="7"
+style="fill:white;
+stroke:black; stroke-width:1"/>
+<ellipse cx="90" cy="122" rx="10" ry="3"
+style="fill:white;
+stroke:black; stroke-width:1"/>		
+   	</symbol>
+
+    <symbol id="deal-cards">
+      <text x="10" y="30" style="font-size:30; fill=black;">deal cards</text>
+    </symbol>
+    <symbol id="start-game">
+      <text x="10" y="30" style="font-size:30; fill=black;">start game</text>
+    </symbol>
+    <symbol id="add-bot">
+      <text x="10" y="30" style="font-size:30; fill=black;">add bot</text>
+    </symbol>
+    <symbol id="suit-panel">
+      <rect width="300" ry="10" rx="10" style="stroke: black; fill:white;" height="300" />
+      <a><text id="choose-C" x="75" y="125" style="font-size: 100; font-family: Apple Symbols; text-anchor: middle;" onclick="choose_suit(evt)">♣</text></a>
+      <a><text id="choose-D" x="225" y="125" style="fill:red; font-size: 100; font-family: Apple Symbols; text-anchor: middle;" onclick="choose_suit(evt)">♦</text></a>
+      <a><text id="choose-H" x="75" y="275" style="fill:red; font-size: 100; font-family: Apple Symbols; text-anchor: middle;" onclick="choose_suit(evt)">♥</text></a>
+      <a><text id="choose-S" x="225" y="275" style="font-size: 100; font-family: Apple Symbols; text-anchor: middle;" onclick="choose_suit(evt)">♠</text></a>
+    </symbol>
+		
+  </defs>
+
+  <!--
+  Permanent graphics...
+  -->
+
+  <use xlink:href="#BACK" x="300" y="300" />
+<!--
+  <a><use xlink:href="#deal-cards" x="0" y="200" onclick="test_deal_cards()"/></a> 
+-->
+  <use xlink:href="#SCORECARD" x="5" y="150" id="scorecard" />
+
+  <script type="text/ecmascript">
+    <![CDATA[
+var svg_ns = "http://www.w3.org/2000/svg";
+var xlink_ns = "http://www.w3.org/1999/xlink";
+
+var movement_id;
+var movement_done = 0;
+
+var top_card;
+hand = new Array;
+var players = new Object;
+
+var current_player;
+
+set_up();
+
+function set_up() {
+//  set_up_test_buttons();
+    add_start_button();
+    add_bot_button();
+}
+
+function add_start_button() {
+  button = document.createElementNS(svg_ns, "use");
+  button.setAttributeNS(xlink_ns, "xlink:href", "#start-game");
+  button.setAttribute("x", 0);
+  button.setAttribute("y", 200);
+  button.setAttribute("onclick", "start_game()");
+  button.setAttribute("id", "button-start-game");
+  document.firstChild.appendChild(button);
+}
+
+function add_bot_button() {
+  button = document.createElementNS(svg_ns, "use");
+  button.setAttributeNS(xlink_ns, "xlink:href", "#add-bot");
+  button.setAttribute("x", 100);
+  button.setAttribute("y", 200);
+  button.setAttribute("onclick", "add_bot()");
+  button.setAttribute("id", "button-add-bot");
+  document.firstChild.appendChild(button);
+}
+
+game.start_game = function() {
+//  window.alert("The game is on.");
+  remove_buttons();
+  rpc("get_full_state");
+}
+
+game.set_current_player = function(player) {
+  current_player = player;
+}
+
+game.start_turn = function(player) {
+  current_player = player;
+  display_players();
+}
+
+game.receive_hand = function(cards) {
+//  window.alert ("I received a hand!!" + cards + cards.length);
+  hand = cards;
+//  game.draw_card("J2");
+  display_hand();
+}
+
+// Todo: sort hand into a local array, and display _that_.
+function display_hand() {
+  for (card_index in hand) {
+//      window.alert("I see an index: " + card_index);
+      card_id = hand[card_index];
+//      window.alert ("Placing the card with id " + card_id);
+      var card = put_card(card_id, 0 + 20 * card_index, 0, "hand-" + card_id);
+      card.setAttribute("id", "hand-" + card_id);
+      card.setAttribute("onclick", "play_card(evt)");
+  }
+}
+
+function display_players() {
+  var y = 165;
+//  window.alert("displaying players.");
+  remove("player-list");
+  var group = document.createElementNS(svg_ns, "g");
+  group.setAttribute("y", 100);
+  group.setAttribute("x", 100);
+  group.setAttribute("id", "player-list");
+  for (player_name in players) {
+        hand_size = players[player_name].card_count;
+	last_card_id = players[player_name].last_card;
+        var player_text = document.createElementNS(svg_ns, "text");
+        var text_color = "black";
+        if (player_name == current_player) {
+          text_color = "red";
+        }
+        player_text.setAttribute("style", "font-size:12; fill=" + text_color + ";");
+	player_text.setAttribute("x",15);
+	player_text.setAttribute("y", y);
+        var text = document.createTextNode(player_name + ": " + players[player_name].card_count);
+        player_text.appendChild(text);
+        group.appendChild(player_text);
+	y = y + 15;
+//        window.alert (player_name + " has " + hand_size + " cards, and last played a " + last_card_id);
+	
+  }
+  document.firstChild.appendChild(group);
+}
+
+function put_card(symbol_id, x, y, use_id) {
+      var card;
+      if (!(use_id && (card = document.getElementById(use_id)))) {
+  	   card = document.createElementNS(svg_ns, "use");
+           card.setAttributeNS(xlink_ns, "xlink:href", "#" + symbol_id);
+           document.firstChild.appendChild(card);
+	   if (use_id) {
+             card.setAttribute("id", use_id);
+           }
+      }
+      card.setAttribute("x", x);
+      card.setAttribute("y", y);
+      return card;
+}
+
+game.starter_card = function(card_id) {
+//  window.alert ("Got starter card: " + card_id);
+  card = put_card(card_id, 300, 300, "starter");
+  top_card = card;
+}
+
+// The circumlocution below is to get around bizarre behavior when cards
+// are drawn before the player makes his first play.
+game.draw_card = function(card_id) {
+   var new_hand = new Array;
+   players[info.nickname].card_count = players[info.nickname].card_count + 1;
+   for (index in hand) {
+     new_hand[index] = hand[index];
+   }
+   new_hand[count_array(new_hand)] = card_id;
+   hand = new_hand;
+   animate_card_draw(card_id);
+}
+
+function animate_card_draw(card_id) {
+    display_hand();
+}
+
+game.player_drew_card = function(player) {
+//  window.alert(player + " had to draw a card.");
+  players[player].card_count = players[player].card_count + 1;
+  display_players();
+}
+
+function remove_buttons() {
+  remove_button("start-game");
+  remove_button("add-bot");
+}
+
+function remove_button(type) {
+  remove("button-" + type);
+}
+
+function play_card(evt) {
+    clicked = evt.getTarget();
+    card_symbol = clicked.parentNode;
+    card_name = card_symbol.getAttribute("id");
+    rpc("play_card", card_name);
+    var rank = card_name.substr(0,1);
+//    window.alert("Dat card had a rank of " + rank);
+    if (rank - 0 == 8)
+       show_suit_panel();
+}
+
+function show_suit_panel() {
+   panel = document.createElementNS(svg_ns, "use");
+   panel.setAttributeNS(xlink_ns, "xlink:href", "#suit-panel");
+   panel.setAttribute("id", "suit-panel-use");
+   panel.setAttribute("x", 100);
+   panel.setAttribute("y", 100);
+   document.firstChild.appendChild(panel);
+}
+
+function hide_suit_panel() {
+    remove("suit-panel-use");
+}
+
+function choose_suit(evt) {
+    clicked = evt.getTarget();
+    var id = clicked.id;
+    var chosen_suit = id.substr(7,1);
+    rpc("choose_suit", chosen_suit);
+    hide_suit_panel();
+}
+
+game.player_played_card = function(player, card_id) {
+    var new_top_card;
+    remove("suit-balloon");
+    players[player].card_count = players[player].card_count - 1;
+    if (player == info.nickname) {
+       new_top_card = document.getElementById("hand-" + card_id);
+       animate_card_play(new_top_card);
+       remove_card_from_hand(card_id);
+       display_hand();
+    } else {
+//       window.alert("Looks like " +player+ " played " +card_id+ ".");
+       new_top_card = put_card(card_id, 300, 300);
+       players[player].last_card = card_id;
+       display_players();
+    }
+    replace_top_card(new_top_card);
+}
+
+game.player_chose_suit = function(player, suit) {
+  var balloon_name = suit + "-BALLOON";
+  var balloon = document.createElementNS(svg_ns, "use");
+  balloon.setAttributeNS(xlink_ns, "xlink:href", "#"+balloon_name);
+  balloon.setAttribute("id", "suit-balloon");
+  balloon.setAttribute("x", 195);
+  balloon.setAttribute("y", 195);
+  document.firstChild.appendChild(balloon);
+}
+
+// This is a dumb function... how better to do this in JS?
+function remove_card_from_hand(card_name) {
+//    window.alert("Time to kill " + card_name);
+    var new_hand = new Array;
+    var new_hand_index = 0;
+    var success = 0;
+    for (index in hand) {
+       if (!(hand[index] == card_name)) {
+//   window.alert(hand[index] + " ias not " + card_name);
+           new_hand[new_hand_index++] = hand[index];             
+       } else {
+           success = 1;
+       }
+    }
+    hand = new_hand;
+    return success;
+}
+
+replace_top_card = function(card) {
+    if (top_card) {
+       old_id = top_card.getAttribute("id");
+//       window.alert("Destroying old top card, with id " +old_id);
+       remove(old_id);
+    }
+    top_card = card;
+}
+
+function remove(id) {
+  element = document.getElementById(id);
+  if (element != null) {
+    document.firstChild.removeChild(element);
+  }
+}
+
+game.set_player_hand_size = function(player, hand_size) {
+//    window.alert("Looks like " +player+ " is holding " +hand_size+ " cards.");
+    if (!(players[player])) {
+	players[player] = {};
+    }
+    players[player].card_count = hand_size;
+}
+
+function animate_card_play(card) {
+//    window.alert("animation time...");
+    frames = 5;
+    dest_x = 300;
+    dest_y = 300;
+    teleport_card(card, dest_x, dest_y);
+}
+
+function teleport_card(card, x, y) {
+//    window.alert("Voopm, teleporting " +card+ " to " +x+ " and " +y);
+    card.setAttribute("x", x);
+    card.setAttribute("y", y);
+}
+
+function move_card(card, x_step, y_step) {
+    if (!movement_done) {
+//    window.alert (x_step +' '+ y_step);
+      current_x = card.getAttribute("x");
+      current_y = card.getAttribute("y");
+      card.setAttribute("x", current_x - 0 + x_step);
+      card.setAttribute("y", current_y - 0 + y_step);
+//    window.alert ("y is " + current_y + ' to ' + card.getAttribute('y'));
+      if (card.getAttribute("x") >= 300) {
+          clearInterval(movement_id);
+       	  movement_done = 1;
+//	window.alert("Whee!");
+      }
+    }
+}
+
+// I don't know how to do this for real!! :(
+function count_array(array) {
+    var count = 0;
+    for (member in array) { count++ }
+//    window.alert(count);
+    return count;
+}
+
+game.scores = function(scores) {
+    for (player in scores) {
+	window.alert(player + " got " + scores[player] + " points.");
+    }
+}
+
+
+function end_game() {
+    window.alert("Game over!");
+    match_card = null;
+    match_suit = null;
+}
+
+
+// ]]>
+
+
+  </script>
+</svg>
