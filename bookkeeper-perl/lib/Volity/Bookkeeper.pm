@@ -266,8 +266,9 @@ sub store_record_in_db {
     foreach ($class->search({game_id=>$game->id})) {
       $_->delete;
     }
-    my @players = map(Volity::Info::Player->search({jid=>$_}),
-		      $game_record->$player_list);
+#    my @players = map(Volity::Info::Player->search({jid=>$_}),
+    my @players = map(Volity::Info::Player->find_or_create({jid=>$_}),
+		      grep(defined($_), $game_record->$player_list));
     for my $player (@players) {
       $class->create({game_id=>$game->id, player_id=>$player->id});
     }
@@ -275,11 +276,6 @@ sub store_record_in_db {
   
   # The winners list is a special case, since we must also record how
   # each player placed.
-#  # First, clear any old win-records this game may already have.
-#  foreach (Volity::Info::GamePlayer->search({game_id=>$game->id})) {
-#    $_->delete;
-#  }
-  # Now record how each player placed.
   my $current_place = 1;	# Start with first place, work down.
   my @places = $game_record->winners;
   my @players_to_update;
@@ -287,7 +283,7 @@ sub store_record_in_db {
     my @player_jids = ref($place)? @$place : ($place);
     for my $player_jid (@player_jids) {
       # Get this player's DB object, since we need its ID.
-      my ($player) = Volity::Info::Player->search({jid=>$player_jid});
+      my ($player) = Volity::Info::Player->find_or_create({jid=>$player_jid});
       # Record how this player placed!
       my $game_player = Volity::Info::GamePlayer->
 	  find_or_create({
