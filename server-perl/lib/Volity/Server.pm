@@ -156,7 +156,6 @@ sub jabber_authed {
 
 sub new_game {
   my $self = shift;
-  print "The new game RPC method has been called, looks like.\n";
   # Start a new session to play this game.
 
   my ($from_jid, $id, @args) = @_;

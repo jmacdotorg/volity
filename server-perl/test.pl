@@ -266,7 +266,7 @@ sub start_new_game {
 sub handle_groupchat_message {
   my $self = shift;
   my ($message) = @_;
-  warn "Got a message: $$message{body}\n";
+#  warn "Got a message: $$message{body}\n";
   if ($$message{body} =~ /game has begun!/) {
 #    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
     $self->take_turn;
