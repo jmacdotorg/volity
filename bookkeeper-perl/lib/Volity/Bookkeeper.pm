@@ -122,13 +122,11 @@ sub handle_disco_info_request {
 	    $fields{"contact-jid"} = [$file->player_id->jid];
 	    $fields{description} = [$file->description];
 							
-	} elsif (my $server = $self->get_server_with_jid($nodes[0])) {
-	    $fields{reputation} = [$server->reputation || 0];
 	} elsif (my $ruleset = $self->get_ruleset_with_uri($nodes[0])) {
 	    $fields{description} = [$ruleset->description];
 	}
     } else {
-	$identity->name('the volity.org bookkeeper');
+	$identity->name('the volity.net bookkeeper');
     }
     
     push (@items, $identity);
@@ -187,9 +185,8 @@ sub handle_disco_items_request {
 		    });
 		    for my $server (@servers) {
 			push (@items, Volity::Jabber::Disco::Item->new({
-#			    jid=>$server->jid . "/volity",
-			    jid=>$self->jid,
-			    node=>$server->jid,
+			    jid=>$server->jid . "/volity",
+#			    jid=>$server->jid . "/testing",
 			    name=>$server->jid,
 			}),
 			      );
@@ -212,6 +209,18 @@ sub handle_disco_items_request {
 			})
 			      );
 		    }
+		} elsif ($nodes[1] eq 'lobby') {
+		    # The lobby's JID is based on the ruleset URI.
+		    # First, transform said URI into JID-legal characters.
+		    my $jid_legal_uri = $ruleset->uri;
+		    $jid_legal_uri =~ tr/:\//;|/;
+		    my $lobby_jid = "$jid_legal_uri\@conference.volity.net";
+		    push (@items,
+			  Volity::Jabber::Disco::Item->new({
+			      jid=>$lobby_jid,
+			      name=>"Lobby for " . $ruleset->name . " discussion.",
+			  }),
+			  );
 		} else {
 		    # There should be a disco-error here.
 		}
@@ -229,13 +238,6 @@ sub handle_disco_items_request {
 		      }),
 		      );
 	    }
-	} elsif (my $server = $self->get_server_with_jid($nodes[0])) {
-	    # For now, I'll just inlcude a pointer to the server,
-	    # as an item.
-	    push (@items, Volity::Jabber::Disco::Item->new({
-		jid=>$server->jid . "/volity",
-		name=>$server->jid,
-	    }));
 	} elsif (my $file = $self->get_file_with_url($nodes[0])) {
 	    # Actually, in this case, no further items are generated.
 	    # I'm leaving this inefficient elsif here to make things
