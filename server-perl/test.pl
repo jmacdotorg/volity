@@ -37,10 +37,13 @@ our $server = TestRPS::Server->new(
 isa_ok($server, "Volity::Server");
 
 my $server_pid;
-#unless ($server_pid = fork) {
-#  print "$server\n";
-#  $server->start;
-#}
+
+my @script = qw(auth table_creation table_configuration start_game insufficient_player_fault auth start_game start_game_response game_record auth);
+#our $checker = Volity::Test::Checker->new;
+
+my %script_hash = set_script_hash();
+
+
 $server->start;
 
 our ($huey, $dewey, $louie);
@@ -49,10 +52,38 @@ sub has_authed {
 
   print "in has_authed: $server\n";
 
-  ok($server->has_authed, "Game onnection and authentication to Jabber server");
+  ok($server->has_authed, "Game connection and authentication to Jabber server");
 
   $huey = new_bot('huey');
     $huey->kernel->run;  
+}
+
+sub check_script {
+  my ($arg) = @_;
+  my $method = shift(@script);
+  unless (defined($method)) {
+    die "Uh oh... I got a call to check the script, but there's no script left.\n";
+  }
+#  $checker->log($arg);
+#  $checker->$method($arg);
+  my $value = $script_hash{$method};
+  unless (defined($value)) {
+    die "Hey, I daon't have any script value defined for '$method'. What gives?";
+  }
+  if (ref($value)) {
+    if (ref($value) eq 'HASH') {
+      # XXX Magic here.
+      pass("A hash... yeah, whatever");
+    } elsif (ref($value) eq 'CODE') {
+      pass("Hmm, a coderef. Whatever.");
+    } elsif (ref($value) eq 'Regexp') {
+      # It's a qr to check against.
+      my $xml = $arg->to_str;
+      like($xml, $value, "Received expected element.");
+    } else {
+      die "Uhm, Don't know what to do with value of type " . ref($value);
+    }
+  }
 }
 
 sub new_bot {
@@ -71,39 +102,39 @@ sub new_bot {
 
 sub bot_authed {
   my ($bot) = @_;
-  pass("Bot has connected successfully.");
+#  pass("Bot has connected successfully.");
   if ($bot->nickname eq 'huey') {
     $bot->make_rpc_request({
 			     to=>$server->jid,
 			     methodname=>'new_game',
 			     id=>'new_game',
 			    });
-    warn "Made an RPC req...\n";
+#    warn "Made an RPC req...\n";
   } elsif ($bot->nickname eq 'louie') {
     $bot->join_muc({jid=>$main::muc_jid, nick=>$bot->nickname});
     # XXX check for presence here???
-    warn "Should be in MUC now...\n";
-    warn $main::muc_jid;
+#    warn "Should be in MUC now...\n";
+#    warn $main::muc_jid;
   }
 
 }
 
 sub bot_invited {
   my ($bot, $rpc_data) = @_;
-  pass($bot->nickname ." was invited into a MUC.");
+#  pass($bot->nickname ." was invited into a MUC.");
 }
 
 sub bot_joined {
   my ($bot) = @_;
-  pass ($bot->nickname . " has joined a MUC.");
+#  pass ($bot->nickname . " has joined a MUC.");
 
 }
 
 sub bot_got_fault {
   my ($bot, $rpc_object) = @_;
   my $expected = shift(@expected_fault_codes);
-  warn "Mew... $expected\n";
-  is ($rpc_object->value->code, $expected, "Received expected RPC fault from referee");
+#  warn "Mew... $expected\n";
+#  is ($rpc_object->value->code, $expected, "Received expected RPC fault from referee");
   if ($bot->nickname eq 'huey') {
     # Awww, huey doesn't have any fwiends. Make 'im a new one.
     $louie = new_bot('louie');
@@ -114,7 +145,7 @@ sub bot_got_fault {
 
 sub end_test {
   $server->stop;
-  pass("Server has stopped.");
+#  pass("Server has stopped.");
 
   foreach (grep(defined($_), $huey, $dewey, $louie)) {
     $_->kernel->post($_->alias, 'shutdown_socket', 0);
@@ -124,12 +155,12 @@ sub end_test {
 
 sub started_game {
   my ($bot, $rpc_object) = @_;
-  pass("Game started successfully.");
+#  pass("Game started successfully.");
 }
 
 sub examine_record {
   my ($record) = @_;
-  pass("Got a record.");
+#  pass("Got a record.");
   end_test;
 }
 
@@ -157,15 +188,28 @@ sub initialize {
 # Starting a game as soon as we're authed is one way to be a good bot.
 sub jabber_authed {
   my $self = $_[OBJECT];
+  # XXX
   main::bot_authed($self);
+  main::check_script($_[ARG0]);
 }
 
+sub jabber_iq {
+  my $self = shift;
+  main::check_script(@_);
+  return $self->SUPER::jabber_iq(@_);
+}
+
+#sub handle_rpc_request {
+#  my $self = shift;
+#  main::check_script(@_);
+#  return $self->SUPER::handle_rpc_request(@_);
+#}
 
 sub handle_rpc_response {
   my $self = shift;
   my ($data) = @_;
-  
-  use Data::Dumper; warn Dumper($data);
+#  main::check_script(@_);
+#  use Data::Dumper; warn Dumper($data);
 #  sleep(1);
   if ($$data{id} eq 'new_game') {
     $self->game_jid($$data{response});
@@ -207,8 +251,6 @@ sub take_turn {
 
 sub start_new_game {
   my $self = shift;
-  warn "Let's step, step.";
-  warn $self->referee_jid;
   $self->make_rpc_request({
 			  to=>$self->referee_jid,
 			   id=>'start',
@@ -221,16 +263,62 @@ sub start_new_game {
 sub handle_groupchat_message {
   my $self = shift;
   my ($message) = @_;
-  warn "Got groupchat message: $$message{body}\n";
   if ($$message{body} =~ /has become available/ and $self->nickname eq 'huey') {
     $self->start_new_game;
   } elsif ($$message{body} =~ /game has begun!/) {
-    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
+#    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
     $self->take_turn;
   }
 
 }
 
-sub handle_normal_message {
-  warn "Blup";
+package Volity::Test::Checker;
+
+use warnings; use strict;
+use base qw(Class::Accessor);
+
+use Data::Dumper;
+
+sub new {
+  unlink ("checker_log");
+  return bless ({}, $_[0]);
+}
+
+sub log {
+  my $self = shift;
+  my ($thingy) = @_;
+  open (LOG, ">>checker_log") or die "Can't open checker_log... $!";
+  print LOG "******************************************************\n";
+  print LOG "Received: $thingy\n";
+  if (ref($thingy) eq 'HASH') {
+    print LOG Dumper($thingy);
+  } elsif ($thingy->isa("PXR::Node")) {
+    print LOG "Node dump:\n";
+    print LOG $thingy->to_str . "\n";
+  }
+  close LOG;
+}
+
+package main;
+
+sub set_script_hash {
+  # XXX Can build and drop in more specific patterns later.
+  my $jid_pattern = '[\w-]+?@[\w-]+?(?:\.[\w-]+?)*(?:/[\w-]+)?';
+  return (
+	  auth=>
+	  qr{<iq id='1' type='result'/>},
+	  table_creation=>
+	  qr{<iq to='$jid_pattern' from='$jid_pattern' id='new_game' type='result'><query xmlns='jabber:iq:rpc'><methodResponse><params><param><value><string>.*?</string></value></param></params></methodResponse></query></iq>},
+	  table_configuration=>
+	  qr{<iq to='$jid_pattern' from='$jid_pattern' type='result' id='42' xml:lang='en'/>},
+	  start_game=>
+	  qr{<iq to='$jid_pattern' from='$jid_pattern' type='set' id='start'><query xmlns='jabber:iq:rpc'><methodCall><methodName>start_game</methodName><params/></methodCall></query></iq>},
+	  insufficient_player_fault=>
+	  qr{<iq to='$jid_pattern' from='$jid_pattern' id='start' type='result'><query xmlns='jabber:iq:rpc'><methodResponse><fault><value><struct><member><name>faultString</name><value><string>This game takes between 2 and 2 players, but there are 1 players here. That&apos;s not enough!</string></value></member><member><name>faultCode</name><value><int>999</int></value></member></struct></value></fault></methodResponse></query></iq>},
+	  start_game_response=>
+	  qr{<iq to='$jid_pattern' from='$jid_pattern' id='start' type='result'><query xmlns='jabber:iq:rpc'><methodResponse><params><param><value><string>ok</string></value></param></params></methodResponse></query></iq>},
+	  game_record=>
+	  {},
+	 );
+ 
 }

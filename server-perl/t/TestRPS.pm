@@ -33,8 +33,9 @@ sub jabber_authed {
   my $self = $_[OBJECT];
   $self->has_authed(1);
   Volity::Server::jabber_authed(@_);
+  # XXX
   main::has_authed;		# Call test.pl's auth sub.
-  $main::timestamp = time;
+  main::check_script($_[ARG0]);
 }
 
 # Hijack the init method to not bother doing a require. (I grumble a
@@ -82,9 +83,34 @@ sub initialize {
 sub send_record_to_bookkeeper {
   my $self = shift;
   my ($record) = @_;
+  # XXX
   main::examine_record($record);
+  main::check_script($record);
 }
 
+#sub jabber_message {
+#  my $self = shift;
+#  main::check_script(@_);
+#  return $self->SUPER::jabber_message(@_);
+#}
+
+#sub handle_rpc_response {
+#  my $self = shift;
+#  main::check_script(@_);
+#  return $self->SUPER::handle_rpc_response(@_);
+#}
+
+#sub handle_rpc_request {
+#  my $self = shift;
+#  main::check_script(@_);
+#  return $self->SUPER::handle_rpc_request(@_);
+#}
+
+sub jabber_iq {
+  my $self = shift;
+  main::check_script(@_);
+  return $self->SUPER::jabber_iq(@_);
+}
 
 package TestRPS::Game;
 
@@ -98,37 +124,26 @@ __PACKAGE__->min_allowed_players(2);
 __PACKAGE__->uri('http://volity.org/games/rps');
 __PACKAGE__->player_class('TestRPS::Player');
 
-sub handle_normal_message {
-  my $self = shift;
-  my ($message) = @_;
-  print "Whoop, got a normal message.";
-}
-
-sub handle_groupchat_message {
-  my $self = shift;
-  my ($message) = @_;
-  print "Whoop, got a groupchat message";
-}
+sub handle_groupchat_message { }
 
 sub handle_chat_message {
   my $self = shift;
   my ($message)  = @_;
   my $body = $$message{body};
-  print "I got a message!! $body";
   unless (ref($self)) {
     # Eh, just a class method.
-    warn "Eh, just a class method.\n";
+#    warn "Eh, just a class method.\n";
     return $self->SUPER::handle_chat_message(@_);
   }
   my $player = $self->get_player_with_jid($$message{from});
 
-  warn "Message is from player $player, aka " . $player->jid;
+#  warn "Message is from player $player, aka " . $player->jid;
   unless ($player) {
     use Data::Dumper;
     die "I'm stupid. The message was from $$message{from}. Here is some junk:\n" . Dumper($self->{player_jids});
   }
   if (substr("rock", 0, length($body)) eq lc($body)) {
-    warn "ROCK";
+#    warn "ROCK";
     $self->referee->send_message({
 				 to=>$player->jid,
 				 body=>"Good old rock! Nothing beats rock.",
