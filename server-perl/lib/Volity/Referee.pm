@@ -706,6 +706,10 @@ sub create_bot {
   # XXXXXXXX Move the above somewhere useful, thx.
 }
 
+=begin old
+
+I think this next method is never actually called. Delete later, if true.
+
 # player_action: RPC request informing us that the player would like to do
 # something within the current game. Pass this along to the game.
 sub player_action {
@@ -726,6 +730,9 @@ sub player_action {
   }
 }
 
+=end old
+
+=cut
 
 # end_game: Not really an RPC call, but putting it here for now for
 # symmetry's sake.
