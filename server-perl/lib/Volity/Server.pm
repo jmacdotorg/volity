@@ -180,6 +180,7 @@ sub new_table {
   
   my $referee_class = $self->referee_class || "Volity::Referee";
 
+
   my $ref = $referee_class->new(
 				      {
 				       starting_request_jid=>$from_jid,
@@ -203,7 +204,7 @@ sub new_table {
   # is being sent. Something else _is_ sending it, which is why I'm
   # commenting out the following line. Whaaaaaaaaa?
 
-#  $self->send_rpc_response($from_jid, $id, $ref->muc_jid);
+  $self->send_rpc_response($from_jid, $id, $ref->muc_jid);
 }
 
 # start: run the kernel.

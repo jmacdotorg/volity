@@ -216,7 +216,7 @@ sub initialize {
 # Jabber POE states
 ################
 
-sub jabber_authed {
+sub init_finish {
   my $kernel = $_[KERNEL];
   my $heap = $_[HEAP];
   my $session = $_[SESSION];
@@ -225,12 +225,6 @@ sub jabber_authed {
   $kernel->post($self->alias, 'register', qw(iq presence message));
 
 #  # Join the game MUC.
-
-#  my $presence = PXR::Node->new('presence');
-#  $presence->attr(from=>$self->jid);
-#  $presence->attr(to=>"$self->{muc_jid}/volity");
-#  $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
-#  $kernel->post($self->alias, 'output_handler', $presence);
 
   $self->join_muc({jid=>$self->muc_jid, nick=>'volity'});
 

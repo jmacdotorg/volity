@@ -134,7 +134,7 @@ use POE qw(
            Component::Jabber::Error
 	  );
 use POE::Filter::XML::Node;
-use POE::Filter::XML::NS qw( :JABBER :IQ );
+# use POE::Filter::XML::NS qw( :JABBER :IQ );
 
 use Jabber::NS qw(:all);
 use PXR::NS qw(:JABBER :IQ);
@@ -203,7 +203,7 @@ Set this to a true value to display verbose debugging messages on STDERR.
 
 =cut
 
-use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler);
+use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification);
 
 sub initialize {
   my $self = shift;
@@ -318,7 +318,6 @@ sub _start {
 
 sub init_finish {
   my $self = $_[OBJECT];
-  warn "Glahb.";
   $self->debug("In init_finish. Password is " . $self->password);
   $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
 }
@@ -440,7 +439,6 @@ sub jabber_iq {
 				 from=>$from_jid,
 				 id=>$id,
 				 method=>$method,
-#				 args=>$rpc_obj->args,
 				 args=>[map($_->value, @{$rpc_obj->args})],
 			       });
     }
@@ -1310,7 +1308,7 @@ sub send_form {
   $iq->attr(type=>'set');
 
   # The XML namespace of the query is just the form type.
-  my $query = $iq->insert_tag('query', $$config{type});
+  my $query = $iq->insert_tag('query', [xmlns=>$$config{type}]);
   my $x = $query->insert_tag('x', [xmlns=>"jabber:x:data"]);
   $x->attr(type=>'submit');
   
@@ -1353,7 +1351,7 @@ sub send_form {
   }
 
   $self->post_node($iq);
-  $iq->free;
+#  $iq->free;
 }
 
 =head2 post_node($node)
