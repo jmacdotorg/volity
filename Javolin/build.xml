@@ -38,7 +38,7 @@
   
   <target name="doc"
         description="generate Javadocs" >
-    <javadoc packagenames="org.volity.javolin.*"
+    <javadoc packagenames="org.volity.javolin.*,org.volity.jabber.*,org.volity.jabber.packet.*,org.volity.jabber.provider.*"
            sourcepath="source"
            destdir="${doc}"
            classpath="${classpath}"
