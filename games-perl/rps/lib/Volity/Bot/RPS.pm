@@ -19,11 +19,14 @@ sub take_turn {
   my $self = shift;
   my @choices = qw(rock paper scissors);
   my $hand = $choices[rand(@choices)];
-  $self->send_message({
-		       type=>'chat',
-		       to=>$self->referee->jid,
-		       body=>$hand,
-		     });
+  $self->make_rpc_request({
+			   to=>$self->referee->jid,
+			   id=>"hand_choice",
+			   methodname=>"game.choose_hand",
+			   args=>[$hand],
+#			   handler=>sub {},
+			  });
+
   $self->send_message({
 		       type=>'groupchat',
 		       to=>$self->muc_jid,
@@ -35,11 +38,19 @@ sub handle_groupchat_message {
   my $self = shift;
   my ($message) = @_;
 #  warn "Got a message: $$message{body}\n";
-  if ($$message{body} =~ /game has begun!/) {
+#  if ($$message{body} =~ /game has begun!/) {
 #    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
-    $self->take_turn;
-  }
-
+#    $self->take_turn;
+#  }
+#  $self->groupchat("Same to you.");
 }
 
+sub handle_rpc_request {
+  my $self = shift;
+  my ($rpc_info) = @_;
+#  $self->groupchat("Ooh, got rpc request $$rpc_info{method}.");
+  if ($$rpc_info{method} eq 'game.start_game') {
+    $self->take_turn;
+  }
+}
 1;
