@@ -118,7 +118,7 @@ you will be sad.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -179,6 +179,7 @@ sub new_table {
 				       bookkeeper_jid=>$self->bookkeeper_jid,
 				      }
 				     );
+  $ref->bot_classes($self->bot_classes);
   $self->add_referee($ref);
   $ref->server($self);
 
