@@ -135,7 +135,7 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes active_bots active_bot_registry);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes active_bots active_bot_registry last_rpc_id invitations);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -208,6 +208,10 @@ sub initialize {
 
   $self->logger->debug("By the way, here's my password: " . $self->password);
 
+  $self->last_rpc_id(0);
+
+  $self->invitations({});
+
   return $self;
 
 }
@@ -241,22 +245,22 @@ sub handle_rpc_request {
   # XXX The above statement is no longer true... and the below if-chain
   # XXX is only going to get longer. Refactoring is needed.
   if ($method =~ /^volity\.(.*)$/) {
-    # This appears to be a system-level call (as opposed to a
-    # game-level one).
-    $method = $1;
-    if ($method eq 'start_game') {
-      $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-    } elsif ($method eq 'add_bot') {
-      $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-    } elsif ($method eq 'player_action') {
-      $self->player_action($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-    }
+      # This appears to be a system-level call (as opposed to a
+      # game-level one).
+      $method = $1;
+      if ($method eq 'start_game') {
+	  $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'add_bot') {
+	  $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'invite_player') {
+	  $self->invite_player($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      }
   } elsif ($method =~ /^game\.(.*)$/) {
-    # This appears to be a call to the game object.
-    $$rpc_info{method} = $1;
-    $self->handle_game_rpc_request($rpc_info);
+      # This appears to be a call to the game object.
+      $$rpc_info{method} = $1;
+      $self->handle_game_rpc_request($rpc_info);
   } else {
-    $self->logger->debug( "Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
+      $self->logger->warn("Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
   }
 }
 
@@ -826,6 +830,52 @@ sub send_record_to_bookkeeper {
 			   methodname=>'volity.record_game',
 			   args=>$hash
 			 });
+}
+
+sub invite_player {
+  my $self = shift;
+  my ($from_jid, $rpc_id, @args) = @_;
+  my $invitation_id = $self->last_rpc_id;
+  $invitation_id++; $self->last_rpc_id($invitation_id);
+  $self->invitations->{$invitation_id} = [$rpc_id, $from_jid];
+  $self->logger->debug("$from_jid will invite $args[0]. New ID is $invitation_id. Old id was $rpc_id.");
+  $self->make_rpc_request({to=>$args[0],
+			   id=>$invitation_id,
+			   methodname=>'volity.receive_invitation',
+			   args=>[{player=>$from_jid,
+				   table=>$self->muc_jid,
+				   referee=>$self->jid,
+				   server=>$self->server->jid,
+				   ruleset=>$self->game_class->uri,
+			       }],
+			   handler=>'invitation',
+			  });
+}
+
+sub rpc_response_invitation {
+  my $self = shift;
+  my ($response) = @_;
+  $self->logger->debug("Received an invitation repsonse, from $$response{from}");
+  my $invitation_info = $self->invitations->{$$response{id}};
+  if ($invitation_info) {
+    my ($original_rpc_id, $inviter) = @$invitation_info;
+    $self->send_rpc_response($inviter, $original_rpc_id, $$response{response});
+    delete($self->invitations->{$$response{id}});
+  } else {
+    $self->logger->warn("Got unexpected invitation response from $$response{from}, id of $$response{id}.");
+  }
+}
+
+sub handle_rpc_fault {
+  my $self = shift;
+  my ($fault_info) = @_;
+  if (my $invitation_info = $self->invitations->{$$fault_info{id}}) {
+    my ($original_rpc_id, $inviter) = @$invitation_info;
+    $self->send_rpc_fault($inviter, $original_rpc_id, $$fault_info{code}, $$fault_info{string});
+    delete($self->invitations->{$$fault_info{id}});
+  } else {
+    $self->logger->warn("Got unexpected RPC fault, id $$fault_info{id}: $$fault_info{code} - $$fault_info{string}");
+  }
 }
 
 sub stop {
