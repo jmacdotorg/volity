@@ -20,6 +20,8 @@ my $build = Module::Build->new
 	       'Data::JavaScript::Anon'=>undef,
 	       'YAML'=>undef,
 	       'Log::Log4perl'=>undef,
+	       'LWP'=>undef,
+	       'Archive::Zip'=>undef,
 	     },
    script_files=>['bin/volityd', 'bin/friv'],
    install_path=>{script=>'/usr/local/volity/bin'},
