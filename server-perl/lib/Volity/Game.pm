@@ -140,7 +140,7 @@ on how this works.
 
 =cut
 
-use warnings;
+use warnings; no warnings qw(deprecated);
 use strict;
 
 use base qw(Class::Accessor::Fields Class::Data::Inheritable);
