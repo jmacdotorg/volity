@@ -200,6 +200,13 @@ sub player_class {
   return $player_class;
 }
 
+=begin old
+
+XXX
+
+I think these methods are obsolete and may deserve deletion before the next
+package release.
+
 #################
 # Subclass-overridable stub methods
 #################
@@ -220,6 +227,10 @@ sub receive_chat_message {
 }
   
 sub receive_groupchat_message { }
+
+=end old
+
+=cut
 
 #################
 # Basic player management
