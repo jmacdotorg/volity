@@ -45,6 +45,10 @@ __PACKAGE__->max_allowed_players(5);
 __PACKAGE__->min_allowed_players(1);
 __PACKAGE__->uri("http://volity.org/games/eights/index.html");
 __PACKAGE__->player_class("Volity::Player::CrazyEights");
+__PACKAGE__->name("Jmac's Crazy Eights");
+__PACKAGE__->description("Crazy Eights, according to Hoyle, by Jason McIntosh.");
+__PACKAGE__->ruleset_version("1.0");
+
 
 ################
 # Callbacks

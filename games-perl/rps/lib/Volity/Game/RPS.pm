@@ -9,6 +9,9 @@ __PACKAGE__->max_allowed_players(2);
 __PACKAGE__->min_allowed_players(2);
 __PACKAGE__->uri("http://volity.org/games/rps");
 __PACKAGE__->player_class("Volity::Player::RPS");
+__PACKAGE__->name("Jmac's RPS");
+__PACKAGE__->description("The offcial Volity.net RPS implementation, by Jason Mcintosh.");
+__PACKAGE__->ruleset_version("1.0");
 
 sub start_game {
   my $self = shift;
