@@ -28,6 +28,7 @@ import javax.swing.text.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
+import org.jivesoftware.smackx.*;
 import org.jivesoftware.smackx.muc.*;
 import org.volity.jabber.*;
 import org.volity.javolin.*;
@@ -53,6 +54,7 @@ public class MUCWindow extends JFrame implements PacketListener
     private SimpleAttributeSet mBaseUserListStyle;
 
     private SizeAndPositionSaver mSizePosSaver;
+    private XMPPConnection mConnection;
     private MultiUserChat mMucObject;
 
     /**
@@ -67,6 +69,7 @@ public class MUCWindow extends JFrame implements PacketListener
          throws XMPPException
     {
         super(JavolinApp.getAppName() + ": " + mucId);
+	mConnection = connection;
         mMucObject = new MultiUserChat(connection, mucId);
 
         mUserColorMap = new UserColorMap();
@@ -124,7 +127,46 @@ public class MUCWindow extends JFrame implements PacketListener
         mMucObject.addParticipantListener(this);
 
         // Last but not least, join the MUC
-        mMucObject.join(nickname);
+	if (mucExists())
+	{
+	    mMucObject.join(nickname);
+	}
+	else
+	{
+	    mMucObject.create(nickname);
+	    configureMuc();
+	}
+    }
+
+    /**
+     * Does the MUC exist on the chat service?
+     */
+    protected boolean mucExists()
+    {
+	ServiceDiscoveryManager discoMan =
+	    ServiceDiscoveryManager.getInstanceFor(mConnection);
+	try
+	{
+	    // If the room exists, it must answer to service discovery.
+	    // We don't actually care what the answer is.
+	    discoMan.discoverInfo(mMucObject.getRoom());
+	    return true;
+	}
+	catch (XMPPException ex)
+	{
+	    return false;
+	}
+    }
+
+    /**
+     * Configure the MUC by accepting the server default settings.
+     * @throws XMPPException if an error occurs while configuring
+     */
+    protected void configureMuc() throws XMPPException
+    {
+	// A blank form indicates that we accept the server default settings.
+	Form blankForm = new Form(Form.TYPE_SUBMIT);
+	mMucObject.sendConfigurationForm(blankForm);
     }
 
     /**
