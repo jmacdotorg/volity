@@ -43,6 +43,7 @@
            destdir="${doc}"
            classpath="${classpath}"
            windowtitle="Javolin API">
+      <link href="http://java.sun.com/j2se/1.4.1/docs/api/"/>
     </javadoc>
   </target>
 
