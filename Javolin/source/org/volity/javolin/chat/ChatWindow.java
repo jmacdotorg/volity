@@ -49,6 +49,7 @@ public class ChatWindow extends JFrame implements PacketListener
     private Chat mChatObject;
     private String mLocalId;
     private String mRemoteId;
+    private String mRemoteNick;
 
     /*
      * Static initializer
@@ -68,22 +69,38 @@ public class ChatWindow extends JFrame implements PacketListener
      */
     public ChatWindow(XMPPConnection connection, String remoteId) throws XMPPException
     {
-        super(JavolinApp.getAppName() + ": Chat with " + remoteId);
-        
         mConnection = connection;
         mRemoteId = remoteId;
         mChatObject = new Chat(mConnection, mRemoteId);
+        
+        // Get nickname for remote user and use for window title
+        RosterEntry entry = mConnection.getRoster().getEntry(mRemoteId);
+        
+        if (entry != null)
+        {
+            mRemoteNick = entry.getName();
+        }
+        
+        if (mRemoteNick == null || mRemoteNick.equals(""))
+        {
+            mRemoteNick = mRemoteId;
+        }
+        
+        setTitle(JavolinApp.getAppName() + ": Chat with " + mRemoteNick);
 
+        // Get local user ID and chat color
         mLocalId = StringUtils.parseBareAddress(mConnection.getUser());
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(mLocalId); // Give user first color
 
+        // Initialize remaining data members
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
         mBaseUserListStyle = new SimpleAttributeSet();
         StyleConstants.setFontFamily(mBaseUserListStyle, "SansSerif");
         StyleConstants.setFontSize(mBaseUserListStyle, 12);
 
+        // Set up UI
         buildUI();
 
         setSize(500, 400);
@@ -122,7 +139,7 @@ public class ChatWindow extends JFrame implements PacketListener
                 }
             });
 
-        // Register as message listener.
+        // Register as message listener
         mChatObject.addMessageListener(this);
     }
 
@@ -213,15 +230,7 @@ public class ChatWindow extends JFrame implements PacketListener
         }
         else
         {
-            String nick = null;
-            String addr = msg.getFrom();
-
-            if (addr != null)
-            {
-                nick = StringUtils.parseBareAddress(addr);
-            }
-
-            writeMessageText(nick, msg.getBody());
+            writeMessageText(mRemoteNick, msg.getBody());
         }
     }
 
