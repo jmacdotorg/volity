@@ -1,1 +1,14 @@
-This module is a catch-all for minor, miscellaneous, text-only Volity games written in Perl, intended for distribution with the FriVolity software package.
+This module is a catch-all for a few simple, testworthy Volity games
+written in Perl, intended for distribution with the FriVolity software
+package.
+
+It may be going away soon, as we encourage developers (including
+ourselves) to released game modules as independently downlaodable
+packages.
+
+Note that the UI files found in ui_files/ecmascript aren't put
+anywhere by the installer. This is because we haven't quite figured
+out how to best distribute UI files yet, let alone, where they should
+live locally.
+
+For more information about Volity: http://volity.org

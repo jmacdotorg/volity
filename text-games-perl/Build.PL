@@ -9,7 +9,7 @@ my $libdir = File::Spec->catdir($Config{installsitelib}, 'Volity');
 my $build = Module::Build->new
   (
    dist_name=>'volity-textgames',
-   dist_version=>'0.2',
+   dist_version=>'0.3',
    license=>'lgpl',
    install_path=>{
 		  lib=>$libdir,

@@ -39,8 +39,6 @@ game.error = function(message) {
 
 
 game.player_chose_hand = function(player, hand) {
-//    writeln (player + " threw " + hand + ".");
-//    writeln ("I am " + info.nickname);
     if (player != info.nickname) {
       writeln (player + " threw " + hand + ".");
       var myHand = status.player;

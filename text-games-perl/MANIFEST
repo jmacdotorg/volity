@@ -4,3 +4,5 @@ lib/Game/Guess100.pm
 lib/Game/RPS.pm
 lib/Game/CrazyEights.pm
 README
+ui_files/ecmascript/rps.js
+ui_files/ecmascript/eights.js
