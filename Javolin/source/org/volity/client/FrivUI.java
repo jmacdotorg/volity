@@ -32,8 +32,9 @@ public class FrivUI extends GameUI {
 
   WritelnHandler writelnHandler;
 
-  protected void initStandardObjects() {
-    super.initStandardObjects();
+  // Inherited from GameUI.
+  public ScriptableObject initGameObjects(ScriptableObject scope) {
+    scope = super.initGameObjects(scope);
     Context context = Context.enter();
     scope.put("writeln", scope, new Callback() {
 	public Object run(Object[] args) {
@@ -50,6 +51,7 @@ public class FrivUI extends GameUI {
 	}
       });
     Context.exit();
+    return scope;
   }
 
   /**

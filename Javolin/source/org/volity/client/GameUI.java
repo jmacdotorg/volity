@@ -2,30 +2,35 @@ package org.volity.client;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.net.URL;
 import java.util.*;
-import org.mozilla.javascript.*;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.filter.PacketFilter;
+import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
+import org.mozilla.javascript.*;
 import org.volity.jabber.*;
 
 /**
  * A game user interface.
  */
-public class GameUI extends RPCResponder implements RPCHandler {
+public class GameUI implements RPCHandler, PacketFilter {
   /**
    * @param connection an authenticated connection to an XMPP server
    * @param errorHandler a handler for UI script and RPC errors
    * @throws IllegalStateException if the connection has not been authenticated
    */
   public GameUI(XMPPConnection connection, ErrorHandler errorHandler) {
-    super(connection, new RPCDispatcher());
     this.errorHandler = errorHandler;
-    initStandardObjects();
-    start();
+    RPCDispatcher dispatcher = new RPCDispatcher();
+    dispatcher.setHandler("game", this);
+    responder = new RPCResponder(connection, this, dispatcher);
+    responder.start();
   }
 
   ErrorHandler errorHandler;
+  RPCResponder responder;
   Scriptable scope, game, info, client;
   GameTable table;
   RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
@@ -37,10 +42,26 @@ public class GameUI extends RPCResponder implements RPCHandler {
     public abstract void error(Exception e);
   }
 
-  protected void initStandardObjects() {
+  /**
+   * Initialize game-handling objects: "game", "info", "client", and "rpc".
+   * @return the initialized scope
+   */
+  public ScriptableObject initGameObjects() {
+    return initGameObjects(null);
+  }
+
+  /**
+   * Initialize game-handling objects: "game", "info", "client", and "rpc".
+   * @param scope the scope to initialize, or null, in which case a
+   *              new object will be created to serve as the scope.
+   * @return the initialized scope, which is the same as the scope
+   *         argument if not null.
+   */
+  public ScriptableObject initGameObjects(ScriptableObject scope) {
     try {
       Context context = Context.enter();
-      scope = context.initStandardObjects();
+      if (scope == null) scope = context.initStandardObjects();
+      this.scope = scope;
       scope.put("game", scope, game = context.newObject(scope));
       scope.put("info", scope, info = new Info());
       scope.put("client", scope, client = context.newObject(scope));
@@ -55,13 +76,12 @@ public class GameUI extends RPCResponder implements RPCHandler {
 	    }
 	  }
 	});
-      RPCDispatcher dispatcher = (RPCDispatcher) getHandler();
-      dispatcher.setHandler("game", this);
     } catch (JavaScriptException e) {
       errorHandler.error(e);
     } finally {
       Context.exit();
     }
+    return scope;
   }
 
   class Info extends ScriptableObject {
@@ -109,6 +129,7 @@ public class GameUI extends RPCResponder implements RPCHandler {
    */
   public void load(File uiScript) throws IOException, JavaScriptException {
     try {
+      if (scope == null) initGameObjects();
       Context.enter().evaluateReader(scope, new FileReader(uiScript),
 				     uiScript.getName(), 1, null);
     } finally {
@@ -116,35 +137,57 @@ public class GameUI extends RPCResponder implements RPCHandler {
     }
   }
 
+  // Inherited from PacketFilter.
+  public boolean accept(Packet packet) {
+    // Only accept packets from the referee at this table.
+    if (table == null) return false;
+    Referee ref = table.getReferee();
+    return ref != null && ref.getResponderJID().equals(packet.getFrom());
+  }
+
   // Inherited from RPCHandler.
-  public Object handleRPC(String methodName, List params)
-    throws RPCException
-  {
+  public void handleRPC(String methodName, List params, RPCResponseHandler k) {
     Object method = game.get(methodName, scope);
     if (method instanceof Function)
       try {
-	Context context = Context.enter();
-	context.setWrapFactory(rpcWrapFactory);
-	Object ret = ((Function) method).call(context, scope, game,
-					      params.toArray());
-	if (ret instanceof Undefined) {
-	  // function returned void, but RPC result has to be non-void
-	  ret = Boolean.TRUE;
-	}
-	return ret;
+	k.respondValue(callUIMethod((Function) method, params));
       } catch (JavaScriptException e) {
 	errorHandler.error(e);
 	// FIXME: Volity protocol should probably define these
 	// error codes.
-	throw new RPCException(901, "UI script exception: " + e);
+	k.respondFault(901, "UI script exception: " + e);
       } catch (EvaluatorException e) {
 	errorHandler.error(e);
-	throw new RPCException(902, "UI script error: " + e);
-      } finally {
-	Context.exit();
+	k.respondFault(902, "UI script error: " + e);
       }
     else
-      throw new RPCException(903, "No such UI function.");
+      k.respondFault(903, "No such UI function.");
+  }
+
+  /**
+   * Call a UI method.
+   * @param method the UI method to be called
+   * @param params the list of method arguments (RPC data objects)
+   * @return the method return value (RPC data object)
+   * @throws JavaScriptException if the UI method throws an exception
+   * @throws EvaluatorException if an error occurs while evaluating
+   *                            the UI method body
+   */
+  public Object callUIMethod(Function method, List params)
+    throws JavaScriptException
+  {
+    try {
+      Context context = Context.enter();
+      context.setWrapFactory(rpcWrapFactory);
+      Object ret = method.call(context, scope, game, params.toArray());
+      if (ret instanceof Undefined) {
+	// function returned void, but RPC result has to be non-void
+	ret = Boolean.TRUE;
+      }
+      return ret;
+    } finally {
+      Context.exit();
+    }
   }
 
   /**

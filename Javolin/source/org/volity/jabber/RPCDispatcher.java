@@ -57,37 +57,37 @@ public class RPCDispatcher implements RPCHandler {
   }
 
   // Inherited from RPCHandler.
-  public Object handleRPC(String methodName, List params)
-    throws RPCException
-  {
+  public void handleRPC(String methodName, List params, RPCResponseHandler k) {
     int i = methodName.indexOf(".");
-    if (i < 0)
+    if (i < 0) {
       if (globalHandler == null)
-	throw noSuchMethodException(methodName);
+	noSuchMethodFault(methodName, k);
       else
-	return globalHandler.handleRPC(methodName, params);
-    String handlerName = methodName.substring(0, i);
-    methodName = methodName.substring(i+1);
-    RPCHandler handler = getHandler(handlerName);
-    if (handler == null)
-      throw noSuchHandlerException(handlerName, methodName);
-    return handler.handleRPC(methodName, params);
+	globalHandler.handleRPC(methodName, params, k);
+    } else {
+      String handlerName = methodName.substring(0, i);
+      methodName = methodName.substring(i+1);
+      RPCHandler handler = getHandler(handlerName);
+      if (handler == null)
+	noSuchHandlerFault(handlerName, methodName, k);
+      else
+	handler.handleRPC(methodName, params, k);
+    }
   }
 
   /**
-   * An exception to be thrown when there is no global handler.
+   * Send a fault response because there is no global handler.
    */
-  public RPCException noSuchMethodException(String methodName) {
-    return new RPCException(404, "No such method: " + methodName);
+  public void noSuchMethodFault(String methodName, RPCResponseHandler k) {
+    k.respondFault(404, "No such method: " + methodName);
   }
 
   /**
-   * An exception to be thrown when there is no named handler.
+   * Send a fault response because there is no named handler.
    */
-  public RPCException noSuchHandlerException(String handlerName,
-					     String methodName)
+  public void noSuchHandlerFault(String handlerName, String methodName,
+				 RPCResponseHandler k)
   {
-    return new RPCException(404, "No such method: " +
-			    handlerName + "." + methodName);
+    k.respondFault(404, "No such method: " + handlerName + "." + methodName);
   }
 }

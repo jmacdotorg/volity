@@ -21,17 +21,25 @@ public class RPCResponder implements PacketListener {
 
   /**
    * @param connection an authenticated connection to an XMPP server
+   * @param filter a filter specifying which RPC requests to handle
+   * @param handler a handler for RPC requests
    * @throws IllegalStateException if the connection has not been authenticated
    */
-  public RPCResponder(XMPPConnection connection, RPCHandler handler) {
+  public RPCResponder(XMPPConnection connection,
+		      PacketFilter filter,
+		      RPCHandler handler) {
     if (!connection.isAuthenticated())
       throw new IllegalStateException("Not logged in.");
     this.connection = connection;
+    this.filter = filter;
     this.handler = handler;
   }
 
   protected XMPPConnection connection;
   public XMPPConnection getConnection() { return connection; }
+
+  protected PacketFilter filter;
+  public PacketFilter getFilter() { return filter; }
 
   protected RPCHandler handler;
   public RPCHandler getHandler() { return handler; }
@@ -40,7 +48,9 @@ public class RPCResponder implements PacketListener {
    * Start listening for requests.
    */
   public void start() {
-    connection.addPacketListener(this, new PacketTypeFilter(RPCRequest.class));
+    PacketFilter filter =
+      new AndFilter(new PacketTypeFilter(RPCRequest.class), this.filter);
+    connection.addPacketListener(this, filter);
   }
 
   /**
@@ -52,16 +62,21 @@ public class RPCResponder implements PacketListener {
 
   // Inherited from PacketListener.
   public void processPacket(Packet packet) {
-    RPCRequest req = (RPCRequest) packet;
-    RPCResponse resp;
-    try {
-      Object value = handler.handleRPC(req.getMethodName(), req.getParams());
-      resp = new RPCResult(value);
-    } catch (RPCException e) {
-      resp = e.getFault();
-    }
-    resp.setTo(req.getFrom());
-    resp.setPacketID(req.getPacketID());
-    connection.sendPacket(resp);
+    final RPCRequest req = (RPCRequest) packet;
+    // Look, ma, continuation-passing style!
+    RPCResponseHandler k = new RPCResponseHandler() {
+	public void respondValue(Object value) {
+	  respond(new RPCResult(value));
+	}
+	public void respondFault(int faultCode, String faultString) {
+	  respond(new RPCFault(faultCode, faultString));
+	}
+	void respond(RPCResponse resp) {
+	  resp.setTo(req.getFrom());
+	  resp.setPacketID(req.getPacketID());
+	  connection.sendPacket(resp);
+	}
+      };
+    handler.handleRPC(req.getMethodName(), req.getParams(), k);
   }
 }
