@@ -58,11 +58,8 @@ might find it interesting.
 use warnings;
 use strict;
 
-use XML::Writer;
-use XML::SAX::ParserFactory;
 use URI;
 use Carp qw(croak carp);
-use IO::Scalar;
 use Date::Parse;
 use Date::Format;
 
@@ -79,29 +76,6 @@ our ($gpg_bin, $gpg_secretkey, $gpg_passphrase);
 =head1 METHODS
 
 =head2 Class methods (constructors)
-
-=over
-
-=item new_from_xml($xml)
-
-Returns a new Volity::GameRecord object, given a scalar containing an XML document representation of same.
-
-For the opposite functionality, see C<render_as_xml> under L<"Object methods">.
-
-=cut
-
-sub new_from_xml {
-  my $class = shift;
-  my $self = $class->new;
-  my ($xml_string) = @_;
-  unless (defined($xml_string)) {
-    croak("You must pass new_from_xml a scalar holding game record XML.");
-  }
-  my $handler = Volity::GameRecord::XMLHandler->new;
-  my $parser = XML::SAX::ParserFactory->parser(Handler=>$handler);
-  $parser->parse_string($xml_string);
-  return $handler->record;
-}
 
 =item new_from_hashref($hashref)
 
@@ -157,75 +131,6 @@ detailed in L<Class::Accessor> apply here as well.
 
 =head2 Object methods
 
-=over
-
-=item render_as_xml
-
-Returns a string holding the game record as an XML document.
-
-=cut
-
-=begin old
-
-This next sub is no longer necessary.
-
-sub render_as_xml {
-  my $self = shift;
-  my $xml_string = IO::Scalar->new;
-  my $w = XML::Writer->new(DATA_MODE=>1,
-			   DATA_INDENT=>2,
-			   @_, 	# Optional user-provided args
-			   OUTPUT=>$xml_string);
-  # XXX We'll have to drop in some NS info here.
-  $w->startTag('signed-record') if defined($self->signature);
-  $w->startTag('record');
-  # Players!
-  $w->startTag('players');
-  foreach my $player ($self->players) {
-    $w->dataElement('player', $player);
-  }
-  $w->endTag;
-  # Winners!
-  if ($self->winners) {
-    $w->startTag('winners');
-    foreach my $place ($self->winners) {
-      # Each member of this this array could be a JID (if a scalar),
-      # or a list of tied JIDs for this place (if an array ref).
-      $w->startTag('place');
-      my @players;
-      @players = ref($place)?
-        @$place :
-        ($place);
-      for my $player (@players) {
-	$w->dataElement('player', $player);
-      }
-      $w->endTag;
-    }
-    $w->endTag;
-  }
-  # Quitters!
-  if ($self->quitters) {
-    foreach my $player ($self->quitters) {
-      $w->dataElement('player', $player);
-    }
-  }
-  # Timestamps!
-  $w->dataElement('start-time', $self->start_time) if defined($self->start_time);
-  $w->dataElement('end-time', $self->end_time);
-  # Server info!
-  $w->dataElement('game-uri', $self->game_uri);
-  $w->dataElement('game-name', $self->game_name);
-  $w->dataElement('server', $self->server);
-  $w->endTag('record');
-  if ($self->signature) {
-    $w->dataElement('signature', $self->signature);
-    $w->endTag('signed-record');
-  }
-  return "$xml_string";
-}
-
-=end old
-
 =cut
 
 ########################
@@ -277,7 +182,7 @@ I<Bookkeeper only.> Confirms that the existing, DB-stored copy of this record as
 sub confirm_record_owner {
   my $self = shift;
   unless ($self->id) {
-    carp("This record has no ID, and thus no owner at all. You shouldn't have called confirm_record_owner on it!");
+    $self->logger->warn("This record has no ID, and thus no owner at all. You shouldn't have called confirm_record_owner on it!");
     return 0;
   }
   return $self->verify_signature;
@@ -299,7 +204,7 @@ sub sign {
   my $self = shift;
   my $serialized = $self->serialize;
   unless ($serialized) {
-    carp("Not signing, because I couldn't get a good serialization of this reciord.");
+    $self->logger->warn("Not signing, because I couldn't get a good serialization of this reciord.");
     return;
   }
 
@@ -352,16 +257,16 @@ valid. Returns truth if everything looks OK, and falsehood otherwise.
 sub verify {
   my $self = shift;
   unless (defined($gpg_bin)) {
-    carp("Can't verify the record, because the path to the GPG binary isn't set!");
+    $self->logger->warn("Can't verify the record, because the path to the GPG binary isn't set!");
     return;
   }
   unless (defined($self->signature)) {
-    carp("Can't verify the record, because there doesn't appear to be a signature attached to this record!!");
+    $self->logger->warn("Can't verify the record, because there doesn't appear to be a signature attached to this record!!");
     return;
   }
   my $serialized = $self->serialize;
   unless (defined($serialized)) {
-    carp("Can't verify this record, since it won't serialize.");
+    $self->logger->warn("Can't verify this record, since it won't serialize.");
     return;
   }
   # XXX Very hacky, but good enough for now.
@@ -396,7 +301,7 @@ sub check_gpg_attributes {
   my $self = shift;
   foreach ($gpg_bin, $gpg_secretkey, $gpg_passphrase,) {
     unless (defined($_)) {
-      carp("You can't perform GPG actions unless you set all three package variables on Volity::Gamerecord: \$gpg_bin, \$gpg_secretkey and \$gpg_passphrase.");
+      $self->logger->warn("You can't perform GPG actions unless you set all three package variables on Volity::Gamerecord: \$gpg_bin, \$gpg_secretkey and \$gpg_passphrase.");
       return 0;
     }
   }
@@ -425,7 +330,7 @@ sub serialize {
   if (defined($self->end_time)) {
     return $self->end_time;
   } else {
-    carp("This record lacks the information needed to serialize it!");
+    $self->logger->warn("This record lacks the information needed to serialize it!");
     return;
   }
 }
@@ -455,7 +360,7 @@ sub massage_jid {
     my ($main_jid, $resource) = ($1, $2);
     return $main_jid;
   } else {
-    carp("This does not look like a valid JID: $jid");
+    $self->logger->warn("This does not look like a valid JID: $jid");
   }
 }
 
@@ -503,60 +408,6 @@ sub new_from_hashref {
   $$hashref{signature} =~ s/==NEWLINE==/\n/g;
 
   return $class->new($hashref);
-}
-
-#########################
-# XML handler
-#########################
-
-package Volity::GameRecord::XMLHandler;
-
-use warnings; use strict;
-
-use base qw(XML::SAX::Base);
-our ($record, @current_player_list, @elements);
-
-sub record {
-  return $record;
-}
-
-sub start_document {
-  my $self = shift;
-  $record = Volity::GameRecord->new;
-}
-
-sub start_element {
-  my $self = shift;
-  my ($info) = @_;
-#  warn "Opening element $$info{LocalName}";
-  push (@elements, $$info{LocalName});
-}
-
-sub characters {
-  my $self = shift;
-  my $data = $_[0]{Data};
-  return unless $data =~ /\S/;
-  my $element = $elements[-1];
-  if ($element eq 'player') {
-    push (@current_player_list, $data);
-  } else {
-    # My method names are the same as XML element names,
-    # except '-'s are '_'s.
-    $element =~ s/-/_/g;
-    $record->$element($data);
-  }
-}
-
-sub end_element {
-  my $self = shift;
-  my ($info) = @_;
-#  warn "Closing element $$info{LocalName}";
-  pop (@elements);
-  if (@current_player_list and $$info{LocalName} ne 'player') {
-    my $method = $$info{LocalName};
-    $record->$method(@current_player_list);
-    undef(@current_player_list);
-  }
 }
 
 =back
