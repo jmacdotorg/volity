@@ -21,7 +21,7 @@ my $build = Module::Build->new
 	       'Data::JavaScript::Anon'=>undef,
 	       'YAML'=>undef,
 	     },
-   script_files=>[glob("bin/*")],
+   script_files=>['bin/server.pl', 'bin/friv'],
    install_path=>{script=>'/usr/local/volity/bin'},
   );
 
