@@ -46,6 +46,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
 
+    private static URI sClientTypeUri;
     private static UIFileCache sUIFileCache = new UIFileCache();
 
     private ImageIcon mConnectedIcon;
@@ -64,6 +65,18 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private XMPPConnection mConnection;
     private java.util.List mMucWindows;
     private java.util.List mTableWindows;
+
+    static
+    {
+        try
+        {
+            sClientTypeUri = new URI("http://volity.org/protocol/ui/svg");
+        }
+        catch (URISyntaxException ex)
+        {
+            // Should never occur
+        }
+    }
 
     /**
      * Constructor.
@@ -166,6 +179,16 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     public static UIFileCache getUIFileCache()
     {
         return sUIFileCache;
+    }
+
+    /**
+     * Gets the URI indicating the client type.
+     *
+     * @return   The URI indicating the client type.
+     */
+    public static URI getClientTypeURI()
+    {
+        return sClientTypeUri;
     }
 
     /**
@@ -274,12 +297,12 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
             if (tableWinCount == 1)
             {
-                message = "There is a game table open. " + action + " anyway?";
+                message = "You still have a game window open. " + action + " anyway?";
             }
             else
             {
-                message = "There are " + tableWinCount + " game tables open. " + action +
-                    " anyway?";
+                message = "You still have " + tableWinCount + " game windows open. " +
+                    action + " anyway?";
             }
 
             int result = JOptionPane.showConfirmDialog(this, message,

@@ -64,7 +64,7 @@ public class TableWindow extends JFrame implements PacketListener
     private GameTable mGameTable;
 
     /**
-     * Constructor. Use this form to create a new table.
+     * Constructor. This form will create a new table.
      *
      * @param connection                 The current active XMPPConnection.
      * @param serverId                   The ID of the game table to create and join.
@@ -77,33 +77,34 @@ public class TableWindow extends JFrame implements PacketListener
     public TableWindow(XMPPConnection connection, String serverId, String nickname)
          throws XMPPException, RPCException, IOException, MalformedURLException
     {
-        this(new GameServer(connection, serverId).newTable(), nickname);
+        this(new GameServer(connection, serverId), null, nickname);
     }
 
     /**
-     * Constructor. Use this form to join an existing table.
+     * Constructor.
      *
-     * @param table                      The ID of the game table to join.
+     * @param server                     The GameServer
+     * @param table                      The GameTable to join. If null, a new table will
+     *  be created.
      * @param nickname                   The nickname to use to join the table.
      * @exception XMPPException          If the table could not be joined.
+     * @exception RPCException           If a new table could not be created.
      * @exception IOException            If a UI file could not be downloaded.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
-    public TableWindow(GameTable table, String nickname)
-         throws XMPPException, IOException, MalformedURLException
+    public TableWindow(GameServer server, GameTable table, String nickname)
+         throws XMPPException, RPCException, IOException, MalformedURLException
     {
         mGameTable = table;
 
+        if (mGameTable == null)
+        {
+            mGameTable = server.newTable();
+        }
+
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
 
-        // Get all necessary UI files
-        UIFileCache cache = JavolinApp.getUIFileCache();
-        File uiFile = cache.getFile(new URL("http://volity.org/games/rps/svg/rps.svg"));
-        cache.getFile(new URL("http://volity.org/games/rps/svg/rock.png"));
-        cache.getFile(new URL("http://volity.org/games/rps/svg/paper.png"));
-        cache.getFile(new URL("http://volity.org/games/rps/svg/scissors.png"));
-
-        mGameViewport = new SVGCanvas(mGameTable, uiFile.toURI().toURL());
+        mGameViewport = new SVGCanvas(mGameTable, getUIURL(server));
 
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(nickname); // Give user first color
@@ -161,6 +162,34 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Last but not least, join the table
         mGameTable.join(nickname);
+    }
+
+
+    /**
+     * Helper method for the constructor. Returns the URL for the given game server's UI.
+     *
+     * @param server  The game server for which to retrieve the UI URL
+     * @return        The URL for the game UI.
+     */
+    private URL getUIURL(GameServer server) throws XMPPException
+    {
+        URL retVal = null;
+
+        Bookkeeper keeper = new Bookkeeper(server.getConnection());
+        java.util.List uiList = keeper.getCompatibleGameUIs(server.getRuleset(),
+            JavolinApp.getClientTypeURI());
+
+        if (uiList.size() != 0)
+        {
+            // Use first UI info object
+            GameUIInfo info = (GameUIInfo)uiList.get(0);
+            retVal = info.getLocation();
+        }
+        else
+        {
+        }
+        
+        return retVal;
     }
 
     /**
