@@ -133,6 +133,7 @@ use POE qw(
 	  );
 use PXR::Node;
 use Jabber::NS qw(:all);
+use PXR::NS qw(:JABBER :IQ);
 use Scalar::Util qw(weaken);
 use Carp qw(croak);
 use RPC::XML::Parser;
@@ -253,9 +254,6 @@ sub _start {
   unless (defined($self->alias)) {
     die "You haven't set an alias on $self! Please do that when constucting the object.";
   }
-  # Old constrcutor for P:C:J version 0.2
-#  POE::Component::Jabber->new($alias);
-  # New constructor for P:C:J version 0.3.x
   POE::Component::Jabber->new(
 			      ALIAS=>$alias,
 			      STATE_PARENT=>$session->ID,
@@ -263,6 +261,9 @@ sub _start {
 				       INITFINISH=>'init_finish',
 				       INPUTEVENT=>'input_event',
 				     },
+			      XMLNS => +NS_JABBER_CLIENT,
+			      STREAM => +XMLNS_STREAM,
+			      IP=>$self->host,
 			      HOSTNAME=>$self->host,
 			      PORT=>$self->port,
 			      DEBUG=>$self->debug,
@@ -286,7 +287,7 @@ sub input_event {
   if ($self->can($method)) {
     $self->$method($node);
   } else {
-    die "I got a $element_type element, and I don't know what to do with it. Sorry.";
+    die "I got a $element_type element, and I don't know what to do with it. Sorry." . $node->to_str;
   }
 }
 
