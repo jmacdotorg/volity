@@ -130,9 +130,12 @@ use POE qw(
 	   Wheel::ReadWrite
 	   Filter::Line
 	   Driver::SysRW
-	   Component::Jabber;
+	   Component::Jabber::Client::Legacy
+           Component::Jabber::Error
 	  );
-use PXR::Node;
+use POE::Filter::XML::Node;
+use POE::Filter::XML::NS qw( :JABBER :IQ );
+
 use Jabber::NS qw(:all);
 use PXR::NS qw(:JABBER :IQ);
 use Scalar::Util qw(weaken);
@@ -213,7 +216,7 @@ sub initialize {
   POE::Session->create(
 		       object_states=>
 		       [$self=>
-			[qw(jabber_authed jabber_iq jabber_presence _start jabber_message input_event init_finish)],
+			[qw(jabber_iq jabber_presence _start jabber_message input_event init_finish )],
 		       ],
 		      );
   # Weaken some variables to prevent circularities & such.
@@ -289,12 +292,13 @@ sub _start {
   unless (defined($self->alias)) {
     die "You haven't set an alias on $self! Please do that when constucting the object.";
   }
-  POE::Component::Jabber->new(
+  POE::Component::Jabber::Client::Legacy->new(
 			      ALIAS=>$alias,
 			      STATE_PARENT=>$session->ID,
 			      STATES=>{
 				       INITFINISH=>'init_finish',
 				       INPUTEVENT=>'input_event',
+				       ERROREVENT=>'error_event',
 				     },
 			      XMLNS => +NS_JABBER_CLIENT,
 			      STREAM => +XMLNS_STREAM,
@@ -302,6 +306,9 @@ sub _start {
 			      HOSTNAME=>$self->host,
 			      PORT=>$self->port,
 			      DEBUG=>$self->debug,
+			      USERNAME=>$self->user,
+                              PASSWORD=>$self->password,
+                              RESOURCE=>$self->resource,
 			     );
 }
 
@@ -311,6 +318,7 @@ sub _start {
 
 sub init_finish {
   my $self = $_[OBJECT];
+  warn "Glahb.";
   $self->debug("In init_finish. Password is " . $self->password);
   $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
 }
@@ -328,6 +336,11 @@ sub input_event {
   }
 }
 
+sub error_event {
+  my $self = $_[OBJECT];
+  warn "Wups, error.";
+  # Nothing else here yet...
+}
 
 # Actually, these are all just stubs. It's up to subclasses for making
 # these do real stuff.
@@ -721,7 +734,7 @@ sub send_rpc_request {
   my $self = shift;
   $self->debug("in make_rpc_request\n");
   my ($args) = @_;
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   foreach (qw(to id)) {
     $iq->attr($_, $$args{$_});
   }
@@ -752,9 +765,11 @@ sub send_rpc_request {
   # But then, I can't see why it would break.
   my $request_xml = $request->as_string;
 #  warn "$request_xml\n";
-  # The susbtr() chops off the XML prolog. I know, I know.
-  $request_xml = substr($request_xml, 22);
-  $iq->insert_tag('query', 'jabber:iq:rpc')->
+#  die;
+#  # The susbtr() chops off the XML prolog. I know, I know.
+#  $request_xml = substr($request_xml, 21);
+  $request_xml =~ s/^<\?\s*xml\s+version="1.0"\s*\?>//;
+  $iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])->
     rawdata($request_xml);
   $self->kernel->post($self->alias, 'output_handler', $iq);
 }
@@ -769,7 +784,7 @@ sub send_rpc_response {
   my $self = shift;
   my ($receiver_jid, $id_attr, $value) = @_;
   my $response = RPC::XML::response->new($value);
-  my $rpc_iq = PXR::Node->new('iq');
+  my $rpc_iq = POE::Filter::XML::Node->new('iq');
   $rpc_iq->attr(type=>'result');
   $rpc_iq->attr(from=>$self->jid);
   $rpc_iq->attr(to=>$receiver_jid);
@@ -779,7 +794,7 @@ sub send_rpc_response {
   my $response_xml = $response->as_string;
   # The susbtr() chops off the XML prolog. I know, I know.
   $response_xml = substr($response_xml, 22);
-  $rpc_iq->insert_tag(query=>'jabber:iq:rpc')
+  $rpc_iq->insert_tag(query=>[xmlns=>'jabber:iq:rpc'])
     ->rawdata($response_xml);
   $self->debug("Sending response: " . $rpc_iq->to_str);
   $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
@@ -835,7 +850,7 @@ I<Optional> The message's body. Can be either a string, or a hashref of the sort
 sub send_message {
   my $self = shift;
   my ($config) = @_;
-  my $message = PXR::Node->new('message');
+  my $message = POE::Filter::XML::Node->new('message');
   foreach (qw(to type from)) {
     $message->attr($_=>$$config{$_}) if defined($$config{$_});
   }
@@ -919,9 +934,9 @@ sub join_muc {
 		      );
   }
   $self->debug( "I want to join this muc: $muc_jid\n");
-  my $presence = PXR::Node->new('presence');
+  my $presence = POE::Filter::XML::Node->new('presence');
   $presence->attr(to=>$muc_jid);
-  $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
+  $presence->insert_tag('x', [xmlns=>'http://jabber.org/protocol/muc']);
   $self->kernel->post($self->alias, 'output_handler', $presence);
   $self->debug("Presence sent.\n");
   return $muc_jid;
@@ -953,11 +968,11 @@ These all set sub-elements on the outgoing presence element. See the XMPP-IM pro
 
 =item x
 
-A PXR::Node object representing a Jabber <<x/>> element, for presence elements carrying additional payload.
+A POE::Filter::XML::Node object representing a Jabber <<x/>> element, for presence elements carrying additional payload.
 
 =item error
 
-A PXR::Node object representing a Jabber <<error/> element.
+A POE::Filter::XML::Node object representing a Jabber <<error/> element.
 
 =end not_yet
 
@@ -970,7 +985,7 @@ element.
 
 sub send_presence {
   my $self = shift;
-  my $presence = PXR::Node->new('presence');
+  my $presence = POE::Filter::XML::Node->new('presence');
   my ($config) = @_;
   $config ||= {};
   foreach (qw(to type)) {
@@ -982,7 +997,7 @@ sub send_presence {
   $self->kernel->post($self->alias, 'output_handler', $presence);
 }
 
-# insert_localized_tag: internal method. Receive a PXR::Node object, a child
+# insert_localized_tag: internal method. Receive a POE::Filter::XML::Node object, a child
 # element name, and a value that might be either a plain string or a hashref
 # containing localized text keyed on langauge abbreviation. Do the right thing.
 # No return value; it sticks the right elements right into the supplied
@@ -1006,15 +1021,15 @@ sub insert_localized_tags {
 
 sub request_roster {
   my $self = shift;
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   $iq->attr(type=>'get');
-  $iq->insert_tag('query', 'jabber:iq:roster');
+  $iq->insert_tag('query', [xmlns=>'jabber:iq:roster']);
   $self->post_node($iq);
 }
 
 sub receive_roster {
   my $self = shift;
-  my ($iq) = @_;		# PXR::Node object
+  my ($iq) = @_;		# POE::Filter::XML::Node object
   my $items = $iq->get_tag('query')->get_children;
   return unless defined($items);
   my $roster = Volity::Jabber::Roster->new;
@@ -1041,9 +1056,9 @@ sub add_item_to_roster {
   unless (defined($self->roster)) {
     croak("You must receive a roster from the server before you can modify it. Try calling request_roster() first.");
   }
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   $iq->attr(type=>'set');
-  my $item = $iq->insert_tag('query', 'jabber:iq:roster')->insert_tag('item');
+  my $item = $iq->insert_tag('query', [xmlns=>'jabber:iq:roster'])->insert_tag('item');
   my ($item_hash) = @_;
   foreach (qw(jid name subscription)) {
     $item->attr($_=>$$item_hash{$_}) if defined($$item_hash{$_});
@@ -1068,7 +1083,7 @@ sub remove_item_from_roster {
 
 sub update_roster {
   my $self = shift;
-  my ($iq) = @_;		# A PXR::Node object
+  my ($iq) = @_;		# A POE::Filter::XML::Node object
   my $item = $iq->get_tag('query')->get_tag('item');
   my $roster = $self->roster;
   unless (defined($roster)) {
@@ -1101,7 +1116,7 @@ sub update_roster {
 sub request_disco {
   my $self = shift;
   my ($info) = @_;
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   $iq->attr(type=>'get');
   if (not($info) or not(ref($info) eq 'HASH')) {
     croak("You must call request_disco with a hashref argument.");
@@ -1111,7 +1126,7 @@ sub request_disco {
   }
   $iq->attr(to=>$$info{to});
   $iq->attr(id=>$$info{id}) if defined($$info{id});
-  my $query = $iq->add_tag(query=>"http://jabber.org/protocol/disco#items");
+  my $query = $iq->add_tag('query', [xmlns=>"http://jabber.org/protocol/disco#items"]);
   $query->attr(node=>$$info{node}) if defined($$info{node});
   $self->post_node($iq);
 }
@@ -1161,8 +1176,8 @@ sub send_disco {
   unless ($$info{to}) {
     croak("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
   }
-  my $iq = PXR::Node->new('iq');
-  my $query = $iq->add_tag('query', "http://jabber.org/protocol/disco#$type");
+  my $iq = POE::Filter::XML::Node->new('iq');
+  my $query = $iq->add_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
   my @items_to_add;
   if (defined($$info{items})) {
     @items_to_add = ref($$info{items})? @{$$info{items}} : ($$info{items});
@@ -1179,11 +1194,11 @@ sub send_disco {
 sub send_registration {
   my $self = shift;
   my ($config) = @_;
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   $iq->attr(type=>'set');
   $$config{id} ||= $self->next_id;
   $iq->attr(id=>$$config{id});
-  my $query = $iq->insert_tag(query=>'jabber:iq:register');
+  my $query = $iq->insert_tag('query', [xmlns=>'jabber:iq:register']);
   foreach (keys(%$config)) {
     next if $_ eq 'id';
     $query->insert_tag($_)->data($$config{$_});
@@ -1197,10 +1212,10 @@ sub send_unregistration {
   my $self = shift;
   my ($id) = @_;
   $id ||= $self->next_id;
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   $iq->attr(type=>'set');
   $iq->attr(id=>$id) if defined($id);
-  my $query = $iq->insert_tag(query=>'jabber:iq:register');
+  my $query = $iq->insert_tag('query', [xmlns=>'jabber:iq:register']);
   $query->insert_tag('remove');
   $self->set_iq_notification($id, 
 			     {result=>'handle_unregistration_result'});
@@ -1281,7 +1296,7 @@ and whose second element is the value that this label represents).
 sub send_form {
   my $self = shift;
   my ($config) = @_;
-  my $iq = PXR::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');
   # Sanity check...
   unless (defined($$config{type})) {
     croak("You must specify a form type through the 'type' argument key.");
@@ -1296,7 +1311,7 @@ sub send_form {
 
   # The XML namespace of the query is just the form type.
   my $query = $iq->insert_tag('query', $$config{type});
-  my $x = $query->insert_tag('x', "jabber:x:data");
+  my $x = $query->insert_tag('x', [xmlns=>"jabber:x:data"]);
   $x->attr(type=>'submit');
   
   # Send the fields and values.
@@ -1404,8 +1419,8 @@ sub new_from_element {
   my $invocant = shift;
   my $class = ref($invocant) || $invocant;
   my ($x_element) = @_;
-  unless (defined($x_element) or $x_element->isa("PXR::Node") or $x_element->name eq 'x') {
-    croak("You must call new_from_element with a PXR::Node representing an 'x' element.");
+  unless (defined($x_element) or $x_element->isa("POE::Filter::XML::Node") or $x_element->name eq 'x') {
+    croak("You must call new_from_element with a POE::Filter::XML::Node representing an 'x' element.");
   }
   my $self = bless ({}, $class);
   $self->{x} = $x_element;
@@ -1445,8 +1460,8 @@ sub new_from_element {
   my $invocant = shift;
   my $class = ref($invocant) || $invocant;
   my ($item_element) = @_;
-  unless (defined($item_element) or $item_element->isa("PXR::Node") or $item_element->name eq 'item') {
-    croak("You must call new_from_element with a PXR::Node representing an 'item' element.");
+  unless (defined($item_element) or $item_element->isa("POE::Filter::XML::Node") or $item_element->name eq 'item') {
+    croak("You must call new_from_element with a POE::Filter::XML::Node representing an 'item' element.");
   }
   my $self = bless ({}, $class);
   $self->{item} = $item_element;
@@ -1475,8 +1490,8 @@ sub new_from_element {
   my $invocant = shift;
   my $class = ref($invocant) || $invocant;
   my ($field_element) = @_;
-  unless (defined($field_element) or $field_element->isa("PXR::Node") or $field_element->name eq 'field') {
-    croak("You must call new_from_element with a PXR::Node representing an 'field' element.");
+  unless (defined($field_element) or $field_element->isa("POE::Filter::XML::Node") or $field_element->name eq 'field') {
+    croak("You must call new_from_element with a POE::Filter::XML::Node representing an 'field' element.");
   }
   my $self = bless ({}, $class);
   $self->{field} = $field_element;
@@ -1646,12 +1661,12 @@ sub presence {
 
 package Volity::Jabber::Disco::Node;
 use warnings; use strict;
-use base qw(PXR::Node Class::Accessor);
+use base qw(POE::Filter::XML::Node Class::Accessor);
 
 sub new {
   my $class = shift;
   my ($node_type) = $class =~ /^.*::(.*?)$/;
-  return PXR::Node->SUPER::new(lc($node_type));
+  return POE::Filter::XML::Node->SUPER::new(lc($node_type));
 }
 
 sub set {

@@ -526,30 +526,14 @@ use base qw(Volity::Jabber);
 use fields qw(nick terminal table_jid referee_jid js opponents);
 use POE;
 
-sub jabber_authed {
+sub init_finish {
   my $self = $_[OBJECT];
-  my( $node ) = @_[ARG0..$#_];
+  
+  my $jid = $_[ARG0];
   
   # Succesful login!
-  if ( $node->attr('type') eq 'result') {
-    $self->print_message("Connection successful. Weclome to Volity.");
-    $self->request_roster;
-  }
-  # Failed login...
-  elsif ( $node->attr('type') eq 'error') {
-    my $details  = $node->get_children_hash;
-    my $query    = $$details{'query'}->get_childbren_hash;
-    my $username = $$query{'username'}->data;
-    my $code     = $$details{'error'}->attr('code');
-    my $desc     = $$details{'error'}->data;
-    $self->print_message( "Login failed, username $username: $code $desc");
-    print "\r        \r"; # Delete the prompt
-    exit;
-  }
-  # Huh?
-  else {
-    $self->print_message( "Unknown response from auth request: ".$node->to_str );
-  }
+  $self->print_message("Connection successful. Weclome to Volity.");
+  $self->request_roster;
 }
 
 sub receive_roster {

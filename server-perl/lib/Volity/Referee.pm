@@ -168,7 +168,7 @@ use POE qw(
 	   Driver::SysRW
 	   Component::Jabber;
 	  );
-use PXR::Node;
+use POE::Filter::XML::Node;
 use Jabber::NS qw(:all);
 use Scalar::Util qw(weaken);
 use Time::HiRes qw(gettimeofday);
@@ -334,7 +334,7 @@ sub jabber_presence {
   my $self = shift;
   $self->debug("****REFEREE**** Got some presence.\n");
   my ($node) = @_;
-  if (my $x = $node->get_tag(x=>"http://jabber.org/protocol/muc#user")) {
+  if (my $x = $node->get_tag('x', [xmlns=>"http://jabber.org/protocol/muc#user"])) {
     # Aha, someone has entered the game MUC.
     # Figure out who it's talking about.
     my $new_person_jid;
@@ -363,7 +363,7 @@ sub jabber_presence {
       # Send the game-creating JID an RPC response letting them know
       # where the action is.
       my $response = RPC::XML::response->new($self->muc_jid);
-      my $rpc_iq = PXR::Node->new('iq');
+      my $rpc_iq = POE::Filter::XML::Node->new('iq');
       $rpc_iq->attr(type=>'result');
       $rpc_iq->attr(to=>$self->starting_request_jid);
       $rpc_iq->attr(id=>$self->starting_request_id) if defined($self->starting_request_id);
@@ -371,7 +371,7 @@ sub jabber_presence {
       # But then, I can't see why it would break.
       my $response_xml = $response->as_string;
       $response_xml = substr($response_xml, 22);
-      $rpc_iq->insert_tag(query=>'jabber:iq:rpc')
+      $rpc_iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])
 	->rawdata($response_xml);
       $kernel->post($self->alias, 'output_handler', $rpc_iq);
 

@@ -158,7 +158,7 @@ sub jabber_authed {
 # requests. Volity servers are very social like that.
 sub jabber_presence {
   my $self = shift;
-  my ($presence) = @_;		# PXR::Node object
+  my ($presence) = @_;		# POE::Filter::XML::Node object
   if ($presence->attr('type') and $presence->attr('type') eq 'subscribe') {
     # A subscription request! Shoot back approval.
     $self->send_presence(
