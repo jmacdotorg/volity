@@ -2,7 +2,7 @@
 
 =begin TODO
 
-* Update the docs to reflect the JS stuff.
+* Fix history browsing so that the cursor snaps back to the end when ya done.
 
 =end TODO
 
@@ -14,6 +14,7 @@ use strict;
 use POE;
 use POE::Wheel::ReadLine;
 use JavaScript::SpiderMonkey;
+use Data::JavaScript::Anon;
 use Getopt::Std;
 use YAML;
 
@@ -126,7 +127,7 @@ sub user_input {
         if ($heap->{'commands'}) {
            foreach (@{ $heap->{'commands'} }) {
                if ( $$_[0] eq $cmd ) {
-                   js_call( $user->js, "referee.$cmd", @args );
+                   js_call( $user->js, "client.$cmd", @args );
                    return;
                }
            }
@@ -143,10 +144,20 @@ sub js_call {
     my $script = "$cmd(";
     foreach (@args) {
         next if /^-?\d*(?:\.\d+)?$/;
+	next if ref($_);
         s/'/\\'/g;
         $_ = "'$_'";
     }
-    $script .= join ', ', @args;
+    # Convert the @args into a list of JS-safe strings.
+    my @js_args;
+    for my $arg (@args) {
+	if (ref($arg)) {
+	    push (@js_args, Data::JavaScript::Anon->anon_dump($arg));
+	} else {
+	    push (@js_args, $arg);
+	}
+    }
+    $script .= join ', ', @js_args;
     $script .= ")";
     return $js->eval( $script );
 }
@@ -287,13 +298,20 @@ sub cmd_load_ui {
   my $js = JavaScript::SpiderMonkey->new();
   $js->init();
   my $game = $js->object_by_path("game");
-  my $referee = $js->object_by_path("referee");
+  my $referee = $js->object_by_path("client");
+  my $info = $js->object_by_path("info");
   $js->function_set("writeln", sub { js_writeln( $term, @_) } );
   $js->function_set("rpc", sub { js_rpc( $user, @_ ) } );
   $js->function_set("registerCommand", 
     sub { js_registerCommand( $commands, @_ ) } , $referee );
 
   $js->eval( $source );
+
+  $js->eval( "info.nickname = '" . ($user->nick || $user->user) . "'" );
+  $js->eval( "info.opponents = {}" );
+  for my $nickname ($user->opponent_nicknames) {
+    $js->eval( "info.opponents['$nickname'] = {}" );
+  }
   
   if ($user->js) {
       $user->js->destroy;
@@ -313,7 +331,7 @@ sub js_rpc {
 #    warn "Da args are: @args\n";
 
 # XXX
-    $user->print_message( "Making RPC call to $cmd..." );
+#    $user->print_message( "Making RPC call to $cmd..." );
     $user->make_rpc_request(
                             {
                              to=>$user->referee_jid,
@@ -341,12 +359,16 @@ sub cmd_new_table {
     $heap->{user}->put("That doesn't look like a JID to me!");
     return;
   }
+  unless ($user->js) {
+      $user->print_message("Load a UI file before starting a new table.");
+      return;
+  }
   my $rpc_id = ++$next_rpc_request_id;
   $user->make_rpc_request(
                           {
                            to=>$server_jid,
                            id=>$rpc_id,
-                           methodname=>'new_table',
+                           methodname=>'volity.new_table',
                            handler=>'new_table',
                           }
                          );
@@ -359,7 +381,7 @@ sub cmd_add_bot {
                           {
                            to=>$user->referee_jid,
                            id=>$rpc_id,
-                           methodname=>'add_bot',
+                           methodname=>'volity.add_bot',
                            handler=>'add_bot',
                           }
                          );
@@ -369,10 +391,15 @@ sub cmd_join_table {
   my $user = $_[HEAP]->{user_obj};
   my $table_jid = $_[ARG0];
   return unless check_jid($_[HEAP]->{user}, $table_jid);
+  unless ($user->js) {
+      $user->print_message("Load a UI file before joining a table.");
+      return;
+  }
+  $user->clear_opponent_nicknames;
   $user->join_muc(
                   {
                    jid=>$table_jid,
-                   nick=>$user->{nick},
+                   nick=>$user->nick || $user->user,
                   }
                  );
   # Tell the user that it's now seated at a table.
@@ -428,7 +455,7 @@ sub cmd_start_game {
                           {
                            id=>$rpc_id,
                            to=>$user->referee_jid,
-                           methodname=>'start_game',
+                           methodname=>'volity.start_game',
                            handler=>'start_game',
                           }
                          );
@@ -496,7 +523,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick terminal table_jid referee_jid js);
+use fields qw(nick terminal table_jid referee_jid js opponents);
 use POE;
 
 sub jabber_authed {
@@ -511,7 +538,7 @@ sub jabber_authed {
   # Failed login...
   elsif ( $node->attr('type') eq 'error') {
     my $details  = $node->get_children_hash;
-    my $query    = $$details{'query'}->get_children_hash;
+    my $query    = $$details{'query'}->get_childbren_hash;
     my $username = $$query{'username'}->data;
     my $code     = $$details{'error'}->attr('code');
     my $desc     = $$details{'error'}->data;
@@ -542,6 +569,7 @@ sub rpc_response_new_table {
   my $self = shift;
   my( $message ) = @_;
   my $table_jid = $$message{'response'};
+  $self->clear_opponent_nicknames;
   $self->join_muc( {
     jid  => $table_jid,
     nick => $self->nick || $self->user,
@@ -559,7 +587,7 @@ sub rpc_response_add_bot {
 }
 
 sub rpc_response_start_game {
-  my $self = shift;
+  my $self = shift;  
   $self->print_message("The game has begun. Good luck!");
 }
 
@@ -596,8 +624,7 @@ sub handle_rpc_request {
       $self->print_message("Unknown rpc request namespace: $$req{'method'}");
   }
 # XXX
-  $self->print_message( "Handling RPC call $$req{'method'}..." );
-  js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
+  main::js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
 }
 
 sub handle_normal_message {
@@ -630,6 +657,15 @@ sub jabber_presence {
   my $self = shift;
   my ($node) = @_;
   my $x; # Hey, that's the name of the element, OK?
+  if (defined($node->attr('type')) and $node->attr('type') eq 'error') {
+    # Ruh roh. Just print an error message.
+    my $error = $node->get_tag('error');
+    my $code = $error->attr('code');
+    $self->terminal->put("Got an error ($code):");
+    my $message = $error->data || "Something went wrong.";
+    $self->terminal->put($message);
+    return;
+  }
   if (($node->get_tag('x')) and (($x) = grep($_->attr('xmlns') eq "http://jabber.org/protocol/muc#user", $node->get_tag('x')))) {
     # Aha, someone has joined the table.
     my $new_person_jid = $x->get_tag('item')->attr('jid');
@@ -637,6 +673,16 @@ sub jabber_presence {
     if ($affiliation eq 'owner') {
       # This is the table's ref.
       $self->referee_jid($new_person_jid);
+    } else {
+      # This is a potential opponent!
+      unless ($node->attr('type')) {
+	# No 'type' attribute means they're joining us...
+	# Save the nickname. We'll pass it to the UI file later.
+	$self->add_opponent_nickname($node->attr('from'));
+      } elsif ($node->attr('type') eq 'unavailable') {
+	# Oh, they're leaving...
+	$self->remove_opponent_nickname($node->attr('from'));
+      }
     }
   } elsif ($self->roster->has_jid( $node->attr('from') )) {
     # Someone on our roster just changed their presence.
@@ -649,6 +695,52 @@ sub jabber_presence {
     $roster->presence($jid, $presence_hash);
     my $prez = $roster->presence($jid);
   }
+}
+
+# add_opponent_nickname: Add the given nickname (either a full JID in MUC
+# format, or a bare string containing only the nickname) to our internal
+# list of known opponents at the current table.
+sub add_opponent_nickname {
+  my $self = shift;
+  my ($name) = @_;
+  my $nickname;
+  if (main::is_jid($name)) {
+    ($nickname) = $name =~ /\/(.*)$/;
+    unless ($nickname) {
+      die "GACK. I couldn't tease a nickname out of the jid $name.";
+    }
+  } else {
+    $nickname = $name;
+  }
+  my $my_nickname = $self->nick || $self->user;
+  unless ($my_nickname eq $nickname) {
+    $self->{opponents}{$nickname} = 1;
+  }
+}
+
+sub remove_opponent_nickname {
+  my $self = shift;
+  my ($name) = @_;
+  my $nickname;
+  if (main::is_jid($name)) {
+    ($nickname) = $name =~ /\/(.*)$/;
+    unless ($nickname) {
+      die "GACK. I couldn't tease a nickname out of the jid $name.";
+    }
+  } else {
+    $nickname = $name;
+  }
+  return(delete($self->{opponents}{$nickname}));
+}
+
+sub opponent_nicknames {
+  my $self = shift;
+  return keys(%{$self->{opponents}});
+}
+
+sub clear_opponent_nicknames {
+  my $self = shift;
+  $self->{opponents} = {};
 }
 
 =head1 NAME
