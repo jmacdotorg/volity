@@ -1,5 +1,9 @@
+bin/bookkeeper.pl
 Build.PL
+lib/Volity/Bookkeeper.pm
+lib/Volity/Info.pm
+lib/Volity/Info/Game.pm
+lib/Volity/Info/Player.pm
+LICENSE
 MANIFEST			This list of files
 README
-lib/Volity/Bookkeeper.pm
-bin/bookkeeper.pl
