@@ -137,7 +137,7 @@ use base qw(Volity Class::Data::Inheritable);
 
 use fields qw(players winners quitters current_player current_player_index referee player_jids);
 
-foreach (qw(uri max_allowed_players min_allowed_players player_class)) {
+foreach (qw(uri name max_allowed_players min_allowed_players player_class)) {
   __PACKAGE__->mk_classdata($_);
 }
 
