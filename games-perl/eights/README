@@ -1,0 +1,9 @@
+This module implements the game of Crazy Eights for the
+Volity game system. It is intended for use with Frivolity, the
+pure-Perl Volity game server and framework.
+
+For more information about Volity: http://volity.org
+
+Frivolity: http://volity.org/projects/frivolity
+
+RPS: http://volity.org/games/rps

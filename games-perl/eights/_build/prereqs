@@ -1,0 +1,8 @@
+{
+          'requires' => {
+                          'Volity' => '0.3.5'
+                        },
+          'conflicts' => {},
+          'recommends' => {},
+          'build_requires' => {}
+        }

@@ -1,0 +1,10 @@
+--- #YAML:1.0
+name: volity-rps
+version: 0.3.5
+author: ~
+abstract: ~
+license: lgpl
+requires:
+  Volity: 0.3.5
+provides: {}
+generated_by: Module::Build version 0.25
