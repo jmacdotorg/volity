@@ -260,7 +260,7 @@ sub game_uri {
 
 # These methods all deal with the attached signature somehow.
 
-=Begin unimplemented
+=begin unimplemented
 
 =item confirm_record_owner
 
