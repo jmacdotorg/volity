@@ -11,13 +11,6 @@ sub player_class {
   return $player_class;
 }
 
-sub initialize {
-  my $self = shift;
-  $self->max_allowed_players(2);
-  $self->min_allowed_players(2);
-  return $self->SUPER::initialize(@_);
-}
-
 sub handle_normal_message {
   my $self = shift;
   my ($message) = @_;
@@ -94,10 +87,13 @@ sub handle_chat_message {
       $victory_message = sprintf("A tie! Both players chose %s.", $players[0]->hand_type);
     } elsif ($players[0]->hand_type eq 'rock') {
       $victory_message = sprintf("%s(rock) crushes %s(scissors)!", $players[0]->nick, $players[1]->nick);
+      $self->winners($players[0]);
     } elsif ($players[0]->hand_type eq 'scissors') {
       $victory_message = sprintf("%s(scissors) shreds %s(paper)!", $players[0]->nick, $players[1]->nick);
+      $self->winners($players[0]);
     } else {
       $victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
+      $self->winners($players[0]);
     }
     $self->server->send_message({
 				 to=>$self->muc_jid,
