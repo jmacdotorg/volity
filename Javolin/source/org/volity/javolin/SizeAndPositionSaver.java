@@ -18,9 +18,7 @@
 package org.volity.javolin;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.util.prefs.*;
-import javax.swing.*;
 
 /**
  * Handles saving and restoring the size and position of a Dialog or Frame in the

@@ -25,13 +25,10 @@ import java.text.*;
 import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
-import javax.swing.event.*;
 import javax.swing.text.*;
-import org.apache.batik.swing.gvt.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
-import org.jivesoftware.smackx.muc.*;
 import org.volity.client.*;
 import org.volity.jabber.*;
 import org.volity.javolin.*;
@@ -269,8 +266,8 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
-     * Saves window state to the preferences storage, including window size and position,
-     * and splitter bar positions.
+     * Restores window state from the preferences storage, including window size and 
+     * position, and splitter bar positions.
      */
     private void restoreWindowState()
     {

@@ -20,12 +20,10 @@ package org.volity.javolin.roster;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.tree.*;
 import org.jivesoftware.smack.*;
-import org.volity.javolin.*;
 
 /**
  * JPanel subclass which contains the roster list and related controls.
@@ -34,7 +32,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 {
     private JTree mTree;
     private DefaultTreeModel mTreeModel;
-    private java.util.List mSelectionListeners;
+    private java.util.List mRosterListeners;
     private boolean mShowUnavailUsers;
     private Roster mRoster;
 
@@ -43,7 +41,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public RosterPanel()
     {
-        mSelectionListeners = new ArrayList();
+        mRosterListeners = new ArrayList();
         buildUI();
 
         // Set up tree
@@ -56,44 +54,73 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             (TreeSelectionModel.SINGLE_TREE_SELECTION);
         mTree.setRootVisible(false);
         mTree.addTreeSelectionListener(this);
+
+        // Set up handling of double-clicks on tree items
+        mTree.addMouseListener(
+            new MouseAdapter()
+            {
+                public void mousePressed(MouseEvent e)
+                {
+                    TreePath clickPath = mTree.getPathForLocation(e.getX(), e.getY());
+                    if ((clickPath != null) && (e.getClickCount() == 2))
+                    {
+                        doItemDoubleClick(clickPath);
+                    }
+                }
+            });
     }
 
     /**
-     * Adds a listener for RosterPanel selection events.
+     * Adds a listener for RosterPanel events.
      *
-     * @param listener  A RosterPanelSelectionListener that will be notified when a node
-     * is selected or deselected.
+     * @param listener  A RosterPanelListener that will be notified about roster actions.
      */
-    public void addRosterPanelSelectionListener(RosterPanelSelectionListener listener)
+    public void addRosterPanelListener(RosterPanelListener listener)
     {
-        mSelectionListeners.add(listener);
+        mRosterListeners.add(listener);
     }
 
     /**
-     * Removes a RosterPanel selection event listener.
+     * Removes a RosterPanel event listener.
      *
-     * @param listener  The RosterPanelSelectionListener to remove.
+     * @param listener  The RosterPanelListener to remove.
      */
-    public void removeRosterPanelSelectionListener(
-        RosterPanelSelectionListener listener)
+    public void removeRosterPanelListener(RosterPanelListener listener)
     {
-        mSelectionListeners.remove(listener);
+        mRosterListeners.remove(listener);
     }
 
     /**
      * Notifies all listeners that have registered interest for notification on this
      * event type.
      *
-     * @param e  The RosterPanelSelectionEvent to be fired; generated when a node is
-     * selected or deselected.
+     * @param e  The RosterPanelEvent to be fired; generated when a node is selected or
+     * deselected.
      */
-    private void fireRosterPanelSelection(RosterPanelSelectionEvent e)
+    private void fireRosterPanelSelection(RosterPanelEvent e)
     {
-        Iterator iter = mSelectionListeners.iterator();
+        Iterator iter = mRosterListeners.iterator();
 
         while (iter.hasNext())
         {
-            ((RosterPanelSelectionListener)iter.next()).valueChanged(e);
+            ((RosterPanelListener)iter.next()).selectionChanged(e);
+        }
+    }
+
+    /**
+     * Notifies all listeners that have registered interest for notification on this
+     * event type.
+     *
+     * @param e  The RosterPanelEvent to be fired; generated when a node is double-
+     * clicked.
+     */
+    private void fireRosterPanelDoubleClick(RosterPanelEvent e)
+    {
+        Iterator iter = mRosterListeners.iterator();
+
+        while (iter.hasNext())
+        {
+            ((RosterPanelListener)iter.next()).itemDoubleClicked(e);
         }
     }
 
@@ -161,7 +188,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 
                 // Remember node if it's the one to select after populating, and the item
                 // will be visible in the tree
-                if (((selUserId != null) && (item.getId().equals(selUserId))) && 
+                if (((selUserId != null) && (item.getId().equals(selUserId))) &&
                     (item.isAvailable() || mShowUnavailUsers))
                 {
                     nodeToSelect = newNode;
@@ -208,8 +235,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         DefaultMutableTreeNode node =
             (DefaultMutableTreeNode)(mTree.getLastSelectedPathComponent());
 
-        if ((node != null) &&
-            (node.getUserObject() instanceof UserTreeItem))
+        if ((node != null) && (node.getUserObject() instanceof UserTreeItem))
         {
             retVal = (UserTreeItem)node.getUserObject();
         }
@@ -226,6 +252,22 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     {
         mShowUnavailUsers = show;
         repopulate();
+    }
+
+    /**
+     * Handler for an item in the tree getting double-clicked.
+     *
+     * @param path  The TreePath indicating the double-clicked item.
+     */
+    private void doItemDoubleClick(TreePath path)
+    {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+
+        if (node.getUserObject() instanceof UserTreeItem)
+        {
+            fireRosterPanelDoubleClick(
+                new RosterPanelEvent(this, (UserTreeItem)node.getUserObject()));
+        }
     }
 
     /**
@@ -253,8 +295,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public void valueChanged(TreeSelectionEvent e)
     {
-        fireRosterPanelSelection(new RosterPanelSelectionEvent(this,
-            getSelectedUserItem()));
+        fireRosterPanelSelection(new RosterPanelEvent(this, getSelectedUserItem()));
     }
 
     /**

@@ -1,19 +1,17 @@
 /*
- * MUCWindow.java
+ * ChatWindow.java
  *
- * Copyright 2004 Karl von Laudermann
+ * Copyright 2005 Karl von Laudermann
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
  */
 package org.volity.javolin.chat;
 
@@ -27,24 +25,19 @@ import javax.swing.text.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
-import org.jivesoftware.smackx.*;
-import org.jivesoftware.smackx.muc.*;
 import org.volity.javolin.*;
 
 /**
- * A window for participating in a MUC.
+ * A window for participating in a one-on-one chat.
  */
-public class MUCWindow extends JFrame implements PacketListener
+public class ChatWindow extends JFrame implements PacketListener
 {
-    private final static String NODENAME = "MUCWindow";
+    private final static String NODENAME = "ChatWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
-    private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
 
     private JSplitPane mChatSplitter;
-    private JSplitPane mUserListSplitter;
     private LogTextPanel mMessageText;
     private JTextArea mInputText;
-    private JTextPane mUserListText;
     private AbstractAction mSendMessageAction;
 
     private UserColorMap mUserColorMap;
@@ -53,26 +46,37 @@ public class MUCWindow extends JFrame implements PacketListener
 
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
-    private MultiUserChat mMucObject;
+    private Chat mChatObject;
+    private String mLocalId;
+    private String mRemoteId;
+
+    /*
+     * Static initializer
+     */
+    static
+    {
+        // Set this before any Chat object is ever created
+        Chat.setFilteredOnThreadID(false);
+    }
 
     /**
      * Constructor.
      *
      * @param connection         The current active XMPPConnection.
-     * @param mucId              The ID of the MUC to create and join.
-     * @param nickname           The nickname to use to join the MUC.
+     * @param remoteId           The ID of the user to chat with.
      * @exception XMPPException  If an error occurs joining the room.
      */
-    public MUCWindow(XMPPConnection connection, String mucId, String nickname)
-         throws XMPPException
+    public ChatWindow(XMPPConnection connection, String remoteId) throws XMPPException
     {
-        super(JavolinApp.getAppName() + ": " + mucId);
-
+        super(JavolinApp.getAppName() + ": Chat with " + remoteId);
+        
         mConnection = connection;
-        mMucObject = new MultiUserChat(connection, mucId);
+        mRemoteId = remoteId;
+        mChatObject = new Chat(mConnection, mRemoteId);
 
+        mLocalId = StringUtils.parseBareAddress(mConnection.getUser());
         mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(nickname); // Give user first color
+        mUserColorMap.getUserNameColor(mLocalId); // Give user first color
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -109,7 +113,6 @@ public class MUCWindow extends JFrame implements PacketListener
                 {
                     // Leave the chat room when the window is closed
                     saveWindowState();
-                    mMucObject.leave();
                 }
 
                 public void windowOpened(WindowEvent we)
@@ -120,60 +123,12 @@ public class MUCWindow extends JFrame implements PacketListener
             });
 
         // Register as message listener.
-        mMucObject.addMessageListener(this);
-
-        // Register as participant listener.
-        mMucObject.addParticipantListener(this);
-
-        // Last but not least, join the MUC
-        if (mucExists())
-        {
-            mMucObject.join(nickname);
-        }
-        else
-        {
-            mMucObject.create(nickname);
-            configureMuc();
-        }
-    }
-
-    /**
-     * Tells whether the MUC exists on the chat service.
-     *
-     * @return   true if the MUC exists on the chat service, false otherwise.
-     */
-    protected boolean mucExists()
-    {
-        ServiceDiscoveryManager discoMan =
-            ServiceDiscoveryManager.getInstanceFor(mConnection);
-        try
-        {
-            // If the room exists, it must answer to service discovery.
-            // We don't actually care what the answer is.
-            discoMan.discoverInfo(mMucObject.getRoom());
-            return true;
-        }
-        catch (XMPPException ex)
-        {
-            return false;
-        }
-    }
-
-    /**
-     * Configure the MUC by accepting the server default settings.
-     *
-     * @throws XMPPException  if an error occurs while configuring.
-     */
-    protected void configureMuc() throws XMPPException
-    {
-        // A blank form indicates that we accept the server default settings.
-        Form blankForm = new Form(Form.TYPE_SUBMIT);
-        mMucObject.sendConfigurationForm(blankForm);
+        mChatObject.addMessageListener(this);
     }
 
     /**
      * Saves window state to the preferences storage, including window size and position,
-     * and splitter bar positions.
+     * and splitter bar position.
      */
     private void saveWindowState()
     {
@@ -182,12 +137,11 @@ public class MUCWindow extends JFrame implements PacketListener
         mSizePosSaver.saveSizeAndPosition();
 
         prefs.putInt(CHAT_SPLIT_POS, mChatSplitter.getDividerLocation());
-        prefs.putInt(USERLIST_SPLIT_POS, mUserListSplitter.getDividerLocation());
     }
 
     /**
-     * Restores window state from the preferences storage, including window size and 
-     * position, and splitter bar positions.
+     * Restores window state from the preferences storage, including window size and
+     * position, and splitter bar position.
      */
     private void restoreWindowState()
     {
@@ -196,36 +150,6 @@ public class MUCWindow extends JFrame implements PacketListener
         mSizePosSaver.restoreSizeAndPosition();
 
         mChatSplitter.setDividerLocation(prefs.getInt(CHAT_SPLIT_POS, getHeight() - 100));
-        mUserListSplitter.setDividerLocation(prefs.getInt(USERLIST_SPLIT_POS,
-            getWidth() - 100));
-    }
-
-    /**
-     * Updates the list of users in the MUC.
-     */
-    private void updateUserList()
-    {
-        mUserListText.setText("");
-        Iterator iter = mMucObject.getParticipants();
-
-        while (iter.hasNext())
-        {
-            String userName = StringUtils.parseResource(iter.next().toString());
-
-            SimpleAttributeSet style = new SimpleAttributeSet(mBaseUserListStyle);
-            StyleConstants.setForeground(style,
-                mUserColorMap.getUserNameColor(userName));
-
-            Document doc = mUserListText.getDocument();
-
-            try
-            {
-                doc.insertString(doc.getLength(), userName + "\n", style);
-            }
-            catch (BadLocationException ex)
-            {
-            }
-        }
     }
 
     /**
@@ -239,10 +163,16 @@ public class MUCWindow extends JFrame implements PacketListener
         {
             doMessageReceived((Message)packet);
         }
-        else if (packet instanceof Presence)
-        {
-            updateUserList();
-        }
+    }
+
+    /**
+     * Gets the ID of the remote user involved in the chat.
+     *
+     * @return   The ID of the remote user involved in the chat.
+     */
+    public String getRemoteUserId()
+    {
+        return mRemoteId;
     }
 
     /**
@@ -252,18 +182,21 @@ public class MUCWindow extends JFrame implements PacketListener
     {
         try
         {
-            mMucObject.sendMessage(mInputText.getText());
+            String message = mInputText.getText();
+
+            mChatObject.sendMessage(message);
             mInputText.setText("");
+            writeMessageText(mLocalId, message);
         }
         catch (XMPPException ex)
         {
-            JOptionPane.showMessageDialog(this, ex.toString(),
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, ex.toString(), JavolinApp.getAppName()
+                 + ": Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     /**
-     * Handles a message received from the MUC.
+     * Handles a message received from the remote party.
      *
      * @param msg  The Message object that was received.
      */
@@ -285,7 +218,7 @@ public class MUCWindow extends JFrame implements PacketListener
 
             if (addr != null)
             {
-                nick = StringUtils.parseResource(addr);
+                nick = StringUtils.parseBareAddress(addr);
             }
 
             writeMessageText(nick, msg.getBody());
@@ -310,10 +243,10 @@ public class MUCWindow extends JFrame implements PacketListener
 
         String nickText = hasNick ? nickname + ":" : "***";
 
-        Color nameColor =
-            hasNick ? mUserColorMap.getUserNameColor(nickname) : Color.BLACK;
-        Color textColor =
-            hasNick ? mUserColorMap.getUserTextColor(nickname) : Color.BLACK;
+        Color nameColor = hasNick ? mUserColorMap.getUserNameColor(nickname) :
+            Color.BLACK;
+        Color textColor = hasNick ? mUserColorMap.getUserTextColor(nickname) :
+            Color.BLACK;
 
         mMessageText.append(nickText + " ", nameColor);
         mMessageText.append(message + "\n", textColor);
@@ -340,16 +273,6 @@ public class MUCWindow extends JFrame implements PacketListener
         mInputText.setWrapStyleWord(true);
         mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
 
-        // Split pane separating user list from everything else
-        mUserListSplitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        mUserListSplitter.setResizeWeight(1);
-
-        mUserListSplitter.setLeftComponent(mChatSplitter);
-
-        mUserListText = new JTextPane();
-        mUserListText.setEditable(false);
-        mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
-
-        cPane.add(mUserListSplitter, BorderLayout.CENTER);
+        cPane.add(mChatSplitter, BorderLayout.CENTER);
     }
 }

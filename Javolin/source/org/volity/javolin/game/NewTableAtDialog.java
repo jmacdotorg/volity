@@ -22,8 +22,6 @@ import java.awt.event.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
-import org.volity.client.*;
-import org.volity.jabber.*;
 import org.volity.javolin.*;
 
 /**

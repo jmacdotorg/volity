@@ -1,5 +1,5 @@
 /*
- * RosterPanelSelectionEvent.java
+ * RosterPanelListener.java
  *
  * Copyright 2005 Karl von Laudermann
  *
@@ -17,24 +17,23 @@
  */
 package org.volity.javolin.roster;
 
-import java.util.*;
-
 /**
- * Event that characterizes a change in the selection of a RosterPanel.
+ * Interface for classes that want to be notified of actions taken on a RosterPanel, such
+ * as the selection changing or an item being double-clicked.
  */
-public class RosterPanelSelectionEvent extends EventObject
+public interface RosterPanelListener
 {
-    private UserTreeItem mUserItem;
+    /**
+     * Called whenever the value of the selection changes.
+     *
+     * @param e  The event that characterizes the change.
+     */
+    public void selectionChanged(RosterPanelEvent e);
 
     /**
-     *Constructor.
+     * Called when an item is double-clicked.
      *
-     * @param source  The object on which the Event initially occurred.
-     * @param item    The UserTreeItem that was selected. Is null selection was cleared.
+     * @param e  The event that characterizes the action.
      */
-    public RosterPanelSelectionEvent(Object source, UserTreeItem item)
-    {
-        super(source);
-        mUserItem = item;
-    }
+    public void itemDoubleClicked(RosterPanelEvent e);
 }

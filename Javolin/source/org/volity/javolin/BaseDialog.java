@@ -19,7 +19,6 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.prefs.*;
 import javax.swing.*;
 
 /**

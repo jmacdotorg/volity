@@ -19,16 +19,17 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.border.*;
+
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smackx.muc.*;
-import org.volity.client.*;
-import org.volity.jabber.*;
+import org.jivesoftware.smack.filter.*;
+import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.util.*;
+
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
 import org.volity.javolin.roster.*;
@@ -37,7 +38,7 @@ import org.volity.javolin.roster.*;
  * The main application class of Javolin.
  */
 public class JavolinApp extends JFrame implements ActionListener, ConnectionListener,
-    RosterPanelSelectionListener
+    RosterPanelListener, PacketListener
 {
     private final static String APPNAME = "Javolin";
     private final static String NODENAME = "MainAppWin";
@@ -75,6 +76,8 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private XMPPConnection mConnection;
     private java.util.List mMucWindows;
     private java.util.List mTableWindows;
+    private java.util.List mChatWindows;
+    private Map mUserChatWinMap;
     private boolean mShowUnavailUsers;
 
     static
@@ -101,8 +104,10 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
 
-        mMucWindows = new Vector();
-        mTableWindows = new Vector();
+        mMucWindows = new ArrayList();
+        mTableWindows = new ArrayList();
+        mChatWindows = new ArrayList();
+        mUserChatWinMap = new Hashtable();
 
         // Set roster to show/hide unavailable users based on prefs
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
@@ -110,8 +115,8 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         mRosterPanel.setShowUnavailableUsers(mShowUnavailUsers);
         updateToolBarButtons();
 
-        // Add self as listener for RosterPanel selection events
-        mRosterPanel.addRosterPanelSelectionListener(this);
+        // Add self as listener for RosterPanel events
+        mRosterPanel.addRosterPanelListener(this);
 
         // Handle closing the window to quit the app
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -281,6 +286,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         }
         else if (e.getSource() == mChatBut)
         {
+            doChatBut();
         }
     }
 
@@ -296,6 +302,10 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         if (mConnection != null)
         {
             mConnection.addConnectionListener(this);
+
+            // Listen for incoming chat messages
+            PacketFilter filter = new MessageTypeFilter(Message.Type.CHAT);
+            mConnection.addPacketListener(this, filter);
         }
 
         // Assign the roster to the RosterPanel
@@ -416,7 +426,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             mTableWindows.add(tableWin);
             mWindowMenu.add(tableWin);
 
-            // Remove the table window from the list when it closes
+            // Remove the table window from the list and menu when it closes
             tableWin.addWindowListener(
                 new WindowAdapter()
                 {
@@ -444,7 +454,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             mMucWindows.add(mucWin);
             mWindowMenu.add(mucWin);
 
-            // Remove the MUC window from the list when it closes
+            // Remove the MUC window from the list and menu when it closes
             mucWin.addWindowListener(
                 new WindowAdapter()
                 {
@@ -454,6 +464,71 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                         mWindowMenu.remove((JFrame)we.getWindow());
                     }
                 });
+        }
+    }
+
+    /**
+     * Handler for the Chat button.
+     */
+    private void doChatBut()
+    {
+        UserTreeItem selItem = mRosterPanel.getSelectedUserItem();
+
+        if (selItem == null)
+        {
+            return;
+        }
+
+        chatWithUser(selItem.getId());
+    }
+
+    /**
+     * Activates a chat session with the specified user. If a ChatWindow exists for the
+     * user, it brings that window to the front. Otherwise, it creates a new chat window 
+     * for communicating with the specified user.
+     *
+     * @param userId  The Jabber ID of the user to chat with.
+     */
+    private void chatWithUser(String userId)
+    {
+        ChatWindow chatWin = getChatWindowForUser(userId);
+
+        if (chatWin != null)
+        {
+            chatWin.toFront();
+        }
+        else
+        {
+
+            try
+            {
+                chatWin = new ChatWindow(mConnection, userId);
+
+                chatWin.show();
+                mChatWindows.add(chatWin);
+                mWindowMenu.add(chatWin);
+                mUserChatWinMap.put(userId, chatWin);
+
+                // Remove the chat window from the list, menu, and map when it closes
+                chatWin.addWindowListener(
+                    new WindowAdapter()
+                    {
+                        public void windowClosed(WindowEvent we)
+                        {
+                            ChatWindow win = (ChatWindow)we.getWindow();
+                            
+                            mChatWindows.remove(win);
+                            mWindowMenu.remove(win);
+                            mUserChatWinMap.remove(win.getRemoteUserId());
+                        }
+                    });
+
+            }
+            catch (XMPPException ex)
+            {
+                JOptionPane.showMessageDialog(this, ex.toString(),
+                    getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -633,14 +708,67 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
-     * RosterPanelSelectionListener interface method implementation. Updates the toolbar
+     * RosterPanelListener interface method implementation. Updates the toolbar
      * buttons when the roster selection has changed.
      *
-     * @param e  The RosterPanelSelectionEvent.
+     * @param e  The RosterPanelEvent.
      */
-    public void valueChanged(RosterPanelSelectionEvent e)
+    public void selectionChanged(RosterPanelEvent e)
     {
         updateToolBarButtons();
+    }
+
+    /**
+     * RosterPanelListener interface method implementation. Starts chat if the double-
+     * clicked user is available.
+     *
+     * @param e  Description of the Parameter
+     */
+    public void itemDoubleClicked(RosterPanelEvent e)
+    {
+        UserTreeItem item = e.getUserTreeItem();
+
+        if (item.isAvailable())
+        {
+            chatWithUser(e.getUserTreeItem().getId());
+        }
+    }
+
+    /**
+     * Gets the ChatWindow handling chatting with the specified user, if any.
+     *
+     * @param userId  The ID of the remote user.
+     * @return        The ChatWindow being used to handle chat with the specified user,
+     * or null if there isn't currently one.
+     */
+    private ChatWindow getChatWindowForUser(String userId)
+    {
+        return (ChatWindow)mUserChatWinMap.get(userId);
+    }
+
+    /**
+     * PacketListener interface method implementation. Handles incoming chat messages.
+     *
+     * @param packet  The packet received.
+     */
+    public void processPacket(Packet packet)
+    {
+        if (packet instanceof Message)
+        {
+            Message message = (Message)packet;
+            String remoteId = StringUtils.parseBareAddress(message.getFrom());
+            
+            // If there is not already a chat window for the current user, create one
+            // and give it the message.
+            ChatWindow chatWin = getChatWindowForUser(remoteId);
+            
+            if (chatWin == null)
+            {
+                chatWithUser(remoteId);
+                chatWin = getChatWindowForUser(remoteId);
+                chatWin.processPacket(message);
+            }
+        }
     }
 
     /**
