@@ -66,9 +66,10 @@ public class TableWindow extends JFrame implements PacketListener
     /**
      * Constructor.
      *
-     * @param server                     A GameServer object corresponding to the desired game.
-     * @param table                      A GameTable to join, or NULL to create a new table from
-     *  the GameServer.
+     * @param server                     A GameServer object corresponding to the desired
+     *  game.
+     * @param table                      A GameTable to join, or NULL to create a new 
+     *  table from the GameServer.
      * @param nickname                   The nickname to use to join the table.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.

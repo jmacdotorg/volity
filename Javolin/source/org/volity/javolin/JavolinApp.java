@@ -331,7 +331,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             catch (Exception ex)
             {
                 JOptionPane.showMessageDialog(this, ex.toString(),
-                    JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+                    getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
             }
 
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
@@ -345,11 +345,10 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     {
         JoinMUCDialog joinMucDlg = new JoinMUCDialog(this, mConnection);
         joinMucDlg.show();
-        MultiUserChat mucObj = joinMucDlg.getMUC();
+        MUCWindow mucWin = joinMucDlg.getMUCWindow();
 
-        if (mucObj != null)
+        if (mucWin != null)
         {
-            MUCWindow mucWin = new MUCWindow(mucObj);
             mucWin.show();
             mMucWindows.add(mucWin);
 

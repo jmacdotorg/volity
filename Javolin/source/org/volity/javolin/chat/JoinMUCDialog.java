@@ -41,7 +41,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     private JButton mJoinButton;
 
     private XMPPConnection mConnection;
-    private MultiUserChat mMucObject;
+    private MUCWindow mMucWindow;
 
     /**
      * Constructor.
@@ -70,12 +70,12 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     /**
      * Gets the MultiUserChat object that was created and joined.
      *
-     * @return   The MultiUserChat that was created and joined when the user pressed the
-     * Join button, or null if the user pressed Cancel or if there was an error.
+     * @return   The MUCWindow for the MUC that was created and joined when the user
+     *  pressed the Join button, or null if the user pressed Cancel.
      */
-    public MultiUserChat getMUC()
+    public MUCWindow getMUCWindow()
     {
-        return mMucObject;
+        return mMucWindow;
     }
 
     /**
@@ -103,11 +103,11 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         // Store field values in preferences
         saveFieldValues();
 
-        // Join the MultiUserChat
+        // Create the MUCWindow
         try
         {
-            mMucObject = new MultiUserChat(mConnection, mMucIdField.getText());
-            mMucObject.join(mNicknameField.getText());
+            mMucWindow = new MUCWindow(mConnection, mMucIdField.getText(),
+                mNicknameField.getText());
 
             dispose();
         }
@@ -116,8 +116,8 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
             JOptionPane.showMessageDialog(this, ex.toString(),
                 JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
 
-            // Destroy MultiUserChat object
-            mMucObject = null;
+            // Destroy MUCWindow object
+            mMucWindow = null;
         }
     }
 

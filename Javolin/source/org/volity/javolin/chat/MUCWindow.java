@@ -58,14 +58,19 @@ public class MUCWindow extends JFrame implements PacketListener
     /**
      * Constructor.
      *
-     * @param aMUC  The MultiUserChat object to communicate with.
+     * @param connection         The current active XMPPConnection.
+     * @param mucId              The ID of the MUC to create and join.
+     * @param nickname           The nickname to use to join the MUC.
+     * @exception XMPPException  If an error occurs joining the room.
      */
-    public MUCWindow(MultiUserChat aMUC)
+    public MUCWindow(XMPPConnection connection, String mucId, String nickname)
+         throws XMPPException
     {
-        super(JavolinApp.getAppName() + ": " + aMUC.getRoom());
+        super(JavolinApp.getAppName() + ": " + mucId);
+        mMucObject = new MultiUserChat(connection, mucId);
 
         mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(aMUC.getNickname()); // Give user first color
+        mUserColorMap.getUserNameColor(nickname); // Give user first color
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -78,8 +83,6 @@ public class MUCWindow extends JFrame implements PacketListener
         setSize(500, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         restoreWindowState();
-
-        mMucObject = aMUC;
 
         // Send message when user presses Enter while editing input text
         mSendMessageAction =
@@ -111,27 +114,17 @@ public class MUCWindow extends JFrame implements PacketListener
                 {
                     // Give focus to input text area when the window is created
                     mInputText.requestFocusInWindow();
-                    updateUserList();
                 }
             });
 
-        // Retrieve all pending messages, then register as message listener.
-        Message msg;
-
-        do
-        {
-            msg = mMucObject.nextMessage(50);
-
-            if (msg != null)
-            {
-                doMessageReceived(msg);
-            }
-        } while (msg != null);
-
+        // Register as message listener.
         mMucObject.addMessageListener(this);
 
         // Register as participant listener.
         mMucObject.addParticipantListener(this);
+
+        // Last but not least, join the MUC
+        mMucObject.join(nickname);
     }
 
     /**
