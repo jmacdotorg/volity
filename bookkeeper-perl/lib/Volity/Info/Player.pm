@@ -23,14 +23,6 @@ use strict;
 
 use base qw(Volity::Info);
 
-sub initialize {
-  my $self = shift;
-  $self->SUPER::initialize(@_);
-  unless (defined($self->jid)) {
-    croak ("You must initialize a player-info object with a JID!");
-  }
-}
-
 Volity::Info::Player->table('player');
 Volity::Info::Player->columns(All=>qw(id jid name email));
 Volity::Info::Player->has_many(games=>["Volity::Info::GamePlayer" => 'game_id'], 'player_id');
