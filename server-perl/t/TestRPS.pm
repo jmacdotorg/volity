@@ -65,7 +65,7 @@ use Carp qw(croak);
 sub initialize {
   my $self = shift;
   $self->game_class("TestRPS::Game");
-  $self->muc_host('conference.localhost');
+  $self->muc_host($main::build->notes("jabber_muc_host"));
 
   $self->Volity::Jabber::initialize(@_);
 
@@ -108,7 +108,7 @@ sub send_record_to_bookkeeper {
 
 sub jabber_iq {
   my $self = shift;
-  main::check_script(@_);
+#  main::check_script(@_);
   return $self->SUPER::jabber_iq(@_);
 }
 

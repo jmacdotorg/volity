@@ -10,7 +10,7 @@ use lib qw(lib t);
 
 use_ok('TestRPS');
 
-my $build = Module::Build->current;
+our $build = Module::Build->current;
 foreach (qw(jabber_user jabber_password jabber_host server_resource)) {
   die "Bleah, can't get $_ notes from the current Module::Build object. Are you running this script outside of the 'Build test' test harness? Don't do that! Sheesh!" unless defined($build->notes($_));
 }
@@ -38,7 +38,8 @@ isa_ok($server, "Volity::Server");
 
 my $server_pid;
 
-my @script = qw(auth table_creation table_configuration start_game insufficient_player_fault auth start_game start_game_response game_record auth);
+#my @script = qw(auth table_creation table_configuration start_game insufficient_player_fault auth start_game start_game_response game_record auth);
+my @script = qw(auth table_creation  insufficient_player_fault auth start_game_response game_record auth);
 #our $checker = Volity::Test::Checker->new;
 
 my %script_hash = set_script_hash();
@@ -50,7 +51,7 @@ our ($huey, $dewey, $louie);
 
 sub has_authed {
 
-  print "in has_authed: $server\n";
+#  print "in has_authed: $server\n";
 
   ok($server->has_authed, "Game connection and authentication to Jabber server");
 
@@ -199,18 +200,18 @@ sub jabber_iq {
   return $self->SUPER::jabber_iq(@_);
 }
 
-#sub handle_rpc_request {
-#  my $self = shift;
-#  main::check_script(@_);
-#  return $self->SUPER::handle_rpc_request(@_);
-#}
+sub jabber_presence {
+  my $self = shift;
+  my ($node) = @_;
+  my $from = $node->attr('from');
+  if (($from =~ /huey$/ or $from =~ /louie$/) and $self->nickname eq 'huey') {
+    $self->start_new_game;
+  }
+}
 
 sub handle_rpc_response {
   my $self = shift;
   my ($data) = @_;
-#  main::check_script(@_);
-#  use Data::Dumper; warn Dumper($data);
-#  sleep(1);
   if ($$data{id} eq 'new_game') {
     $self->game_jid($$data{response});
     # Hardcoding 'volity' below, since it's the hardcoded nickname of the
@@ -263,9 +264,7 @@ sub start_new_game {
 sub handle_groupchat_message {
   my $self = shift;
   my ($message) = @_;
-  if ($$message{body} =~ /has become available/ and $self->nickname eq 'huey') {
-    $self->start_new_game;
-  } elsif ($$message{body} =~ /game has begun!/) {
+  if ($$message{body} =~ /game has begun!/) {
 #    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
     $self->take_turn;
   }
