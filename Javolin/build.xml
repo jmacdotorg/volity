@@ -1,0 +1,44 @@
+<project name="Javolin" default="dist" basedir=".">
+    <description>
+        Build file for Javolin app
+    </description>
+  <!-- project-specific properties; change these -->
+  <property name="jarfile" value="Javolin.jar"/>
+  <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
+  <!-- set global properties for this build -->
+  <property name="src" location="source"/>
+  <property name="build" location="build"/>
+  <property name="classpath" value="lib/smack.jar"/>
+
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}"/>
+  </target>
+
+  <target name="compile" depends="init"
+        description="compile the source " >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}" classpath="${classpath}"
+    	deprecation="on"/>
+  </target>
+
+  <target name="dist" depends="compile"
+        description="generate the distribution" >
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+    <jar jarfile="${jarfile}" basedir="${build}">
+      <manifest>
+        <attribute name="Main-Class" value="${mainclass}"/>
+        <attribute name="Class-Path" value="${classpath}"/>        
+      </manifest> 
+    </jar>
+  </target>
+
+  <target name="clean"
+        description="clean up" >
+    <!-- Delete the ${build} directory tree and .jar file -->
+    <delete dir="${build}"/>
+    <delete file="${jarfile}"/>
+  </target>
+</project>
