@@ -1,4 +1,5 @@
 package Volity::Jabber;
+use Carp;
 
 ############################################################################
 # LICENSE INFORMATION - PLEASE READ
@@ -199,7 +200,7 @@ Set this to a true value to display verbose debugging messages on STDERR.
 
 =cut
 
-use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster iq_notification last_id);
+use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler);
 
 sub initialize {
   my $self = shift;
@@ -212,7 +213,7 @@ sub initialize {
   POE::Session->create(
 		       object_states=>
 		       [$self=>
-			[qw(jabber_authed jabber_authfailed jabber_iq jabber_presence _start jabber_message input_event init_finish)],
+			[qw(jabber_authed jabber_iq jabber_presence _start jabber_message input_event init_finish)],
 		       ],
 		      );
   # Weaken some variables to prevent circularities & such.
@@ -351,7 +352,6 @@ sub jabber_presence { }
 # XXX Hmmn, not sure what these do now. ;b
 
 sub jabber_authed { }
-sub jabber_authfailed { }
 
 =item jabber_iq
 
@@ -522,8 +522,53 @@ request.
 
 =cut
 
+sub add_response_handler {
+  my $self = shift;
+  my ( $id, $sub ) = @_;
+  my $response_handler = $self->{'response_handler'} ||= {};
+  # If it's a code ref then store as is...
+  if (ref $sub eq 'CODE') {
+    $$response_handler{ $id } = $sub;
+  } else { # else we assume it's a method name
+    my $method = "rpc_response_$sub";
+    if ( $self->can( $method ) ) {
+      $$response_handler{ $id } = sub { $self->$method( @_ ) };
+    } else {
+      croak "Can't add response handler, unknown method $method.\n";
+    }
+  }
+}
+
+sub have_response_handler {
+  my $self = shift;
+  my ( $id ) = @_;
+  return exists( $self->{'response_handler'}{ $id } ) ? 1 : 0;
+}
+
+sub call_response_handler {
+  my $self = shift;
+  my ( $id, $response ) = @_;
+  return &{ $self->{'response_handler'}{ $id } }( $response );
+}
+
+sub delete_response_handler {
+  my $self = shift;
+  my ( $id ) = @_;
+  delete( $self->{'response_handler'}{ $id } );
+}
+
+sub handle_rpc_response {
+  my $self = shift;
+  my ($message) = @_;
+  if ($self->have_response_handler( $$message{'id'} )) {
+    $self->call_response_handler( $$message{'id'}, $message );
+    $self->delete_response_handler( $$message{'id'} );
+  } else {
+    $self->rpc_response_default( $message );
+  }
+}
 # No default behavior for RPC stuff.
-sub handle_rpc_response { }
+sub rpc_response_default { }
 sub handle_rpc_request { }
 sub handle_rpc_transmission_error { }
 sub handle_rpc_fault { }
@@ -649,6 +694,18 @@ arrayref. In the latter cases, the argument will turn into an RPC
 struct or array, respectively. All the datatyping magic is handled by
 the RPC::XML module (q.v.).
 
+=item handler
+
+This is the response handler.  It's executed when we get an answer back.  If
+it isn't passed then the default handler is used (which does nothing unless
+overridden).  It can either be a CODE ref or the name of a premade response
+handler.  CODE refs are passed only the response.  Premade response handler
+are not provided here but may be availble in subclasses.  The method name of
+the handler is in the form "rpc_response_$handler".  So if $handler was
+"start_game" then the method containing the response handler would be
+"rpc_response_start_game".  Premade response handlers are called as methods
+with the response as their argument.
+
 =back
 
 =cut
@@ -673,6 +730,10 @@ sub make_rpc_request {
     @args = ();
   }
   
+  if ( exists $$args{'handler'} ) {
+      $self->add_response_handler( $$args{'id'}, $$args{'handler'} );
+  }
+
   my $request = RPC::XML::request->new($$args{methodname}, @args);
   # I don't like this so much, sliding in the request as raw data.
   # But then, I can't see why it would break.
@@ -1531,12 +1592,12 @@ sub groups_for_jid {
     return ();
   }
 }
-
 sub has_jid {
   my $self = shift;
   my ($jid) = @_;
   my $resource;
-  ($jid, $resource) = $jid =~ /^(.*)\/(.*)$/;
+  ($jid, $resource) = $jid =~ m{^([^/]+)(?:/(.*))?$}
+    or croak "Could not find jid and resource in $_[0]\n";
   if (exists($self->{jids}->{$jid})) {
     return 1;
   } else {
