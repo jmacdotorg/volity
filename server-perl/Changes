@@ -1,15 +1,19 @@
-0.3.0
+0.2.2
 
 	- (distribution) Improved the test.pl script. It now more
           properly takes advantage of Test::More's abilities, and is
           easier to extend.
 
-	- More cruft removal from Game.pm, Server.pm
+	- More cruft removal from Game.pm, Server.pm.
 
 	- Fixed a bug in Volity::Jabber that prevented it from opening
           connections to remote servers correctly (!) (The call to
           POE::Component::Jabber's constructor lacked sufficient
           information.)
+
+	- Eliminated dependency of my silly, non-CPAN Class::Accessor::Fields
+	  module, and added dependency on CPAN's Class::Fields. This is better,
+	  though it still means that pseudohashes are being used for now.
 
 0.2.1
 	- Servers now keep track of referees they create, and provide the

@@ -48,7 +48,7 @@ In theory you can then run:
 But that might not work, so you may have to instead do a 
  perl test.pl
 
-(sorry.)
+This will work in a saner fashion soon. (Sorry.)
 
 --- CONTACT ---
 
