@@ -10,6 +10,8 @@ import org.apache.batik.script.Interpreter;
 import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
 import org.apache.batik.script.rhino.RhinoInterpreter;
+import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
+import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.svg.GVTTreeBuilderAdapter;
 import org.apache.batik.swing.svg.GVTTreeBuilderEvent;
@@ -31,11 +33,11 @@ public class SVGCanvas extends JSVGCanvas
     this.connection = connection;
     setDocumentState(ALWAYS_DYNAMIC);
     setURI(uiDocument.toString());
-    addGVTTreeBuilderListener(new GVTTreeBuilderAdapter() {
-	public void gvtBuildCompleted(GVTTreeBuilderEvent evt) {
+    addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
+	public void gvtRenderingCompleted(GVTTreeRendererEvent evt) {
 	  Dimension2D size = getSVGDocumentSize();
-	  setPreferredSize(new Dimension((int) size.getWidth(),
-					 (int) size.getHeight()));
+	  setSize(new Dimension((int)(size.getWidth() + 10),
+	                        (int)(size.getHeight() + 10)));
 	  revalidate();
 	}
       });
