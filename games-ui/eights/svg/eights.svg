@@ -707,7 +707,7 @@
 			<rect width="100" ry="10" rx="10" style="stroke: black; fill: purple;" height="140" />
 		</symbol>
   <symbol id="SCORECARD">
-  <rect width="100" height="200" style="stroke:green; fill:white;" />
+  <rect width="100" height="200" style="stroke:green; fill:yellow;" />
   </symbol>
 
 	<symbol id="C-BALLOON">
@@ -764,10 +764,10 @@ stroke:black; stroke-width:1"/>
       <text x="10" y="30" style="font-size:30; fill=black;">deal cards</text>
     </symbol>
     <symbol id="start-game">
-      <text x="10" y="30" style="font-size:30; fill=black;">start game</text>
+      <a><text x="10" y="30" style="font-size:30; fill=black;" onclick="clicked_start_button(evt)">start game</text></a>
     </symbol>
     <symbol id="add-bot">
-      <text x="10" y="30" style="font-size:30; fill=black;">add bot</text>
+      <a><text x="10" y="30" style="font-size:30; fill=black;" onclick="clicked_bot_button(evt)">add bot</text></a>
     </symbol>
     <symbol id="suit-panel">
       <rect width="300" ry="10" rx="10" style="stroke: black; fill:white;" height="300" />
@@ -776,17 +776,22 @@ stroke:black; stroke-width:1"/>
       <a><text id="choose-H" x="75" y="275" style="fill:red; font-size: 100; font-family: Apple Symbols; text-anchor: middle;" onclick="choose_suit(evt)">♥</text></a>
       <a><text id="choose-S" x="225" y="275" style="font-size: 100; font-family: Apple Symbols; text-anchor: middle;" onclick="choose_suit(evt)">♠</text></a>
     </symbol>
-		
+
+    <symbol id="LOADING-RED">
+      <text x="0" y="50" style="font-size:50; fill:red; stroke:black; font-weight:bold;">Loading...</text>
+    </symbol>
+
+    <symbol id="LOADING-BLACK">
+      <text x="0" y="50" style="font-size:50; fill:black; stroke:red; font-weight:bold;">Loading...</text>
+    </symbol>
+
   </defs>
 
   <!--
   Permanent graphics...
   -->
-
+  <rect id="tablecloth" x="0" y="0" style="fill: gray;" height="500" width="500" />
   <use xlink:href="#BACK" x="300" y="300" />
-<!--
-  <a><use xlink:href="#deal-cards" x="0" y="200" onclick="test_deal_cards()"/></a> 
--->
   <use xlink:href="#SCORECARD" x="5" y="150" id="scorecard" />
 
   <script type="text/ecmascript">
@@ -806,7 +811,6 @@ var current_player;
 set_up();
 
 function set_up() {
-//  set_up_test_buttons();
     add_start_button();
     add_bot_button();
 }
@@ -814,9 +818,8 @@ function set_up() {
 function add_start_button() {
   button = document.createElementNS(svg_ns, "use");
   button.setAttributeNS(xlink_ns, "xlink:href", "#start-game");
-  button.setAttribute("x", 0);
+  button.setAttribute("x", 75);
   button.setAttribute("y", 200);
-  button.setAttribute("onclick", "start_game()");
   button.setAttribute("id", "button-start-game");
   document.firstChild.appendChild(button);
 }
@@ -824,16 +827,24 @@ function add_start_button() {
 function add_bot_button() {
   button = document.createElementNS(svg_ns, "use");
   button.setAttributeNS(xlink_ns, "xlink:href", "#add-bot");
-  button.setAttribute("x", 100);
+  button.setAttribute("x", 250);
   button.setAttribute("y", 200);
-  button.setAttribute("onclick", "add_bot()");
   button.setAttribute("id", "button-add-bot");
   document.firstChild.appendChild(button);
 }
 
-game.start_game = function() {
-//  window.alert("The game is on.");
+function clicked_bot_button() {
+  add_bot();
+  remove("button-add-bot");
+}
+
+function clicked_start_button() {
+  start_game();
   remove_buttons();
+  display_loading_message();
+}
+
+game.start_game = function() {
   rpc("get_full_state");
 }
 
@@ -847,27 +858,39 @@ game.start_turn = function(player) {
 }
 
 game.receive_hand = function(cards) {
-//  window.alert ("I received a hand!!" + cards + cards.length);
   hand = cards;
-//  game.draw_card("J2");
   display_hand();
 }
 
 // Todo: sort hand into a local array, and display _that_.
 function display_hand() {
+  remove_loading_message();
   for (card_index in hand) {
-//      window.alert("I see an index: " + card_index);
       card_id = hand[card_index];
-//      window.alert ("Placing the card with id " + card_id);
       var card = put_card(card_id, 0 + 20 * card_index, 0, "hand-" + card_id);
       card.setAttribute("id", "hand-" + card_id);
       card.setAttribute("onclick", "play_card(evt)");
+      card.setAttribute("onmouseover", "highlight_card(evt)");
+      card.setAttribute("onmouseout", "unhighlight_card(evt)");
   }
+}
+
+// This should be animated.
+function display_loading_message() {
+  message = document.createElementNS(svg_ns, "use");
+  message.setAttributeNS(xlink_ns, "xlink:href", "#LOADING-RED");
+  message.setAttribute("y", 200);
+  message.setAttribute("x", 150);
+  message.setAttribute("id", "loading-message");
+  document.firstChild.appendChild(message);
+}
+
+function remove_loading_message() {
+  remove("loading-message");
 }
 
 function display_players() {
   var y = 165;
-//  window.alert("displaying players.");
   remove("player-list");
   var group = document.createElementNS(svg_ns, "g");
   group.setAttribute("y", 100);
@@ -881,14 +904,13 @@ function display_players() {
         if (player_name == current_player) {
           text_color = "red";
         }
-        player_text.setAttribute("style", "font-size:12; fill=" + text_color + ";");
+        player_text.setAttribute("style", "font-size:12; fill:" + text_color + ";");
 	player_text.setAttribute("x",15);
 	player_text.setAttribute("y", y);
         var text = document.createTextNode(player_name + ": " + players[player_name].card_count);
         player_text.appendChild(text);
         group.appendChild(player_text);
 	y = y + 15;
-//        window.alert (player_name + " has " + hand_size + " cards, and last played a " + last_card_id);
 	
   }
   document.firstChild.appendChild(group);
@@ -910,7 +932,6 @@ function put_card(symbol_id, x, y, use_id) {
 }
 
 game.starter_card = function(card_id) {
-//  window.alert ("Got starter card: " + card_id);
   card = put_card(card_id, 300, 300, "starter");
   top_card = card;
 }
@@ -920,6 +941,7 @@ game.starter_card = function(card_id) {
 game.draw_card = function(card_id) {
    var new_hand = new Array;
    players[info.nickname].card_count = players[info.nickname].card_count + 1;
+   display_players();
    for (index in hand) {
      new_hand[index] = hand[index];
    }
@@ -933,7 +955,6 @@ function animate_card_draw(card_id) {
 }
 
 game.player_drew_card = function(player) {
-//  window.alert(player + " had to draw a card.");
   players[player].card_count = players[player].card_count + 1;
   display_players();
 }
@@ -953,10 +974,26 @@ function play_card(evt) {
     card_name = card_symbol.getAttribute("id");
     rpc("play_card", card_name);
     var rank = card_name.substr(0,1);
-//    window.alert("Dat card had a rank of " + rank);
     if (rank - 0 == 8)
        show_suit_panel();
 }
+
+function highlight_card(evt) {
+    clicked = evt.getTarget();
+    card_symbol = clicked.parentNode;
+    card_id = "hand-" + card_symbol.getAttribute("id");
+    card = document.getElementById(card_id);
+    card.setAttribute("y", 5);
+}
+
+function unhighlight_card(evt) {
+    clicked = evt.getTarget();
+    card_symbol = clicked.parentNode;
+    card_id = "hand-" + card_symbol.getAttribute("id");
+    card = document.getElementById(card_id);
+    card.setAttribute("y", 0);
+}
+
 
 function show_suit_panel() {
    panel = document.createElementNS(svg_ns, "use");
@@ -986,10 +1023,12 @@ game.player_played_card = function(player, card_id) {
     if (player == info.nickname) {
        new_top_card = document.getElementById("hand-" + card_id);
        animate_card_play(new_top_card);
+       // Eliminate the highlight animations.
+       new_top_card.setAttribute("onmouseout", "");
+       new_top_card.setAttribute("onmouseover", "");
        remove_card_from_hand(card_id);
        display_hand();
     } else {
-//       window.alert("Looks like " +player+ " played " +card_id+ ".");
        new_top_card = put_card(card_id, 300, 300);
        players[player].last_card = card_id;
        display_players();
@@ -1009,13 +1048,11 @@ game.player_chose_suit = function(player, suit) {
 
 // This is a dumb function... how better to do this in JS?
 function remove_card_from_hand(card_name) {
-//    window.alert("Time to kill " + card_name);
     var new_hand = new Array;
     var new_hand_index = 0;
     var success = 0;
     for (index in hand) {
        if (!(hand[index] == card_name)) {
-//   window.alert(hand[index] + " ias not " + card_name);
            new_hand[new_hand_index++] = hand[index];             
        } else {
            success = 1;
@@ -1028,7 +1065,6 @@ function remove_card_from_hand(card_name) {
 replace_top_card = function(card) {
     if (top_card) {
        old_id = top_card.getAttribute("id");
-//       window.alert("Destroying old top card, with id " +old_id);
        remove(old_id);
     }
     top_card = card;
@@ -1042,7 +1078,6 @@ function remove(id) {
 }
 
 game.set_player_hand_size = function(player, hand_size) {
-//    window.alert("Looks like " +player+ " is holding " +hand_size+ " cards.");
     if (!(players[player])) {
 	players[player] = {};
     }
@@ -1050,7 +1085,6 @@ game.set_player_hand_size = function(player, hand_size) {
 }
 
 function animate_card_play(card) {
-//    window.alert("animation time...");
     frames = 5;
     dest_x = 300;
     dest_y = 300;
@@ -1058,23 +1092,19 @@ function animate_card_play(card) {
 }
 
 function teleport_card(card, x, y) {
-//    window.alert("Voopm, teleporting " +card+ " to " +x+ " and " +y);
     card.setAttribute("x", x);
     card.setAttribute("y", y);
 }
 
 function move_card(card, x_step, y_step) {
     if (!movement_done) {
-//    window.alert (x_step +' '+ y_step);
       current_x = card.getAttribute("x");
       current_y = card.getAttribute("y");
       card.setAttribute("x", current_x - 0 + x_step);
       card.setAttribute("y", current_y - 0 + y_step);
-//    window.alert ("y is " + current_y + ' to ' + card.getAttribute('y'));
       if (card.getAttribute("x") >= 300) {
           clearInterval(movement_id);
        	  movement_done = 1;
-//	window.alert("Whee!");
       }
     }
 }
@@ -1083,7 +1113,6 @@ function move_card(card, x_step, y_step) {
 function count_array(array) {
     var count = 0;
     for (member in array) { count++ }
-//    window.alert(count);
     return count;
 }
 
