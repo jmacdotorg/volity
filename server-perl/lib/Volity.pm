@@ -7,6 +7,7 @@ no warnings qw(deprecated);
 
 use base qw(Class::Accessor Class::Fields);
 use fields qw(logger);
+use Log::Log4perl qw(:nowarn);
 
 use Carp;
 
