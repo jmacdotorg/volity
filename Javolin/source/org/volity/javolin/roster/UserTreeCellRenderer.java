@@ -24,7 +24,7 @@ import javax.swing.tree.*;
 /**
  * Custom tree item renderer for displaying a Jabber user in the roster tree.
  */
-class UserTreeCellRenderer extends DefaultTreeCellRenderer
+public class UserTreeCellRenderer extends DefaultTreeCellRenderer
 {
     private final static ImageIcon AVAILABLE_ICON;
     private final static ImageIcon UNAVAILABLE_ICON;

@@ -26,7 +26,7 @@ import org.volity.javolin.*;
 /**
  * The dialog for adding a user to the roster.
  */
-class AddUserDialog extends BaseDialog implements ActionListener
+public class AddUserDialog extends BaseDialog implements ActionListener
 {
     private final static String NODENAME = "AddUserDialog";
 
