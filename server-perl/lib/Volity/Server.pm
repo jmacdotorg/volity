@@ -242,6 +242,53 @@ sub new_referee_resource {
   return $$ . "_" . time;
 }
 
+####################
+# Service Discovery
+####################
+
+sub handle_disco_info_request {
+    my $self = shift;
+    my ($iq) = @_;
+    $self->logger->debug("I got a disco info request from " . $iq->attr('from'));
+    $self->send_disco_info({
+	to=>$iq->attr('from'),
+	id=>$iq->attr('id'),
+	# I'm making up my own category and type stuff, here.
+	# I'll have to ask the Jabber folks what I actually ought to be doing.
+	items=>[Volity::Jabber::Disco::Identity->new({category=>'volity',
+						      type=>'game-server',
+						      name=>'A game server',
+						  }),
+		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#info'}),
+		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'}),
+		],
+    });
+}
+
+sub handle_disco_items_request {
+    my $self = shift;
+    my ($iq) = @_;
+    $self->logger->debug("I got a disco items request.");
+    my $query = $iq->get_tag('query');
+    my @nodes;
+    if (defined($query->attr('node'))) {
+	@nodes = split(/\//, $query->attr('node'));
+    }
+    
+    my @items;			# Disco items to return to the requester.
+
+    # It should probably return a list of conference tables, or something?
+    # Now things get interesting...
+
+    # For now, it will just return no items.
+    $self->send_disco_items({to=>$iq->attr('from'),
+			     id=>$iq->attr('id'),
+			     items=>[],
+			 }
+			     );
+
+}
+
 1;
 
 =head1 AUTHOR
