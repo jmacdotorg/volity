@@ -1180,7 +1180,6 @@ sub send_disco_info {
 sub send_disco {
   my $self = shift;
   my ($type, $info) = @_;
-  use Data::Dumper; warn Dumper($info);
   if (not($info) or not(ref($info) eq 'HASH')) {
     croak("You must call send_disco_$type with a hashref argument.");
   }
@@ -1205,7 +1204,6 @@ sub send_disco {
     }
     $query->insert_tag($item);
   }
-  warn $iq->to_str;
   $self->post_node($iq);
 }
 
