@@ -1,13 +1,28 @@
 /*
  * JavolinApp.java
- * Source code Copyright 2004 by Karl von Laudermann
+ *
+ * Copyright 2004 Karl von Laudermann
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.border.*;
 import org.jivesoftware.smack.*;
+import org.volity.javolin.roster.*;
 
 /**
  * The main application class of Javolin.
@@ -15,13 +30,20 @@ import org.jivesoftware.smack.*;
 public class JavolinApp extends JFrame implements ActionListener
 {
     private final static String APPNAME = "Javolin";
+    private final static String NODENAME = "MainAppWin";
 
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";
     private final static String MENUCMD_QUIT = "Exit";
 
+    private ImageIcon mConnectedIcon;
+    private ImageIcon mDisconnectedIcon;
+
+    private RosterPanel mRosterPanel;
+    private JLabel mConnectedLabel;
     private JMenuItem mConnectMenuItem;
 
+    private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
 
     /**
@@ -30,7 +52,11 @@ public class JavolinApp extends JFrame implements ActionListener
     public JavolinApp()
     {
         setTitle(APPNAME);
-        setUpMenus();
+        buildUI();
+
+        setSize(300, 300);
+        mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
+        mSizePosSaver.restoreSizeAndPosition();
 
         // Handle closing the window to quit the app
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -44,8 +70,21 @@ public class JavolinApp extends JFrame implements ActionListener
                 }
             });
 
-        setSize(300, 300);
-//        pack();
+        // Save window size and position whenever it is moved or resized
+        addComponentListener(
+            new ComponentAdapter()
+            {
+                public void componentMoved(ComponentEvent e)
+                {
+                    mSizePosSaver.saveSizeAndPosition();
+                }
+
+                public void componentResized(ComponentEvent e)
+                {
+                    mSizePosSaver.saveSizeAndPosition();
+                }
+            });
+
         show();
     }
 
@@ -80,15 +119,6 @@ public class JavolinApp extends JFrame implements ActionListener
             // Make .app and .pkg files non-traversable as directories in AWT file
             // choosers
             System.setProperty("com.apple.macos.use-file-dialog-packages", "true");
-
-            // Make the menu bar appear at the top of the screen instead of in the window
-            // (Let's reenable this later when we can work out a way to put the same menu
-            // bar on all windows and keep them in sync, so that the same menu bar will
-            // appear regardless of what window is active. We need to make sure that the
-            // same menu item can be enabled/disabled on all menu bars simultaneously, as
-            // well as make sure that invoking the same item on all bars activates the
-            // same handler.)
-            //System.setProperty("com.apple.macos.useScreenMenuBar", "true");
         }
 
         JavolinApp mainApp = new JavolinApp();
@@ -125,7 +155,7 @@ public class JavolinApp extends JFrame implements ActionListener
      */
     private boolean isConnected()
     {
-        return (mConnection != null);
+        return (mConnection != null) && mConnection.isConnected();
     }
 
     /**
@@ -157,7 +187,20 @@ public class JavolinApp extends JFrame implements ActionListener
         ConnectDialog connDlg = new ConnectDialog(this);
         connDlg.show();
         mConnection = connDlg.getConnection();
-        updateMenuItems();
+
+        // Assign the roster to the RosterPanel
+        Roster connRost = null;
+
+        if (mConnection != null)
+        {
+            connRost = mConnection.getRoster();
+        }
+
+        mRosterPanel.setRoster(connRost);
+
+        // Update the UI
+        updateUI();
+
     }
 
     /**
@@ -174,7 +217,9 @@ public class JavolinApp extends JFrame implements ActionListener
         mConnection.close();
         mConnection = null;
 
-        updateMenuItems();
+        mRosterPanel.setRoster(null);
+
+        updateUI();
     }
 
     /**
@@ -202,6 +247,27 @@ public class JavolinApp extends JFrame implements ActionListener
     }
 
     /**
+     * Updates the state and appearance of all UI items that depend on program state.
+     */
+    private void updateUI()
+    {
+        // Update connected/disconnected icon
+        if (isConnected())
+        {
+            mConnectedLabel.setIcon(mConnectedIcon);
+            mConnectedLabel.setToolTipText("Connected");
+        }
+        else
+        {
+            mConnectedLabel.setIcon(mDisconnectedIcon);
+            mConnectedLabel.setToolTipText("Disconnected");
+        }
+
+        // Do menu items
+        updateMenuItems();
+    }
+
+    /**
      * Updates the text or state of all dynamic menu items.
      */
     private void updateMenuItems()
@@ -218,7 +284,7 @@ public class JavolinApp extends JFrame implements ActionListener
         else
         {
             mConnectMenuItem.setText(MENUCMD_CONNECT);
-            mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, 
+            mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,
                 keyMask));
             setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
         }
@@ -246,7 +312,6 @@ public class JavolinApp extends JFrame implements ActionListener
 
         JMenuItem menuItem = new JMenuItem(MENUCMD_QUIT);
         menuItem.addActionListener(this);
-//        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, keyMask));
         setPlatformMnemonic(menuItem, KeyEvent.VK_X);
         fileMenu.add(menuItem);
 
@@ -254,5 +319,37 @@ public class JavolinApp extends JFrame implements ActionListener
         JMenuBar theMenuBar = new JMenuBar();
         theMenuBar.add(fileMenu);
         setJMenuBar(theMenuBar);
+    }
+
+    /**
+     * Populates the frame with UI controls.
+     */
+    private void buildUI()
+    {
+        Container cPane = getContentPane();
+        cPane.setLayout(new BorderLayout());
+
+        // Create roster panel
+        mRosterPanel = new RosterPanel();
+        cPane.add(mRosterPanel, BorderLayout.CENTER);
+
+        // Create bottom panel
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+        mConnectedIcon =
+            new ImageIcon(JavolinApp.class.getResource("Connected_Icon.png"));
+        mDisconnectedIcon =
+            new ImageIcon(JavolinApp.class.getResource("Disconnected_Icon.png"));
+
+        mConnectedLabel = new JLabel(mDisconnectedIcon);
+        mConnectedLabel.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+        mConnectedLabel.setToolTipText("Disconnected");
+        panel.add(mConnectedLabel, BorderLayout.WEST);
+
+        cPane.add(panel, BorderLayout.SOUTH);
+
+        // Create menu bar
+        setUpMenus();
     }
 }

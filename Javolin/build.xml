@@ -28,7 +28,13 @@
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
       deprecation="on"/>
-  </target>
+    <!-- Copy all .png files from ${src} to ${build}-->
+    <copy todir="${build}">
+      <fileset dir="${src}">
+        <include name="**/*.png"/> 
+      </fileset>
+    </copy> 
+</target>
 
   <target name="archive" depends="compile"
         description="generate the jar file" >
