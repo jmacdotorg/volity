@@ -199,13 +199,13 @@ Set this to a true value to display verbose debugging messages on STDERR.
 
 =cut
 
-use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster);
+use fields qw(kernel alias host port user resource password debug jid rpc_parser default_language query_handlers roster iq_notification last_id);
 
 sub initialize {
   my $self = shift;
-  unless (defined($self->user)) {
-    croak("You have to initialize this object with a Jabber username!");
-  }
+#  unless (defined($self->user)) {
+#    croak("You have to initialize this object with a Jabber username!");
+#  }
   $self->{kernel} = $poe_kernel;
   $self->{port} ||= 5222;
   $self->debug("STARTING init. Password is " . $self->password);
@@ -236,14 +236,34 @@ sub initialize {
 			     'http://jabber.org/protocol/disco#info'=>{
 				  result => 'receive_disco_info',
 							              },
+			     'jabber:iq:register'=>{
+						    error => 'receive_registration_error'
+						   },
 			  };
 
+  $self->{iq_notification} = {};
+  $self->{last_id} = 0;
+
   return $self;
+}
+
+sub set_iq_notification {
+  my $self = shift;
+  my ($id, $methods) = @_;
+  unless (ref($methods) eq 'HASH') {
+    croak("The second arg to set_iq_notification must be a hashref.");
+  }
+  $self->{iq_notification}->{$id} = $methods;
 }
 
 sub debug {
   my $self = shift;
   warn ("@_\n") if $self->{debug};
+}
+
+sub next_id {
+  my $self = shift;
+  return ++$self->{last_id};
 }
 
 # post_xml_node: send a given XML node object to the server.
@@ -356,6 +376,7 @@ sub jabber_iq {
   my ($node) = @_;
 #  warn $node->to_str;
   my $id = $node->attr('id'); my $from_jid = $node->attr('from');
+  $id ||= $self->next_id;
   my $query;
   # Check to see if we should dispatch this to a predefined NS handler
   # method.
@@ -404,15 +425,22 @@ sub jabber_iq {
     }
   } elsif ($node->attr('type') eq 'error') {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
-      # This isn't an RPC fault, but an apparet error in trying to send the
+      # This isn't an RPC fault, but an apparent error in trying to send the
       # RPC message at all.
       my $error_message = $node->get_tag('error')->data;
       my $code = $node->get_tag('error')->attr('code');
       $self->handle_rpc_transmission_error($node, $code, $error_message);
+    } else {
+      if (my $method = delete($self->{error_notification}->{$id})) {
+	delete($self->{result_notification}->{$id});
+	$self->$method($node);
+      }
     }
-  } else {
-    $self->debug("Didn't do nuthin with it. Twas this: ");
-    $self->debug( $node->to_str);
+  }
+  if (my $methods = delete($self->{iq_notification}->{$id})) {
+    if (my $method = $$methods{$node->attr('type')}) {
+      $self->$method($node);
+    }
   }
 }
 
@@ -545,7 +573,8 @@ sub handle_query_element_ns {
   my $query_ns;
   if (my $query = $node->get_tag('query')) {
     $query_ns = $query->attr('xmlns');
-  }
+  }  
+  return unless defined($query_ns);
 
   $self->debug("In handle_query_element_ns, for $query_ns...");
   return unless defined($query_ns);
@@ -1076,6 +1105,58 @@ sub send_disco {
   $self->post_node($iq);
 }
 
+sub send_registration {
+  my $self = shift;
+  my ($config) = @_;
+  my $iq = PXR::Node->new('iq');
+  $iq->attr(type=>'set');
+  $$config{id} ||= $self->next_id;
+  $iq->attr(id=>$$config{id});
+  my $query = $iq->insert_tag(query=>'jabber:iq:register');
+  foreach (keys(%$config)) {
+    next if $_ eq 'id';
+    $query->insert_tag($_)->data($$config{$_});
+  }
+  $self->set_iq_notification($$config{id}, 
+			     {result=>'handle_registration_result'});
+  $self->post_node($iq);
+}
+
+sub send_unregistration {
+  my $self = shift;
+  my ($id) = @_;
+  $id ||= $self->next_id;
+  my $iq = PXR::Node->new('iq');
+  $iq->attr(type=>'set');
+  $iq->attr(id=>$id) if defined($id);
+  my $query = $iq->insert_tag(query=>'jabber:iq:register');
+  $query->insert_tag('remove');
+  $self->set_iq_notification($id, 
+			     {result=>'handle_unregistration_result'});
+  $self->post_node($iq);
+}  
+
+sub handle_registration_result { }
+
+sub handle_unregistration_result { }
+
+sub receive_registration_error {
+  my $self = shift;
+  my ($iq) = @_;
+  my $error = $iq->get_tag('error');
+  $self->handle_registration_error(
+				   {
+				    id=>$iq->attr('id'),
+				    error_node=>$error,
+				    code=>$error->attr('code'),
+				    type=>$error->attr('type'),
+				    message=>$error->data,
+				   }
+				  );
+}
+
+# Stub:
+sub handle_registration_error { }
 
 =head2 send_form
 
