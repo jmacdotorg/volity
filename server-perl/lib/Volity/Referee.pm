@@ -135,6 +135,8 @@ use Volity::Player;
 use Volity::GameRecord;
 use RPC::XML;
 
+use Carp qw(carp croak);
+
 use POE qw(
 	   Wheel::SocketFactory
 	   Wheel::ReadWrite
@@ -178,7 +180,7 @@ sub initialize {
   # Set some query namespace handlers.
   $self->query_handlers->{'volity:iq:botchoice'} = {set=>'choose_bot'};
 
-  $self->active_bots = [];
+  $self->{active_bots} = [];
 
   return $self;
 
@@ -218,6 +220,8 @@ sub handle_rpc_request {
   # In fact, the only one we care about right now is 'start_game'.
   if ($method eq 'start_game') {
     $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+  } elsif ($method eq 'add_bot') {
+    $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } else {
     $self->debug( "Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
   }
@@ -638,8 +642,8 @@ sub send_record_to_bookkeeper {
 sub stop {
   my $self = shift;
   # Kick out all the bots.
-  foreach ($self->active_bots) {
-    $_->stop;
+  foreach (grep(defined($_), $self->active_bots)) {
+      $_->stop;
   }
   $self->kernel->post($self->alias, 'shutdown_socket', 0);
   $self->server->remove_referee($self);
