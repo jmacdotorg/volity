@@ -1,5 +1,5 @@
 /*
- * MUCWindow.java
+ * TableWindow.java
  *
  * Copyright 2004 Karl von Laudermann
  *
@@ -15,37 +15,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.volity.javolin.chat;
+package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
+import org.apache.batik.swing.gvt.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
 import org.jivesoftware.smackx.muc.*;
+import org.volity.client.*;
 import org.volity.jabber.*;
 import org.volity.javolin.*;
+import org.volity.javolin.chat.*;
 
 /**
- * A window for participating in a MUC.
+ * A window for playing a game.
  */
-public class MUCWindow extends JFrame implements PacketListener
+public class TableWindow extends JFrame implements PacketListener
 {
-    private final static String NODENAME = "MUCWindow";
+    private final static String NODENAME = "TableWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
     private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
+    private final static String BOARD_SPLIT_POS = "BoardSplitPos";
 
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
+    private JSplitPane mBoardSplitter;
     private LogTextPanel mMessageText;
     private JTextArea mInputText;
     private JTextPane mUserListText;
+    private SVGCanvas mGameViewport;
     private AbstractAction mSendMessageAction;
 
     private UserColorMap mUserColorMap;
@@ -53,19 +61,52 @@ public class MUCWindow extends JFrame implements PacketListener
     private SimpleAttributeSet mBaseUserListStyle;
 
     private SizeAndPositionSaver mSizePosSaver;
-    private MultiUserChat mMucObject;
+    private GameTable mGameTable;
 
     /**
      * Constructor.
      *
-     * @param aMUC  The MultiUserChat object to communicate with.
+     * @param server                     A GameServer object corresponding to the desired game.
+     * @param table                      A GameTable to join, or NULL to create a new table from
+     *  the GameServer.
+     * @param nickname                   The nickname to use to join the table.
+     * @exception XMPPException          If the table could not be joined.
+     * @exception RPCException           If a new table could not be created.
+     * @exception IOException            If a UI file could not be downloaded.
+     * @exception MalformedURLException  If an invalid UI file URL was used.
      */
-    public MUCWindow(MultiUserChat aMUC)
+    public TableWindow(GameServer server, GameTable table, String nickname)
+         throws XMPPException, RPCException, IOException, MalformedURLException
     {
-        super(JavolinApp.getAppName() + ": " + aMUC.getRoom());
+        mGameTable = table;
+
+        if (mGameTable == null)
+        {
+            mGameTable = server.newTable();
+        }
+
+        setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
+
+        // Get all necessary UI files
+        UIFileCache cache = JavolinApp.getUIFileCache();
+        File uiFile = cache.getFile(new URL("http://volity.org/games/rps/svg/rps.svg"));
+        cache.getFile(new URL("http://volity.org/games/rps/svg/rock.png"));
+        cache.getFile(new URL("http://volity.org/games/rps/svg/paper.png"));
+        cache.getFile(new URL("http://volity.org/games/rps/svg/scissors.png"));
+
+        mGameViewport = new SVGCanvas(mGameTable, uiFile.toURI().toURL());
+        try
+        {
+            Thread.sleep(500);
+        }
+        catch (InterruptedException ex)
+        {
+        }
+
+        mGameTable.join(nickname);
 
         mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(aMUC.getNickname()); // Give user first color
+        mUserColorMap.getUserNameColor(mGameTable.getNickname()); // Give user first color
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -75,11 +116,9 @@ public class MUCWindow extends JFrame implements PacketListener
 
         buildUI();
 
-        setSize(500, 400);
+        setSize(500, 600);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         restoreWindowState();
-
-        mMucObject = aMUC;
 
         // Send message when user presses Enter while editing input text
         mSendMessageAction =
@@ -104,7 +143,7 @@ public class MUCWindow extends JFrame implements PacketListener
                 {
                     // Leave the chat room when the window is closed
                     saveWindowState();
-                    mMucObject.leave();
+                    mGameTable.leave();
                 }
 
                 public void windowOpened(WindowEvent we)
@@ -120,7 +159,7 @@ public class MUCWindow extends JFrame implements PacketListener
 
         do
         {
-            msg = mMucObject.nextMessage(50);
+            msg = mGameTable.nextMessage(50);
 
             if (msg != null)
             {
@@ -128,10 +167,10 @@ public class MUCWindow extends JFrame implements PacketListener
             }
         } while (msg != null);
 
-        mMucObject.addMessageListener(this);
+        mGameTable.addMessageListener(this);
 
         // Register as participant listener.
-        mMucObject.addParticipantListener(this);
+        mGameTable.addParticipantListener(this);
     }
 
     /**
@@ -145,6 +184,7 @@ public class MUCWindow extends JFrame implements PacketListener
         mSizePosSaver.saveSizeAndPosition();
 
         prefs.putInt(CHAT_SPLIT_POS, mChatSplitter.getDividerLocation());
+        prefs.putInt(BOARD_SPLIT_POS, mBoardSplitter.getDividerLocation());
         prefs.putInt(USERLIST_SPLIT_POS, mUserListSplitter.getDividerLocation());
     }
 
@@ -158,7 +198,9 @@ public class MUCWindow extends JFrame implements PacketListener
 
         mSizePosSaver.restoreSizeAndPosition();
 
-        mChatSplitter.setDividerLocation(prefs.getInt(CHAT_SPLIT_POS, getHeight() - 100));
+        mChatSplitter.setDividerLocation(prefs.getInt(CHAT_SPLIT_POS, 100));
+        mBoardSplitter.setDividerLocation(prefs.getInt(BOARD_SPLIT_POS,
+            getHeight() - 200));
         mUserListSplitter.setDividerLocation(prefs.getInt(USERLIST_SPLIT_POS,
             getWidth() - 100));
     }
@@ -169,7 +211,7 @@ public class MUCWindow extends JFrame implements PacketListener
     private void updateUserList()
     {
         mUserListText.setText("");
-        Iterator iter = mMucObject.getParticipants();
+        Iterator iter = mGameTable.getParticipants();
 
         while (iter.hasNext())
         {
@@ -215,7 +257,7 @@ public class MUCWindow extends JFrame implements PacketListener
     {
         try
         {
-            mMucObject.sendMessage(mInputText.getText());
+            mGameTable.sendMessage(mInputText.getText());
             mInputText.setText("");
         }
         catch (XMPPException ex)
@@ -303,11 +345,20 @@ public class MUCWindow extends JFrame implements PacketListener
         mInputText.setWrapStyleWord(true);
         mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
 
+        // Split pane separating game viewport from message text and input text
+        mBoardSplitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        mBoardSplitter.setResizeWeight(1);
+        mBoardSplitter.setBorder(BorderFactory.createEmptyBorder());
+
+        mBoardSplitter.setTopComponent(mGameViewport);
+
+        mBoardSplitter.setBottomComponent(mChatSplitter);
+
         // Split pane separating user list from everything else
         mUserListSplitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         mUserListSplitter.setResizeWeight(1);
 
-        mUserListSplitter.setLeftComponent(mChatSplitter);
+        mUserListSplitter.setLeftComponent(mBoardSplitter);
 
         mUserListText = new JTextPane();
         mUserListText.setEditable(false);

@@ -1,5 +1,5 @@
 /*
- * JoinMUCDialog.java
+ * NewTableAtDialog.java
  *
  * Copyright 2004 Karl von Laudermann
  *
@@ -15,33 +15,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.volity.javolin.chat;
+package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
-import org.jivesoftware.smackx.muc.*;
+import org.volity.client.*;
 import org.volity.jabber.*;
 import org.volity.javolin.*;
 
 /**
- * The dialog for joining a MUC.
+ * The dialog for creating a new game table.
  */
-public class JoinMUCDialog extends BaseDialog implements ActionListener
+public class NewTableAtDialog extends BaseDialog implements ActionListener
 {
-    private final static String NODENAME = "JoinMUCDialog";
-    private final static String MUCID_KEY = "MUCID";
+    private final static String NODENAME = "NewTableAtDialog";
+    private final static String SERVERID_KEY = "GameServerID";
     private final static String NICKNAME_KEY = "Nickname";
 
-    private JTextField mMucIdField;
+    private JTextField mServerIdField;
     private JTextField mNicknameField;
     private JButton mCancelButton;
-    private JButton mJoinButton;
+    private JButton mCreateButton;
 
     private XMPPConnection mConnection;
-    private MultiUserChat mMucObject;
+    private String mServerId;
+    private String mNickname;
+    private boolean mCreatePressed;
 
     /**
      * Constructor.
@@ -49,9 +51,9 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      * @param owner       The Frame from which the dialog is displayed.
      * @param connection  The current active XMPPConnection.
      */
-    public JoinMUCDialog(Frame owner, XMPPConnection connection)
+    public NewTableAtDialog(Frame owner, XMPPConnection connection)
     {
-        super(owner, JavolinApp.getAppName() + ": Join Multi-user Chat", true, NODENAME);
+        super(owner, JavolinApp.getAppName() + ": New Table At", true, NODENAME);
 
         mConnection = connection;
 
@@ -68,14 +70,23 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Gets the MultiUserChat object that was created and joined.
+     * Gets the server ID to connect to.
      *
-     * @return   The MultiUserChat that was created and joined when the user pressed the
-     * Join button, or null if the user pressed Cancel or if there was an error.
+     * @return   The server ID as a String.
      */
-    public MultiUserChat getMUC()
+    public String getServerId()
     {
-        return mMucObject;
+        return mServerId;
+    }
+
+    /**
+     * Gets the nickname to use in the table MUC.
+     *
+     * @return   The nickname to use in the table MUC.
+     */
+    public String getNickname()
+    {
+        return mNickname;
     }
 
     /**
@@ -85,9 +96,9 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      */
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getSource() == mJoinButton)
+        if (e.getSource() == mCreateButton)
         {
-            doJoin();
+            doCreate();
         }
         else if (e.getSource() == mCancelButton)
         {
@@ -96,45 +107,51 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Handles the Join button.
+     * Handles the Create button.
      */
-    private void doJoin()
+    private void doCreate()
     {
         // Store field values in preferences
         saveFieldValues();
 
-        // Join the MultiUserChat
-        try
-        {
-            mMucObject = new MultiUserChat(mConnection, mMucIdField.getText());
-            mMucObject.join(mNicknameField.getText());
+        // Retrieve field text
+        mServerId = mServerIdField.getText();
 
-            dispose();
-        }
-        catch (XMPPException ex)
+        if (mServerId.indexOf('/') == -1)
         {
-            JOptionPane.showMessageDialog(this, ex.toString(),
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
-
-            // Destroy MultiUserChat object
-            mMucObject = null;
+            mServerId = mServerId + "/volity";
         }
+
+        mNickname = mNicknameField.getText();
+
+        mCreatePressed = true;
+        dispose();
     }
 
     /**
-     * Saves the current text of the MUC ID and nickname fields to the preferences
+     * Tells whether the user pressed the Create button.
+     *
+     * @return   true if Create was pressed, false if Cancel was pressed.
+     */
+    public boolean createWasPressed()
+    {
+        return mCreatePressed;
+    }
+
+    /**
+     * Saves the current text of the server ID and nickname fields to the preferences
      * storage.
      */
     private void saveFieldValues()
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        prefs.put(MUCID_KEY, mMucIdField.getText());
+        prefs.put(SERVERID_KEY, mServerIdField.getText());
         prefs.put(NICKNAME_KEY, mNicknameField.getText());
     }
 
     /**
-     * Reads the default MUC ID and nickname values from the preferences storage and
+     * Reads the default server ID and nickname values from the preferences storage and
      * fills in the text fields.
      */
     private void restoreFieldValues()
@@ -145,7 +162,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        mMucIdField.setText(prefs.get(MUCID_KEY, ""));
+        mServerIdField.setText(prefs.get(SERVERID_KEY, ""));
         mNicknameField.setText(prefs.get(NICKNAME_KEY, defNick));
     }
 
@@ -160,8 +177,8 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         int gridY = 0;
 
-        // Add MUC ID label
-        JLabel someLabel = new JLabel("MUC ID:");
+        // Add game server ID label
+        JLabel someLabel = new JLabel("Game Server ID:");
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -169,13 +186,13 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         c.anchor = GridBagConstraints.WEST;
         getContentPane().add(someLabel, c);
 
-        // Add MUC ID field
-        mMucIdField = new JTextField(20);
+        // Add game server ID field
+        mServerIdField = new JTextField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
         c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        getContentPane().add(mMucIdField, c);
+        getContentPane().add(mServerIdField, c);
         gridY++;
 
         // Add nickname label
@@ -196,7 +213,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         getContentPane().add(mNicknameField, c);
         gridY++;
 
-        // Add panel with Cancel and Join buttons
+        // Add panel with Cancel and Create buttons
         JPanel buttonPanel = new JPanel(new GridBagLayout());
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -219,20 +236,20 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         c.weightx = 0.5;
         buttonPanel.add(mCancelButton, c);
 
-        // Add Join button
-        mJoinButton = new JButton("Join");
-        mJoinButton.addActionListener(this);
+        // Add Create button
+        mCreateButton = new JButton("Create");
+        mCreateButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = 0;
         c.insets = new Insets(0, SPACING, 0, 0);
         c.anchor = GridBagConstraints.EAST;
-        buttonPanel.add(mJoinButton, c);
-        // Make Join button default
-        getRootPane().setDefaultButton(mJoinButton);
+        buttonPanel.add(mCreateButton, c);
+        // Make Create button default
+        getRootPane().setDefaultButton(mCreateButton);
 
         // Make the buttons the same width
-        Dimension dim = mJoinButton.getPreferredSize();
+        Dimension dim = mCreateButton.getPreferredSize();
 
         if (mCancelButton.getPreferredSize().width > dim.width)
         {
@@ -240,6 +257,6 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         }
 
         mCancelButton.setPreferredSize(dim);
-        mJoinButton.setPreferredSize(dim);
+        mCreateButton.setPreferredSize(dim);
     }
 }
