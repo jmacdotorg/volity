@@ -143,30 +143,33 @@ sub handle_chat_message {
     die "I'm stupid. The message was from $$message{from}. Here is some junk:\n" . Dumper($self->{player_jids});
   }
   if (substr("rock", 0, length($body)) eq lc($body)) {
-#    warn "ROCK";
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"Good old rock! Nothing beats rock.",
-			       });
+#    $self->referee->send_message({
+#				 to=>$player->jid,
+#				 type=>"chat",
+#				 body=>"Good old rock! Nothing beats rock.",
+#			       });
     $player->hand_type('rock');
     
   } elsif (substr("paper", 0, length($body)) eq lc($body)) {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"Paper it is.",
-			       });
+#    $self->referee->send_message({
+#				 to=>$player->jid,
+#				 type=>"chat",
+#				 body=>"Paper it is.",
+#			       });
     $player->hand_type('paper');
   } elsif (substr("scissors", 0, length($body)) eq lc($body)) {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"You chose scissors.",
-			       });
+#    $self->referee->send_message({
+#				 to=>$player->jid,
+#				 type=>"chat",
+#				 body=>"You chose scissors.",
+#			       });
     $player->hand_type('scissors');
   } else {
-    $self->referee->send_message({
-				 to=>$player->jid,
-				 body=>"No idea what you just said. Please choose one of 'rock', 'paper' or 'scissors'.",
-			       });
+#    $self->referee->send_message({
+#				 to=>$player->jid,
+#				  type=>'chat',
+#				 body=>"No idea what you just said. Please choose one of 'rock', 'paper' or 'scissors'.",
+#			       });
   }
   
   # Has everyone registered a hand?
@@ -200,10 +203,13 @@ sub handle_chat_message {
       $victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
       $self->winners($players[0]);
     }
-    $self->referee->send_message({
-				 to=>$self->muc_jid,
-				 body=>$victory_message,
-			       });
+#    warn "***GAME OVER****";
+#    $self->referee->send_message({
+#				 to=>$self->referee->muc_jid,
+#				 type=>"groupchat",
+#				 body=>$victory_message,
+#			       });
+#    warn "**** MESSAGE SENT****";
     $self->end_game;
   }
   

@@ -145,12 +145,14 @@ sub bot_got_fault {
 }
 
 sub end_test {
-  $server->stop;
 #  pass("Server has stopped.");
 
   foreach (grep(defined($_), $huey, $dewey, $louie)) {
     $_->kernel->post($_->alias, 'shutdown_socket', 0);
   }
+
+  $server->stop;
+
 
 }
 
@@ -264,6 +266,7 @@ sub start_new_game {
 sub handle_groupchat_message {
   my $self = shift;
   my ($message) = @_;
+  warn "Got a message: $$message{body}\n";
   if ($$message{body} =~ /game has begun!/) {
 #    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
     $self->take_turn;

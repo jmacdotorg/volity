@@ -385,6 +385,9 @@ sub jabber_message {
   my $info_hash;		# Will be the argument to the delegate method.
   my $type;			# What type of chat is this?
   $self->debug( "I ($self) received a message...\n");
+#  warn "<<<<<<<<<<<<<<<<<<<<<<<<<\n";
+#  warn "I ($self) received a message...\n" . $node->to_str . "\n";  warn "<<<<<<<<<<<<<<<<<<<<<<<<<\n";
+
   foreach (qw(to from)) {
     $$info_hash{$_} = $node->attr($_);
   }
@@ -643,6 +646,10 @@ sub send_message {
     }
   }
   $self->post_node($message);
+#  warn ">>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
+#  warn "Message SENT.\n";
+#  warn $message->to_str . "\n";
+#  warn ">>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
 }
 
 =head2 join_muc($args_hashref)
