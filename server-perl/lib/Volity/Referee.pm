@@ -229,10 +229,17 @@ sub handle_rpc_request {
   # In fact, the only one we care about right now is 'start_game'.
   # XXX The above statement is no longer true... and the below if-chain
   # XXX is only going to get longer. Refactoring is needed.
-  if ($method eq 'start_game') {
-    $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-  } elsif ($method eq 'add_bot') {
-    $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+  if ($method =~ /^volity\.(.*)$/) {
+    # This appears to be a system-level call (as opposed to a
+    # game-level one).
+    $method = $1;
+    if ($method eq 'start_game') {
+      $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+    } elsif ($method eq 'add_bot') {
+      $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+    } elsif ($method eq 'player_action') {
+      $self->player_action($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+    }
   } elsif ($method =~ /^game\.(.*)$/) {
     # This appears to be a call to the game object.
     $$rpc_info{method} = $1;
@@ -248,21 +255,27 @@ sub handle_rpc_request {
 sub handle_game_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
+
   unless ($self->game) {
-    $self->send_rpc_fault($$rpc_info{id}, 999, "There is no active game.");
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "There is no active game.");
+    warn "No game.";
     return;
   }
 
   # We prepend an 'rpc_' to the method's name for ssecurity reasons.
   my $method = "rpc_$$rpc_info{method}";
 
-  unless ($self->game->can($$rpc_info{method})) {
-    $self->send_rpc_fault($$rpc_info{id}, 999, "This game has no '$$rpc_info{method}' function.");
+  unless ($self->game->can($method)) {
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "This game has no '$method' function.");
+    warn "No function.";
+    return;
   }
 
   my $player = $self->look_up_player_with_jid($$rpc_info{from});
   unless ($player) {
-    $self->send_rpc_fault($$rpc_info{id}, 999, "You don't seem to be playing this game!");
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "You don't seem to be playing this game!");
+    warn "No player.";
+    return;
   }
   
   # I've we've come this far, then we can pass the request on to the game.
@@ -281,10 +294,23 @@ sub handle_game_rpc_request {
 
 #  warn "Calling $method with these args: @args\n";
 
-  $self->game->$method(@args);
+  my @response = $self->game->$method(@args);
 
-  # Send back an ack, just to be nice.
-  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, "ok");
+  if (@response) {
+    my $response_type = shift(@response);
+    if ($response_type eq 'fault') {
+      # Oh, there's some in-game problem with the player's request.
+      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
+    } else {
+      # The game has a specific, non-fault response to send back.
+      $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, @response);
+    }
+  } else {
+    # The game silently approved the request,
+    # so send back a minimal positive response.
+    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, "ok");
+  }
+
 }
 
 sub jabber_presence {
@@ -567,11 +593,12 @@ sub start_game {
   $self->debug("Created a game!!\n");
   # Send back a positive RPC response.
   $self->send_rpc_response($from_jid, $id, "ok");
-#  $self->send_message({
-#		       to=>$self->muc_jid,
-#		       type=>"groupchat",
-#		       body=>"The game has begun!",
-#		     });
+  
+  # Tell the players' clients to get ready for some fun.
+  for my $player ($self->players) {
+      $player->call_ui_function('start_game');
+  }
+
   # Tell the game object to do whatever it wants as its first action.
   $game->start_game;
 }
@@ -679,6 +706,27 @@ sub create_bot {
   # XXXXXXXX Move the above somewhere useful, thx.
 }
 
+# player_action: RPC request informing us that the player would like to do
+# something within the current game. Pass this along to the game.
+sub player_action {
+  my $self = shift;
+  my ($from, $id, $action_name, $arg) = @_;
+
+  unless ($self->game) {
+    # XXX Put error here. Error error error.
+    # XXX The error is that we're NOT EVEN PLAYING A GAME YET, sillyhead.
+  }
+
+  my $method = "pa_$action_name";
+  if ($self->game->can($method)) {
+    $self->game->$method($arg);
+    # XXX Send back a response.
+  } else {
+    # XXX Error error ERROR. I don't know how to do what you ask of me.
+  }
+}
+
+
 # end_game: Not really an RPC call, but putting it here for now for
 # symmetry's sake.
 # It's called by a game object.
@@ -728,7 +776,7 @@ sub send_end_game_notification_to_player {
   my $self = shift;
   my ($player) = @_;
   $self->make_rpc_request({
-			   methodname=>'end_game',
+			   methodname=>'game.end_game',
 			   to=>$player->jid,
 			  });
 }
@@ -748,7 +796,7 @@ sub send_record_to_bookkeeper {
   my $hash = $record->render_as_hashref;
   $self->make_rpc_request({to=>$bkp_jid,
 			   id=>'record_set',
-			   methodname=>'record_game',
+			   methodname=>'volity.record_game',
 			   args=>$hash
 			 });
 }
