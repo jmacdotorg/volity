@@ -136,13 +136,19 @@ use Carp qw(croak carp);
 
 sub initialize {
   my $self = shift;
-  if ($self->SUPER::initialize(@_)) {
-    if (my $referee_class = $self->referee_class) {
+  $self->SUPER::initialize(@_);
+  if (my $referee_class = $self->referee_class) {
       eval "require $referee_class";
       if ($@) {
-	die "Failed to require referee class $referee_class: $@";
+	  die "Failed to require referee class $referee_class: $@";
       }
-    }
+  }
+  if (my $game_class = $self->game_class) {
+      
+      eval "require $game_class";
+      if ($@) {
+	  die "Failed to require game class $game_class: $@";
+      }
   }
   return $self;
 }
@@ -251,19 +257,30 @@ sub new_referee_resource {
 sub handle_disco_info_request {
     my $self = shift;
     my ($iq) = @_;
+    my $query = $iq->get_tag('query');
     $self->logger->debug("I got a disco info request from " . $iq->attr('from'));
+    # Build the list of disco items to return.
+    my @items;
+    my $identity = Volity::Jabber::Disco::Identity->new({category=>'volity',
+							 type=>'game-server',
+						     });
+    my $game_class = $self->game_class;
+    my $node = $query->attr('node');
+    if (not(defined($node))) {
+	eval "\$identity->name($game_class->name);";
+    }
+    push (@items, $identity);
+    push (@items, Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#info'}));
+    my $items_feature = Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'});
+    push (@items, $items_feature);
+
+    # Send them off.
     $self->send_disco_info({
 	to=>$iq->attr('from'),
 	id=>$iq->attr('id'),
 	# I'm making up my own category and type stuff, here.
 	# I'll have to ask the Jabber folks what I actually ought to be doing.
-	items=>[Volity::Jabber::Disco::Identity->new({category=>'volity',
-						      type=>'game-server',
-						      name=>'A game server',
-						  }),
-		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#info'}),
-		Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'}),
-		],
+	items=>\@items,
     });
 }
 
@@ -282,10 +299,24 @@ sub handle_disco_items_request {
     # It should probably return a list of conference tables, or something?
     # Now things get interesting...
 
-    # For now, it will just return no items.
+    my $game_class = $self->game_class;
+
+    if ($nodes[0] eq 'ruleset') {
+	# Return a pointer to the bookeeper's info about this ruleset.
+	# The JID reveals our bookkeeper, while the node reveals our
+	# ruleset URI.
+	my $uri;
+	$uri = $self->game_class->uri; 
+	warn "Wah, I see no URI under $game_class: $uri.";
+	push (@items, Volity::Jabber::Disco::Item->new({
+	    jid=>$self->bookkeeper_jid,
+	    node=>$uri,
+	    name=>"ruleset information (URI: $uri )",
+	}));
+    }
     $self->send_disco_items({to=>$iq->attr('from'),
 			     id=>$iq->attr('id'),
-			     items=>[],
+			     items=>\@items,
 			 }
 			     );
 
