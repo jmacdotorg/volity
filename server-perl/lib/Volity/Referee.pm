@@ -779,8 +779,10 @@ sub end_game {
     }
   }
 
-  # Give it the ol' John Hancock
-  $record->sign;
+  # Give it the ol' John Hancock, if possible.
+  if (defined($Volity::GameRecord::gpg_bin) and defined($Volity::GameRecord::gpg_secretkey) and defined($Volity::GameRecord::gpg_passphrase)) {
+      $record->sign;
+  }
   
   # Send the record to the bookkeeper!
   $self->send_record_to_bookkeeper($record);
