@@ -24,6 +24,10 @@
 	- All RPC calls are now in either the 'volity.*' or 'game.*'
           namespaces.
 
+	- Rewrote lots of low-level stuff in Volity::Jabber and
+          elsewhere to cope with API change to the new (tentative v1.0)
+          pre-release version of POE::Component::Jabber.
+
 0.2.2
 
 	- (distribution) Improved the test.pl script. It now more
