@@ -290,6 +290,7 @@ sub input_event {
   my $node = $_[ARG0];
   my $element_type = $node->name;
   my $method = "jabber_$element_type";
+  $method =~ s/\W/_/g;
   if ($self->can($method)) {
     $self->$method($node);
   } else {
@@ -428,6 +429,14 @@ sub jabber_message {
 =back
 
 =cut
+
+# We could use some more useful stream-error handling...
+sub jabber_stream_error { 
+  my $self = shift;
+  my ($node) = @_;
+  $self->debug("Got a jabber stream error. " . $node->to_str);
+}
+  
 
 ################################
 # Jabber event delegate methods
@@ -640,6 +649,7 @@ sub send_rpc_response {
   $response_xml = substr($response_xml, 22);
   $rpc_iq->insert_tag(query=>'jabber:iq:rpc')
     ->rawdata($response_xml);
+  $self->debug("Sending response: " . $rpc_iq->to_str);
   $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
   return 1;
 }
