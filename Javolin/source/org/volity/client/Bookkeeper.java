@@ -12,6 +12,7 @@ import org.jivesoftware.smackx.packet.DiscoverItems;
 /** A connection to a Volity bookkeeper. */
 public class Bookkeeper {
   /**
+   * Connect to a Volity bookkeeper.
    * @param connection an authenticated connection to an XMPP server
    * @param jid the JID of the bookkeeper
    * @throws IllegalStateException if the connection has not been authenticated
@@ -23,7 +24,7 @@ public class Bookkeeper {
 
   /**
    * Connect to the standard Volity bookkeeper,
-   * <code>bookkeeper@volity.net/volity<code>.
+   * <code>bookkeeper@volity.net/volity</code>.
    * @param connection an authenticated connection to an XMPP server
    * @throws IllegalStateException if the connection has not been authenticated
    */
@@ -61,7 +62,7 @@ public class Bookkeeper {
    * Ask the bookkeeper what game servers are available for a
    * particular ruleset.
    * @param ruleset the URI of a ruleset known by the bookkeeper
-   * @return a list of strings, game server JIDs for the given ruleset
+   * @return a list of JIDs (strings)
    * @throws XMPPException if an XMPP error occurs
    */
   public List getGameServers(URI ruleset) throws XMPPException {
@@ -79,7 +80,7 @@ public class Bookkeeper {
    * Ask the bookkeeper what game UIs are available for a particular
    * ruleset.
    * @param ruleset the URI of a ruleset known by the bookkeeper
-   * @return a list of GameUIInfo objects
+   * @return a list of {@link GameUIInfo} objects
    * @throws XMPPException if an XMPP error occurs
    */
   public List getGameUIs(URI ruleset) throws XMPPException {
@@ -104,7 +105,7 @@ public class Bookkeeper {
    * ruleset that are compatible with a particular client type.
    * @param ruleset the URI of a ruleset known by the bookkeeper
    * @param clientType the URI of a client type
-   * @return a list of GameUIInfo objects
+   * @return a list of {@link GameUIInfo} objects
    * @throws XMPPException if an XMPP error occurs
    */
   public List getCompatibleGameUIs(URI ruleset, URI clientType)
