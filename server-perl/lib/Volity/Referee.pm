@@ -70,17 +70,6 @@ detailed in L<Class::Accessor> apply here as well.
 
 =over
 
-=item max_allowed_players
-
-An integer specifying the maximum number of players this game
-allows. If undefined, then there is no limit to the number of players
-who can join.
-
-=item min_allowed_players
-
-An integer specifying the minimum number of players this game requires
-for play. Defaults to 1.
-
 =item error_message
 
 A string to display to the MUC if something goes wrong.
@@ -122,7 +111,7 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id uri bookkeeper_jid  max_allowed_players min_allowed_players error_message server muc_host);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -220,7 +209,6 @@ sub handle_rpc_request {
   my $method = $$rpc_info{method};
   # For security's sake, we explicitly accept only a few method names.
   # In fact, the only one we care about right now is 'start_game'.
-  warn "******UNTA UNTA $method*****"; sleep(1);
   if ($method eq 'start_game') {
     $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } else {
@@ -363,10 +351,10 @@ sub check_sanity {
   my $player_count = $self->players;
   $self->debug("Player count is $player_count.");
   my $player_statement = $self->state_allowed_players;
-  if (defined($self->max_allowed_players) and $self->max_allowed_players < $player_count) {
+  if (defined($self->game_class->max_allowed_players) and $self->game_class->max_allowed_players < $player_count) {
     $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's too many!");
     return 0;
-  } elsif (defined($self->min_allowed_players) and $self->min_allowed_players > $player_count) {
+  } elsif (defined($self->game_class->min_allowed_players) and $self->game_class->min_allowed_players > $player_count) {
     $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's not enough!");
     return 0;
   }
@@ -377,8 +365,8 @@ sub check_sanity {
 # that this game supports.
 sub state_allowed_players {
   my $self = shift;
-  my $max = $self->max_allowed_players;
-  my $min = $self->min_allowed_players;
+  my $max = $self->game_class->max_allowed_players;
+  my $min = $self->game_class->min_allowed_players;
   my $statement;
   if (not($min) and $max) {
     $statement = "$max or fewer";
@@ -456,7 +444,6 @@ sub start_game {
   # Make sure the player who sent us this request is in the MUC.
   my ($from_nick) = $from_jid =~ /\/(.*)$/;
   my $requester_jid = $self->{nicks}{$from_nick};
-  warn "***DEET***";
   die "I have no record of a nickname '$from_nick'" unless $requester_jid;
   if ($requester_jid ne $self->starting_request_jid) {
     $self->send_rpc_fault($from_jid, $id, 2, "You asked to start a game, but you did not initiate the game.");
@@ -485,7 +472,7 @@ sub start_game {
 
   # No error message? Great... let's play!
   # Try creating the new game object.
-  my $game = $self->game_class->new({players=>[$self->players], server=>$self});
+  my $game = $self->game_class->new({players=>[$self->players], referee=>$self});
   $self->game($game);
   $self->debug("Created a game!!\n");
   # Send back a positive RPC response.
@@ -512,7 +499,7 @@ sub end_game {
   my $record = Volity::GameRecord->new({
 					server=>$self->basic_jid,
 				      });
-  $record->game_uri($self->uri);
+  $record->game_uri($self->game_class->uri);
   $record->end_time(scalar(localtime));
   foreach my $player_list (qw(players winners quitters)) {
     my @players = $game->$player_list;
