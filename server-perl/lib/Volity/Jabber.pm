@@ -243,13 +243,15 @@ sub initialize {
 						  set => 'update_roster',
 						 },
 			     'http://jabber.org/protocol/disco#items'=>{
+				  get    => 'handle_disco_items_request',
 				  result => 'receive_disco_items',
 								       },
 			     'http://jabber.org/protocol/disco#info'=>{
+				  get    => 'handle_disco_info_request',
 				  result => 'receive_disco_info',
 							              },
 			     'jabber:iq:register'=>{
-						    error => 'receive_registration_error'
+				  error  => 'receive_registration_error'
 						   },
 			  };
 
@@ -322,6 +324,10 @@ sub init_finish {
   my $self = $_[OBJECT];
   $self->logger->debug("In init_finish. Password is " . $self->password);
   $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
+  # XXX EXPERIMENTAL
+  # Always request roster. The roster's receipt will trigger an 'available'
+  # presence packet (see 'receive_roster').
+  $self->request_roster;
 }
 
 sub input_event {
@@ -1042,6 +1048,9 @@ sub receive_roster {
     $roster->add_item($item_hash);
   }
   $self->roster($roster);
+  # XXX EXPERIMENTAL
+  # Send presence after receipt of roster.
+  $self->send_presence;
 }
 
 # add_item_to_roster: Useful for both adding new stuff to the roster,
@@ -1091,7 +1100,9 @@ sub update_roster {
   if (my @groups = $item->get_children) {
     $$item_hash{group} = [];
     for my $group (@groups) {
-      push (@{$$item_hash{group}}, $group->data)
+      # XXX ?!
+	eval {push (@{$$item_hash{group}}, $group->data)};
+	warn "Whoa, burped with $group" if $@;
     }
   }
   # Now that we've made a chewable data structure from this item,
@@ -1121,7 +1132,7 @@ sub request_disco {
   }
   $iq->attr(to=>$$info{to});
   $iq->attr(id=>$$info{id}) if defined($$info{id});
-  my $query = $iq->add_tag('query', [xmlns=>"http://jabber.org/protocol/disco#items"]);
+  my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#items"]);
   $query->attr(node=>$$info{node}) if defined($$info{node});
   $self->post_node($iq);
 }
@@ -1140,11 +1151,15 @@ sub receive_disco_items {
 sub handle_disco_items { }
 sub handle_disco_info { }
 
+sub handle_disco_items_request { }
+sub handle_disco_info_request { }
+
+
 sub receive_disco {
   my $self = shift;
   my ($iq) = @_;
   my @return;
-  for my $child ($iq->get_tag('query')->get_children) {
+  for my $child (@{$iq->get_tag('query')->get_children}) {
     my $class = "Volity::Jabber::Disco::" . ucfirst($child->name);
     bless($child, $class);
     push (@return, $child);
@@ -1165,14 +1180,21 @@ sub send_disco_info {
 sub send_disco {
   my $self = shift;
   my ($type, $info) = @_;
+  use Data::Dumper; warn Dumper($info);
   if (not($info) or not(ref($info) eq 'HASH')) {
     croak("You must call send_disco_$type with a hashref argument.");
   }
-  unless ($$info{to}) {
-    croak("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
-  }
+
   my $iq = POE::Filter::XML::Node->new('iq');
-  my $query = $iq->add_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
+  $iq->attr(type=>'result');
+  $iq->attr(id=>$$info{id}) if (defined($$info{id}));
+  if ($$info{to}) {
+    $iq->attr(to=>$$info{to});
+  } else {
+    $self->expire("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
+  }
+
+  my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
   my @items_to_add;
   if (defined($$info{items})) {
     @items_to_add = ref($$info{items})? @{$$info{items}} : ($$info{items});
@@ -1181,8 +1203,9 @@ sub send_disco {
     unless ($item->isa("Volity::Jabber::Disco::Node")) {
       croak("The items you add must be objects belonging to one of the Volity::Jabber::Disco::* classes. But you passed me this: $item");
     }
-    $query->add_tag($item);
+    $query->insert_tag($item);
   }
+  warn $iq->to_str;
   $self->post_node($iq);
 }
 
@@ -1675,14 +1698,24 @@ use base qw(POE::Filter::XML::Node Class::Accessor);
 sub new {
   my $class = shift;
   my ($node_type) = $class =~ /^.*::(.*?)$/;
-  return POE::Filter::XML::Node->SUPER::new(lc($node_type));
+  my $self = POE::Filter::XML::Node->SUPER::new(lc($node_type));
+  bless ($self, $class);
+  my ($init_hash) = @_;
+  while (my($key, $val) = each(%$init_hash)) {
+    if ($self->can($key)) {
+      $self->$key($val);
+    } else {
+      $self->expire("I can't call the $key accessor on a $class object.");
+    }
+  }
+  return $self;
 }
 
 sub set {
   my $self = shift;
   my ($key, $value) = @_;
   $self->attr($key=>$value);
-  return $self->SUPER::set(@_);
+  return $value;
 }
 
 package Volity::Jabber::Disco::Item;
