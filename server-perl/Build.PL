@@ -22,7 +22,7 @@ my $build = Module::Build->new
 	       'YAML'=>undef,
 	       'Log::Log4perl'=>undef,
 	     },
-   script_files=>['bin/server.pl', 'bin/friv'],
+   script_files=>['bin/volityd', 'bin/friv'],
    install_path=>{script=>'/usr/local/volity/bin'},
   );
 
