@@ -1,7 +1,11 @@
 package Volity::Referee;
 
+# XXX CHANGES TO MAKE XXX
+
+# Referees should be subclasses of this class.
+
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id uri bookkeeper_jid  max_allowed_players min_allowed_players error_message);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -20,6 +24,7 @@ use strict;
 
 use lib qw(/Users/jmac/Library/Perl/);
 use Volity::Player;
+use Volity::GameRecord;
 use RPC::XML;
 
 use POE qw(
@@ -54,6 +59,14 @@ sub initialize {
   # XXXXXXX
   $self->muc_jid('game@conference.localhost');
   # XXXXXXX
+
+  my $game_class = $self->game_class or die
+    "No referee class specified at construction!";
+  eval "require $game_class";
+  if ($@) {
+    die "Failed to require referee class $game_class: $@";
+  }
+
 
   return $self;
 
@@ -222,29 +235,30 @@ sub start_game {
     return;
   }
 
-  # Try creating the new game object.
-  my $game = $self->game_class->new({players=>[$self->players], server=>$self});
-  if ($game->error_message) {
+  # Time for a sanity check.
+  unless ($self->check_sanity) {
     # Something seems to have gone awry. Alas!
     $self->send_message({
 			 to=>$self->muc_jid,
 			 type=>"groupchat",
-			 body=>"I can't create a new game right now! Error message: " . $game->error_message,
+			 body=>"I can't create a new game right now! Error message: " . $self->error_message,
 		       });
     $self->send_rpc_response($self->starting_request_jid, 'start_game', undef);
-  } else {
-    # No error message? Great... let's play!
-    $self->game($game);
-    $self->debug("Created a game!!\n");
-    # Send back a positive RPC response.
-    # XXX Eek, hardcoded ID attribute...
-    $self->send_rpc_response($self->starting_request_jid, $id, "ok");
-    $self->send_message({
-			 to=>$self->muc_jid,
-			 type=>"groupchat",
-			 body=>"The game has begun!",
-		       });
+    return;
   }
+
+  # No error message? Great... let's play!
+  # Try creating the new game object.
+  my $game = $self->game_class->new({players=>[$self->players], server=>$self});
+  $self->game($game);
+  $self->debug("Created a game!!\n");
+  # Send back a positive RPC response.
+  $self->send_rpc_response($self->starting_request_jid, $id, "ok");
+  $self->send_message({
+		       to=>$self->muc_jid,
+		       type=>"groupchat",
+		       body=>"The game has begun!",
+		     });
 }
 
 # end_game: Not really an RPC call, but putting it here for now for
@@ -253,9 +267,54 @@ sub start_game {
 
 sub end_game {
   my $self = shift;
-  # XXX Here is where the record-storing magic would go.
   $self->groupchat("The game is over.");
-  delete($self->{game});
+  my $game = delete($self->{game});
+
+  # Time to register this game with the bookkeeper!
+  # Create an initialize a new game record object.
+
+  my $record = Volity::GameRecord->new({
+					server=>$self->basic_jid,
+				      });
+  $record->game_uri($self->uri);
+  $record->end_time(scalar(localtime));
+  foreach my $player_list (qw(players winners quitters)) {
+    my @players = $game->$player_list;
+    if (@players and defined($players[0])) {
+      $record->$player_list(map($_->basic_jid, @players));
+    }
+  }
+
+  $record->sign;
+  
+  # Send the record to the bookkeeper!
+  $self->send_record_to_bookkeeper($record);
+
+  # That's all.
+
+}
+
+sub send_record_to_bookkeeper {
+  my $self = shift;
+  my ($record) = @_;
+  unless (ref($record) and $record->isa('Volity::GameRecord')) {
+    croak("You must call send_record_to_bookkeeper with a game record object.");
+  }
+  my $bkp_jid = $self->bookkeeper_jid;
+  $self->send_message({
+		       to=>$bkp_jid,
+		       type=>'chat',
+		       body=>'Hello, sailor!',
+		     });
+#  my $xml = $record->render_as_xml;
+#  print "$xml\n";
+  my $hash = $record->render_as_hashref;
+  $self->make_rpc_request({to=>$bkp_jid,
+			   id=>'record_set',
+			   methodname=>'record_game',
+#			   args=>$xml,
+			   args=>$hash
+			 });
 }
 
 ###################
@@ -300,6 +359,7 @@ sub look_up_jid_with_nickname {
   return $self->{nicks}{$nick};
 }
 
+
 # groupchat:
 # Convenience method for sending a message to the game's MUC.
 sub groupchat {
@@ -310,6 +370,47 @@ sub groupchat {
 		       type=>"groupchat",
 		       body=>$message,
 		     });
+}
+
+######################
+# Game config info & pregame sanity checking
+######################
+
+# check_sanity: Runs some tests on this 
+# new object to make sure that all is well.
+# XXX This could use better exception handling, eh?
+sub check_sanity {
+  my $self = shift;
+  my $player_count = $self->players;
+  warn "Player count is $player_count.";
+  my $player_statement = $self->state_allowed_players;
+  if (defined($self->max_allowed_players) and $self->max_allowed_players < $player_count) {
+    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's too many!");
+    return 0;
+  } elsif (defined($self->min_allowed_players) and $self->min_allowed_players > $player_count) {
+    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's not enough!");
+    return 0;
+  }
+  return 1;
+}
+
+# state_allowed_players: Utility method for stating the number of players
+# that this game supports.
+sub state_allowed_players {
+  my $self = shift;
+  my $max = $self->max_allowed_players;
+  my $min = $self->min_allowed_players;
+  my $statement;
+  if (not($min) and $max) {
+    $statement = "$max or fewer";
+  } elsif ($min and not($max)) {
+    $statement = "$min or more";
+  } elsif (not($min) and not($max)) {
+    $statement = "any number";
+  } else {
+    $statement = "between $min and $max";
+  }
+  return $statement;
 }
 
 
