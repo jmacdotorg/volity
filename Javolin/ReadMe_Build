@@ -1,0 +1,34 @@
+This document assumes that you have obtained the Javolin build environment from the CVS repository at SourceForge.net, and wish to build Javolin.
+
+------------
+Requirements
+------------
+To build Javolin, you need:
+- Java 1.4.1 or higher. 
+- Apache Ant; see http://ant.apache.org/ for info and download
+- Various third party libraries on which Javolin depends. See the "Libraries" section below before attempting to build Javolin.
+
+--------
+Building
+--------
+Currently Apache Ant is used for building Javolin. The build.xml file specifies several commands. To invoke a command, simply execute:
+
+ant command
+
+at the command line, where "command" is the desired command. The following commands are available:
+
+  archive - Compiles Javolin and builds the Javolin.jar file. This is the default, so you can just execute "ant" by itself, without specifying a command.
+
+  clean - Deletes everything created by the archive command: the build directory and the Javolin.jar file.
+
+---------
+Libraries
+---------
+Javolin relies on third party libraries. If you don't have these libraries, you cannot build or run Javolin. These libraries are not checked in to the CVS repository, so you must download them and place them into the lib directory yourself. The following is a list of the libraries currently used, along with URLs pointing to the download location of the version currently being developed against. The Lib file(s) item tells you what file or files must be copied into the lib directory so that Javolin can be compiled and run. (Please keep this list up-to-date when new library dependencies are added to Javolin, as well as when we move to a new version of a library that we are already using.)
+
+---
+Name: Smack
+Version: 1.2.1
+Download: http://www.jivesoftware.com/xmpp/smack/smack-1.2.1.zip
+Lib file(s): smack.jar
+---
