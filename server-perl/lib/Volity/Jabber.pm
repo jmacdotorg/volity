@@ -407,6 +407,10 @@ sub jabber_iq {
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
       # We should be getting only RPC responses, not requests.
       my $response_obj = $self->rpc_parser->parse($raw_xml);
+      unless (ref($response_obj)) {
+	  $self->logger->warn("Failed to parse this response: $raw_xml");
+	  return;
+      }
       $self->logger->debug("Finally, got $response_obj.\n");
       $self->logger->debug("The response is: " . $response_obj->value->value . "\n");
       if ($response_obj->value->is_fault) {
@@ -682,8 +686,8 @@ sub handle_query_element_ns {
       croak("No type attribute defined in query's parent node! Gak!");
     }
     $method = $self->query_handlers->{$query_ns}->{$type};
-    $self->logger->debug("Trying to call the $method method.");
     if (defined($method)) {
+      $self->logger->debug("Trying to call the $method method.");
       if ($self->can($method)) {
 	$self->$method($node);
 	return 1;
@@ -1280,6 +1284,7 @@ sub receive_disco {
   for my $child (@{$iq->get_tag('query')->get_children}) {
       if ($child->name eq 'x') {
 	  for my $field ($child->get_tag('field')) {
+	      next unless (ref($field));
 	      bless ($field, "Volity::Jabber::Form::Field");
 	      $fields{$field->var} = [$field->values];
 	  }
