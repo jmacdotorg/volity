@@ -20,16 +20,13 @@ public class RPCResponder implements PacketListener {
   }
 
   /**
-   * @param connection an authenticated connection to an XMPP server
+   * @param connection a connection to an XMPP server
    * @param filter a filter specifying which RPC requests to handle
    * @param handler a handler for RPC requests
-   * @throws IllegalStateException if the connection has not been authenticated
    */
   public RPCResponder(XMPPConnection connection,
 		      PacketFilter filter,
 		      RPCHandler handler) {
-    if (!connection.isAuthenticated())
-      throw new IllegalStateException("Not logged in.");
     this.connection = connection;
     this.filter = filter;
     this.handler = handler;
