@@ -9,10 +9,9 @@ use strict;
 use Volity::Server;
 use Getopt::Std;
 use Volity::GameRecord;
-use Log::Log4perl qw(:levels);
 
 my %opts;
-getopts('u:p:h:r:g:o:b:l:G:K:P:R:m:B:f:', \%opts);
+getopts('u:p:h:r:g:o:b:l:G:K:P:m:B:f:', \%opts);
 
 foreach ('user', 'host', 'password',) {
   unless (defined($opts{substr($_, 0, 1)})) {
@@ -22,13 +21,26 @@ foreach ('user', 'host', 'password',) {
 
 foreach ('key id (GPG)', 'passphrase (GPG)', 'GPG binary path',) {
   unless (defined($opts{uc(substr($_, 0, 1))})) {
-    die "You must define a $_, with the " . uc(substr($_, 0, 1)) . " switch.\n";
+#    die "You must define a $_, with the " . uc(substr($_, 0, 1)) . " switch.\n";
+      warn "You have not defined a $_. Game records will _not_ be sent to the bookkeeper.\n";
+      last;
   }
 }
 
+if (defined($opts{G}) and not(-x $opts{G})) {
+    die "The GPG binary path must lead to an executable gpg program.\n";
+}
 
-unless (defined($opts{g}) or defined($opts{R})) {
-  die "You must define either a game class (-g) or a referee class (-R).\n";
+if (defined($opts{g})) {
+    eval qq|require $opts{g}|;
+    if ($@) {
+	die "Couldn't load the game module $opts{g}: $@\n";
+    } 
+    unless ($opts{g}->isa("Volity::Game")) {
+	die "The class you define with -g must be a subclass of Volity::Game.\n";
+    }
+} else {
+  die "You must define a game class with -g.\n";
 }
 
 if (defined($opts{f})) {
@@ -136,22 +148,6 @@ the Jabber server.
 The full Perl package name of the game module that the game server
 will run. It must be visible to @INC.
 
-=item K
-
-The public ID of the GPG key that the game server will use to sign
-outgoing game records.
-
-=item G
-
-A filesystem path leading to a GPG executable.
-
-=item P
-
-The GPG passphrase that the game server will use to sign outgoing game
-records.
-
-Yes, this isn't very secure. This will be improved.
-
 =back
 
 =head2 Optional parameters
@@ -213,6 +209,22 @@ modules available to the server. They will be invoked through Perl's
 C<require()> function, so they must each be visible to @INC.
 
 B<Default>: None, and no bots will be available to the server.
+
+=item G
+
+A filesystem path leading to a GPG executable.
+
+=item K
+
+The public ID of the GPG key that the game server will use to sign
+outgoing game records.
+
+=item P
+
+The GPG passphrase that the game server will use to sign outgoing game
+records.
+
+Yes, this isn't very secure. This will be improved.
 
 =back
 
