@@ -1,0 +1,11 @@
+Build.PL
+MANIFEST			This list of files
+lib/Volity.pm
+lib/Volity/Game.pm
+lib/Volity/Game/Guess100.pm
+lib/Volity/Game/RPS.pm
+lib/Volity/Jabber.pm
+lib/Volity/Player.pm
+lib/Volity/Referee.pm
+lib/Volity/Server.pm
+bin/server.pl
