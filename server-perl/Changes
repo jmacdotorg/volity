@@ -1,3 +1,16 @@
+0.3.0
+
+	- (distribution) Improved the test.pl script. It now more
+          properly takes advantage of Test::More's abilities, and is
+          easier to extend.
+
+	- More cruft removal from Game.pm, Server.pm
+
+	- Fixed a bug in Volity::Jabber that prevented it from opening
+          connections to remote servers correctly (!) (The call to
+          POE::Component::Jabber's constructor lacked sufficient
+          information.)
+
 0.2.1
 	- Servers now keep track of referees they create, and provide the
 	  appropriate accessor methods. A server that receives a 'stop'

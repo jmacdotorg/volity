@@ -27,3 +27,24 @@ http://www.volity.org
 Volity at SourceForge:
 http://volity.sf.net
 
+--- INSTALLATION ---
+
+This package uses the Module::Build installation style. You should be
+able to set everything up like so:
+ perl Build.PL
+[ then answer some questions to set up testing ]
+
+ ./Build
+
+In theory you can then run:
+ ./Build test
+
+But that might not work, so you may have to instead do a 
+ perl test.pl
+
+(sorry.)
+
+--- CONTACT ---
+
+Please send all questions, comments, bug reports, etc. to Jason
+McIntosh <jmac@jmac.org>.
