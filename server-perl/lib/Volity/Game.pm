@@ -20,6 +20,28 @@ package Volity::Game;
 
 # This is a base class for Volity game classes.
 
+=head1 NAME
+
+Volity::Game - base class for Volity game modules
+
+=head1 DESCRIPTION
+
+This class provides a framework for writing Volity game modules in Perl.
+
+If you downloaded and installed the Frivolity system (all these Perl
+modules under the C<Volity> namespace) primarily so you could write
+Volity game modules in Perl, then this is the man page you should show
+the most interest in! If you'd like to I<run> your game as a server
+once you've written it, please direct your subsequent attention to
+L<Volity::Server>.
+
+=head1 USAGE
+
+Create your own Perl package for your game, and have it inherit from
+C<Volity::Game>. You can then have it do whatever you like, but
+
+=cut
+
 use warnings;
 use strict;
 
@@ -37,18 +59,6 @@ our $max_allowed_players;
 our $min_allowed_players;
 
 
-=head1 NAME
-
-Volity::Game - Base class for Volity game modules
-
-=head1 DESCRIPTION
-
-This is a base class for Volity game modules. To create a game module, simply subclass Volity::Game, then override the message-handling methods as described in this documentation.
-
-For information about creating a game server to work with game modules, see L<Volity::Server>.
-
-=cut
-
 sub initialize {
   my $self = shift;
 #  unless ($self->check_sanity) {
@@ -60,35 +70,6 @@ sub initialize {
     $self->create_player_jid_lookup_hash;
   }
 }
-
-=head1 Class methods
-
-Class methods that this module definEs Includes A standard Perl constructor (I<new>), plus some Jabber-message callbacks that handle chatter received by an inactive game. See the list of object message for active-game callback methods.
-
-=head2 new({%config})
-
-Constructor. Accepts an optional config hash, whose keys are the same as this class's accessor methods. Commonly, you'll use the 'players' key, with a list of Volity::Player objects as its value.
-
-You don't need to ovveride this method in your subclass; see I<initialize>.
-
-=head2 receive_message($message, $client)
-
-A callback method, invoked by the game server when it receives a private (non-chat) Jabber message while no game is active. 
-
-The first argument is a Net::Jabber::Message object representing the incoming message, and the second a "live" Net::Jabber::Client object that you can use to send out a response.
-
-=head2 receive_chat($message, $client)
-
-A callback method, invoked by the game server when it receives a private chat message from a jid while no game is active. This might happen when the game server and several players are in a multi-user conference room together but have yet to begin play, or have played an entire game but haven't started a new one yet.
-
-The first argument is a Net::Jabber::Message object representing the incoming message, and the second a "live" Net::Jabber::Client object that you can use to send out a response.
-
-=head2 receive_groupchat($message, $client)
-
-A callback method, invoked by the game server when it receives a private (non-chat) Jabber message while no game is active. This might happen when the game server and several players are in a multi-user conference room together but have yet to begin play, or have played an entire game but haven't started a new one yet.
-The first argument is a Net::Jabber::Message object representing the incoming message, and the second a "live" Net::Jabber::Client object that you can use to send out a response.
-
-=cut
 
 sub DESTROY {
   my $self = shift;
@@ -199,10 +180,11 @@ sub muc_jid {
   return ($self->server->muc_jid(@_));
 }
 
-#sub j {
-#  my $self = shift;
-#  return $self->server->j;
-#}
+=head2 get_player_with_jid ($jid)
+
+Returns the Volity::Player object corresponding to the given JID.
+
+=cut
 
 sub get_player_with_jid {
   my $self = shift;
@@ -228,6 +210,12 @@ sub get_player_with_jid {
   return $player;
 }
 
+=head2 end_game
+
+Ends the game! The server and referee will handle cleanup.
+
+=cut
+
 # end_game: called when the game has come to a close, one way or another.
 # Does very little right now.
 sub end_game {
@@ -240,6 +228,28 @@ sub debug {
   my $self = shift;
   warn "@_\n" if $self->{debug};
 }
+
+=head1 BUGS
+
+Volity is, at the time of this writing, waddling through its early
+alpha stages. As such, this framework only does so much; you'll note
+the lack of any graphics-handling features, since the
+graphics-handling protocols of Volity have yet to be defined. For one
+thing.
+
+For the latest Volity news, please see the project's homepage, at
+http://volity.sf.net .
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2003 by Jason McIntosh.
+
+=cut
+
 
 1;
 
