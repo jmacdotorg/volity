@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
   <defs>
     <!-- These 'hand' graphics all face right. Rotate them to face left. -->
     <symbol id="scissors">
@@ -28,7 +28,12 @@
     <symbol id="draw">
       <text x="10" y="100" style="font-size:100; fill=gray;">meh...</text>
     </symbol>
-
+    <symbol id="start-game">
+      <text x="10" y="30" style="font-size:30; fill=black;">start game</text>
+    </symbol>
+    <symbol id="add-bot">
+      <text x="10" y="30" style="font-size:30; fill=black;">add bot</text>
+    </symbol>
   </defs>
 
   <script type="text/ecmascript">
@@ -58,38 +63,73 @@ function set_up_box(type, x) {
 }
 
 function set_up_buttons() {
-  set_up_button("rock", 0);
-  set_up_button("paper", 125);
-  set_up_button("scissors", 250);
+  button = document.createElementNS(svg_ns, "use");
+  button.setAttributeNS(xlink_ns, "xlink:href", "#start-game");
+  button.setAttribute("x", 0);
+  button.setAttribute("y", 200);
+  button.setAttribute("onclick", "start_game()");
+  button.setAttribute("id", "button-start-game");
+  document.firstChild.appendChild(button);
+
+  if (info.opponents.length == 0) {
+    button = document.createElementNS(svg_ns, "use");
+    button.setAttributeNS(xlink_ns, "xlink:href", "#add-bot");
+    button.setAttribute("x", 200);
+    button.setAttribute("y", 200);
+    button.setAttribute("onclick", "add_bot()");
+    button.setAttribute("id", "button-add-bot");
+    document.firstChild.appendChild(button);
+  }
 }
 
-function set_up_button(type, x) {
+function remove_buttons() {
+  remove_button("start-game");
+  remove_button("add-bot");
+}
+
+function set_up_hands() {
+  set_up_hand("rock", 0);
+  set_up_hand("paper", 125);
+  set_up_hand("scissors", 250);
+}
+
+function remove_hands() {
+  remove_hand("rock");
+  remove_hand("paper");
+  remove_hand("scissors");
+}
+
+function set_up_hand(type, x) {
   hand = document.createElementNS(svg_ns, "use");
   hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
   hand.setAttribute("y", 200);
   hand.setAttribute("x", x);
   hand.setAttribute("onclick", "choose_hand(evt)");
-  hand.setAttribute("id", "button-" + type);
+  hand.setAttribute("id", "hand-" + type);
   document.firstChild.appendChild(hand);
+}
+
+function remove(id) {
+  element = document.getElementById(id);
+  if (element != null) {
+    document.firstChild.removeChild(element);
+  }
+}
+
+function remove_button(type) {
+  remove("button-" + type);
+}
+function remove_hand(type) {
+  remove("hand-" + type);
 }
 
 game.start_game = function() {
   status = new Object;
-
-  old_hand = document.getElementById("hand-in-box");
-  if (old_hand != null) {
-    document.firstChild.removeChild(old_hand);
-  };
-
-  old_hand = document.getElementById("opp-hand");
-  if (old_hand != null) {
-    document.firstChild.removeChild(old_hand);
-  };
-
-  old_message = document.getElementById("message");
-  if (old_message != null) {
-    document.firstChild.removeChild(old_message);
-  };
+  remove("hand-in-box");
+  remove("opp-hand");
+  remove("message");
+  remove_buttons();
+  set_up_hands();
 }
 
 function choose_hand(evt) {
@@ -149,6 +189,7 @@ game.end_game = function() {
   } else {
     declare_end("draw");
   }
+  status = null;
 }
 
 function declare_end(type) {
@@ -158,6 +199,8 @@ function declare_end(type) {
   message.setAttribute("x", 15);
   message.setAttribute("id", "message");
   document.firstChild.appendChild(message);
+  remove_hands();
+  set_up_buttons();
 }
 
 
