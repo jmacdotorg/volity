@@ -28,7 +28,7 @@ public class RPCRequester {
    * @throws IllegalStateException if the connection has not been authenticated
    */
   public RPCRequester(XMPPConnection connection, String responderJID) {
-    if (!connection.isAuthenticated())
+    if (connection == null || !connection.isAuthenticated())
       throw new IllegalStateException("Not logged in.");
     this.connection = connection;
     this.responderJID = responderJID;
@@ -54,12 +54,13 @@ public class RPCRequester {
   }
 
   /**
-   * Invoke a remote method and wait for the response.
+   * Invoke a remote method and wait 5 seconds for the response.
    * @param methodName the name of the remote method
    * @param params the list of method parameters
    * @return the result of the remote method invocation
    * @throws XMPPException if there was an XMPP error
-   * @throws RPCException if the remote method resulted in a fault response
+   * @throws RPCException if the remote method resulted in a fault
+   *                      or timed out
    */
   public Object invoke(String methodName, List params)
     throws XMPPException, RPCException
@@ -75,8 +76,10 @@ public class RPCRequester {
 	  }
 	});
     connection.sendPacket(request);
-    RPCResponse response = (RPCResponse) collector.nextResult(); // blocks
+    RPCResponse response = (RPCResponse) collector.nextResult(5000);
     collector.cancel();
+    if (response == null)
+      throw new RPCException(1, "Timed out waiting for response.");
     XMPPError error = response.getError();
     if (error != null)
       throw new XMPPException(error);
