@@ -77,7 +77,7 @@ sub rpc_draw_card {
 sub rpc_start_turn {
   my $self = shift;
   my ($player) = @_;
-  if ($player eq $self->name) {
+  if ($player eq $self->nickname) {
     $self->take_turn;
   }
 }
@@ -117,7 +117,7 @@ sub take_turn {
 			   methodname=>"game.play_card",
 			   args=>[$card],
 			  });
-  if ($play_rank == 8) {
+  if ($play_rank eq '8') {
     # We just played an eight. So we must follow up with a suit choice.
     # We'll declare our best suit.
     my $declaration_suit = ($self->evaluate_suits)[0];
@@ -145,20 +145,25 @@ sub choose_card_to_play {
   my ($match_rank, $match_suit) = $self->split_card($match_card);
   my $match_suit_value = $self->{suit_rank}->{$match_suit};
   $self->logger->debug("I must match the suit $match_suit or the rank $match_rank.");
+
   #### Seek a suit-switch...
   # Find the most valuable card among the rank-matches.
   my @rank_matches = keys(%{$self->{by_rank}->{$match_rank}});
   if (@rank_matches) {
+#      warn "I see rank matches.\n";
     my $best_rank_match;
     my $best_rank_match_value = 0;
     for my $rank_match (@rank_matches) {
       my ($rank_match_rank, $rank_match_suit) = $self->split_card($rank_match);
       if ($self->{suit_rank}->{$rank_match_suit} > $best_rank_match_value) {
+#	  warn "Aha, $rank_match_suit seems good.";
 	$best_rank_match = $rank_match;
 	$best_rank_match_value = $self->{suit_rank}->{$rank_match_suit};
       }
     }
-    if ($best_rank_match_value > $match_suit_value) {
+      
+    if (($best_rank_match_value > $match_suit_value) or 
+	(not(keys(%{$self->{by_suit}->{$match_suit}}))) ) {
       $self->logger->debug("I will match ranks with $best_rank_match.");
       return $best_rank_match;
     }
@@ -191,6 +196,7 @@ sub choose_card_to_play {
 sub add_card {
   my $self = shift;
   my ($card) = @_;
+#  warn "Adding a $card.\n";
   my ($rank, $suit);
   unless (($rank, $suit) = $self->split_card($card)) {
     $self->expire("This doesn't look like a card: $card");
@@ -297,7 +303,7 @@ sub find_highest_card_in_suit {
   my $self = shift;
   my ($suit) = @_;
   # We skip eights, since they're not part of any suit, in our reckoning.
-  foreach (qw(K Q J 10 9 7 6 5 4 3 2)) {
+  foreach (qw(K Q J 10 9 7 6 5 4 3 2 A)) {
     my $card = "$_$suit";
     if (exists($self->{cards}->{$card})) {
       return $card;
