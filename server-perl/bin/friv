@@ -335,7 +335,7 @@ sub cmd_start_game {
                            id=>$rpc_id,
                            to=>$user->referee_jid,
                            methodname=>'start_game',
-                           response=>'start_game',
+                           handler=>'start_game',
                           }
                          );
 }
