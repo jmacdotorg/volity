@@ -1,3 +1,11 @@
+0.4.1
+
+	- Bugfix: Wasn't requesting disco-info on multiple UI files
+          properly. Now it is.
+
+	- Started to implement player-to-player invitations. See the
+	  "invite" and "accept" commands in Friv.
+
 0.4.0
 
 	- Expanded the Bot base class's usefulness.
