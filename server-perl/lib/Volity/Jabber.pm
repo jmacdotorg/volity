@@ -27,6 +27,8 @@ use Carp;
 The roster should be easier to use, by way of more methods. Make
 methods for retrieving the online and offline JIDS.
 
+=end TODO
+
 =cut
 
 =head1 NAME
@@ -202,62 +204,62 @@ After connection, this will return the connection's JID.
 
 Like C<jid>, except it returns the non-resource part of the JID. (e.g. C<foo@bar.com> versus C<foo@bar.com/bazzle>.)
 
+=back
+
 =cut
 
 use fields qw(kernel alias host port user resource password jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification);
 
 sub initialize {
-  my $self = shift;
-#  unless (defined($self->user)) {
-#    croak("You have to initialize this object with a Jabber username!");
-#  }
-  $self->{kernel} = $poe_kernel;
-  $self->{port} ||= 5222;
-  $self->logger->debug("STARTING init. Password is " . $self->password);
-  POE::Session->create(
-		       object_states=>
-		       [$self=>
-			[qw(jabber_iq jabber_presence _start jabber_message input_event init_finish error_event)],
-		       ],
-		      );
-  # Weaken some variables to prevent circularities & such.
-  foreach (qw(kernel)) {
-    weaken($self->{$_});
-  }
+    my $self = shift;
+    warn "Init called on $self.\n";
+    $self->{kernel} = $poe_kernel;
+    $self->{port} ||= 5222;
+    $self->logger->debug("STARTING init. Password is " . $self->password);
+    POE::Session->create(
+			 object_states=>
+			 [$self=>
+			  [qw(jabber_iq jabber_presence _start jabber_message input_event init_finish error_event)],
+			  ],
+			 );
+    # Weaken some variables to prevent circularities & such.
+    foreach (qw(kernel)) {
+	weaken($self->{$_});
+    }
 
-  foreach (qw(user host resource)) {
-      unless ($self->$_) {
-	  die "Failed to make a Jabber connection with $self, because the $_ field is empty.";
-      }
-  }
-
-  $self->jid(sprintf("%s@%s/%s", $self->user, $self->host, $self->resource));
-  $self->rpc_parser(RPC::XML::Parser->new);
-  $self->default_language('en') unless defined($self->default_language);
-
-  # Give initial values to instance variables what needs 'em.
-  $self->{query_handlers} = {
-			     'jabber:iq:roster'=>{
-						  result => 'receive_roster',
-						  set => 'update_roster',
-						 },
-			     'http://jabber.org/protocol/disco#items'=>{
-				  get    => 'handle_disco_items_request',
-				  result => 'receive_disco_items',
-								       },
-			     'http://jabber.org/protocol/disco#info'=>{
-				  get    => 'handle_disco_info_request',
-				  result => 'receive_disco_info',
-							              },
-			     'jabber:iq:register'=>{
-				  error  => 'receive_registration_error'
-						   },
-			  };
-
-  $self->{iq_notification} = {};
-  $self->{last_id} = 0;
-
-  return $self;
+    foreach (qw(user host resource)) {
+	unless ($self->$_) {
+	    die "Failed to make a Jabber connection with $self, because the $_ field is empty.";
+	}
+    }
+    
+    $self->jid(sprintf("%s@%s/%s", $self->user, $self->host, $self->resource));
+    $self->rpc_parser(RPC::XML::Parser->new);
+    $self->default_language('en') unless defined($self->default_language);
+    
+    # Give initial values to instance variables what needs 'em.
+    $self->{query_handlers} = {
+	'jabber:iq:roster'=>{
+	    result => 'receive_roster',
+	    set => 'update_roster',
+	},
+	'http://jabber.org/protocol/disco#items'=>{
+	    get    => 'handle_disco_items_request',
+	    result => 'receive_disco_items',
+	},
+	'http://jabber.org/protocol/disco#info'=>{
+	    get    => 'handle_disco_info_request',
+	    result => 'receive_disco_info',
+	},
+	'jabber:iq:register'=>{
+	    error  => 'receive_registration_error'
+	    },
+	    };
+    
+    $self->{iq_notification} = {};
+    $self->{last_id} = 0;
+    
+    return $self;
 }
 
 sub set_iq_notification {
@@ -357,7 +359,8 @@ sub error_event {
 =head2 Element-handling methods
 
 All these object methods are called with a single argument: the XML
-node that triggered them.
+node that triggered them. See L<POE::Filter::XML::Node> for more about
+this node object's API.
 
 =over
 
@@ -368,8 +371,6 @@ Called when a presence element is received.
 =cut
 
 sub jabber_presence { }
-
-# XXX Hmmn, not sure what these do now. ;b
 
 sub jabber_authed { }
 
@@ -496,6 +497,25 @@ sub jabber_message {
   $self->$method($info_hash);
   $self->logger->debug( "Done delegating to $method." );
 }
+
+The following related methods handle specefic applicationes of the
+<<iq>> element. As with C<jabber_iq>, the single argument in every
+case is a POE::Filter::XML::Node object representing the triggering
+XMPP <<iq>> element.
+
+=item handle_disco_items
+
+=item handle_disco_info
+
+=item handle_disco_items_request
+
+=item handle_disco_info_request
+
+Define these methods in your subclass to let it respond to Jabber
+service discovery (JEP-0030) requests and responses. The first two
+methods handle other entities' response to requests that this one
+sent; the latter two handle entities seeking disco information on this
+object.
 
 =back
 
@@ -646,7 +666,7 @@ sub handle_query_element_ns {
   }  
   return unless defined($query_ns);
 
-  $self->logger->debug("In handle_query_element_ns, for $query_ns...");
+  $self->logger->debug("I am $self in handle_query_element_ns, for $query_ns...");
   return unless defined($query_ns);
   return unless defined($self->query_handlers);
   return unless defined($self->query_handlers->{$query_ns});
@@ -679,8 +699,6 @@ sub handle_query_element_ns {
   }
 }
     
-
-
 ################################
 # Jabber element-sending methods
 ################################
@@ -884,6 +902,64 @@ sub send_message {
   $self->post_node($message);
 }
 
+=head2 send_query($args_hashref)
+
+Send a Jabber <<query>> element, wrapped in an <<iq>> packet. The single argument is a hashref describing the query to send, and can take the following keys:
+
+=over
+
+=item to
+
+The JID that this query will be sent to.
+
+=item id
+
+The ID attribute attached to the enfolding <<iq>> envelope.
+
+=item type
+
+The sort of <<iq>> this will be, e.g. C<set> or C<result>.
+
+=item query_ns
+
+The XML namespace to attach to the query. It's usually important to
+set this to some value, since it lets the receiver know which Jabber
+application the query applies to. For instance, a MUC configuration
+form query would set this to "http://jabber.org/protocol/muc#owner",
+as per JEP-0045.
+
+=item content
+
+An anonymous array containing POE::Filter::XML::Node objects (or
+objects made from a subclass thereof), to be added as children to the
+outgoing query.
+
+=back
+
+=cut
+
+# send_query: accept a config hash, and send of a query element of a certain
+# NS, maybe with a payload.
+sub send_query {
+    my $self = shift;
+    my ($config) = @_;
+    warn "**Sending a query!!\n";
+    my $iq = POE::Filter::XML::Node->new('iq');
+    foreach (qw(to from id type)) {
+	$iq->attr($_=>$$config{$_});
+    }
+    my $query = $iq->insert_tag('query');
+    $query->attr(xmlns=>$$config{query_ns});
+    if ($$config{content}) {
+	for my $kid (@{$$config{content}}) {	    
+	    $query->insert_tag($kid);
+	}
+    }
+    warn "**Sent.\n";
+    warn $iq->to_str;
+    $self->post_node($iq);
+}
+
 =head2 join_muc($args_hashref)
 
 Join a multi-user conference (MUC). The single argument is a hashref with the following keys:
@@ -970,18 +1046,6 @@ These all set sub-elements on the outgoing presence element. See the XMPP-IM pro
 
 =back
 
-=begin not_yet
-
-=item x
-
-A POE::Filter::XML::Node object representing a Jabber <<x/>> element, for presence elements carrying additional payload.
-
-=item error
-
-A POE::Filter::XML::Node object representing a Jabber <<error/> element.
-
-=end not_yet
-
 You can leave out the hashref entirely to send a blank <<presence/>>
 element.
 
@@ -1023,6 +1087,14 @@ sub insert_localized_tags {
   }
 }
 
+=head2 request_roster
+
+Requests the user's roster from its Jabber server. Takes no arguments.
+
+This will result in a new roster object becoming available under the C<roster> accessor method. See L<"Volity::Jabber::Roster"> for this object's API.
+
+=cut
+
 sub request_roster {
   my $self = shift;
   my $iq = POE::Filter::XML::Node->new('iq');
@@ -1054,38 +1126,6 @@ sub receive_roster {
   # XXX EXPERIMENTAL
   # Send presence after receipt of roster.
   $self->send_presence;
-}
-
-# add_item_to_roster: Useful for both adding new stuff to the roster,
-# and updating existing items. The JID, as always, is the key value.
-sub add_item_to_roster {
-  my $self = shift;
-  unless (defined($self->roster)) {
-    croak("You must receive a roster from the server before you can modify it. Try calling request_roster() first.");
-  }
-  my $iq = POE::Filter::XML::Node->new('iq');
-  $iq->attr(type=>'set');
-  my $item = $iq->insert_tag('query', [xmlns=>'jabber:iq:roster'])->insert_tag('item');
-  my ($item_hash) = @_;
-  foreach (qw(jid name subscription)) {
-    $item->attr($_=>$$item_hash{$_}) if defined($$item_hash{$_});
-  }
-  if (defined($$item_hash{groups})) {
-    $$item_hash{groups} = [$$item_hash{groups}] unless ref($$item_hash{groups});
-    for my $group_name (@{$$item_hash{groups}}) {
-      $item->insert_tag('group')->data($group_name);
-    }
-  }
-  $self->post_node($iq);
-}
-
-# XXX Unimplemented!! Because I don't care yet!!
-sub remove_item_from_roster {
-  my $self = shift;
-  unless (defined($self->roster)) {
-    croak("You must receive a roster from the server before you can modify it. Try calling request_roster() first.");
-  }
-
 }
 
 sub update_roster {
@@ -1121,6 +1161,75 @@ sub update_roster {
   }
 }
 
+=head2 request_disco_info ($args_hashref)
+
+Request service-discovery info from a JID/node combination. The
+server's answer will trigger your module's C<receive_disco_info>
+callback method (see L<"CALLBACK METHODS">).
+
+The argument hashref can contain the following keys:
+
+=over
+
+=item to
+
+A JID that the request will be sent to.
+
+=item node
+
+An optional string, specifying the node of the given JID.
+
+=item id
+
+The ID of this request.
+
+=back
+
+=cut
+
+sub request_disco_info {
+  my $self = shift;
+  my ($info) = @_;
+  my $iq = POE::Filter::XML::Node->new('iq');
+  $iq->attr(type=>'get');
+  if (not($info) or not(ref($info) eq 'HASH')) {
+    croak("You must call request_disco with a hashref argument.");
+  }
+  unless ($$info{to}) {
+    croak("The hash argument to request_disco() must contain at least a 'to' key, with a JID value.");
+  }
+  $iq->attr(to=>$$info{to});
+  $iq->attr(id=>$$info{id}) if defined($$info{id});
+  my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#info"]);
+  $query->attr(node=>$$info{node}) if defined($$info{node});
+  $self->post_node($iq);
+}
+
+=head2 request_disco_items ($args_hashref)
+
+Request service-discovery items from a JID/node combination. The
+server's answer will trigger your module's C<receive_disco_items>
+callback method (see L<"CALLBACK METHODS">).
+
+The argument hashref can contain the following keys:
+
+=over
+
+=item to
+
+A JID that the request will be sent to.
+
+=item node
+
+An optional string, specifying the node of the given JID.
+
+=item id
+
+The ID of this request.
+
+=back
+
+=cut
 
 sub request_disco_items {
   my $self = shift;
@@ -1140,23 +1249,6 @@ sub request_disco_items {
   $self->post_node($iq);
 }
 
-sub request_disco_info {
-  my $self = shift;
-  my ($info) = @_;
-  my $iq = POE::Filter::XML::Node->new('iq');
-  $iq->attr(type=>'get');
-  if (not($info) or not(ref($info) eq 'HASH')) {
-    croak("You must call request_disco with a hashref argument.");
-  }
-  unless ($$info{to}) {
-    croak("The hash argument to request_disco() must contain at least a 'to' key, with a JID value.");
-  }
-  $iq->attr(to=>$$info{to});
-  $iq->attr(id=>$$info{id}) if defined($$info{id});
-  my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#info"]);
-  $query->attr(node=>$$info{node}) if defined($$info{node});
-  $self->post_node($iq);
-}
 
 sub receive_disco_info {
   my $self = shift;
@@ -1216,38 +1308,51 @@ sub send_disco {
 	croak("You must call send_disco_$type with a hashref argument.");
     }
     
-    my $iq = POE::Filter::XML::Node->new('iq');
-    $iq->attr(type=>'result');
-    $iq->attr(id=>$$info{id}) if (defined($$info{id}));
-    if ($$info{to}) {
-	$iq->attr(to=>$$info{to});
-    } else {
-	$self->expire("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
-    }
+#    my $iq = POE::Filter::XML::Node->new('iq');
+#    $iq->attr(type=>'result');
+#    $iq->attr(id=>$$info{id}) if (defined($$info{id}));
+#    if ($$info{to}) {
+#	$iq->attr(to=>$$info{to});
+#    } else {
+#	$self->expire("The hash argument to send_disco_$type contain at least a 'to' key, with a JID value.");
+#    }
     
-    my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
+#    my $query = $iq->insert_tag('query', [xmlns=>"http://jabber.org/protocol/disco#$type"]);
+    
+    my @query_content;
+
     if (defined($$info{items})) {
 	my @items_to_add = ref($$info{items})? @{$$info{items}} : ($$info{items});
 	for my $item (@items_to_add) {
 	    unless ($item->isa("Volity::Jabber::Disco::Node")) {
 		croak("The items you add must be objects belonging to one of the Volity::Jabber::Disco::* classes. But you passed me this: $item");
 	    }
-	    $query->insert_tag($item);
+#	    $query->insert_tag($item);
+	    push (@query_content, $item);
 	}
     }
     
     # There may also be a data form, as per JEP-0128.
     if (defined($$info{fields})) {
-	my $form = $query->insert_tag('x', [xmlns=>'jabber:x:data', type=>'result']);
+	my $form = Volity::Jabber::Form->new({type=>'result'});
 	my @fields_to_add = ref($$info{fields})? @{$$info{fields}} : ($$info{fields});
 	for my $field (@fields_to_add) {
 	    unless ($field->isa("Volity::Jabber::Form::Field")) {
 		croak("The fields you add must be objects belonging to the Volity::Jabber::Form::Field class. But you passed me this: $field");
 	    }
-	    $form->insert_tag($field);
 	}
+	$form->fields(@fields_to_add);
+	push (@query_content, $form);
     }
-    $self->post_node($iq);
+
+#    $self->post_node($iq);
+    $self->send_query({
+	to=>$$info{to},
+	id=>$$info{id},
+	type=>'result',
+	content=>\@query_content,
+	query_ns=>"http://jabber.org/protocol/disco#$type",
+    });
 }
 
 sub send_registration {
@@ -1303,56 +1408,23 @@ sub receive_registration_error {
 # Stub:
 sub handle_registration_error { }
 
-=head2 send_form
-
-Send a data-gathering form (compliant with JEP-0004). The single argument is a hashref with the following keys:
-
-=over
-
-=item to
-
-The JID to which this form shall be sent.
-
-=item type
-
-The type of form to send. Should be a URI appropriate to this form.
-
-=item fields
-
-A hashref containing the form's fields and their submitted values.
-
-The values can be simple scalars, in which case they're interpreted to be the simple values of unlabeled text fields, or they can be hash references, which allows more fine-tuned control over the fields. In the latter case, the hash reference may contain any or all of the following keys:
-
-=over
-
-=item value
-
-The actual data value for this field.
-
-=item type
-
-The type of field.
-
-=item label
-
-The human-readable label to use with this field.
-
-=item options
-
-An array reference specifying the options that a C<list-single> or
-C<list-multi> type of field can offer. Each list element can either be
-a simple scalar (in which case it will act as both label and option
-value), or list references (whose first element is the label to use,
-and whose second element is the value that this label represents).
-
-=back
-
-=back
-
-=cut
+sub send_form {
+    my $self = shift;
+    my ($config) = @_;
+    my $form = $$config{form};
+    unless ($form->isa("Volity::Jabber::Form")) {
+	Carp::croak("The argument to send_form must be an object of class Volity::Jabber::Form.");
+      }
+    my $iq = POE::Filter::XML::Node->new('iq');
+    foreach (qw(from to id)) {
+	$iq->attr($_=>$$config{$_}) if defined($$config{$_});
+    }
+    $iq->attr(type=>'set');
+    $self->post_node($iq);
+}
 
 # send_form: Sends a form, as per JEP-0004.
-sub send_form {
+sub old_send_form {
   my $self = shift;
   my ($config) = @_;
   my $iq = POE::Filter::XML::Node->new('iq');
@@ -1450,149 +1522,26 @@ sub basic_jid {
   return undef;
 }
 
-=head1 NOTES
+=head1 SUPPLEMENTARY PACKAGES
 
-This class was originally written with the Volity internet game system
-in mind, but it doesn't really have much Volity-specific code in
-it. It might end up leaving the Volity namespace, if it stays as such
-for a long time.
-
-=head1 SEE ALSO
-
-=over 
-
-=item *
-
-Jabber Protocol information: http://www.jabber.org/protocol/
-
-=item *
-
-L<RPC::XML>
-
-=back
-
-=head1 AUTHOR
-
-Jason McIntosh <jmac@jmac.org>
-
-=head1 COPYRIGHT
-
-Copyright (c) 2003 by Jason McIntosh.
-
-=cut
-
-1;
-
-=begin OLD_CRUFT
-
-package Volity::Jabber::Form;
-
-use warnings; use strict;
-use PXR;
-
-sub new_from_element {
-  my $invocant = shift;
-  my $class = ref($invocant) || $invocant;
-  my ($x_element) = @_;
-  unless (defined($x_element) or $x_element->isa("POE::Filter::XML::Node") or $x_element->name eq 'x') {
-    croak("You must call new_from_element with a POE::Filter::XML::Node representing an 'x' element.");
-  }
-  my $self = bless ({}, $class);
-  $self->{x} = $x_element;
-  return $self;
-}
-
-sub items {
-  my $self = shift;
-  my @items;
-  foreach ($self->{x}->get_tag('item')) {
-    push (@items, Volity::Jabber::Form::Item->new_from_element($_));
-  }
-  return @items;
-}
-
-sub fields { $_[0]->call_item_method('fields', @_) }
-sub field_with_var { $_[0]->call_item_method('field_with_var', @_) }
-
-sub call_item_method {
-  my $self = shift;
-  my @items = $self->items;
-  my $method = shift;
-  if (@items > 1) {
-    croak("Can't call $method on $self, since it contains more than one item.");
-  } elsif (@items == 0) {
-    croak("Can't call $method on $self, since it contains no items.");
-  }
-  return $items[0]->$method(@_);
-}
-
-package Volity::Jabber::Form::Item;
-
-use warnings; use strict;
-use PXR;
-
-sub new_from_element {
-  my $invocant = shift;
-  my $class = ref($invocant) || $invocant;
-  my ($item_element) = @_;
-  unless (defined($item_element) or $item_element->isa("POE::Filter::XML::Node") or $item_element->name eq 'item') {
-    croak("You must call new_from_element with a POE::Filter::XML::Node representing an 'item' element.");
-  }
-  my $self = bless ({}, $class);
-  $self->{item} = $item_element;
-  return $self;
-}
-
-sub fields {
-  my $self = shift;
-  my @fields;
-  foreach ($self->{item}->get_tag('field')) {
-    push (@fields, Volity::Jabber::Form::Item->new_from_element($_));
-  }
-  return @fields;
-}
-
-sub field_with_var {
-  my $self = shift;
-  my ($var) = @_;
-  my $field = grep($_->var eq $var, $self->fields);
-  return $field;
-}
-
-package Volity::Jabber::Form::Field;
-
-sub new_from_element {
-  my $invocant = shift;
-  my $class = ref($invocant) || $invocant;
-  my ($field_element) = @_;
-  unless (defined($field_element) or $field_element->isa("POE::Filter::XML::Node") or $field_element->name eq 'field') {
-    croak("You must call new_from_element with a POE::Filter::XML::Node representing an 'field' element.");
-  }
-  my $self = bless ({}, $class);
-  $self->{field} = $field_element;
-  return $self;
-}
-
-sub value {
-  my $self = shift;
-  return $self->{field}->get_tag('value')? $self->get_tag('value')->data: undef;
-}
-
-sub var {
-  my $self = shift;
-  return $self->{field}->attr('var');
-}
-
-sub label {
-  my $self = shift;
-  return $self->{field}->attr('label');
-}
-
-=end OLD_CRUFT
+This module also include a handful of supplementary packages which
+define some helper objects. You'll usually use them in conjuction with
+the methods described above.
 
 =cut
 
 package Volity::Jabber::Roster;
+
+=head2 Volity::Jabber::Roster
+
+Objects of this class represent a Jabber roster, and its creation is
+usually the result of a call to the C<request_roster> method of a
+C<Volity::Jabber> object. Roster objects have methods appropriate for
+storing and grouping Jabber IDs (JIDs), as follows:
+
+=over
+
+=cut
 
 use warnings;
 use strict;
@@ -1607,6 +1556,17 @@ sub initialize {
   $self->{jids_by_name} = {};
   return $self;
 }
+
+=item add_item ($item_hash)
+
+Adds to the roster the JID described by the given hash reference. The
+hash I<must> include a C<jid> key, whose value is the JID to add to
+the roster. It can optionally contain a C<name>, whose value is a
+nickname to associate with this roster JID, and a C<group> key, whose
+value is an anonymous list of all the roster group names that this JID
+should be filed under.
+
+=cut
 
 sub add_item {
   my $self = shift;
@@ -1628,6 +1588,12 @@ sub add_item {
   $self->{jids}->{$$item_hash{jid}} = 1;
 }
 
+=item remove_item ($jid)
+
+Removes the given JID from the roster.
+
+=cut
+
 sub remove_item {
   my $self = shift;
   my ($jid) = @_;
@@ -1645,15 +1611,33 @@ sub remove_item {
   delete($self->{jids}->{$jid});
 }
 
+=item jids
+
+Returns a list of all the JIDs on the roster.
+
+=cut
+
 sub jids {
   my $self = shift;
   return keys(%{$self->{jids}});
 }
 
+=item ungrouped_jids
+
+Returns a list of all the JIDs which do not belong to any group.
+
+=cut
+
 sub ungrouped_jids {
   my $self = shift;
   return keys(%{$self->{groups}->{_NONE}});
 }
+
+=item jids_in_group ($group)
+
+Returns a list of all the JIDs which belong to the given group.
+
+=cut
 
 sub jids_in_group {
   my $self = shift;
@@ -1666,6 +1650,12 @@ sub jids_in_group {
   }
 }
 
+=item jid_for_name ($name)
+
+Returns the JID corresponding to the given nickname, if any.
+
+=cut
+
 sub jid_for_name {
   my $self = shift;
   my ($name) = @_;
@@ -1675,6 +1665,12 @@ sub jid_for_name {
   return $self->{jids_by_name}->{$name};
 }
 
+=item name_for_jid ($jid)
+
+Returns the nickname associated with the given JID, if any.
+
+=cut
+
 sub name_for_jid {
   my $self = shift;
   my ($jid) = @_;
@@ -1683,6 +1679,12 @@ sub name_for_jid {
   }
   return $self->{names_by_jid}->{$jid};
 }
+
+=item groups_for_jid ($jid)
+
+Returns a list of the groups that the given JID belongs to, if any.
+
+=cut
 
 sub groups_for_jid {
   my $self = shift;
@@ -1696,6 +1698,13 @@ sub groups_for_jid {
     return ();
   }
 }
+
+=item has_jid ($jid)
+
+Returns C<1> if the given jid is on the roster, and 0 if it isn't.
+
+=cut
+
 sub has_jid {
   my $self = shift;
   my ($jid) = @_;
@@ -1708,6 +1717,28 @@ sub has_jid {
     return 0;
   }
 }
+
+=item presence ($jid, {type=>$presence_type)
+ 
+Gets or sets a hash of information about the given JID's presence.
+Note that the roster object doesn't listen to presence and do this all by
+itself; this method has to be called from outside.
+
+The JID in the required first argument may include a resource
+string. If so, the method will set and return presence information
+only for that one JID / resource combination.
+
+At this time, only a single key, C<type>, is supported in the optional
+second argument. If present, it sets the presence of the given JID
+(and resource, if provided) to that key's value, e.g. "unavailable".
+
+The return value is a list of anonymous hashes describing all known
+presence information about this JID. Each hash has two keys,
+C<resource> and C<type>.
+
+=back
+
+=cut
 
 # presence: get or set a hashful of information about the given JID's presence.
 # Note that the roster object doesn't listen to presence and do this all by
@@ -1780,12 +1811,52 @@ sub get {
     return $self->attr($key);
 }
 
+=head2 Volity::Jabber::Disco::Item
+
+This object represents a Jabber Service Discovery item. A subclass of
+POE::XML::Node, it may be inserted directly into disco responses you
+are building, just as <<item>> elements in disco responses you receive
+may be re-blessed into this class.
+
+It contains the following simple accessor methods, whose ultimate fucntion is described in JEP-0030:
+
+=over
+
+=item jid
+
+=item node
+
+=item name
+
+=back
+
+=cut
+
 package Volity::Jabber::Disco::Item;
 
 use warnings; use strict;
 use base qw(Volity::Jabber::Disco::Node);
 
 __PACKAGE__->mk_accessors(qw(jid node name));
+
+=head2 Volity::Jabber::Disco::Identity
+
+Just like Volity::Jabber::Disco::Item, except for disco <<identity>>
+elements.
+
+It contains the following simple accessor methods:
+
+=over
+
+=item category
+
+=item type
+
+=item name
+
+=back
+
+=cut
 
 package Volity::Jabber::Disco::Identity;
 
@@ -1794,6 +1865,21 @@ use base qw(Volity::Jabber::Disco::Node);
 
 __PACKAGE__->mk_accessors(qw(category type name));
 
+=head2 Volity::Jabber::Disco::Feature
+
+Just like Volity::Jabber::Disco::Item, except for disco <<feature>>
+elements.
+
+It contains the following simple accessor methods (er, method):
+
+=over
+
+=item var
+
+=back
+
+=cut
+
 package Volity::Jabber::Disco::Feature;
 
 use warnings; use strict;
@@ -1801,12 +1887,263 @@ use base qw(Volity::Jabber::Disco::Node);
 
 __PACKAGE__->mk_accessors(qw(var));
 
+=head2 Volity::Jabber::Form
+
+B<Caution: incomplete implemntation.>
+
+A class for Jabber data forms, as defined by JEP-0004. An object of
+this class is useful to stick under the C<content> key of of the
+C<send_query> argument (see L<"ACTION METHODS">.
+
+Simple accessors:
+
+=over
+
+=item type
+
+=item title
+
+=item instructions
+
+=back
+
+Other accessors:
+
+=over
+
+=item fields
+
+Returns, as a list of Volity::Jabber::Form::Field objects, the form's
+fields, with any values they may contain.
+
+Optionally call with an array of Volity::Jabber::Form::Field objects
+to first set the form's fields.
+
+=item clear_fields
+
+Erases all the form's fields.
+
+=back
+
+Other methods:
+
+=over
+
+=item invalid_fields
+
+Returns a list of Volity::Jabber::Form::Field objects set as
+C<required> but which have no values set.
+
+=back
+
+=cut
+
+package Volity::Jabber::Form;
+
+use warnings; use strict;
+use base qw(Volity::Jabber::Disco::Node);
+
+__PACKAGE__->mk_accessors(qw(type title instructions));
+
+# Define which accessors get child elements, not attributes.
+our %elements = (
+		 title=>1,
+		 instructions=>1,
+		 );
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->attr(xmlns=>"jabber:x:data");
+    $self->name('x');
+    return $self;
+}
+
+sub set {
+    my $self = shift;
+    my ($key, $value) = @_;
+    if (exists($elements{$key})) {
+	my $kid = $self->get_tag($key);
+	unless ($kid) {
+	    $kid = $self->insert_tag($key);
+	}
+	$kid->data($value);
+    } else {
+	return $self->SUPER::set(@_);
+    }
+}
+
+sub get {
+    my $self = shift;
+    my ($key) = @_;
+    if (exists($elements{$key})) {
+	if (my $kid = $self->get_tag($key)) {
+	    return $kid->data;
+	} else {
+	    return undef;
+	}
+    } else {
+	return $self->SUPER::get(@_);
+    }
+}
+
+sub fields {
+    my $self = shift;
+    my @fields = @_;
+    if (@fields) {
+	$self->clear_fields;
+	if (grep(not($_->isa("Volity::Jabber::Form::Field")), @fields)) {
+	    die "Arguments to fields() must all be Volity::Jabber::Form::Field  objects. I got these instead: @fields";
+	}
+	foreach (@fields) { $self->insert_tag($_) }
+    }
+    my @return_fields = map(bless($_, "Volity::Jabber::Form::Field"), grep(defined($_), $self->get_tag('field')));
+    return @return_fields;
+}
+
+sub clear_fields {
+    my $self = shift;
+    for my $field (grep(defined($_), $self->get_tag('field'))) {
+	$self->detach_child($field);
+    }
+}
+
+sub invalid_fields {
+    my $self = shift;
+    return grep(not($_->is_valid), $self->fields);
+}
+
+=head2 Volity::Jabber::Form::Field
+
+Just like Volity::Jabber::Disco::Item, except for JEP-0004 form-field
+elements. Whoah, bet you didn't see that curveball coming, did you?
+
+It contains the following simple accessor methods:
+
+=over
+
+=item label
+
+=item var
+
+=item type
+
+=item desc
+
+=item required
+
+=back
+
+And the slightly less-simple accessors:
+
+=over
+
+=item values (@values)
+
+If a list of arguments is provided, it becomes the values for this form field.
+
+Returns a list of this field's current values.
+
+=item clear_values
+
+Clears this field's list of values.
+
+=item options (@options)
+
+If a list of arguments is provided, it becomes the options for this
+form field. Each argument should be an anonymous hash, with a
+C<values> key set to an anonymouos list of the values this option
+allows, and an optional C<label> key.
+
+Returns a list of this field's current options, using the anonymous
+hash format described above.
+
+=item clear_options
+
+Clears the options from this form element.
+
+=back
+
+Other methods:
+
+=over
+
+=item is_required ($is_required)
+
+Set to a true value to define this field as C<required>. Call with a
+false (but defined) value to set the field to not-C<required> (which
+is the initial state of all new objects of this class).
+
+Returns the current required-state of this object, expressed as 0 or 1.
+
+=item is_valid
+
+Returns 0 if this field is set C<required> and contains no values; 1
+otherwise.
+
+=back
+
+=cut
+
 package Volity::Jabber::Form::Field;
 
 use warnings; use strict;
 use base qw(Volity::Jabber::Disco::Node);
 
-__PACKAGE__->mk_accessors(qw(label var));
+__PACKAGE__->mk_accessors(qw(label var type));
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+    $self->name('field');
+    return $self;
+}
+
+sub desc {
+    my $self = shift;
+    my $desc_node = $self->get_tag('desc');
+    if (exists($_[0])) {
+	my ($desc) = @_;
+	$self->detach_child($desc_node) if defined($desc_node);
+	$self->insert_tag('desc')->data($desc);
+	return $desc;
+    } else {
+	if (defined($desc_node)) {
+	    return $desc_node->data;
+	} else {
+	    return undef;
+	}
+    }
+}
+	
+sub is_required {
+    my $self = shift;
+    my ($required) = @_;
+    if (defined($required)) {
+	if ($required) {
+	    $self->insert_tag('required') unless $self->get_tag('required');
+	} else {
+	    if (my $tag = $self->get_tag('required')) {
+		$self->detach_child($tag);
+	    }
+	}
+    }
+    if ($self->get_tag('required')) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+sub is_valid {
+    my $self = shift;
+    if ($self->is_required and not($self->values)) {
+	return 0;
+    } else {
+	return 1;
+    }
+}
+       
 
 # values: Accessor to this field's value elements.
 # Always returns a list of the current values, as simple strings.
@@ -1814,19 +2151,112 @@ sub values {
     my $self = shift;
     my (@values) = @_;
     if (@values) {
+	$self->clear_values;
 	for my $value (@values) {
 	    $self->insert_tag('value')->data($value);
 	}
+	return $self;
     } else {
 	@values = map($_->data, grep(defined($_), $self->get_tag('value')));
     }
     return @values;
 }
 
+# Each member of the @options argument is a hashref with two keys:
+# label: the label of this option
+# values: scalar or anon. array of values.
+sub options {
+    my $self = shift;
+    my (@options) = @_;
+    if (@options) {
+	$self->clear_options;
+	for my $option (@options) {
+	    my $label = $$option{label};
+	    my @values;
+	    if ($$option{values}) {
+		if (ref($$option{values})) {
+		    @values = @{$$option{values}};
+		} else {
+		    @values = ($$option{values});
+		}
+	    }
+	    my $option = $self->insert_tag('option');
+	    $option->attr(label=>$label);
+	    foreach (@values) { $option->insert_tag('value')->data($_) }
+	}
+    } else {
+	for my $option_node ($self->get_tag('option')) {
+	    my $label = $option_node->attr('label');
+	    my @values = $option_node->get_tag('value');
+	    push (@options, {label=>$label, values=>\@values});
+	}
+    }
+    return @options;
+}
+
+
 # clear_values: Drop all the value elements.
 sub clear_values {
     my $self = shift;
-    map ($self->detatch_child($_), $self->get_tag('value'));
+    map ($self->detach_child($_), grep(defined($_), $self->get_tag('value')));
 }
 
+sub clear_options {
+    my $self = shift;
+    map ($self->detach_child($_), $self->get_tag('option'));
+}
+
+################################
+####### POSTSCRIPT (docs only after this point)
+################################
+
+=head1 NOTES
+
+This class was originally written with the Volity internet game system
+in mind, but it doesn't really have much Volity-specific code in
+it. It might end up leaving the Volity namespace, if it stays as such
+for a long time.
+
+=head1 BUGS AND SUCH
+
+JEP-0004 (data forms) is not yet fully implemented, especially where
+handling incoming forms is concerned.
+
+The module is only patchily object-oriented. Some things that I<really
+ought> to have object classes lack them, such as Jabber
+iq/message/presence packets. Future versions of this module. Backwards
+compatibility will be attempted but is not guaranteed. (Therefore,
+modules which subclass from Volity::Jabber should really be specific
+about which version they require.)
+
+=head1 SEE ALSO
+
+=over 
+
+=item *
+
+Jabber Protocol information: http://www.jabber.org/protocol/
+
+=item *
+
+L<RPC::XML>
+
+=item *
+
+L<Volity>
+
+=back
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2003 by Jason McIntosh.
+
+=cut
+
 1;
+
+
