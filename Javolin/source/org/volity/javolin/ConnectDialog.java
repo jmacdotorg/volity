@@ -76,7 +76,6 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         }
     }
 
-
     /**
      * Gets the XMPPConnection holding the connection that was established.
      *

@@ -19,9 +19,14 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
+import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import org.jivesoftware.smack.*;
+import org.volity.client.*;
+import org.volity.jabber.*;
+import org.volity.javolin.chat.*;
 import org.volity.javolin.roster.*;
 
 /**
@@ -35,16 +40,23 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";
     private final static String MENUCMD_QUIT = "Exit";
+    private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
+    private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
 
     private ImageIcon mConnectedIcon;
     private ImageIcon mDisconnectedIcon;
 
+    private JMenuItem mConnectMenuItem;
+    private JMenuItem mQuitMenuItem;
+    private JMenuItem mNewTableAtMenuItem;
+    private JMenuItem mJoinMucMenuItem;
+
     private RosterPanel mRosterPanel;
     private JLabel mConnectedLabel;
-    private JMenuItem mConnectMenuItem;
 
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
+    private java.util.List mMucWindows;
 
     /**
      * Constructor.
@@ -57,6 +69,8 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         setSize(200, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
+
+        mMucWindows = new Vector();
 
         // Handle closing the window to quit the app
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -165,17 +179,28 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getActionCommand() == MENUCMD_CONNECT)
+        if (e.getSource() == mConnectMenuItem)
         {
-            doConnect();
+            if (isConnected())
+            {
+                doDisconnect();
+            }
+            else
+            {
+                doConnect();
+            }
         }
-        else if (e.getActionCommand() == MENUCMD_DISCONNECT)
-        {
-            doDisconnect();
-        }
-        else if (e.getActionCommand() == MENUCMD_QUIT)
+        else if (e.getSource() == mQuitMenuItem)
         {
             doQuit();
+        }
+        else if (e.getSource() == mNewTableAtMenuItem)
+        {
+            doNewTableAt();
+        }
+        else if (e.getSource() == mJoinMucMenuItem)
+        {
+            doJoinMuc();
         }
     }
 
@@ -205,25 +230,34 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
         // Update the UI
         updateUI();
-
     }
 
     /**
-     * Closes the current connection.
+     * Closes the current connection. This method can also be called to clean up the
+     * application state after the connection has been closed or lost via some other
+     * means.
      */
     private void doDisconnect()
     {
-        // Sanity check
-        if (!isConnected())
+        // Close all MUC windows
+        while (mMucWindows.size() > 0)
         {
-            return;
+            MUCWindow mucWin = (MUCWindow)mMucWindows.get(0);
+            mucWin.dispose();
+            mMucWindows.remove(mucWin);
         }
 
-        mConnection.close();
-        mConnection = null;
+        // Close connection if open
+        if (mConnection != null)
+        {
+            mConnection.close();
+            mConnection = null;
+        }
 
+        // Clear the roster panel
         mRosterPanel.setRoster(null);
 
+        // Update UI component states
         updateUI();
     }
 
@@ -234,6 +268,52 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     {
         doDisconnect();
         System.exit(0);
+    }
+
+    /**
+     * Handler for the New Table At... menu item.
+     */
+    private void doNewTableAt()
+    {
+//        try
+//        {
+//            GameServer gameServ = new GameServer(mConnection, "rps@volity.net/volity");
+//            GameTable table = gameServ.newTable();
+//            File script = new File("rps.js");
+//            TableWindow tableWin = new TableWindow(table, "howdy", script);
+//        }
+//        catch (Exception ex)
+//        {
+//            JOptionPane.showMessageDialog(this, ex.toString(),
+//                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+//        }
+    }
+
+    /**
+     * Handler for the Join Multi-user Chat... menu item.
+     */
+    private void doJoinMuc()
+    {
+        JoinMUCDialog joinMucDlg = new JoinMUCDialog(this, mConnection);
+        joinMucDlg.show();
+        MUC mucObj = joinMucDlg.getMUC();
+
+        if (mucObj != null)
+        {
+            MUCWindow mucWin = new MUCWindow(mucObj);
+            mucWin.show();
+            mMucWindows.add(mucWin);
+
+            // Remove the MUC window from the list when it closes
+            mucWin.addWindowListener(
+                new WindowAdapter()
+                {
+                    public void windowClosed(WindowEvent we)
+                    {
+                        mMucWindows.remove(we.getWindow());
+                    }
+                });
+        }
     }
 
     /**
@@ -293,6 +373,9 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                 keyMask));
             setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
         }
+
+        mNewTableAtMenuItem.setEnabled(false); //isConnected());
+        mJoinMucMenuItem.setEnabled(isConnected());
     }
 
     /**
@@ -313,10 +396,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         JOptionPane.showMessageDialog(this, "Connection closed due to exception:\n" +
             ex.toString(), getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
 
-        mConnection = null;
-        mRosterPanel.setRoster(null);
-        updateUI();
-
+        doDisconnect();
     }
 
     /**
@@ -339,14 +419,37 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
         fileMenu.addSeparator();
 
-        JMenuItem menuItem = new JMenuItem(MENUCMD_QUIT);
-        menuItem.addActionListener(this);
-        setPlatformMnemonic(menuItem, KeyEvent.VK_X);
-        fileMenu.add(menuItem);
+        mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
+        mQuitMenuItem.addActionListener(this);
+        setPlatformMnemonic(mQuitMenuItem, KeyEvent.VK_X);
+        fileMenu.add(mQuitMenuItem);
+
+        // Chat menu
+        JMenu chatMenu = new JMenu("Chat");
+        setPlatformMnemonic(chatMenu, KeyEvent.VK_C);
+
+        mJoinMucMenuItem = new JMenuItem(MENUCMD_JOIN_MUC);
+        mJoinMucMenuItem.addActionListener(this);
+        mJoinMucMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J, keyMask));
+        setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_J);
+        chatMenu.add(mJoinMucMenuItem);
+
+        // Game menu
+        JMenu gameMenu = new JMenu("Game");
+        setPlatformMnemonic(gameMenu, KeyEvent.VK_G);
+
+        mNewTableAtMenuItem = new JMenuItem(MENUCMD_NEW_TABLE_AT);
+        mNewTableAtMenuItem.addActionListener(this);
+        mNewTableAtMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
+            keyMask));
+        setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_E);
+        gameMenu.add(mNewTableAtMenuItem);
 
         // Create menu bar
         JMenuBar theMenuBar = new JMenuBar();
         theMenuBar.add(fileMenu);
+        theMenuBar.add(chatMenu);
+        theMenuBar.add(gameMenu);
         setJMenuBar(theMenuBar);
     }
 
