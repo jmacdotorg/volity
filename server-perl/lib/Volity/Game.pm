@@ -181,10 +181,6 @@ sub initialize {
     $self->current_player($self->{players}->[0]);
     $self->create_player_jid_lookup_hash;
   }
-}
-
-sub DESTROY {
-  my $self = shift;
   weaken($self->{referee});
 }
 
@@ -196,18 +192,6 @@ sub AUTOHANDLER {
   } else {
     croak ("Unknown method $AUTOHANDLER");
   }
-}
-
-#################
-# Class methods (mostly for fetching pre-game setup info)
-#################
-
-sub player_class {
-  my $class = shift;
-  if (exists($_[0])) {
-    $player_class = $_[0];
-  }
-  return $player_class;
 }
 
 #################
@@ -301,6 +285,14 @@ sub get_player_with_jid {
   return $player;
 }
 
+# call_ui_function_on_everyone: A convenience method for blasting something
+# at every single player.
+sub call_ui_function_on_everyone {
+  my $self = shift;
+  map($_->call_ui_function(@_), $self->players);
+}
+
+
 ###################
 # Game actions
 ###################
@@ -350,6 +342,13 @@ players.
 =cut
 
 sub start_game { }
+
+sub handle_normal_message { }
+sub handle_groupchat_message { }
+sub handle_chat_message { }
+sub handle_headline_message { }
+sub handle_error_message { }
+
 
 =head1 BUGS
 
