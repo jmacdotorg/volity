@@ -1,3 +1,12 @@
+0.5
+
+	- Lots of new protocol support in both the server modules and
+	Friv, including readiness, table configuration, and enough service
+	discovery response to support the game finder.
+	
+	- Bugfix: The "smart" array hander in Volity.pm's get()
+	  accessor method was actually kind of dumb. It's less so now.
+
 0.4.1
 
 	- Bugfix: Wasn't requesting disco-info on multiple UI files
