@@ -1,5 +1,5 @@
 bin/friv
-bin/server.pl
+bin/volityd
 Build.PL
 lib/Volity.pm
 lib/Volity/Game.pm
