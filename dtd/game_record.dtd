@@ -1,0 +1,25 @@
+<!ELEMENT signed-record (record signature)>
+
+<!ELEMENT signature (#PCDATA)>
+
+<!ELEMENT record (players winners? quitters? end-reason? start-time?
+	          end-time game-uri game-name? server)>
+<!ATTLIST record id ID #IMPLIED
+                 status CDATA #IMPLIED
+                 game-uri CDATA #REQUIRED
+                 >
+<!-- lists of all players, and those who won, and those who bailed -->
+<!ELEMENT players (player+)>
+<!ELEMENT winners (player*)>
+<!ELEMENT quitters (player*)>
+<!-- start-time and end-time: Timestamps describing when the game
+     and ended. -->
+<!ELEMENT start-time (#PCDATA)>
+<!ELEMENT end-time (#PCDATA)>
+
+<!-- game-name: short text description of this game, e.g. "Checkers" -->
+<!ELEMENT game-name (#PCDATA)>
+<!-- server: the server's JID -->
+<!ELEMENT server (#PCDATA)> 
+<!-- player: a player's JID -->
+<!ELEMENT player (#PCDATA)>
