@@ -70,7 +70,6 @@ sub start {
                                   resource=>$heap->{resource},
                                   port=>$heap->{port},
                                   alias=>$heap->{resource},
-                                  debug=>$opts{d} || 0,
                                   user=>$heap->{username},
                                  }
                                 );
@@ -81,7 +80,7 @@ sub start {
 
 sub is_jid {
   my ($jid) = @_;
-  if ($jid =~ /^\w+@\w+(?:\.\w+)*(?:\/\w+)?/) {
+  if ($jid =~ /^[\w-]+@[\w-]+(?:\.[\w-]+)*(?:\/[\w-]+)?/) {
     return $jid;
   } else {
     return;
@@ -250,6 +249,9 @@ sub cmd_debug {
   my ($heap) = $_[HEAP];
   my $user = $heap->{user_obj};
   $heap->{user}->put("Current user object: $user");
+  if ($user->referee_jid) {
+      $heap->{user}->put("Current ref JID: " . $user->referee_jid);
+  }
 }
 
 sub cmd_help {
@@ -785,10 +787,6 @@ The resource to use with the Jabber account. Defaults to 'friv'.
 =item o
 
 The TCP port to connect to. Defaults to 5222 (Jabber's default port).
-
-=item d
-
-Set to a true value to display verbose and perhaps largely meaningless debug messages. Defaults to 0.
 
 =back
 
