@@ -2,7 +2,7 @@
 
 =begin TODO
 
-* Fix history browsing so that the cursor snaps back to the end when ya done.
+* Update the docs to reflect the JS stuff.
 
 =end TODO
 
@@ -13,6 +13,7 @@ use strict;
 
 use POE;
 use POE::Wheel::ReadLine;
+use JavaScript::SpiderMonkey;
 use Getopt::Std;
 use YAML;
 
@@ -53,10 +54,10 @@ sub start {
         InputEvent => 'user_input',
         PutMode => 'immediate',
         );
-   foreach (@cmd_hist) {
-       $heap->{'user'}->addhistory($_);
-   }
-   $heap->{'user'}->get( 'Volity> ' );
+    foreach (@cmd_hist) {
+        $heap->{'user'}->addhistory($_);
+    }
+    $heap->{'user'}->get( 'Volity> ' );
     $heap->{username} = $opts{u};
     $heap->{resource} = $opts{r} || 'friv';
     $heap->{port} = $opts{o} || 5222;
@@ -107,22 +108,47 @@ END {
 
 sub user_input {
     my($heap,$input,$exception) = @_[HEAP, ARG0, ARG1];
+    my $user = $heap->{user_obj};
     if (defined $input) {
         $heap->{'user'}->get('Volity> ');
+        my($cmd,@args) = tokenize($input,{});
+        $cmd = lc( $cmd );
+
+        return if not(defined($cmd)) or $cmd eq '';
+
         $heap->{'user'}->addhistory($input);
         push(@cmd_hist,$input);
-        my($cmd,@args) = tokenize($input,{});
-        if (defined($cmd) and my $sub = __PACKAGE__->can("cmd_$cmd")) {
+
+        if (my $sub = __PACKAGE__->can("cmd_$cmd")) {
             &$sub(@_[0..(ARG0-1)],@args);
-        } elsif (not(defined($cmd)) or $cmd eq '') {
-            # Do nothing.
-        } else {
-            $heap->{'user'}->put("Unknown command: $input");
+            return;
         }
+        if ($heap->{'commands'}) {
+           foreach (@{ $heap->{'commands'} }) {
+               if ( $$_[0] eq $cmd ) {
+                   js_call( $user->js, "referee.$cmd", @args );
+                   return;
+               }
+           }
+        }
+        $heap->{'user'}->put("Unknown command: $input");
     } else {
         $heap->{'user'}->put("Exception: $exception");
         exit;
     }
+}
+
+sub js_call {
+    my( $js, $cmd, @args ) = @_;
+    my $script = "$cmd(";
+    foreach (@args) {
+        next if /^-?\d*(?:\.\d+)?$/;
+        s/'/\\'/g;
+        $_ = "'$_'";
+    }
+    $script .= join ', ', @args;
+    $script .= ")";
+    return $js->eval( $script );
 }
 
 sub tokenize {
@@ -216,24 +242,92 @@ sub cmd_debug {
 }
 
 sub cmd_help {
-    my($heap,$on) = @_[HEAP,ARG0..$#_];
-    $heap->{'user'}->put("$_") for
-        'Volity client commands:',
-        '  msg (JID) (text) - send private message to the given JID',
-        '  tmsg (text)      - send groupchat message to the current table',
-        '  rmsg (text)       - send private message to the current referee',
-        '',
-        '  nick (nickname)  - set a new table nickname for yourself',
-        '  roster           - view your roster',
-        '',
-        '  new_table (JID)  - request a new table from the given server JID',
-        '  join_table (JID) - join an existing table',
-        '  add_bot          - request a new bot for the current table',
-        '  start_game       - request a new game at the current table',
-        '',
-        '  info             - see some info about your current status',
-        '  help             - this list',
-        '  quit             - log off from Volity and exit this program';
+  my($heap,$on) = @_[HEAP,ARG0..$#_];
+  $heap->{'user'}->put("$_") for split /\n/, <<CMDLIST;
+Volity client commands:
+  msg (JID) (text) - send private message to the given JID
+  tmsg (text)      - send groupchat message to the current table
+  rmsg (text)      - send private message to the current referee
+
+  nick (nickname)  - set a new table nickname for yourself
+  roster           - view your roster
+
+
+  new_table (JID)  - request a new table from the given server JID
+  join_table (JID) - join an existing table
+  load_ui (file)   - load a ui control file (do this before starting a game)
+  add_bot          - request a new bot for the current table
+  start_game       - request a new game at the current table
+
+  info             - see some info about your current status
+  help             - this list
+  quit             - log off from Volity and exit this program
+CMDLIST
+  return unless $heap->{'commands'};
+  $heap->{'user'}->put( "" );
+  foreach (@{ $heap->{'commands'} }) {
+    $heap->{'user'}->put( sprintf("  %-16s - %s",$$_[0],$$_[1]) );
+  }
+}
+
+sub cmd_load_ui {
+  my ($heap, $filename) = @_[HEAP, ARG0];
+
+  my $term = $heap->{'user'};
+  
+  unless (open FILE, $filename) {
+      $term->put("Couldn't open $filename: $!");
+      return;
+  }
+  my $source = join '', <FILE>;
+  close FILE;
+  
+  my $user = $heap->{'user_obj'};
+  my $commands = $heap->{'commands'} ||= [];
+  my $js = JavaScript::SpiderMonkey->new();
+  $js->init();
+  my $game = $js->object_by_path("game");
+  my $referee = $js->object_by_path("referee");
+  $js->function_set("writeln", sub { js_writeln( $term, @_) } );
+  $js->function_set("rpc", sub { js_rpc( $user, @_ ) } );
+  $js->function_set("registerCommand", 
+    sub { js_registerCommand( $commands, @_ ) } , $referee );
+
+  $js->eval( $source );
+  
+  if ($user->js) {
+      $user->js->destroy;
+  }
+  $user->js( $js );
+}
+
+sub js_writeln {
+    my ($term, @output) = @_;
+    $term->put( "@output" );
+}
+
+sub js_rpc {
+    my ($user, $cmd, @args) = @_;
+    
+#    warn "Da command is: $cmd\n";
+#    warn "Da args are: @args\n";
+
+# XXX
+    $user->print_message( "Making RPC call to $cmd..." );
+    $user->make_rpc_request(
+                            {
+                             to=>$user->referee_jid,
+                             id=>"$cmd.".time,
+                             methodname=>"game.$cmd",
+			     args=>\@args,
+                             handler=>sub {},
+                            }
+                           );
+}
+
+sub js_registerCommand {
+    my( $commands, $command, $shortdesc, $longdesc ) = @_;
+    push @$commands, [ $command, $shortdesc, $longdesc ];
 }
 
 sub cmd_new_table {
@@ -402,7 +496,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick terminal table_jid referee_jid);
+use fields qw(nick terminal table_jid referee_jid js);
 use POE;
 
 sub jabber_authed {
@@ -492,6 +586,19 @@ sub handle_rpc_fault {
   my $full_message = "Received an RPC fault response: ";
   $full_message .= join(' - ', $$fault_hash{fault_code}, $$fault_hash{fault_string});
   $self->print_message($full_message);
+}
+
+sub handle_rpc_request {
+  my $self = shift;
+  my ($req) = @_;
+  my $sub;
+  unless ($$req{'method'} =~ /^game\.(\w+)/) {
+      $self->print_message("Unknown rpc request namespace: $$req{'method'}");
+  }
+# XXX
+  $self->print_message( "Handling RPC call $$req{'method'}..." );
+#  main::js_call( $self->js, $$req{'method'}, @{ $$req{'req'} } );
+  main::js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
 }
 
 sub handle_normal_message {
