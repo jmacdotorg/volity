@@ -120,7 +120,7 @@ you will be sad.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -274,13 +274,45 @@ sub handle_disco_info_request {
     my $items_feature = Volity::Jabber::Disco::Feature->new({var=>'http://jabber.org/protocol/disco#items'});
     push (@items, $items_feature);
 
+    # Prepare JEP-0128 data form fields!
+    my @fields;
+    # We must perform these two separate loops since some info is found
+    # on the server object, and some on the loaded game module class.
+    foreach (qw(description ruleset ruleset_version website)) {
+	my $field_name;
+	my $value;
+	if ($_ eq 'ruleset') {
+	    $value = $game_class->uri;
+	} else {
+	    $value = $game_class->$_;
+	}
+	$field_name = $_;
+	$field_name =~ s/_/-/g;
+	my @values = (ref($value) and ref($value) eq 'ARRAY')?
+	    @$value : ($value);
+	my $field = Volity::Jabber::Form::Field->new({var=>$field_name});
+	$field->values(@values);
+	push (@fields, $field);
+    }
+    foreach (qw(contact_email contact_jid volity_version)) {
+	my $field_name;
+	my $value;
+	$value = $self->$_;
+	$field_name = $_;
+	$field_name =~ s/_/-/g;
+	my @values = (ref($value) and ref($value) eq 'ARRAY')?
+	    @$value : ($value);
+	my $field = Volity::Jabber::Form::Field->new({var=>$field_name});
+	$field->values(@values);
+	push (@fields, $field);
+    }
+
     # Send them off.
     $self->send_disco_info({
 	to=>$iq->attr('from'),
 	id=>$iq->attr('id'),
-	# I'm making up my own category and type stuff, here.
-	# I'll have to ask the Jabber folks what I actually ought to be doing.
 	items=>\@items,
+	fields=>\@fields,
     });
 }
 
@@ -301,7 +333,7 @@ sub handle_disco_items_request {
 
     my $game_class = $self->game_class;
 
-    if ($nodes[0] eq 'ruleset') {
+    if (defined($nodes[0]) and $nodes[0] eq 'ruleset') {
 	# Return a pointer to the bookeeper's info about this ruleset.
 	# The JID reveals our bookkeeper, while the node reveals our
 	# ruleset URI.
