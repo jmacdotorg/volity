@@ -15,7 +15,6 @@ to try programming the platform's first few "third-party" game
 modules. Their feedback is sure to make future releases more mature,
 and of wider reach.
 
-
 For more information about Volity:
 Volity Developers' Site:
 http://www.volity.org
@@ -67,7 +66,40 @@ the near future.
 
  sudo ./Build install
 
+--- TESTING YOUR INSTALLATION WITH A SAMPLE GAME ---
+
+While no automated testing exists yet, you can manually test your
+installation by attempting to play a game of rock-paper-scissors using
+Friv, a text-based Volity client included with this distribution. Friv
+is located locally in bin/friv, and is installed into wherever you
+specified the Build script to place scripts; by default it goes into
+/usr/local/volity/bin/.
+
+Using a valid Jabber username, host, and password, run Friv like so:
+
+ friv -u [username] -h [host] -p [password]
+
+Upon connection, issue the following series of commands to Friv's prompt:
+
+> new_table rps@volity.net/volity
+> add_bot
+> start_game
+> select rock
+
+As you do so, you should witness an entire game of rock-paper-scissors
+occur between you and an automated opponent. (In fact, it should look
+rather like the "SYNOPSIS" section of Friv's manpage.) If everything
+looks good, congratulations; your Frivolity installation seems to be a
+success! (And you can continue issuing "start_game" and "select
+[hand-shape]" commands for as long as you'd like.) If something goes
+wrong, please notify either me or the mailing list (see below).
+
 --- CONTACT ---
 
 Please send all questions, comments, bug reports, etc. to Jason
 McIntosh <jmac@jmac.org>.
+
+For community discussion about these modules, see the volity-devel
+mailing list:
+<http://lists.sourceforge.net/lists/listinfo/volity-devel>. Its
+archives are on the Web, and offers open subscription to all.
