@@ -212,7 +212,6 @@ use fields qw(kernel alias host port user resource password jid rpc_parser defau
 
 sub initialize {
     my $self = shift;
-    warn "Init called on $self.\n";
     $self->{kernel} = $poe_kernel;
     $self->{port} ||= 5222;
     $self->logger->debug("STARTING init. Password is " . $self->password);
@@ -497,6 +496,8 @@ sub jabber_message {
   $self->$method($info_hash);
   $self->logger->debug( "Done delegating to $method." );
 }
+
+=pod
 
 The following related methods handle specefic applicationes of the
 <<iq>> element. As with C<jabber_iq>, the single argument in every
@@ -943,7 +944,6 @@ outgoing query.
 sub send_query {
     my $self = shift;
     my ($config) = @_;
-    warn "**Sending a query!!\n";
     my $iq = POE::Filter::XML::Node->new('iq');
     foreach (qw(to from id type)) {
 	$iq->attr($_=>$$config{$_});
@@ -955,8 +955,6 @@ sub send_query {
 	    $query->insert_tag($kid);
 	}
     }
-    warn "**Sent.\n";
-    warn $iq->to_str;
     $self->post_node($iq);
 }
 
