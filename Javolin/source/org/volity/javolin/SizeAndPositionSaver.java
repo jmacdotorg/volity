@@ -52,7 +52,7 @@ public class SizeAndPositionSaver
     /**
      * Moves the window to the center of the screen.
      */
-    protected void centerWindow()
+    private void centerWindow()
     {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension frameSize = mWindow.getSize();
@@ -87,7 +87,7 @@ public class SizeAndPositionSaver
      * Saves the window size and position values to the preferences storage.
      * The size is not saved if the window is not resizable.
      */
-    protected void saveSizeAndPosition()
+    public void saveSizeAndPosition()
     {
         Preferences prefs =
             Preferences.userNodeForPackage(mWindow.getClass()).node(mPrefsNodeName);
@@ -113,7 +113,7 @@ public class SizeAndPositionSaver
      * was never stored, the size remains unchanged. If the position was never stored,
      * the window is centered on the screen.
      */
-    protected void restoreSizeAndPosition()
+    public void restoreSizeAndPosition()
     {
         Preferences prefs =
             Preferences.userNodeForPackage(mWindow.getClass()).node(mPrefsNodeName);

@@ -206,7 +206,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add user name label
-        someLabel = new JLabel("User ID:");
+        someLabel = new JLabel("User name:");
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -276,7 +276,15 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         // Make Connect button default
         getRootPane().setDefaultButton(mConnectButton);
 
-        // Make the Connect button and the Cancel button the same width
-        mCancelButton.setPreferredSize(mConnectButton.getPreferredSize());
+        // Make the buttons the same width
+        Dimension dim = mConnectButton.getPreferredSize();
+        
+        if (mCancelButton.getPreferredSize().width > dim.width)
+        {
+            dim = mCancelButton.getPreferredSize();
+        }
+        
+        mCancelButton.setPreferredSize(dim);
+        mConnectButton.setPreferredSize(dim);
     }
 }

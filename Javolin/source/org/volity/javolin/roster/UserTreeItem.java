@@ -40,7 +40,7 @@ public class UserTreeItem
     public UserTreeItem(RosterEntry entry, Presence presence)
     {
         mID = entry.getUser();
-        
+
         mNickname = entry.getName();
         if (mNickname == null)
         {
@@ -53,6 +53,27 @@ public class UserTreeItem
             mPresMode = presence.getMode();
             mMessage = presence.getStatus(); // Might be null
         }
+    }
+
+    /**
+     * Gets the user ID of the item.
+     *
+     * @return   The user ID of the item.
+     */
+    public String getId()
+    {
+        return mID;
+    }
+
+    /**
+     * Gets the nickname of the item.
+     *
+     * @return   The nickname of the item. If the user does not have a nickname, the
+     * empty string will be returned.
+     */
+    public String getNickname()
+    {
+        return mNickname;
     }
 
     /**

@@ -25,6 +25,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.tree.*;
 import org.jivesoftware.smack.*;
+import org.volity.javolin.*;
 
 /**
  * JPanel subclass which contains the roster list and related controls.
@@ -114,6 +115,16 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
     {
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode)(mTreeModel.getRoot());
 
+        // Save selected user ID so we can reselect the node for that user after
+        // repopulating
+        String selUserId = null;
+        if (getSelectedUser() != null)
+        {
+            selUserId = getSelectedUser().getId();
+        }
+
+        TreeNode nodeToSelect = null;
+
         // Remove all items
         rootNode.removeAllChildren();
 
@@ -123,33 +134,49 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
             java.util.List unavailUsers = new Vector();
             Iterator usersIter = mRoster.getEntries();
 
+            MutableTreeNode newNode = null;
+
             while (usersIter.hasNext())
             {
                 RosterEntry entry = (RosterEntry)usersIter.next();
                 UserTreeItem item =
                     new UserTreeItem(entry, mRoster.getPresence(entry.getUser()));
 
+                newNode = new DefaultMutableTreeNode(item);
+
+                // Remember node if it's the one to select after populating
+                if ((selUserId != null) && (item.getId().equals(selUserId)))
+                {
+                    nodeToSelect = newNode;
+                }
+
                 if (item.isAvailable())
                 {
                     // Add available users to tree
-                    rootNode.add(new DefaultMutableTreeNode(item));
+                    rootNode.add(newNode);
                 }
                 else if (mShowUnavailUsers)
                 {
-                    // Save unavailable users to Vector to add later
-                    unavailUsers.add(item);
+                    // Save unavailable users to List to add later
+                    unavailUsers.add(newNode);
                 }
             }
 
             // Add unavailable users to tree
             for (int n = 0; n < unavailUsers.size(); n++)
             {
-                rootNode.add(new DefaultMutableTreeNode(unavailUsers.get(n)));
+                rootNode.add((MutableTreeNode)unavailUsers.get(n));
             }
         }
 
         // Ensure the tree redraws
         mTreeModel.nodeStructureChanged(rootNode);
+
+        // Reselect previously selected user
+        if (nodeToSelect != null)
+        {
+            mTree.setSelectionPath(new TreePath(mTreeModel.getPathToRoot(nodeToSelect)));
+        }
     }
 
     /**
@@ -183,7 +210,7 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
      *
      * @return   The selected user item, or null if no item is selected.
      */
-    public UserTreeItem getSelectedUser()
+    private UserTreeItem getSelectedUser()
     {
         UserTreeItem retVal = null;
 
@@ -212,9 +239,11 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
         }
         else if (e.getSource() == mAddUserBut)
         {
+            doAddUserBut();
         }
         else if (e.getSource() == mDelUserBut)
         {
+            doDeleteUserBut();
         }
         else if (e.getSource() == mChatBut)
         {
@@ -222,7 +251,7 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
     }
 
     /**
-     * Handler for show/hide unavailable users button.
+     * Handler for Show/Hide Unavailable Users button.
      */
     private void doShowHideUnavailBut()
     {
@@ -233,6 +262,55 @@ public class RosterPanel extends JPanel implements ActionListener, RosterListene
 
         repopulate();
         updateToolBarButtons();
+    }
+
+    /**
+     * Handler for the Delete User button.
+     */
+    private void doDeleteUserBut()
+    {
+        UserTreeItem selUser = getSelectedUser();
+
+        if (selUser == null)
+        {
+            return;
+        }
+
+        // The user name string in the message box will be "Joe Blow (joe@volity.net)" or
+        // "joe@volity.net" depending on whether the user has a nickname
+        String userStr = selUser.getId();
+
+        if (!selUser.getNickname().equals(""))
+        {
+            userStr = selUser.getNickname() + " (" + userStr + ")";
+        }
+
+        // Show confrimation dialog
+        String message = "Delete " + userStr + " from your roster?";
+
+        int result = JOptionPane.showConfirmDialog(this, message,
+            JavolinApp.getAppName() + ": Confirm Delete User", JOptionPane.YES_NO_OPTION);
+
+        // Delete user from roster
+        if (result == JOptionPane.YES_OPTION)
+        {
+            RosterEntry entry = mRoster.getEntry(selUser.getId());
+
+            if (entry != null)
+            {
+                mRoster.removeEntry(entry);
+            }
+        }
+    }
+
+    /**
+     * Handler for the Add User button.
+     */
+    private void doAddUserBut()
+    {
+        AddUserDialog addUserDlg =
+            new AddUserDialog(JOptionPane.getFrameForComponent(this), mRoster);
+        addUserDlg.show();
     }
 
     /**

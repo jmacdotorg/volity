@@ -54,7 +54,7 @@ public class JavolinApp extends JFrame implements ActionListener
         setTitle(APPNAME);
         buildUI();
 
-        setSize(300, 300);
+        setSize(200, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
 
