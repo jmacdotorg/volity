@@ -236,6 +236,8 @@ There needs to be a way to specify a GPG passphrase that offers at least a modic
 
 The server should be launchable with a pointer to a configuration file, as opposed to a giant list of command-line configuration switches.
 
+=back
+
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org>
