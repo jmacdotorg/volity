@@ -90,7 +90,7 @@ public class UserTreeItem
             retVal = mID;
         }
 
-        if (mMessage != null)
+        if ((mMessage != null) && !mMessage.equals(""))
         {
             retVal += " (" + mMessage + ")";
         }
