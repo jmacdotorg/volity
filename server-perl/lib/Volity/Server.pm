@@ -145,15 +145,6 @@ sub initialize {
   return $self;
 }
 
-sub jabber_authed {
-  my $self = $_[OBJECT];
-  my $node = $_[ARG0];
-  $self->debug("We have authed!\n");
-  unless ($node->name eq 'handshake') {
-#    warn $node->to_str;
-  }
-}
-
 # This presence handler takes care of auto-approving all subscription
 # requests. Volity servers are very social like that.
 sub jabber_presence {
