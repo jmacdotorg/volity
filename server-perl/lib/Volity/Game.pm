@@ -6,7 +6,7 @@ use warnings;
 use strict;
 
 use base qw(Class::Accessor::Fields);
-use fields qw(players current_player current_player_index server player_jids error_message max_allowed_players min_allowed_players debug);
+use fields qw(players winners quitters current_player current_player_index server player_jids debug);
 
 use Scalar::Util qw(weaken);
 
@@ -33,53 +33,15 @@ For information about creating a game server to work with game modules, see L<Vo
 
 sub initialize {
   my $self = shift;
-  unless ($self->check_sanity) {
+#  unless ($self->check_sanity) {
 #    return;
-  }
+#  }
   $self->current_player_index(0);
   if (defined($self->{players})) {
     $self->current_player($self->{players}->[0]);
     $self->create_player_jid_lookup_hash;
   }
 }
-
-# check_sanity: Called from initialize(). Runs some tests on this 
-# new object to make sure that all is well.
-# XXX This could use better exception handling, eh?
-sub check_sanity {
-  my $self = shift;
-  my $player_count = $self->players;
-  warn "Player count is $player_count.";
-  my $player_statement = $self->state_allowed_players;
-  if (defined($self->max_allowed_players) and $self->max_allowed_players < $player_count) {
-    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's too many!");
-    return 0;
-  } elsif (defined($self->min_allowed_players) and $self->min_allowed_players > $player_count) {
-    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's not enough!");
-    return 0;
-  }
-  return 1;
-}
-
-# state_allowed_players: Utility method for stating the number of players
-# that this game supports.
-sub state_allowed_players {
-  my $self = shift;
-  my $max = $self->max_allowed_players;
-  my $min = $self->min_allowed_players;
-  my $statement;
-  if (not($min) and $max) {
-    $statement = "$max or fewer";
-  } elsif ($min and not($max)) {
-    $statement = "$min or more";
-  } elsif (not($min) and not($max)) {
-    $statement = "any number";
-  } else {
-    $statement = "between $min and $max";
-  }
-  return $statement;
-}
-
 
 =head1 Class methods
 
