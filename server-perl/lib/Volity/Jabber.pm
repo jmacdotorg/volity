@@ -1349,6 +1349,20 @@ sub send_form {
 #  $iq->free;
 }
 
+=head2 disconnect
+
+Disconnects this entity from the Jabber server.
+
+It sends out an 'unavailable' presence packet before doing so, just to be nice.
+
+=cut
+
+sub disconnect {
+    my $self = shift;
+    $self->send_presence({type=>'unavailable'});
+    $self->kernel->post($self->alias, 'shutdown_socket', 0);
+}
+
 =head2 post_node($node)
 
 Post the given XML node object to the POE kernel, which will then send it off to the Jabber server.
