@@ -208,6 +208,7 @@ sub initialize {
   }
   $self->{kernel} = $poe_kernel;
   $self->{port} ||= 5222;
+  $self->debug("STARTING init. Password is " . $self->password);
   POE::Session->create(
 		       object_states=>
 		       [$self=>
@@ -227,6 +228,7 @@ sub initialize {
   # Give initial values to instance variables what needs 'em.
   $self->{query_handlers} = {};
 
+  $self->debug("LEAVING init. Password is " . $self->password);
   return $self;
 }
 
@@ -279,6 +281,7 @@ sub _start {
 
 sub init_finish {
   my $self = $_[OBJECT];
+  $self->debug("In init_finish. Password is " . $self->password);
   $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
 }
 
@@ -736,7 +739,7 @@ The JID of the conference to join. You can specify the MUC either through this k
 
 =item nick
 
-The nickname to use in the conference.
+The nickname to use in the conference. If you don't specify this, the nick used will default to the object's username.
 
 =item server
 
@@ -764,7 +767,7 @@ sub join_muc {
       if (defined($$config{nick})) {
 	$muc_jid .= "/$$config{nick}";
       } else {
-	croak("You called join_muc with a MUC JID but no nickname to use. Oops!");
+	  $muc_jid .= "/" . $self->user;
       }
     }
   } else {
@@ -782,6 +785,7 @@ sub join_muc {
   $presence->attr(to=>$muc_jid);
   $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
   $self->kernel->post($self->alias, 'output_handler', $presence);
+  $self->debug("Presence sent.\n");
   return $muc_jid;
 }
 
