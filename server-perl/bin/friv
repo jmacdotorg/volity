@@ -88,7 +88,7 @@ sub start {
                                   alias=>$heap->{resource},
                                   user=>$heap->{username},
 				  poe_heap=>$heap,
-				  bookkeeper_jid=>$opts{b} || 'bookkeeper@volity.net/testing',
+				  bookkeeper_jid=>$opts{b} || 'bookkeeper@volity.net/volity',
                                  }
                                 );
     $heap->{user_obj} = $user;
