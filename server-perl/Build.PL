@@ -14,6 +14,8 @@ my $build = Module::Build->new
 	       'XML::Writer'=>undef,
 	       'Data::Lazy'=>undef,
 	       'IPC::Shareable'=>undef,
+	       'Class::Accessor'=>undef,
+	       'Class::Fields'=>undef,
 	     },
    script_files=>[glob("bin/*.pl")],
    install_path=>{script=>'/usr/local/volity/bin'},
