@@ -75,6 +75,7 @@ public class RPCRequester {
 	});
     connection.sendPacket(request);
     RPCResponse response = (RPCResponse) collector.nextResult(); // blocks
+    collector.cancel();
     XMPPError error = response.getError();
     if (error != null)
       throw new XMPPException(error);
