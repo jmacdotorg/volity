@@ -1,5 +1,6 @@
 package org.volity.client;
 
+import java.util.Arrays;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.volity.jabber.RPCRequester;
@@ -13,6 +14,33 @@ public class Referee extends RPCRequester {
    */
   Referee(GameTable table, String jid) {
     super(table.getConnection(), jid);
+  }  
+
+  /**
+   * Ask the referee to invite a player to this game.
+   * @param jid the JID of the player to invite
+   * @param message a text message to include with the invitation
+   * @throws XMPPException if an XMPP error occurs
+   * @throws RPCException if a RPC fault occurs
+   */
+  public void invitePlayer(String jid, String message)
+    throws XMPPException, RPCException
+  {
+    invoke("volity.invite_player",
+	   Arrays.asList(new String[] { jid, message }));
+  }
+
+  /**
+   * Ask the referee to invite a player to this game.
+   * @param jid the JID of the player to invite
+   * @throws XMPPException if an XMPP error occurs
+   * @throws RPCException if a RPC fault occurs
+   */
+  public void invitePlayer(String jid)
+    throws XMPPException, RPCException
+  {
+    invoke("volity.invite_player",
+	   Arrays.asList(new String[] { jid }));
   }
 
   /**
