@@ -492,7 +492,8 @@ sub handle_groupchat_message {
 sub jabber_presence {
   my $self = shift;
   my ($node) = @_;
-  if (my $x = $node->get_tag(x=>"http://jabber.org/protocol/muc#user")) {
+  my $x; # Hey, that's the name of the element, OK?
+  if (($node->get_tag('x')) and (($x) = grep($_->attr('xmlns') eq "http://jabber.org/protocol/muc#user", $node->get_tag('x')))) {
     # Aha, someone has joined the table.
     my $new_person_jid = $x->get_tag('item')->attr('jid');
     my $affiliation = $x->get_tag('item')->attr('affiliation');
