@@ -33,6 +33,11 @@ public class UserColorMap
     private static final float UPPER_BRIGHT = (2.0f/3.0f) - 0.05f;
     
     private Map mHueMap;
+    
+    // These values are used for calculating the next hue
+    private int mHueNumerator = 0;
+    private int mHueDenominator = 3;
+    private int mHueNumerDelta = 1;
 
     /**
      * Constructor.
@@ -49,11 +54,20 @@ public class UserColorMap
      */
     private float getNextHue()
     {
-        int divisions = 100;
-        int step = 19;
+        float retVal = (float)(1.0 * mHueNumerator / mHueDenominator);
+        
+        if (mHueNumerator == (mHueDenominator - 1))
+        {
+            mHueDenominator *= 2;
+            mHueNumerator = 1;
+            mHueNumerDelta = 2;
+        }
+        else
+        {
+            mHueNumerator += mHueNumerDelta;
+        }
 
-        int intVal = (mHueMap.size() * step) % divisions;
-        return (1.0f * intVal) / divisions;
+        return retVal;
     }
 
     /**
@@ -70,9 +84,7 @@ public class UserColorMap
             mHueMap.put(user, new Float(getNextHue()));
         }
 
-        float hue = ((Float)mHueMap.get(user)).floatValue();
-
-        return hue;
+        return ((Float)mHueMap.get(user)).floatValue();
     }
 
     /**
