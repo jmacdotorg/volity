@@ -41,9 +41,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
     private JButton mCreateButton;
 
     private XMPPConnection mConnection;
-    private String mServerId;
-    private String mNickname;
-    private boolean mCreatePressed;
+    private TableWindow mTableWindow;
 
     /**
      * Constructor.
@@ -70,23 +68,14 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Gets the server ID to connect to.
+     * Gets the TableWindow that was created.
      *
-     * @return   The server ID as a String.
+     * @return   The TableWindow for the game table that was created and joined when the
+     * user pressed the Create button, or null if the user pressed Cancel.
      */
-    public String getServerId()
+    public TableWindow getTableWindow()
     {
-        return mServerId;
-    }
-
-    /**
-     * Gets the nickname to use in the table MUC.
-     *
-     * @return   The nickname to use in the table MUC.
-     */
-    public String getNickname()
-    {
-        return mNickname;
+        return mTableWindow;
     }
 
     /**
@@ -114,28 +103,35 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         // Store field values in preferences
         saveFieldValues();
 
-        // Retrieve field text
-        mServerId = mServerIdField.getText();
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        if (mServerId.indexOf('/') == -1)
+        // Create the TableWindow
+        try
         {
-            mServerId = mServerId + "/volity";
+            String serverID = mServerIdField.getText();
+
+            if (serverID.indexOf('/') == -1)
+            {
+                serverID = serverID + "/volity";
+            }
+
+            mTableWindow = new TableWindow(mConnection, serverID,
+                mNicknameField.getText());
+
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            dispose();
         }
+        catch (Exception ex)
+        {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
-        mNickname = mNicknameField.getText();
+            JOptionPane.showMessageDialog(this, ex.toString(),
+                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
 
-        mCreatePressed = true;
-        dispose();
-    }
-
-    /**
-     * Tells whether the user pressed the Create button.
-     *
-     * @return   true if Create was pressed, false if Cancel was pressed.
-     */
-    public boolean createWasPressed()
-    {
-        return mCreatePressed;
+            // Destroy TableWindow object
+            mTableWindow = null;
+        }
     }
 
     /**

@@ -350,41 +350,24 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     {
         NewTableAtDialog newTableDlg = new NewTableAtDialog(this, mConnection);
         newTableDlg.show();
+        TableWindow tableWin = newTableDlg.getTableWindow();
 
-        if (newTableDlg.createWasPressed())
+        if (tableWin != null)
         {
-            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            tableWin.show();
+            mTableWindows.add(tableWin);
+            mWindowMenu.add(tableWin);
 
-            try
-            {
-                GameServer server =
-                    new GameServer(mConnection, newTableDlg.getServerId());
-
-                TableWindow tableWin =
-                    new TableWindow(server, null, newTableDlg.getNickname());
-
-                tableWin.show();
-                mTableWindows.add(tableWin);
-                mWindowMenu.add(tableWin);
-
-                // Remove the table window from the list when it closes
-                tableWin.addWindowListener(
-                    new WindowAdapter()
+            // Remove the table window from the list when it closes
+            tableWin.addWindowListener(
+                new WindowAdapter()
+                {
+                    public void windowClosed(WindowEvent we)
                     {
-                        public void windowClosed(WindowEvent we)
-                        {
-                            mTableWindows.remove(we.getWindow());
-                            mWindowMenu.remove((JFrame)we.getWindow());
-                        }
-                    });
-            }
-            catch (Exception ex)
-            {
-                JOptionPane.showMessageDialog(this, ex.toString(),
-                    getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
-            }
-
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        mTableWindows.remove(we.getWindow());
+                        mWindowMenu.remove((JFrame)we.getWindow());
+                    }
+                });
         }
     }
 

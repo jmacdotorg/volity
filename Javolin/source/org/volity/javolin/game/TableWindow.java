@@ -64,27 +64,35 @@ public class TableWindow extends JFrame implements PacketListener
     private GameTable mGameTable;
 
     /**
-     * Constructor.
+     * Constructor. Use this form to create a new table.
      *
-     * @param server                     A GameServer object corresponding to the desired
-     *  game.
-     * @param table                      A GameTable to join, or NULL to create a new 
-     *  table from the GameServer.
+     * @param connection                 The current active XMPPConnection.
+     * @param serverId                   The ID of the game table to create and join.
      * @param nickname                   The nickname to use to join the table.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
      * @exception IOException            If a UI file could not be downloaded.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
-    public TableWindow(GameServer server, GameTable table, String nickname)
+    public TableWindow(XMPPConnection connection, String serverId, String nickname)
          throws XMPPException, RPCException, IOException, MalformedURLException
     {
-        mGameTable = table;
+        this(new GameServer(connection, serverId).newTable(), nickname);
+    }
 
-        if (mGameTable == null)
-        {
-            mGameTable = server.newTable();
-        }
+    /**
+     * Constructor. Use this form to join an existing table.
+     *
+     * @param table                      The ID of the game table to join.
+     * @param nickname                   The nickname to use to join the table.
+     * @exception XMPPException          If the table could not be joined.
+     * @exception IOException            If a UI file could not be downloaded.
+     * @exception MalformedURLException  If an invalid UI file URL was used.
+     */
+    public TableWindow(GameTable table, String nickname)
+         throws XMPPException, IOException, MalformedURLException
+    {
+        mGameTable = table;
 
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
 
@@ -96,18 +104,9 @@ public class TableWindow extends JFrame implements PacketListener
         cache.getFile(new URL("http://volity.org/games/rps/svg/scissors.png"));
 
         mGameViewport = new SVGCanvas(mGameTable, uiFile.toURI().toURL());
-        try
-        {
-            Thread.sleep(500);
-        }
-        catch (InterruptedException ex)
-        {
-        }
-
-        mGameTable.join(nickname);
 
         mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(mGameTable.getNickname()); // Give user first color
+        mUserColorMap.getUserNameColor(nickname); // Give user first color
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
@@ -151,27 +150,17 @@ public class TableWindow extends JFrame implements PacketListener
                 {
                     // Give focus to input text area when the window is created
                     mInputText.requestFocusInWindow();
-                    updateUserList();
                 }
             });
 
-        // Retrieve all pending messages, then register as message listener.
-        Message msg;
-
-        do
-        {
-            msg = mGameTable.nextMessage(50);
-
-            if (msg != null)
-            {
-                doMessageReceived(msg);
-            }
-        } while (msg != null);
-
+        // Register as message listener.
         mGameTable.addMessageListener(this);
 
         // Register as participant listener.
         mGameTable.addParticipantListener(this);
+
+        // Last but not least, join the table
+        mGameTable.join(nickname);
     }
 
     /**
