@@ -30,6 +30,13 @@ Volity::Game - base class for Volity game modules
 
  use base qw(Volity::Game);
 
+ # Set some configuration information.
+
+ __PACKAGE__->min_allowed_players(2);
+ __PACKAGE__->max_allowed_players(4);
+
+ __PACKAGE__->uri("http://mydomain.com/games/mygame");
+
  # Override some Volity::Jabber methods.
 
  sub handle_chat_message {
@@ -81,9 +88,9 @@ either class or object methods, and you should check the C<ref>ness of
 the first argument if it makes any difference. (This is possibly dumb,
 and might change in future versions of this module.)
 
-So here are some object methods peculiar C<Volity::Game>...
+So here are some object methods peculiar to C<Volity::Game>...
 
-=head2 Accessors
+=head2 Object accessor methods
 
 =over 
 
@@ -98,13 +105,50 @@ If you don't set this, it defaults to using the C<Volity::Player> class.
 An array of this game's players, in turn order. (If turn order doesn't
 matter, then neither does the order of this array, so: hah.)
 
+=item referee
+
+Returns the C<Volity::Referee> object that owns this game.
+
+=back
+
+=head2 Class Accessor methods
+
+These methods are used to set some general configuration information
+about the game, rather than specific information about any particualr
+instance thereof.
+
+=over
+
+=item max_allowed_players
+
+An integer specifying the maximum number of players this game
+allows. If undefined, then there is no limit to the number of players
+who can join.
+
+=item min_allowed_players
+
+An integer specifying the minimum number of players this game requires
+for play. Defaults to 1.
+
+=item uri
+
+I<Required.> The game URI that this particular game module
+"provides". Consult the core Volity documentation for more information
+on how this works.
+
+=back
+
 =cut
 
 use warnings;
 use strict;
 
-use base qw(Class::Accessor::Fields);
-use fields qw(players winners quitters current_player current_player_index server player_jids debug);
+use base qw(Class::Accessor::Fields Class::Data::Inheritable);
+use fields qw(players winners quitters current_player current_player_index referee player_jids debug);
+
+foreach (qw(uri max_allowed_players min_allowed_players player_class)) {
+  __PACKAGE__->mk_classdata($_);
+}
 
 use Scalar::Util qw(weaken);
 
@@ -131,14 +175,14 @@ sub initialize {
 
 sub DESTROY {
   my $self = shift;
-  weaken($self->{server});
+  weaken($self->{referee});
 }
 
 sub AUTOHANDLER {
   my $self = shift;
   our $AUTOHANDLER;
-  if ($self->server->can($AUTOHANDLER)) {
-    return $self->server->$AUTOHANDLER(@_);
+  if ($self->referee->can($AUTOHANDLER)) {
+    return $self->referee->$AUTOHANDLER(@_);
   } else {
     croak ("Unknown method $AUTOHANDLER");
   }
@@ -150,6 +194,9 @@ sub AUTOHANDLER {
 
 sub player_class {
   my $class = shift;
+  if (exists($_[0])) {
+    $player_class = $_[0];
+  }
   return $player_class;
 }
 
@@ -164,8 +211,8 @@ sub receive_chat_message {
   my $self = shift;
   my ($message, $j)  = @_;
   unless (ref($self)) {
-    my $reply_body = "Hi! I am a Volity game server.";
-    $self->server->send_message({
+    my $reply_body = "Hi! I am a Volity game referee.";
+    $self->referee->send_message({
 				 to=>$message->GetFrom,
 				 body=>$reply_body,
 			       });
@@ -232,7 +279,7 @@ in.)
 
 sub muc_jid {
   my $self = shift;
-  return ($self->server->muc_jid(@_));
+  return ($self->referee->muc_jid(@_));
 }
 
 =head2 get_player_with_jid ($jid)
@@ -252,7 +299,7 @@ sub get_player_with_jid {
   my $real_jid;			# The keyed JID of this user.
   if (defined($muc_jid) and $jid =~ m|^$muc_jid/|) {
     # Looks like a player within a MUC.
-    $real_jid = $self->server->look_up_jid_with_nickname($jid);
+    $real_jid = $self->referee->look_up_jid_with_nickname($jid);
     croak("Uhh, I can't find any real jids for MUC-based JID $jid. This shouldn't happen.") unless defined($real_jid);
   } else {
     $real_jid = $jid;
@@ -267,7 +314,7 @@ sub get_player_with_jid {
 
 =head2 end_game
 
-Ends the game! The server and referee will handle cleanup.
+Ends the game! The referee and referee will handle cleanup.
 
 =cut
 
@@ -276,7 +323,7 @@ Ends the game! The server and referee will handle cleanup.
 sub end_game {
   my $self = shift;
   my ($args) = @_;
-  $self->server->end_game;
+  $self->referee->end_game;
 }
 
 sub debug {
