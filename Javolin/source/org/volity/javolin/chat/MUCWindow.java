@@ -69,7 +69,8 @@ public class MUCWindow extends JFrame implements PacketListener
          throws XMPPException
     {
         super(JavolinApp.getAppName() + ": " + mucId);
-	mConnection = connection;
+        
+        mConnection = connection;
         mMucObject = new MultiUserChat(connection, mucId);
 
         mUserColorMap = new UserColorMap();
@@ -127,46 +128,49 @@ public class MUCWindow extends JFrame implements PacketListener
         mMucObject.addParticipantListener(this);
 
         // Last but not least, join the MUC
-	if (mucExists())
-	{
-	    mMucObject.join(nickname);
-	}
-	else
-	{
-	    mMucObject.create(nickname);
-	    configureMuc();
-	}
+        if (mucExists())
+        {
+            mMucObject.join(nickname);
+        }
+        else
+        {
+            mMucObject.create(nickname);
+            configureMuc();
+        }
     }
 
     /**
-     * Does the MUC exist on the chat service?
+     * Tells whether the MUC exists on the chat service.
+     *
+     * @return   true if the MUC exists on the chat service, false otherwise.
      */
     protected boolean mucExists()
     {
-	ServiceDiscoveryManager discoMan =
-	    ServiceDiscoveryManager.getInstanceFor(mConnection);
-	try
-	{
-	    // If the room exists, it must answer to service discovery.
-	    // We don't actually care what the answer is.
-	    discoMan.discoverInfo(mMucObject.getRoom());
-	    return true;
-	}
-	catch (XMPPException ex)
-	{
-	    return false;
-	}
+        ServiceDiscoveryManager discoMan =
+            ServiceDiscoveryManager.getInstanceFor(mConnection);
+        try
+        {
+            // If the room exists, it must answer to service discovery.
+            // We don't actually care what the answer is.
+            discoMan.discoverInfo(mMucObject.getRoom());
+            return true;
+        }
+        catch (XMPPException ex)
+        {
+            return false;
+        }
     }
 
     /**
      * Configure the MUC by accepting the server default settings.
-     * @throws XMPPException if an error occurs while configuring
+     *
+     * @throws XMPPException  if an error occurs while configuring.
      */
     protected void configureMuc() throws XMPPException
     {
-	// A blank form indicates that we accept the server default settings.
-	Form blankForm = new Form(Form.TYPE_SUBMIT);
-	mMucObject.sendConfigurationForm(blankForm);
+        // A blank form indicates that we accept the server default settings.
+        Form blankForm = new Form(Form.TYPE_SUBMIT);
+        mMucObject.sendConfigurationForm(blankForm);
     }
 
     /**

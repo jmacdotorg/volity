@@ -68,7 +68,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Gets the MultiUserChat object that was created and joined.
+     * Gets the MUCWindow that was created.
      *
      * @return   The MUCWindow for the MUC that was created and joined when the user
      *  pressed the Join button, or null if the user pressed Cancel.
