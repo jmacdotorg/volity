@@ -108,10 +108,12 @@ sub store_record_in_db {
   my ($server) = Volity::Info::Server->search({jid=>$game_record->server});
   unless ($server) {
       warn "Bizarre... got a record with server JID " . $game_record->server . ", but couldn't get a server object from the DB from it. No record stored.";
+      return;
   }
   my ($ruleset) = Volity::Info::Ruleset->search({uri=>$game_record->game_uri});
   unless ($ruleset) {
       warn "Bizarre... got a record with server JID " . $game_record->game_uri . ", but couldn't get a server object from the DB from it. No record stored.";
+      return;
   }
   my $game;			# Volity::Info::Game object
   if (defined($game_record->id)) {
