@@ -43,11 +43,13 @@ public class RPCRequester {
   public String getResponderJID() { return responderJID; }
 
   /**
-   * Invoke a remote method with no parameters and wait for the response.
+   * Invoke a remote method with no parameters and wait 5 seconds for
+   * the response.
    * @param methodName the name of the remote method
    * @return the result of the remote method invocation
    * @throws XMPPException if there was an XMPP error
-   * @throws RPCException if the remote method resulted in a fault response
+   * @throws RPCException if the remote method resulted in a fault
+   *                      or timed out
    */
   public Object invoke(String methodName)
     throws XMPPException, RPCException
