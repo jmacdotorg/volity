@@ -420,7 +420,8 @@ sub jabber_iq {
 				 from=>$from_jid,
 				 id=>$id,
 				 method=>$method,
-				 args=>$rpc_obj->args,
+#				 args=>$rpc_obj->args,
+				 args=>[map($_->value, @{$rpc_obj->args})],
 			       });
     }
   } elsif ($node->attr('type') eq 'error') {
@@ -453,8 +454,6 @@ sub jabber_message {
   my $info_hash;		# Will be the argument to the delegate method.
   my $type;			# What type of chat is this?
   $self->debug( "I ($self) received a message...\n");
-#  warn "<<<<<<<<<<<<<<<<<<<<<<<<<\n";
-#  warn "I ($self) received a message...\n" . $node->to_str . "\n";  warn "<<<<<<<<<<<<<<<<<<<<<<<<<\n";
 
   foreach (qw(to from)) {
     $$info_hash{$_} = $node->attr($_);
@@ -710,7 +709,8 @@ with the response as their argument.
 
 =cut
 
-sub make_rpc_request {
+*make_rpc_request = \&send_rpc_request;
+sub send_rpc_request {
   my $self = shift;
   $self->debug("in make_rpc_request\n");
   my ($args) = @_;
@@ -729,12 +729,15 @@ sub make_rpc_request {
   } else {
     @args = ();
   }
-  
+
   if ( exists $$args{'handler'} ) {
       $self->add_response_handler( $$args{'id'}, $$args{'handler'} );
   }
 
   my $request = RPC::XML::request->new($$args{methodname}, @args);
+
+
+
   # I don't like this so much, sliding in the request as raw data.
   # But then, I can't see why it would break.
   my $request_xml = $request->as_string;
@@ -849,10 +852,6 @@ sub send_message {
     }
   }
   $self->post_node($message);
-#  warn ">>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
-#  warn "Message SENT.\n";
-#  warn $message->to_str . "\n";
-#  warn ">>>>>>>>>>>>>>>>>>>>>>>>>>>\n";
 }
 
 =head2 join_muc($args_hashref)
