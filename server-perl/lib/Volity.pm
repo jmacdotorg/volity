@@ -1,6 +1,6 @@
 package Volity;
 
-our $VERSION = '0.3.5';
+our $VERSION = '0.4.0';
 
 use warnings; use strict;
 no warnings qw(deprecated);
