@@ -1,11 +1,14 @@
 package Volity;
 
-our $VERSION = '0.3.0';
+our $VERSION = '0.3.5';
 
 use warnings; use strict;
 no warnings qw(deprecated);
 
 use base qw(Class::Accessor Class::Fields);
+use fields qw(logger);
+
+use Carp;
 
 sub new {
   my($proto, $fields) = @_;
@@ -20,11 +23,7 @@ sub new {
   my $self = fields::new($class);
   $self->create_accessors;
   while (my ($key, $val) = each %$fields) {
-      if ($key eq 'debug') {
-	  $self->{debug} = $val;
-      } else {
-	  eval {$self->$key($val);};
-      }
+      eval {$self->$key($val);};
     if ($@) {
       Carp::confess "Couldn't set the $key key of $self: $@";
     }
@@ -60,6 +59,25 @@ sub get {
   }
   return $self->SUPER::get(@_);
 }
+
+# logger: Returns the Log::Log4perl logger object,
+# creating it first if necessary.
+sub logger {
+  my $self = shift;
+  unless ($self->{logger}) {
+    $self->{logger} = Log::Log4perl::get_logger(ref($self));
+  }
+  return $self->{logger};
+}
+
+# expire: Log a fatal error message, and then die with that same message.
+sub expire {
+  my $self = shift;
+  my ($last_words) = @_;
+  $self->logger->fatal($last_words);
+  Carp::croak ($last_words);
+}
+
 
 =pod
 
