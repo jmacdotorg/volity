@@ -738,8 +738,10 @@ $ friv -u myusername -p mypassword -h volity.net
 =head1 DESCRIPTION
 
 This program provides a very simple text-based interface to the Volity
-network. It will let you play at any game server that provides a
-text-only UI, over Jabber messaging (as opposed to SVG).
+network. It will let you play at any game server, so long as you have
+local access to a text-based UI file for the ruleset that server
+runs. Friv does not yet support automatic fetching and loading of UI
+files.
 
 For more about Volity, visit http://volity.org
 
@@ -797,6 +799,21 @@ Set to a true value to display verbose and perhaps largely meaningless debug mes
 =item roster
 
 View your Jabber roster, including indicators of who's online and who's not.
+
+=item help
+
+Displays a list of the standard Friv commands (as described in this
+manpage), as well as any game-specific commands defined by the current UI
+file (if there is one).
+
+=item load_ui C<filename>
+
+Loads an ECMAScript UI file. You must do this I<before> joining or
+creating a table.
+
+Once you load an UI file, several new game-specific commands may
+before available. Use the C<help> command to see a list of them (along
+with all the other standard Friv commands).
 
 =item new_table C<JID>
 
