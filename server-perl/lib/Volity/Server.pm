@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(game_class);
+use fields qw(referee_class bookkeeper_jid);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -15,32 +15,26 @@ use POE qw(
 	  );
 use Jabber::NS qw(:all);
 use RPC::XML::Parser;
-use Volity::Referee;
 
 sub initialize {
   my $self = shift;
   if ($self->SUPER::initialize(@_)) {
-    my $game_class = $self->game_class or die
-      "No game class specified at construction!";
-    eval "require $game_class";
+    my $referee_class = $self->referee_class or die
+      "No referee class specified at construction!";
+    eval "require $referee_class";
     if ($@) {
-      die "Failed to require game class $game_class: $@";
+      die "Failed to require referee class $referee_class: $@";
     }
   }
   return $self;
 }
 
-# XXX This is dumb.
 sub jabber_authed {
-  my $kernel = $_[KERNEL];
-  my $heap = $_[HEAP];
-  my $session = $_[SESSION];
-  my $node = $_[ARG0];
-  print "We have authed!\n";
   my $self = $_[OBJECT];
+  my $node = $_[ARG0];
+  $self->debug("We have authed!\n");
   unless ($node->name eq 'handshake') {
     warn $node->to_str;
-#    die;
   }
 }
 
@@ -51,7 +45,8 @@ sub new_game {
 
   my ($from_jid, $id, @args) = @_;
 
-  Volity::Referee->new(
+#  Volity::Referee->new(
+  $self->referee_class->new(
 		       {
 			starting_request_jid=>$from_jid,
 			starting_request_id=>$id,
@@ -61,7 +56,7 @@ sub new_game {
 			host=>$self->host,
 			alias=>'game',
 			debug=>$self->debug,
-			game_class=>$self->game_class,
+			bookkeeper_jid=>$self->bookkeeper_jid,
 		      }
 		      );
 }
