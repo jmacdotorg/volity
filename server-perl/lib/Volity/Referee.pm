@@ -342,16 +342,22 @@ sub jabber_presence {
       # I must have just created it. Well, then.
       $self->logger->debug("Let's configure, robots!\n");
       # Configure the MUC.
-      $self->send_form({
-			to=>$self->muc_jid,
-			from=>$self->jid,
-			id=>42,
-			type=>"http://jabber.org/protocol/muc#owner",
-			fields=>{
-				 "muc#owner_roomname"=>"The house of fun and glass",
-				 "muc#owner_whois"=>"anyone",
-			       }
-		      });
+
+      my $config_form = Volity::Jabber::Form->new({type=>'submit'});
+      $config_form->fields(
+		           Volity::Jabber::Form::Field->new({var=>"muc#owner_roomname"})->values("A volity game..."),
+		           Volity::Jabber::Form::Field->new({var=>"muc#owner_whois"})->values("anyone"),
+			   );
+
+      $self->send_query({
+	  to=>$self->muc_jid,
+	  from=>$self->jid,
+	  id=>42,
+	  type=>'set',
+	  query_ns=>"http://jabber.org/protocol/muc#owner",
+	  content=>[$config_form],
+      });
+
 
       # Send the game-creating JID an RPC response letting them know
       # where the action is.
@@ -381,6 +387,8 @@ sub jabber_presence {
     }
   }
 }
+
+
 
 ###################
 # MUC user tracking
@@ -659,6 +667,8 @@ sub add_bot {
 }
 
 # choose_bot: Called on receipt of a form with bot choice.
+# XXX CAUTION XXXX
+# This won't work, since Volity::Jabber::Form is currently commented out.
 sub choose_bot {
   my $self = shift;
   my ($iq) = @_;
