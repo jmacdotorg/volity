@@ -29,15 +29,17 @@ days, do drop me a line: jmac@jmac.org.
 --- PREREQUISITES ---
 
 Frivolity requires several Perl modules to work; the Build script
-checks for their presence on your system.
+checks for their presence on your system. All are available from CPAN,
+except for the following special exception:
 
-All are available from CPAN, except one: version 1.0 (tentative) of
-POE::Component::Jabber. As of this writing (May 2004), its CPAN
-version, 0.2.x, is not compatible with Frivolity. You will have to
-download the more recent version from Jabber Studio. Fortunately, this
-is pretty easy; it's a tarball that you can find here:
+* POE::Filter::XML::Node v0.24
 
-http://www.jabberstudio.org/projects/pcj/project/view.php
+I have made some slight modifications to Nick Perez's excellent XML
+node module, which have not (at the time of this writing) been merged
+into its CPAN-release version. Please download and install my version,
+available here:
+
+http://volity.org/projects/frivolity/POE-Filter-XML-0.24.tar.gz
 
 --- INSTALLATION ---
 
