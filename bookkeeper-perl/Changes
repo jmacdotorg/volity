@@ -1,4 +1,8 @@
-0.3     
+0.5
+
+	- Added game finder support.
+
+0.4     
         - Added service discovery support.
 
         - Added usage of the Log::Log4perl-based logging system that

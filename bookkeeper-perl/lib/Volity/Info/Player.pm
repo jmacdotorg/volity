@@ -35,6 +35,8 @@ Volity::Info::Player->set_sql(current_rating_by_ruleset=>qq{select rating from g
 
 Volity::Info::Player->set_sql(number_of_games_played_by_ruleset=>qq{select count(game_player.game_id) from game_player, game where game.id = game_player.game_id and game_player.player_id = ? and game.ruleset_id = ?});
 
+Volity::Info::Player->set_sql(number_of_wins_for_ruleset=>qq{select count(game_player.game_id) from game_player, game where game.id = game_player.game_id and place = 1 and game_player.player_id = ? and game.ruleset_id = ?});
+
 # current_rating_for_uri: Return the player's current ranking for the given
 # ruleset URI. Defaults to 1500, if the player has no ranking.
 sub current_rating_for_uri {
@@ -73,6 +75,24 @@ sub number_of_games_played_for_ruleset {
   my ($number) = $sth->fetch;
   $sth->finish;
   return $number;
+}
+
+sub number_of_wins_for_ruleset {
+    my $self = shift;
+    my ($ruleset) = @_;
+    my $sth = $self->sql_number_of_wins_for_ruleset;
+    $sth->execute($self->id, $ruleset->id);
+    my ($number) = $sth->fetch;
+    $sth->finish;
+    return $number;
+}
+
+# rulsets: Return Volity::Info::Ruleset objects corresponding to rulesets
+# that this player has played.
+sub rulesets {
+    my $self = shift;
+    my @rulesets = Volity::Info::Ruleset->search_with_player($self);
+    return @rulesets;
 }
 
 1;
