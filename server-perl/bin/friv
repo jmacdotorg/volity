@@ -252,6 +252,39 @@ sub cmd_quit {
     exit;
 }
 
+sub cmd_invite {
+    my ($heap, $invited) = @_[HEAP, ARG0];
+    my $user = $heap->{user_obj};
+    unless ($user->referee_jid) {
+	$user->print_message("Create or join a table first!");
+	return;
+    }
+    unless ($invited) {
+	$user->print_message("Usage: invite [jid]");
+	return;
+    }
+    my $rpc_id = ++$next_rpc_request_id;
+    $user->make_rpc_request(
+			    {
+				to=>$user->referee_jid,
+				id=>$rpc_id,
+				methodname=>'volity.invite_player',
+				args=>[$invited],
+				handler=>'invite_player',
+			    }
+			    );
+
+}
+
+sub cmd_accept {
+    my ($heap) = $_[HEAP];
+    my $user = $heap->{user_obj};
+    if (my $invitation = $user->invitation) {
+	$user->current_command('accept_invitation');
+	$user->discover_uis_for_ruleset($$invitation{ruleset});
+    }
+}
+
 sub cmd_nick {
     my($heap,$nickname) = @_[HEAP,ARG0..$#_];
     unless ($nickname) {
@@ -288,6 +321,8 @@ Volity client commands:
 
   new_table (JID)  - request a new table from the given server JID
   join_table (JID) - join an existing table
+  invite (JID)     - invite another player to the table
+  accept           - accept the last invitation you received
   add_bot          - request a new bot for the current table
   start_game       - request a new game at the current table
 
@@ -338,11 +373,6 @@ sub js_writeln {
 sub js_rpc {
     my ($user, $cmd, @args) = @_;
     
-#    warn "Da command is: $cmd\n";
-#    warn "Da args are: @args\n";
-
-# XXX
-#    $user->print_message( "Making RPC call to $cmd..." );
     $user->make_rpc_request(
                             {
                              to=>$user->referee_jid,
@@ -527,7 +557,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick terminal poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load);
+use fields qw(nick terminal poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load invitation);
 use POE;
 
 sub init_finish {
@@ -538,6 +568,7 @@ sub init_finish {
   # Succesful login!
   $self->print_message("Connection successful. Weclome to Volity.");
   $self->request_roster;
+  $self->current_ui_url({});
 }
 
 sub receive_roster {
@@ -564,6 +595,20 @@ sub rpc_response_new_table {
   $self->print_message("New table made, and joined. (Table JID: $table_jid)");
 }
 
+sub _rpc_receive_invitation {
+    my $self = shift;
+    my ($sender_jid, $invitation) = @_;
+    $self->print_message("$sender_jid has invited you to a game!");
+    if ($invitation->{message}) {
+	$self->print_message("This message was attached:");
+	$self->print_message($invitation->{message});
+    }
+    $self->print_message("Use the 'accept' command to accept the invitation.");
+    $self->invitation($invitation);
+    return 1;
+}
+
+
 sub fetch_ui_file {
     my $self = shift;
     my ($url) = @_;
@@ -583,7 +628,7 @@ sub fetch_ui_file {
     close (ZIP) or die "Can't close zipfile $local_zipfile: $!\n";
     my $zip_reader;
     unless ($zip_reader = Archive::Zip->new($local_zipfile)) {
-	$self->terminal->("Oh, there was a problem reading the zipfile $local_zipfile. Sorry.");
+	$self->print_message("Oh, there was a problem reading the zipfile $local_zipfile. Sorry.");
 	return;
     }
     my $js_fh;
@@ -593,7 +638,7 @@ sub fetch_ui_file {
 	    push (@js_source, $line);
 	}
     } else {
-	$self->terminal->("The archive $local_zipfile doesn't seem to have a main file. I can't use it. Sorry...");
+	$self->print_message("The archive $local_zipfile doesn't seem to have a main file. I can't use it. Sorry...");
 	return;
     }
     
@@ -603,7 +648,11 @@ sub fetch_ui_file {
 
     # Now make the actual RPC request.
 
-    $self->request_new_table($self->server_jid);
+    if ($self->current_command eq 'new_table') {
+	$self->request_new_table($self->server_jid);
+    } elsif ($self->current_command eq 'accept_invitation') {
+	$self->join_table($self->invitation->{table});
+    }
 
 }
 
@@ -669,6 +718,11 @@ sub rpc_response_add_bot {
   $self->print_message("Response from the bot-add request was: $$message{'response'}");
 }
 
+sub rpc_response_invite_player {
+    my $self = shift;
+    $self->print_message("The invitation has been sent.");
+}
+
 sub rpc_response_start_game {
   my $self = shift;  
   $self->print_message("The game has begun. Good luck!");
@@ -703,11 +757,25 @@ sub handle_rpc_request {
   my $self = shift;
   my ($req) = @_;
   my $sub;
-  unless ($$req{'method'} =~ /^game\.(\w+)/) {
-      $self->print_message("Unknown rpc request namespace: $$req{'method'}");
-  }
-# XXX
-  main::js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
+  if ($$req{method} =~ /^volity\.(\w+)/) {
+      my $rpc_method = $1;
+      my $local_method = "_rpc_$rpc_method";
+      my $return_value;
+      if ($self->can($local_method)) {
+	  my @return_values = $self->$local_method($$req{from}, @{$$req{args}});
+	  if (@return_values < 2) {
+	      $self->send_rpc_response($$req{from}, $$req{id}, @return_values);
+	  } else {
+	      $self->send_rpc_fault($$req{from}, $$req{id}, @return_values);
+	  }
+      } else {
+	  $self->warn("Got bogus RPC request, '$$req{method}'");
+      }
+  } elsif ($$req{'method'} =~ /^game\.(\w+)/) {
+      main::js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
+    } else {
+	$self->print_message("Unknown rpc request namespace: $$req{'method'}");
+    }
 }
 
 sub handle_normal_message {
@@ -786,13 +854,15 @@ sub handle_disco_info {
     my @items = @$items;
 
     # The value of $id indicates what sort of Volity entity sent the packet.
-    if ($id eq 'ruleset-ui') {
+    if ($id =~ /^ruleset-ui(\d+)$/) {
+	my $id_number = $1;
+	my $current_ui_url = $self->current_ui_url->{$id_number};
 	my @types = @{$$fields{"client-type"}};
 	if (grep($_ eq 'http://volity.org/protocol/ui/text', @types)) {
 	    # Good, this one is available to us.
 	    push (@{$self->{available_uis}},
 		  {
-		      url=>$self->current_ui_url,
+		      url=>$current_ui_url,
 		      description=>$$fields{description}->[0],
 		      reputation=>$$fields{reputation}->[0],
 		  },
@@ -801,10 +871,11 @@ sub handle_disco_info {
 	$self->{uis_to_check} -= 1;
 	unless ($self->uis_to_check) {
 	    if (@{$self->available_uis} > 1) {
-		use Data::Dumper; die Dumper($self->available_uis);
+#		use Data::Dumper; die Dumper($self->available_uis);
 		$self->show_ui_menu;
 	    } elsif (@{$self->available_uis}) {
 		my $ui = $self->available_uis->[0];
+#		use Data::Dumper; die (Dumper($ui));
 		$self->print_message("Fetching game UI file from $$ui{url}...");
 		$self->fetch_ui_file($$ui{url});
 	    } else {
@@ -815,14 +886,25 @@ sub handle_disco_info {
     } elsif ($id eq 'server') {
 	my ($ruleset_uri) = @{$$fields{ruleset}};
 	my ($ruleset_version) = @{$$fields{"ruleset-version"}};
-#	warn "Aha, the ruleset to use is $ruleset_uri, version $ruleset_version.\n";
-	$self->request_disco_items({to=>$self->bookkeeper_jid,
-			      id=>'ruleset',
-			      node=>$ruleset_uri . "|uis",
-			  });
+
+	$self->discover_uis_for_ruleset($ruleset_uri);
     } else {
 	$self->terminal->("Um... I got a disco info response with id $id. I'm not sure what to do about it.");
     }
+}
+
+# discover_uis_for_ruleset: make a disco request for a given ruleset's
+# ui-items.
+# WARNING! The way this is presently coded, this plugs into a chain reaction
+# that will end up in a UI being downloaded. Well... so be it.
+sub discover_uis_for_ruleset {
+    my $self = shift;
+    my ($ruleset_uri) = @_;
+    
+    $self->request_disco_items({to=>$self->bookkeeper_jid,
+				id=>'ruleset',
+				node=>$ruleset_uri . "|uis",
+			    });
 }
 
 sub handle_disco_items {
@@ -831,13 +913,14 @@ sub handle_disco_items {
     my @items = @$items;
     
     if ($id eq 'ruleset') {
-#	warn "Got some Ruleset UI items!!!\n";
 	$self->available_uis([]);
 	$self->uis_to_check(scalar(@items));
+	my $id_num = 0;
 	for my $item (@items) {
-	    $self->current_ui_url($item->node);
+	    my $iq_id = "ruleset-ui" . ++$id_num;
+	    $self->current_ui_url->{$id_num} = $item->node;
 	    $self->request_disco_info({to=>$item->jid, 
-				  id=>'ruleset-ui',
+				  id=>$iq_id,
 				  node=>$item->node,
 			      });
 	}
@@ -1068,6 +1151,14 @@ Summon a bot to the current table. Only works if the referee offers a
 single bot type. (Friv currently lacks the form-support needed to
 choose new bots.)
 
+=item invite C<JID>
+
+Sends an invitation to the player with the given jid. Only works if you are already seated at a table.
+
+=item accept
+
+Accepts the last invitation you received, and brings you to the table.
+
 =item start_game
 
 Request that the referee at the current table start the game.
@@ -1112,4 +1203,5 @@ L<Volity>
 http://volity.org
 
 =cut
+					  
 					  
