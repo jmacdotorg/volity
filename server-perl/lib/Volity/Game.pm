@@ -93,14 +93,21 @@ The class that this game's players belong to. When the game wants to make new pl
 
 If you don't set this, it defaults to using the C<Volity::Player> class.
 
-=item players
-
-An array of this game's players, in turn order. (If turn order doesn't
-matter, then neither does the order of this array, so: hah.)
-
 =item referee
 
-Returns the C<Volity::Referee> object that owns this game.
+Returns the C<Volity::Referee> object that owns this game. Use this
+object to fetch player information while the game is afoot; see
+L<Volity::Referee> for the salient methods.
+
+I<Shortcut> You can call any of the referee's methods simply by
+calling them on the game object. For example, calling
+C<$game->players> is exactly equivalent to (and will return exactly
+the same player objects as) calling C<$game->referee->players>.
+
+=item is_afoot
+
+If the game is still being set up, returns falsehood. If the game has
+already started, returns truth.
 
 =back
 
@@ -152,7 +159,7 @@ use strict;
 
 use base qw(Volity Class::Data::Inheritable);
 
-use fields qw(players winners quitters current_player current_player_index referee player_jids);
+use fields qw(winners quitters current_player current_player_index referee config_variables is_afoot config_variable_setters);
 
 foreach (qw(uri name description ruleset_version website max_allowed_players min_allowed_players player_class)) {
   __PACKAGE__->mk_classdata($_);
@@ -162,51 +169,23 @@ use Scalar::Util qw(weaken);
 
 use Carp qw(carp croak);
 
-# Ehh, these globals...
-# The idea is that subclasses will define them, if they want to. I dunno.
-our $player_class;
-our $max_allowed_players;
-our $min_allowed_players;
-
-
 sub initialize {
   my $self = shift;
-#  unless ($self->check_sanity) {
-#    return;
-#  }
   $self->current_player_index(0);
-  if (defined($self->{players})) {
-    $self->current_player($self->{players}->[0]);
-    $self->create_player_jid_lookup_hash;
-  }
   weaken($self->{referee});
+  $self->config_variables({});
+  $self->config_variable_setters({});
 }
 
-sub AUTOHANDLER {
+sub AUTOLOAD {
   my $self = shift;
-  our $AUTOHANDLER;
-  if ($self->referee->can($AUTOHANDLER)) {
-    return $self->referee->$AUTOHANDLER(@_);
+  our $AUTOLOAD;
+  my ($method) = $AUTOLOAD =~ /^.*::(.*)$/;
+  if ($self->referee->can($method)) {
+    return $self->referee->$method(@_);
   } else {
-    croak ("Unknown method $AUTOHANDLER");
+    croak ("Unknown method $method");
   }
-}
-
-#################
-# Basic player management
-#################
-
-sub players {
-  my $self = shift;
-  if (exists($_[0])) {
-    if (not(defined($_[0])) || ref($_[0]) eq 'ARRAY') {
-      $self->{players} = $_[0];
-    } else {
-      $self->{players} = [@_];
-    }
-    $self->create_player_jid_lookup_hash;
-  }
-  return @{$self->{players}};
 }
 
 =head2 current_player ($player)
@@ -226,89 +205,95 @@ This method is useful to call at the end of a turn.
 sub rotate_current_player {
   my $self = shift;
   my $index = $self->current_player_index;
-  if ($index + 1< (@{$self->{players}})) {
+  if ($index + 1< ($self->referee->players)) {
     $index++;
   } else {
     $index = 0;
   }
   $self->current_player_index($index);
-  $self->current_player($self->{players}->[$index]);
-}
-
-sub create_player_jid_lookup_hash {
-  my $self = shift;
-  map ($self->{player_jids}{$_->jid} = $_, @{$self->{players}});
-}
-
-=head2 muc_jid
-
-I<Read-only> accessor for the JID of the MUC which this game is
-running in. (Really, it justs asks the parent referee which MUC it's
-in.)
-
-=cut
-
-sub muc_jid {
-  my $self = shift;
-  return ($self->referee->muc_jid(@_));
-}
-
-=head2 get_player_with_jid ($jid)
-
-Returns the Volity::Player object corresponding to the given JID.
-
-=cut
-
-sub get_player_with_jid {
-  my $self = shift;
-  my ($jid) = @_;
-  unless (defined($jid)) {
-    carp("get_player_with_jid() called with no arguments. That's not going to work, pal.");
-    return;
-  }
-  my $muc_jid = $self->muc_jid;
-  my $real_jid;			# The keyed JID of this user.
-  if (defined($muc_jid) and $jid =~ m|^$muc_jid/|) {
-    # Looks like a player within a MUC.
-    $real_jid = $self->referee->look_up_jid_with_nickname($jid);
-    croak("Uhh, I can't find any real jids for MUC-based JID $jid. This shouldn't happen.") unless defined($real_jid);
-  } else {
-    $real_jid = $jid;
-  }
-  my $player = $self->{player_jids}->{$real_jid};
-  unless (defined($player)) {
-    warn("Received message from apparent non-player JID $jid (\$real_jid was: $real_jid). Ignoring!!\n");
-    return;
-  }
-  return $player;
+  $self->current_player(($self->referee->players)[$index]);
 }
 
 # call_ui_function_on_everyone: A convenience method for blasting something
 # at every single player.
 sub call_ui_function_on_everyone {
   my $self = shift;
-  map($_->call_ui_function(@_), $self->players);
+  map($_->call_ui_function(@_), $self->referee->players);
 }
 
+# register_config_variables: Turn the given strings into class variables,
+# and also add them to the internal list of configuration vars.
+# We need to remember these for proper URI construction.
+sub register_config_variables {
+    my $self = shift;
+    my $class = ref($self);
+    foreach (@_) {
+	$self->config_variables->{$_} = 1;
+    }
+    use Data::Dumper;
+    warn Dumper($self->config_variables);
+
+}
+
+# full_uri: Returns the base uri plus a query string based on current
+# game config settings.
+sub full_uri {
+    my $self = shift;
+    my $class = ref($self);
+    my $base_uri = $class->uri;
+    my @query_string_parts;
+    for my $config_variable_name (@{$class->config_variables}) {
+	push (@query_string_parts, "$config_variable_name=".
+	      $class->$config_variable_name)
+    }
+    my $full_uri = "$base_uri?" . join('&', @query_string_parts);
+    return $full_uri;
+}
+
+# is_config_variable: Returns truth if the given string is the name of
+# a config variable.
+sub is_config_variable {
+    my $self = shift;
+    my ($variable_name) = @_;
+    return $self->config_variables->{$variable_name};
+}
+
+# tell_player_about_config: Tell the given player about the current game
+# configuaration. Called by the ref when a new player joins.
+sub tell_player_about_config {
+    my $self = shift;
+    my ($player) = @_;
+    while (my ($config_variable_name, $setter) = each(%{$self->config_variable_setters})) {
+	unless ($setter) {
+	    $setter = $self->referee->table_creator;
+	}
+	my $value = $self->$config_variable_name;
+	$player->call_ui_function($config_variable_name, $setter->nick, $value);
+    }
+}
 
 ###################
 # Game actions
 ###################
 
-=head2 end_game
+=head2 end
 
 Ends the game. The referee will automatically handle player
 notification. The bookkeeper will be sent a record of the game's
 results at this time, so be sure you have the game's winner-list
 arranged correctly.
 
+I<Note> that the balancing C<start> method is actually a callback; see
+L<"Callback methods">.
+
 =cut
 
-# end_game: called when the game has come to a close, one way or another.
+# end: called when the game has come to a close, one way or another.
 # Does very little right now.
-sub end_game {
+sub end {
   my $self = shift;
   my ($args) = @_;
+  $self->is_afoot(0);
   $self->referee->end_game;
 }
 
@@ -321,7 +306,7 @@ sub end_game {
 
 C<Volity::Game> provides default handlers for these methods, called on the game object by different parts of Frivolity. You may override these methods if you want your game module to behave in some way other than the default (usually a no-op).
 
-=head2 start_game
+=head2 start
 
 Called by the referee after it creates the game object and is ready to
 begin play. It gives the object a chance to perform whatever it would
