@@ -1,5 +1,23 @@
 #!/usr/bin/perl
 
+############################################################################
+# LICENSE INFORMATION - PLEASE READ
+############################################################################
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+############################################################################
+
 =begin TODO
 
 * Fix history browsing so that the cursor snaps back to the end when ya done.
@@ -25,7 +43,7 @@ use Archive::Zip::MemberRead;
 use Tie::ExecHash;
 
 my %opts;
-getopts( 'u:h:p:r:o:f:b:c:d', \%opts );
+getopts( 'u:h:p:r:o:f:b:c:l:d', \%opts );
 # u == username
 # h == host
 # p == password
@@ -35,6 +53,7 @@ getopts( 'u:h:p:r:o:f:b:c:d', \%opts );
 # b == bookkeeper (bookkeeper@volity.net/volity)
 # c == command to run on start
 # d == daemonize
+# l == logger configuration file (no logging, if undefined)
 
 ################
 # GLOBALS
@@ -52,6 +71,14 @@ unless (-e $working_dir) {
 	mkdir $_ or die "Tried to create working directory $_ but failed: $!";
     }
 }
+
+# Set up the logger, if a config file has been provided.
+if (defined($opts{l})) {
+    my $logger_config_filename = $opts{l};
+    Log::Log4perl::init_and_watch($logger_config_filename, 5);
+    my $logger = Log::Log4perl->get_logger("Volity");
+}
+
 
 # Crank up the POE session that will manage our Jabber connection.
 POE::Session->create(
@@ -509,6 +536,8 @@ sub cmd_help {
     my( $heap, $on ) = @_[ HEAP, &ARGS ];
     output( $heap, $_ ) for split /\n/, <<CMDLIST;
 Volity client commands:
+
+  CONNECTING
   connect [(JID) [(password)]] - creates a new connection.  If this is
                              the only connection then it is made
                              active.
@@ -516,6 +545,7 @@ Volity client commands:
   use (JID)        - make JID the active connection
   connections      - list connections
   
+  MESSAGING
   msg (JID) (text) - send private message to the given JID
   tmsg (text)      - send groupchat message to the current table
   rmsg (text)      - send private message to the current referee
@@ -523,16 +553,28 @@ Volity client commands:
   nick (nickname)  - set a new table nickname for yourself
   roster           - view your roster
 
+  UI MANAGEMENT (Useful for UI development / debugging)
   load_ui (path)   - manually load a UI file
   clear_ui         - clear the current UI file from memory
 
+  FINDING GAMES
+  find             - call up the game finder
+  lobby (menu #)   - join the given game's lobby
+  tables (menu #)  - see a list of open tables playing the given game
+  play (#)         - let the server choose a table for you
+
+  STARTING GAMES
   new_table (JID)  - request a new table from the given server JID
   join_table (JID) - join an existing table
   invite (JID)     - invite another player to the table
   accept           - accept the last invitation you received
   add_bot          - request a new bot for the current table
-  start_game       - request a new game at the current table
+  ready            - declare readiness to start a new game at current table
+  unready          - withdraw a previous readiness declaration
+  stand            - declare unwillingness to play, but remain at table
+  sit              - delcare willingness to play (cancelling previous stand)
 
+  MISCELLANY
   info             - see some info about your current status
   source (file)    - run commands from file
   help             - this list
@@ -570,8 +612,8 @@ sub cmd_load_ui {
 }
 
 sub js_writeln {
-    my( $term, @output ) = @_;
-    $term->put( "@output" );
+    my( $user, @output ) = @_;
+    $user->print_message( "@output" );
 }
 
 sub js_rpc {
@@ -600,8 +642,30 @@ sub cmd_new_table {
     my( $heap, $server_jid ) = @_[ HEAP, &ARGS ];
     my $user = $heap->{'default_player'};
     unless ( defined $server_jid ) {
-        return output( $heap, "Usage: new_table [game-server-jid]" );
     }
+
+    unless ($server_jid) {
+	# A bare-named new_table command should be within a finder context.
+	if ($user->server_menu) {
+#	    use Data::Dumper; die Dumper($user->{server_menu});
+	    if (not($user->server_menu->[0])) {
+		$user->print_message("Use the game finder to choose a game to create, or enter a server JID directly.");
+	    } elsif (not($user->server_menu->[1])) {
+		# There's only one choice, so skip the menu.
+		$server_jid = $user->server_menu->[0]->{jid};
+		$user->print_message("Requesting new table at $server_jid...");
+	    } else {
+		# Make the user choose a server.
+		$user->print_server_menu;
+		return;
+	    }
+	} else {
+	    # No server menu defined? We don't seem to be using the
+	    # game finder, then.
+	    return output( $heap, "Usage: new_table [game-server-jid]" );
+	}
+    }
+
     unless ( is_jid( $server_jid ) ) {
         return output( $heap, "That doesn't look like a JID to me!" );
     }
@@ -633,7 +697,30 @@ sub cmd_add_bot {
 sub cmd_join_table {
   my( $heap, $table_jid ) = @_[ HEAP, &ARGS ];
   my $user = $heap->{'default_player'};
-  return unless check_jid( $heap, $table_jid );
+
+  unless ($table_jid) {
+      $user->print_message("Usage: join_table [jid] OR join_table [menu #]");
+      return;
+  }
+
+  # The $table_jid might be a numeric menu choice, and not a real JID.
+  # Check for that first.
+  if ($table_jid =~ /^\d+$/) {
+      # Try treating it as a menu option.
+      if ($user->table_menu->[$table_jid - 1]) {
+	  $table_jid = $user->table_menu->[$table_jid - 1]->{table};
+      } else {
+	  $user->print_message("There is no table number '$table_jid' in the menu.");
+	  return;
+      }
+  }
+
+  # Check the validity of the JID.
+  unless (check_jid( $heap, $table_jid )) {
+      $user->print_message("This doesn't look like a valid Jabber ID to me: $table_jid");
+      return;
+  }
+
   if ( $user->js and $user->manual_ui_load ) {
       output( $heap, "UI file manually loaded, so I won't fetch another over the network.");
       output( $heap, "To force a fetch, use the clear_ui command, then rejoin this table.");
@@ -676,7 +763,7 @@ sub cmd_msg {
         });
 }
 
-sub cmd_start_game {
+sub cmd_ready {
     my( $heap ) = @_[ HEAP, &ARGS ];
     my $user = $heap->{'default_player'};
     unless ( defined $user->table_jid ) {
@@ -686,8 +773,44 @@ sub cmd_start_game {
     $user->make_rpc_request({
         id         => $rpc_id,
         to         => $user->referee_jid,
-        methodname => 'volity.start_game',
-        handler    => 'start_game',
+        methodname => 'volity.ready',
+        handler    => 'ready',
+        });
+}
+
+sub cmd_stand {
+    my( $heap ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $user->table_jid ) {
+      return output( $heap,"You're not seated at a table.");
+    }
+    my $rpc_id = ++$next_rpc_request_id;
+    $user->make_rpc_request({
+        id         => $rpc_id,
+        to         => $user->referee_jid,
+        methodname => 'volity.stand',
+        handler    => 'stand',
+        });
+}
+
+sub cmd_sit {
+    # Sitting is actually just an alias to an unreadiness call request,
+    # since they really do the same thing.
+    return cmd_unready(@_);
+}
+
+sub cmd_unready {
+    my( $heap ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $user->table_jid ) {
+      return output( $heap,"You're not at a table.");
+    }
+    my $rpc_id = ++$next_rpc_request_id;
+    $user->make_rpc_request({
+        id         => $rpc_id,
+        to         => $user->referee_jid,
+        methodname => 'volity.unready',
+        handler    => 'unready',
         });
 }
 
@@ -746,13 +869,72 @@ sub cmd_roster {
     }
 }
 
+sub cmd_find {
+    my( $heap ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    $user->request_disco_items({
+	to=>$user->bookkeeper_jid,
+	id=>'finder',
+	node=>'rulesets',
+    });
+}
+
+sub cmd_lobby {
+    my( $heap, $menu_choice ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ($menu_choice) {
+	$user->print_message("Usage: lobby (game #)");
+	$user->print_message("...where (game #) is one of the menu option numbers resulting from\nthe 'find' command.");
+	    return;
+    }
+    my $ruleset_item = $user->ruleset_menu->[$menu_choice - 1];
+    unless ($ruleset_item) {
+	$user->print_message("That doesn't appear to be a menu option.");
+	return;
+    }
+    # Issue a lobby-discovering disco request to the server.
+    $user->request_disco_items({
+	to=>$user->bookkeeper_jid,
+	id=>'lobby',
+	node=>$ruleset_item->node . "|lobby",
+    });
+}
+
+sub cmd_tables {
+    my( $heap, $menu_choice ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ($menu_choice) {
+	$user->print_message("Usage: tables (game #)\n...where (game #) is one of the menu option numbers resulting from\nthe 'find' command.");
+	    return;
+    }
+    my $ruleset_item = $user->ruleset_menu->[$menu_choice - 1];
+    unless ($ruleset_item) {
+	$user->print_message("That doesn't appear to be a menu option.");
+	return;
+    }
+    my @servers = $user->servers_for_ruleset($ruleset_item->node);
+    if (@servers) {
+	$user->server_menu(\@servers);
+	my @tables = $user->tables_for_servers(@servers);
+	if (@tables) {
+	    $user->table_menu(\@tables);
+	    $user->print_table_menu;
+	} else {
+	    $user->print_message("There are no open tables for that ruleset.");
+	}
+    } else {
+	$user->print_message("There are no active servers for that ruleset. (How strange...)");
+    }
+    
+}
+
 package Volity::User;
 
 use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick output poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load);
+use fields qw(nick output poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load ruleset_menu table_menu server_menu server_timeout awaiting_referee_list awaiting_table_info awaiting_server_list alarm_ids servers_by_ruleset waiting_for_servers salient_servers responding_servers salient_referees responding_referees is_ready);
 use POE;
 
 sub init_finish {
@@ -763,7 +945,16 @@ sub init_finish {
   # Succesful login!
   $self->print_message("Connection successful. Weclome to Volity.");
   $self->request_roster;
-  $self->current_ui_url({});
+
+  # Initialize some instance variables.
+  $self->server_timeout(2);	# How long (secs) to wait for disco responses
+  foreach (qw(current_ui_url awaiting_server_list awaiting_referee_list awaiting_table_info alarm_ids servers_by_ruleset salient_servers responding_servers salient_referees responding_referees)) {
+      $self->$_({});
+  }
+  foreach (qw(table_menu ruleset_menu server_menu)) {
+      $self->$_([]);
+  }
+
 }
 
 sub receive_roster {
@@ -803,6 +994,51 @@ sub _rpc_receive_invitation {
     return 1;
 }
 
+sub _rpc_player_ready {
+    my $self = shift;
+    my ($sender_jid, $player_nickname) = @_;
+    $self->print_message("$player_nickname is ready to play.");
+    return 1;
+}
+
+sub _rpc_player_unready {
+    my $self = shift;
+    my ($sender_jid, $player_nickname) = @_;
+    $self->print_message("Oops; $player_nickname is no longer ready to play.");
+    return 1;
+}
+
+sub _rpc_start_game {
+    my $self = shift;
+    # Tell the UI to get going.
+    main::js_call($self->js, 'START');
+}
+
+sub _rpc_end_game {
+    my $self = shift;
+    # Tell the UI to end the game.
+    main::js_call($self->js, 'END');
+}
+
+sub _rpc_player_sat {
+    my $self = shift;
+    my ($sender_jid, $player_nickname) = @_;
+    $self->print_message("$player_nickname sits, joining as a player.");
+    if ($self->is_ready) {
+	$self->print_message("This has made you unready.");
+	$self->is_ready(0);
+    }
+}
+
+sub _rpc_player_stood {
+    my $self = shift;
+    my ($sender_jid, $player_nickname) = @_;
+    $self->print_message("$player_nickname stands up, no longer wishing to play.");
+    if ($self->is_ready) {
+	$self->print_message("This has made you unready.");
+	$self->is_ready(0);
+    }
+}
 
 sub fetch_ui_file {
     my $self = shift;
@@ -888,7 +1124,7 @@ sub load_js_from_source {
     my $game = $js->object_by_path("game");
     my $referee = $js->object_by_path("client");
     my $info = $js->object_by_path("info");
-    $js->function_set("writeln", sub { main::js_writeln( $self->terminal, @_) } );
+    $js->function_set("writeln", sub { main::js_writeln( $self, @_) } );
     $js->function_set("rpc", sub { main::js_rpc( $self, @_ ) } );
     $js->function_set("registerCommand", 
                       sub { main::js_registerCommand( $commands, @_ ) } , $referee );
@@ -918,9 +1154,15 @@ sub rpc_response_invite_player {
     $self->print_message("The invitation has been sent.");
 }
 
-sub rpc_response_start_game {
+sub rpc_response_ready {
   my $self = shift;  
-  $self->print_message("The game has begun. Good luck!");
+  $self->print_message("You're ready to play. (Use the 'unready' command to cancel.)");
+  $self->is_ready(1);
+}
+
+sub rpc_response_unready {
+    my $self = shift;
+    $self->print_message("You are sitting, but not ready to play. (Use the 'ready' command when you are ready.)");
 }
 
 sub rpc_response_default {
@@ -928,6 +1170,11 @@ sub rpc_response_default {
   my ($message) = @_;
   $self->print_message("Received an RPC response with id ".
     "$$message{'id'}, but I don't know how to handle it.");
+}
+
+sub rpc_response_stand {
+    my $self = shift;
+    $self->print_message("You are no longer playing. (Use the 'sit' command to cancel.)");
 }
 
 sub handle_rpc_transmission_error {
@@ -964,10 +1211,9 @@ sub handle_rpc_request {
               $self->send_rpc_fault($$req{from}, $$req{id}, @return_values);
           }
       } else {
-          $self->warn("Got bogus RPC request, '$$req{method}'");
+          warn("Got bogus RPC request, '$$req{method}'");
       }
   } elsif ($$req{'method'} =~ /^game\.(\w+)/) {
-# XXX
       main::js_call( $self->js, $$req{'method'}, @{ $$req{'args'} } );
   } else {
       $self->print_message("Unknown rpc request namespace: $$req{'method'}");
@@ -1067,11 +1313,9 @@ sub handle_disco_info {
         $self->{uis_to_check} -= 1;
         unless ($self->uis_to_check) {
             if (@{$self->available_uis} > 1) {
-#                use Data::Dumper; die Dumper($self->available_uis);
                 $self->show_ui_menu;
             } elsif (@{$self->available_uis}) {
                 my $ui = $self->available_uis->[0];
-#                use Data::Dumper; die (Dumper($ui));
                 $self->print_message("Fetching game UI file from $$ui{url}...");
                 $self->fetch_ui_file($$ui{url});
             } else {
@@ -1084,6 +1328,21 @@ sub handle_disco_info {
         my ($ruleset_version) = @{$$fields{"ruleset-version"}};
 
         $self->discover_uis_for_ruleset($ruleset_uri);
+    } elsif ($id =~ /^table-info-request-(.*)$/) {
+	# This referee is telling us about its table.
+	my $referee_jid = $1;
+	$self->logger->debug("New table info from $referee_jid.");
+	my %table_info;
+	foreach ("max-players", "server", "table", "afoot", "players", "language", "name") {
+	    $table_info{$_} = $$fields{$_}->[0];
+	}
+#	$self->table_menu->{keys(%{$self->table_menu}) + 1} = \%table_info;
+	push (@{$self->table_menu}, \%table_info);
+    } elsif ($id =~ /^server-info-request-(.*)$/) {
+	my $server_jid = $1;
+	my ($server_info) = $self->salient_servers->{$server_jid};
+	$server_info->{name} = "Billy bob's bar-b-q";
+	$self->responding_servers->{$server_jid} = $server_jid;
     } else {
         $self->print_message("Um... I got a disco info response with id $id. I'm not sure what to do about it.");
     }
@@ -1120,8 +1379,265 @@ sub handle_disco_items {
                                   node=>$item->node,
                               });
         }
+    } elsif ($id eq 'finder') {
+	if (@items) {
+	    my @menu;
+	    for my $item (@items) {
+		push (@menu, $item);
+	    }
+	    $self->ruleset_menu(\@menu);
+	    $self->print_ruleset_menu;
+	} else {
+	    $self->print_message("Worryingly, the bookkeeper doesn't seem to know about any game categories. Er...");
+	}
+    } elsif ($id eq 'lobby') {
+	if (@items) {
+	    # We'll just use the one lobby for now.
+	    my $lobby_jid = $items[0]->jid;
+	    $self->print_message("Joining lobby (at $lobby_jid)...");
+	    $self->join_muc({
+		jid=>$lobby_jid,
+		nick=>$self->nick || $self->user,
+	    });
+	} else {
+	    $self->print_message("Oddly, I can't find the lobby for that game. Sorry.");
+	}
+    } elsif ($id eq 'servers') {
+	# Stuff a hashref representation of the server into an dictionary
+	# called 'salient servers' which the servers_for_ruleset() sub
+	# (which is probably executing in another POE thread) will use.
+	foreach (@items) {
+	    my $server_info = {jid=>$_->jid};
+	    $self->salient_servers->{$_->jid} = $server_info;
+	}
+
+	# We're done waiting, so signal the other POE parts.
+	$self->waiting_for_servers(0);
+
+    } elsif ($id =~ /^referee-list-request-(.*)$/) {
+	# This server is telling us about its non-hidden referees.
+	foreach (@items) {
+	    $self->salient_referees->{$_->jid} = $_->jid;
+	}
+	my $server_jid = $1;
+	$self->responding_servers->{$server_jid} = 1;
+	$self->logger->debug("New referee list from $server_jid.");
+#	# The @items array holds referee information.
+#	# Ask the bookkeeper for the skinny on this server.
+#	$self->get_server_reputation($server_jid);
+#	# We will ask each referee for info about its table.
+#	$self->get_table_info_from_referees(@items);
+#	# We're no longer waiting for a response from this server...
+#	delete($self->awaiting_referee_list->{$server_jid});
+#	unless (keys(%{$self->awaiting_referee_list})) {
+#	    # OK, all the servers have reported back. We don't need to
+#	    # wait any longer.
+#	    $self->kernel->delay_adjust($self->alarm_ids->{referee_list},
+#					0,
+#					);
+#	}
     }
 }
+    
+sub get_server_reputation { }
+
+sub tables_for_servers {
+    my $self = shift;
+    my @servers = @_;
+    my $deadline;
+
+    # Get referees from all servers.
+    $deadline = time + $self->server_timeout;
+    for my $server (@servers) {
+	# Do a disco for refs
+	my $server_jid = $server->{jid};
+	$self->logger->debug("Asking $server_jid for its referees.");
+	$self->request_disco_items({
+	    to=>$server_jid,
+	    id=>"referee-list-request-$server_jid",
+	    node=>"open_games",
+	});
+    }
+    until ((time == $deadline) or (values(%{$self->responding_servers}) == @servers)) {
+	$self->kernel->run_one_timeslice;
+    }
+
+    # We have all the refrees we care about stored in $self->salient_referees.
+    # Ask them what tables they have.
+    $deadline = time + $self->server_timeout;
+    for my $referee_jid (values(%{$self->salient_referees})) {
+	$self->logger->debug("Asking $referee_jid for its info.");
+	$self->request_disco_info({
+	    to=>$referee_jid,
+	    id=>"table-info-request-$referee_jid",
+	});
+    }
+    until ((time == $deadline) or (values(%{$self->responding_referees}) == values(%{$self->salient_referees}))) {
+	$self->kernel->run_one_timeslice;
+    }
+
+    # Now, all the table info hashes are in $self->table_menu.
+
+    # Clean up scratchpads.
+    $self->responding_servers({});
+    $self->salient_referees({});
+    $self->responding_referees({});
+
+    # And return the table menu because it's nice to return things.
+    return @{$self->table_menu};
+}
+
+sub servers_for_ruleset {
+    my $self = shift;
+    my ($ruleset_uri) = @_;
+    unless ($self->servers_by_ruleset->{$ruleset_uri}) {
+	$self->print_message("One moment while I fetch server information...");
+	$self->request_disco_items({
+	    to=>$self->bookkeeper_jid,
+	    id=>'servers',
+	    node=>$ruleset_uri . '|servers',
+	});
+	$self->waiting_for_servers(1);
+	until (not($self->waiting_for_servers)) {
+	    $self->kernel->run_one_timeslice;
+	}
+	my $deadline = time + $self->server_timeout;
+	for my $server_info (values(%{$self->salient_servers})) {
+	    $self->request_disco_info({
+		to=>$server_info->{jid},
+		id=>"server-info-request-" . $server_info->{jid},
+	    });
+	}
+	until ((time == $deadline) or (values(%{$self->responding_servers}) == values(%{$self->salient_servers}))) {
+	    $self->kernel->run_one_timeslice;
+	}
+	# Winnow out any servers who didn't respond to that info call.
+	for my $jid (keys(%{$self->salient_servers})) {
+	    unless ($self->responding_servers->{$jid}) {
+		delete($self->salient_servers->{$jid});
+	    }
+	}
+
+	$self->servers_by_ruleset->{$ruleset_uri} = [values(%{$self->salient_servers})];
+	# Clean up the scratchpads.
+	$self->salient_servers({});
+	$self->responding_servers({});
+    }
+
+    return @{$self->servers_by_ruleset->{$ruleset_uri}};
+}
+
+# get_referee_lists_from_servers: Send out disco requests to the given
+# servers, asking what referees they have available.
+sub OLD_get_referee_lists_from_servers {
+    my $self = shift;
+    my (@server_items) = @_;
+    # Set a timer. All the servers will have to check in by this deadline.
+    # When it's up, we'll print the table menu, _unless_ we are still
+    # waiting for referees to respond.
+    $self->kernel->state('referee_timeout', 
+			 sub {
+			     my $self = $_[ARG0];
+			     delete($self->alarm_ids->{referee_list});
+			     unless($self->alarm_ids->{table_info}) {
+				 $self->print_table_menu;
+			     }
+			   },
+			 );
+    $self->alarm_ids->{referee_list} = 
+	$self->kernel->delay('referee_timeout', $self->server_timeout, $self);
+    foreach my $server_item (@server_items) {
+	my $jid = $server_item->jid;
+	$self->awaiting_referee_list->{$jid} = 1;
+	my $request_id = "referee-list-request-$jid";
+	$self->logger->debug("Making referee-list request to $jid, id $request_id");
+	$self->request_disco_items({
+	    to=>$jid,
+	    id=>$request_id,
+	    node=>'referees',
+	});
+    }
+}
+
+sub OLD_get_table_info_from_referees {
+    my $self = shift;
+    my (@referee_items) = @_;
+    # Set a timer. All the servers will have to check in by this deadline.
+    # When it's up, we'll print the table menu, _unless_ we are still
+    # waiting for referees to respond.
+    $self->kernel->state('table_timeout', 
+			 sub {
+			     my $self = $_[ARG0];
+			     delete($self->alarm_ids->{table_info});
+			     unless($self->alarm_ids->{referee_list}) {
+				 $self->print_table_menu;
+			     }
+			   },
+			 );
+    $self->alarm_ids->{referee_list} = 
+	$self->kernel->delay('table_info', $self->server_timeout, $self);
+    foreach my $referee_item (@referee_items) {
+	my $jid = $referee_item->jid;
+	$self->awaiting_table_info->{$jid} = 1;
+	my $request_id = "table-info-request-$jid";
+	$self->logger->debug("Making table-info request to $jid, id $request_id");
+	$self->request_disco_info({
+	    to=>$jid,
+	    id=>$request_id,
+	});
+    }
+}
+    
+
+sub print_ruleset_menu {
+    my $self = shift;
+    $self->print_message("Games you can play:");
+    my $number = 1;
+    for my $ruleset_item ($self->ruleset_menu) {
+	my $name = $ruleset_item->name;
+	$self->print_message("$number\t$name");
+	$number++;
+    }
+    $self->print_message("You may now use the 'lobby' or 'tables' commands with one of");
+    $self->print_message("the above numbers.");
+}
+
+sub print_server_menu {
+    my $self = shift;
+    if (($self->server_menu)) {
+	my $number = 1;
+	for my $server_item ($self->server_menu) {
+	    $self->print_message($number++ . $server_item->{jid});
+	}
+	$self->print_message("Type 'new_table [#]' to create a new table on one of these servers.");
+    } else {
+	$self->print_message("There are no known servers for this ruleset.");
+    }
+}
+
+sub print_table_menu {
+    my $self = shift;
+    if ($self->table_menu) {
+	my $number = 1;
+	for my $table_info ($self->table_menu) {
+	    my $table_line = sprintf("% 2d: %s Players:(%d/%d)",
+				     $number++,
+				     $table_info->{name},
+				     $table_info->{players} || 0,
+				     $table_info->{'max-players'},
+				     );
+	    my $server_line = sprintf("    Server rating: %d", 0);
+	    $self->print_message($table_line);
+	    $self->print_message($server_line);
+	    $self->print_message("    Language: " . $table_info->{language});
+	}
+	$self->print_message("Join a table with 'join_table [#]'.");
+    } else {
+	$self->print_message("No tables are available for this game.");
+    }
+    $self->print_message("You can start a new table with 'new_table'.");
+}
+	
 
 # add_opponent_nickname: Add the given nickname (either a full JID in MUC
 # format, or a bare string containing only the nickname) to our internal
@@ -1283,6 +1799,10 @@ probably shouldn't change this.
 The working directory that Friv can use to store its scratch
 files. Defaults to "$ENV{HOME}/.friv".
 
+=item l
+
+A Log::Log4perl configuration file to use. (See L<Log::Log4perl>.)
+
 =item o
 
 The TCP port to connect to. Defaults to 5222 (Jabber's default port).
@@ -1295,17 +1815,62 @@ The resource to use with the Jabber account. Defaults to 'friv'.
 
 =head1 COMMANDS
 
+=head2 Connecting and disconnecting
+
 =over
 
-=item roster
+=item connect C<JID> C<password>
 
-View your Jabber roster, including indicators of who's online and who's not.
+Creates a new Jabber connection with the given Jabber ID and
+password. Friv can support multiple simultaneous connections.
 
-=item help
+This command is executed for you if you specified login information
+via command-line flags (see L<"RUNNING">).
 
-Displays a list of the standard Friv commands (as described in this
-manpage), as well as any game-specific commands defined by the current UI
-file (if there is one).
+=item use C<JID>
+
+Makes the connection with the named JID active.
+
+You don't need to invoke this if you have only one connection active.
+
+=item disconnect C<JID>
+
+Disconnects the connection with the provided JID from the Volity/Jabber network.
+
+=item quit
+
+Closes all network connections, and exits the program.
+
+=back
+
+=head2 Messaging
+
+=over
+
+=item msg C<JID> C<Message body>
+
+Send the given text (as a 'normal'-type Jabber message) to the specifed JID.
+
+=item tmsg C<Message body>
+
+Send the given text (as a 'groupchat'-type Jabber message) to the table.
+
+=item rmsg C<Message body>
+
+Send the given text to the table's referee.
+
+=item nick C<nickname>
+
+Change your table/MUC nickname. By default, it's your username.
+
+=back
+
+=head2 UI management
+
+These commands are mainly useful for UI development and debugging,
+since Volity automates most UI management.
+
+=over
 
 =item load_ui C<filename>
 
@@ -1323,6 +1888,37 @@ with all the other standard Friv commands).
 
 Clears the currently loaded UI file from memory.
 
+=back
+
+=head2 Finding games
+
+These commands let you interact with the Volity game finder, which let
+you create and join game tables without directly handling raw
+JabberIDs.
+
+This is an experimental Volity feature, and so are these commands.
+
+=over
+
+=item find
+
+Summons the game finder, displaying a menu of rulesets known to the Volity bookkeeper. Use the numbers from that menu as arguments with the following commands, as well as the C<new_table> command.
+
+=item lobby C<find-menu-number>
+
+Joins the discussion lobby of the given ruleset.
+
+=item tables C<find-menu-number>
+
+Lists the active, open tables of the given ruleset. You can use the numbers
+from that menu as arguments with the C<join_table> command.
+
+=back
+
+=head2 Starting games
+
+=over
+
 =item new_table C<JID>
 
 Attempt to create a new table at the specified JID. If successful, you
@@ -1333,6 +1929,10 @@ open negotiation with the specified server in order to find and load
 an appropriate UI file by itself. It it cannot do so, you'll recieve
 an explanatory error message, and no table will be created.
 
+Optionally, after using the C<find> command, you can use a menu number
+instead of a JID to start a new table at a server providing that menu
+item's ruleset.
+
 =item join_table C<JID>
 
 Attempt to join the table (or Jabber groupchat) at the specifed JID.
@@ -1340,6 +1940,9 @@ Attempt to join the table (or Jabber groupchat) at the specifed JID.
 Unfortunately, you must load a UI file manually (with C<load_ui>)
 before calling this. Future versions of Friv will be able to fetch the
 appropriate UI file over the network, much as with C<new_table>.
+
+Optionally, after using the C<tables> command, you can use a menu number
+instead of a JID to join that table.
 
 =item add_bot
 
@@ -1355,25 +1958,54 @@ Sends an invitation to the player with the given jid. Only works if you are alre
 
 Accepts the last invitation you received, and brings you to the table.
 
-=item start_game
+=item sit
 
-Request that the referee at the current table start the game.
+Sits at the table, signaling that you are ready to play.
 
-=item msg C<JID> C<Message body>
+Note that you are standing when you first join a table.
 
-Send the given text (as a 'normal'-type Jabber message) to the specifed JID.
+Sitting causes all other players to become unready, since changing the
+number (and identity) of players effectively the changes the table
+conifguration.
 
-=item tmsg C<Message body>
+=item stand
 
-Send the given text (as a 'groupchat'-type Jabber message) to the table.
+Stands up from the table, signaling that you no longer wish to be an
+active player.
 
-=item rmsg C<Message body>
+Standing causes all other players to become unready, since changing
+the number (and identity) of players effectively the changes the table
+conifguration.
 
-Send the given text to the table's referee.
+=item ready
 
-=item quit
+(Only works when you are seated.) Signals that you are ready
+to play. The game begins once all the players have signaled readiness.
 
-Quits the program (and logs you out of the system).
+=item unready
+
+(Only works when you are seated.) Signals that you are no longer ready
+to play, but keeps you seated at the table.
+
+=back
+
+=head2 Miscellaneous commands
+
+=over
+
+=item info
+
+Displays some debuggy information about your current Volity status.
+
+=item source [filename]
+
+Opens the named file and executes it as ECMAScript.
+
+=item help
+
+Displays a list of the standard Friv commands (as described in this
+manpage), as well as any game-specific commands defined by the current UI
+file (if there is one).
 
 =back
 
@@ -1390,7 +2022,7 @@ Jason McIntosh <jmac@jmac.org> (Jabber: jmac@volity.net)
 
 =head1 COPYRIGHT
 
-Copyright (c) 2004 by Jason McIntosh
+Copyright (c) 2004-2005 by Jason McIntosh
 
 =head1 SEE ALSO
 
@@ -1399,3 +2031,4 @@ L<Volity>
 http://volity.org
 
 =cut
+
