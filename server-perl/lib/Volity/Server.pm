@@ -150,7 +150,7 @@ sub jabber_authed {
   my $node = $_[ARG0];
   $self->debug("We have authed!\n");
   unless ($node->name eq 'handshake') {
-    warn $node->to_str;
+#    warn $node->to_str;
   }
 }
 
