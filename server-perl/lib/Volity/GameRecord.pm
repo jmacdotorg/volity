@@ -556,6 +556,8 @@ sub end_element {
   }
 }
 
+=back
+
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org>

@@ -115,6 +115,8 @@ as they come and go.
 You can set this if you want, but it will probably break things and
 you will be sad.
 
+=back
+
 =cut
 
 use base qw(Volity::Jabber);

@@ -436,6 +436,8 @@ sub look_up_jid_with_nickname {
 
 Sends the given message string as a groupchat to the referee's table.
 
+=back
+
 =cut
 
 # groupchat:
@@ -828,8 +830,6 @@ sub DESTROY {
   my $self = shift;
   $self->server(undef);
 }
-
-=back
 
 =head1 AUTHOR
 
