@@ -21,7 +21,9 @@ package Volity::Player;
 use warnings;
 use strict;
 
-use base qw(Class::Accessor::Fields);
+#use base qw(Class::Accessor::Fields);
+use base qw(Volity);
+
 use fields qw(jid name nick);
 
 #Volity::Player->create_accessors;

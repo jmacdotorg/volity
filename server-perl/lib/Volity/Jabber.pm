@@ -119,7 +119,7 @@ simply use a string like this:
 
 =cut
 
-use base qw(Class::Accessor::Fields);
+use base qw(Volity);
 
 use warnings; no warnings qw(deprecated);
 use strict;

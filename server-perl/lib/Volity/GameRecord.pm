@@ -66,7 +66,7 @@ use IO::Scalar;
 use Date::Parse;
 use Date::Format;
 
-use base qw(Class::Accessor::Fields);
+use base qw(Volity);
 use fields qw(id players signature winners quitters start_time end_time game_uri_object game_name server);
 
 # Set up package variables for GPG config.
