@@ -18,8 +18,94 @@ package Volity::Server;
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
 
+=head1 NAME
+
+Volity::Server - A Volity game server!
+
+=head1 SYNOPSIS
+
+ use Volity::Server;
+ 
+ # Create a new server
+ my $server = Volity::Server->new(
+				 {
+				  user=>'bob_the_game',
+				  password=>'secret',
+				  host=>'volity.net',
+				  resource=>'server',
+				  alias=>'volity',
+				  referee_class=>'MyGame::Referee',
+				}
+				);
+
+ # And there you go.
+ $server->start;
+
+ # ... elsewhere ...
+
+ $server->stop;
+
+
+=head1 DESCRIPTION
+
+An object of this class is a Volity game server. As the synopsis
+suggests, it's more or less a black-box application class. Construct
+the object with a configuratory hash reference, call the C<start>
+method, and you'd got a running server, unless you don't.
+
+=cut
+
 use warnings;
 use strict;
+
+=head1 CONFIGURATION
+
+When constructing the object, you can use all the keys described in
+L<Volity::Jabber/"Accessors">, for this class inherits from that one, you see. You can also use any of the following keys:
+
+=over
+
+=item referee_class
+
+The Perl class of the referee this server will use. When a new game
+starts, the server will call tshi constructor of this class, and then
+hurl the resulting referee object into its own MUC, ready for action!
+
+This value defaults to C<Volity::Referee>. If you set it to something
+else, it shoudl probably be a subclass of that. See L<Volity::Referee>
+for more information.
+
+=item bookkeeper_jid
+
+The JID of the bookkeeper this server will use for fetching game
+records and such. Defaults to "bookkeeper@volity.net", which is
+probably exactly what you want.
+
+=back
+
+=head1 OTHER METHODS
+
+=over
+
+=item start
+
+Starts the server.
+
+=item stop
+
+Stops the server, and furthermore calls C<stop> on all its child
+referee objects, if it has any still hanging around.
+
+=item referees
+
+Returns a list of all server's currently active referee objects. The
+server will take care of adding and removing referees from this list
+as they come and go.
+
+You can set this if you want, but it will probably break things and
+you will be sad.
+
+=cut
 
 use base qw(Volity::Jabber);
 use fields qw(referee_class bookkeeper_jid referees referee_host referee_user referee_password);
@@ -136,3 +222,13 @@ sub new_referee_resource {
 }
 
 1;
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2003 by Jason McIntosh.
+
+=cut
