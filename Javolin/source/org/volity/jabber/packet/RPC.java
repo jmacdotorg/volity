@@ -51,6 +51,7 @@ public abstract class RPC extends IQ {
 	xml += getValueXML(entry.getValue());
 	xml += "</member>";
       }
+      xml += "</struct>";
     } else if (v instanceof Collection) {
       xml += "<array>";
       for (Iterator it = ((Collection) v).iterator(); it.hasNext();)

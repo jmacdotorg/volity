@@ -20,60 +20,81 @@ public class RPCProvider implements IQProvider {
     parser.nextTag();
     String elementName = parser.getName();
     if (elementName.equals("methodCall")) {
-      parser.nextTag();
-      parser.require(parser.START_TAG, null, "methodName");
-      String methodName = parser.nextText();
-      parser.nextTag();
-      parser.require(parser.END_TAG, null, "methodName");
-
-      List params = null;
-      if (parser.nextTag() == parser.START_TAG) {
-	parser.require(parser.START_TAG, null, "params");
-	params = parseParams(parser);
-	parser.nextTag();
-      }
-
-      parser.require(parser.END_TAG, null, "methodCall");
-      packet = new RPCRequest(methodName, params);
-
+      packet = parseRequest(parser);
     } else if (elementName.equals("methodResponse")) {
-
-      parser.nextTag();
-      elementName = parser.getName();
-      if (elementName.equals("params")) {
-	List params = parseParams(parser);
-	if (params.size() != 1)
-	  throw error(parser, "RPC result did not have exactly one param.");
-	packet = new RPCResult(params.get(0));
-
-      } else if (elementName.equals("fault")) {
-
-	parser.nextTag();
-	parser.require(parser.START_TAG, null, "value");
-	Object faultValue = parseValue(parser);
-	if (!(faultValue instanceof Map))
-	  throw error(parser, "RPC fault did not contain struct.");
-	Map faultStruct = (Map) faultValue;
-	if (!faultStruct.containsKey("faultCode"))
-	  throw error(parser, "RPC fault did not contain fault code.");
-	if (!faultStruct.containsKey("faultString"))
-	  throw error(parser, "RPC fault did not contain fault string.");
-
-	Integer faultCode = (Integer) faultStruct.get("faultCode");
-	String faultString = (String) faultStruct.get("faultString");
-	packet = new RPCFault(faultCode.intValue(), faultString);
-
-	parser.nextTag();
-	parser.require(parser.END_TAG, null, "fault");
-
-      } else throw error(parser, "Unknown RPC response.");
-
-      parser.nextTag();
-      parser.require(parser.END_TAG, null, "methodResponse");
-
+      packet = parseResponse(parser);
     } else throw error(parser, "Unknown RPC payload.");
-
+    parser.require(parser.END_TAG, null, elementName);
     return packet;
+  }
+
+  /** Parse a RPC request. */
+  public RPCRequest parseRequest(XmlPullParser parser)
+    throws XmlPullParserException, IOException
+  {
+    parser.nextTag();
+    parser.require(parser.START_TAG, null, "methodName");
+    String methodName = parser.nextText();
+    parser.require(parser.END_TAG, null, "methodName");
+
+    List params = null;
+    if (parser.nextTag() == parser.START_TAG) {
+      parser.require(parser.START_TAG, null, "params");
+      params = parseParams(parser);
+      parser.require(parser.END_TAG, null, "params");
+      parser.nextTag();
+    }
+
+    return new RPCRequest(methodName, params);
+  }
+
+  /** Parse a RPC response. */
+  public RPCResponse parseResponse(XmlPullParser parser)
+    throws XmlPullParserException, IOException
+  {
+    RPCResponse response;
+    parser.nextTag();
+    String elementName = parser.getName();
+    if (elementName.equals("params")) {
+      response = parseResult(parser);
+    } else if (elementName.equals("fault")) {
+      response = parseFault(parser);
+    } else throw error(parser, "Unknown RPC response.");
+    parser.require(parser.END_TAG, null, elementName);
+
+    parser.nextTag();
+    return response;
+  }
+
+  /** Parse a RPC result (a non-fault response). */
+  public RPCResult parseResult(XmlPullParser parser)
+    throws XmlPullParserException, IOException
+  {
+    List params = parseParams(parser);
+    if (params.size() != 1)
+      throw error(parser, "RPC result did not have exactly one param.");
+    return new RPCResult(params.get(0));
+  }
+
+  /** Parse a RPC fault response. */
+  public RPCFault parseFault(XmlPullParser parser)
+    throws XmlPullParserException, IOException
+  {
+    parser.nextTag();
+    parser.require(parser.START_TAG, null, "value");
+    Object faultValue = parseValue(parser);
+    if (!(faultValue instanceof Map))
+      throw error(parser, "RPC fault did not contain struct.");
+    Map faultStruct = (Map) faultValue;
+    if (!faultStruct.containsKey("faultCode"))
+      throw error(parser, "RPC fault did not contain fault code.");
+    Integer faultCode = (Integer) faultStruct.get("faultCode");
+    if (!faultStruct.containsKey("faultString"))
+      throw error(parser, "RPC fault did not contain fault string.");
+    String faultString = (String) faultStruct.get("faultString");
+
+    parser.nextTag();
+    return new RPCFault(faultCode.intValue(), faultString);
   }
 
   /**
@@ -90,10 +111,10 @@ public class RPCProvider implements IQProvider {
       parser.nextTag();
       parser.require(parser.START_TAG, null, "value");
       params.add(parseValue(parser));
+      parser.require(parser.END_TAG, null, "value");
       parser.nextTag();
       parser.require(parser.END_TAG, null, "param");
     }
-    parser.require(parser.END_TAG, null, "params");
     return params;
   }
 
@@ -128,12 +149,12 @@ public class RPCProvider implements IQProvider {
       else if (elementName.equals("array"))
 	value = parseArray(parser);
       else throw error(parser, "Unknown RPC value.");
+      parser.require(parser.END_TAG, null, elementName);
       parser.nextTag();
       break;
     case XmlPullParser.END_DOCUMENT:
     default: throw error(parser, "Premature document end.");
     }
-    parser.require(parser.END_TAG, null, "value");
     return value;
   }
 
@@ -152,18 +173,17 @@ public class RPCProvider implements IQProvider {
       parser.nextTag();
       parser.require(parser.START_TAG, null, "name");
       Object key = parser.nextText();
-      parser.nextTag();
       parser.require(parser.END_TAG, null, "name");
 
       parser.nextTag();
       parser.require(parser.START_TAG, null, "value");
       Object value = parseValue(parser);
+      parser.require(parser.END_TAG, null, "value");
       map.put(key, value);
 
       parser.nextTag();
       parser.require(parser.END_TAG, null, "member");
     }
-    parser.require(parser.END_TAG, null, "struct");
     return map;
   }
 
@@ -181,10 +201,10 @@ public class RPCProvider implements IQProvider {
     while (parser.nextTag() == parser.START_TAG) {
       parser.require(parser.START_TAG, null, "value");
       list.add(parseValue(parser));
+      parser.require(parser.END_TAG, null, "value");
     }
     parser.require(parser.END_TAG, null, "data");
     parser.nextTag();
-    parser.require(parser.END_TAG, null, "array");
     return list;
   }
 

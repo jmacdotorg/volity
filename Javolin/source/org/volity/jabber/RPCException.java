@@ -10,6 +10,9 @@ public class RPCException extends Exception {
     super(fault.toString());
     this.fault = fault;
   }
+  public RPCException(int faultCode, String faultString) {
+    this(new RPCFault(faultCode, faultString));
+  }
 
   protected RPCFault fault;
   public RPCFault getFault() { return fault; }

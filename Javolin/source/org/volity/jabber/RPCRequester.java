@@ -12,7 +12,7 @@ import org.volity.jabber.provider.*;
 import java.util.*;
 
 /**
- * A class for making Jabber-RPC requests to an XMPP server.
+ * A class for making Jabber-RPC requests.
  *
  * @author Doug Orleans (dougo@place.org)
  */
@@ -70,7 +70,8 @@ public class RPCRequester {
     PacketCollector collector =
       connection.createPacketCollector(new PacketFilter() {
 	  public boolean accept(Packet packet) {
-	    return packet.getPacketID().equals(requestID);
+	    return packet instanceof RPCResponse &&
+	      packet.getPacketID().equals(requestID);
 	  }
 	});
     connection.sendPacket(request);
