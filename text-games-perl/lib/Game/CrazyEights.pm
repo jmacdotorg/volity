@@ -217,7 +217,7 @@ sub flip_starter {
   # Semi-hack... if the starter is an 8, silently set our notion of
   # the last 8 suit. This keeps the logic in the match-checking part of
   # rpc_play_card simpler.
-  $self->last_8_suit eq $self->last_card->suit if $self->last_card->name eq '8';
+  $self->last_8_suit = $self->last_card->suit if $self->last_card->name eq '8';
 }
 
 sub last_card {
