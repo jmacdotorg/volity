@@ -9,7 +9,12 @@
   <property name="src" location="source"/>
   <property name="build" location="build"/>
   <property name="doc" location="doc"/>
-  <property name="classpath" value="lib/smack.jar"/>
+  <!-- define class path -->
+  <path id="class.path">
+    <fileset dir="lib">
+        <include name="*.jar"/>
+    </fileset>
+  </path>
 
   <target name="init">
     <!-- Create the time stamp -->
@@ -21,27 +26,31 @@
   <target name="compile" depends="init"
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}" classpath="${classpath}"
-    	deprecation="on"/>
+    <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
+      deprecation="on"/>
   </target>
 
   <target name="archive" depends="compile"
         description="generate the jar file" >
+    <!-- Transform classpath into space-separated list for manifest -->
+    <property name="lib.loc" location="lib"/>
+    <pathconvert dirsep="/" pathsep=" " property="manif.cpath" 
+      refid="class.path">
+      <map from="${lib.loc}" to="lib"/>
+    </pathconvert>
     <!-- Put everything in ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfile}" basedir="${build}">
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
-        <attribute name="Class-Path" value="${classpath}"/>        
+        <attribute name="Class-Path" value="${manif.cpath}"/>        
       </manifest> 
     </jar>
   </target>
   
   <target name="doc"
         description="generate Javadocs" >
-    <javadoc
-           destdir="${doc}"
-           classpath="${classpath}"
-           windowtitle="Javolin API">
+    <javadoc destdir="${doc}" classpathref="class.path" 
+      windowtitle="Javolin API">
       <packageset dir="${src}"/>
       <link href="http://java.sun.com/j2se/1.4.2/docs/api/"/>
     </javadoc>
