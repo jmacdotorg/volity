@@ -11,7 +11,11 @@ my $build = Module::Build->new
 	       'Scalar::Util'=>undef,
 	       'RPC::XML'=>undef,
 	       'POE::Component::Jabber'=>'0.3.3',
-	     }
+	       'XML::Writer'=>undef,
+	       'Data::Lazy'=>undef,
+	     },
+   script_files=>[glob("bin/*.pl")],
+   install_path=>{script=>'/usr/local/volity/bin'},
   );
 $build->create_build_script;
 
