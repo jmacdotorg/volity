@@ -1,8 +1,125 @@
 package Volity::Referee;
 
-# XXX CHANGES TO MAKE XXX
+############################################################################
+# LICENSE INFORMATION - PLEASE READ
+############################################################################
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+############################################################################
 
-# Referees should be subclasses of this class.
+=head1 NAME
+
+Volity::Referee - Superclass for in-MUC game overseers.
+
+=head1 DESCRIPTION
+
+An object of this class represents a Volity referee, the automated
+process that sits in a MUC along with the players, and arbitrates the
+game for them. See the general Volity documentation for a more
+detailed description of how this works.
+
+In the Frivolity system, a Volity::Server object automatically makes a
+referee object and sends it to the appropriate MUC when a game
+starts. The class of referee it makes depends upon the value of the
+server object's C<referee_class> instance variable, and varies from
+game to game. Each Frivolity game implementation must define its own
+referee class, which should inherit from Volity::Referee if it knows
+what's good for it.
+
+=head1 USAGE
+
+Just create a new package for your game's referee
+
+ package MyGame::Referee;
+
+ use base qw(Volity::Referee);
+
+...and now your package may use (or override) all the methods
+described below. For simple games, you can just use some of the
+accessors (see L<"Object accessors">) to set some configuration
+options, and let the Volity::Referee superclass handle everything
+else.
+
+At any rate, most of your code and effort will probably go into your
+actual game class; see L<Volity::Game> for more information.
+
+=head1 METHODS
+
+=head1 Object accessors
+
+All these are simple accessors which return the named object
+attribute. If an argument is passed in, then the attribute's value is
+first set to that argument.
+
+It is through these accessors that you perform most game configuration
+definition, such as the maximum number of players allowed per game.
+
+This module inherits from Class::Accessor, so all the tips and tricks
+detailed in L<Class::Accessor> apply here as well.
+
+=over
+
+=item max_allowed_players
+
+An integer specifying the maximum number of players this game
+allows. If undefined, then there is no limit to the number of players
+who can join.
+
+=item min_allowed_players
+
+An integer specifying the minimum number of players this game requires
+for play. Defaults to 1.
+
+=item error_message
+
+A string to display to the MUC if something goes wrong.
+
+=item bookkeeper_jid
+
+The JID of the network's bookkeeper. Initially set by the server,
+depending upon its own configuration.
+
+=item muc_jid
+
+The JID of the MUC that the game is in. Set by various magic internal
+methods, so you should treat this as read-only; things will probably
+not work well if you reset this value yourself.
+
+=item game_class
+
+I<Important!> The Perl class of the actual game (usually a subclass of
+Volity::Game).
+
+You I<must> set this on object construction though the C<new> method's
+argument hash, as detailed in L<Volity/"Object construction">. Not
+doing so will result in an error.
+
+=item game
+
+The referee superclass already knows how and when to create a game
+object from the class specified by the C<game_class> instance
+variable, and when it does so, it stores that object under C<game>.
+
+You should treat-this as a read-only variable. This variable pulls
+double-duty as a quick way to check whether a game is actively being
+played, or if the ref is "idle" and waiting for a player to kick it
+into action: if C<game> is defined, then a game is underway. (The
+referee will undefine this variable after a game ends.)
+
+=back
+
+=cut
 
 use base qw(Volity::Jabber);
 use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id uri bookkeeper_jid  max_allowed_players min_allowed_players error_message);
@@ -81,7 +198,7 @@ sub jabber_authed {
   my $heap = $_[HEAP];
   my $session = $_[SESSION];
   my $self = $_[OBJECT];
-  print "***REFEREE*** We have authed!\n";
+  $self->debug("***REFEREE*** We have authed!\n");
   $kernel->post($self->alias, 'register', qw(iq presence message));
 
   # Join the game MUC.
@@ -92,7 +209,7 @@ sub jabber_authed {
   $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
   $kernel->post($self->alias, 'output_handler', $presence);
 
-  print "I think I sent something?!\n";
+  $self->debug("I think I sent something?!\n");
 
 }
 
@@ -110,8 +227,8 @@ sub handle_rpc_request {
 }
 
 sub jabber_presence {
-  print "****REFEREE**** Got some presence.\n";
   my $self = shift;
+  $self->debug("****REFEREE**** Got some presence.\n");
   my ($node) = @_;
   if (my $x = $node->get_tag(x=>"http://jabber.org/protocol/muc#user")) {
     # Aha, someone has entered the game MUC.
@@ -126,7 +243,7 @@ sub jabber_presence {
       # If there's no JID for this user, that means that the MUC hasn't
       # been configured yet, and _that_ means that the user is me!
       # I must have just created it. Well, then.
-      print "Let's configure, robots!\n";
+      $self->debug("Let's configure, robots!\n");
       # Configure the MUC.
       $self->send_form({
 			to=>$self->muc_jid,
@@ -176,6 +293,123 @@ sub jabber_presence {
     }
   }
 }
+
+###################
+# MUC user tracking
+###################
+
+# These methods refer to MUC users besides myself as 'players'.
+
+sub add_player {
+  my $self = shift;
+  my ($args) = @_;
+  # Figure out which class to call a player-constructor on.
+  # Games can override Volity::Player, the default class.
+
+  my $player_class = $self->game_class->player_class || $default_player_class;
+
+  $self->{players}{$$args{jid}} = $player_class->new({jid=>$$args{jid}, nick=>$$args{nick}});
+  $self->{nicks}{$$args{nick}} = $$args{jid};
+}
+
+sub remove_player_with_jid {
+  my $self = shift;
+  my ($jid) = @_;
+  delete($self->{players}{$jid});
+}
+
+sub players {
+  my $self = shift;
+  return values (%{$self->{players}});
+}
+
+# look_up_jid_with_nickname:
+# Takes a nickname, and returns the full JID of the player using it.
+# Returns undef if there's no such nick.
+sub look_up_jid_with_nickname {
+  my $self = shift;
+  my ($nick) = @_;
+  if ($nick =~ m|/(.*)$|) {
+    # Ah, it's an entire MUC-style jid. Parse out the nickname part.
+    $nick = $1;
+  }
+  return $self->{nicks}{$nick};
+}
+
+
+# groupchat:
+# Convenience method for sending a message to the game's MUC.
+sub groupchat {
+  my $self = shift;
+  my ($message) = @_;
+  $self->send_message({
+		       to=>$self->muc_jid,
+		       type=>"groupchat",
+		       body=>$message,
+		     });
+}
+
+######################
+# Game config info & pregame sanity checking
+######################
+
+# check_sanity: Runs some tests on this 
+# new object to make sure that all is well.
+# XXX This could use better exception handling, eh?
+sub check_sanity {
+  my $self = shift;
+  my $player_count = $self->players;
+  $self->debug("Player count is $player_count.");
+  my $player_statement = $self->state_allowed_players;
+  if (defined($self->max_allowed_players) and $self->max_allowed_players < $player_count) {
+    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's too many!");
+    return 0;
+  } elsif (defined($self->min_allowed_players) and $self->min_allowed_players > $player_count) {
+    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's not enough!");
+    return 0;
+  }
+  return 1;
+}
+
+# state_allowed_players: Utility method for stating the number of players
+# that this game supports.
+sub state_allowed_players {
+  my $self = shift;
+  my $max = $self->max_allowed_players;
+  my $min = $self->min_allowed_players;
+  my $statement;
+  if (not($min) and $max) {
+    $statement = "$max or fewer";
+  } elsif ($min and not($max)) {
+    $statement = "$min or more";
+  } elsif (not($min) and not($max)) {
+    $statement = "any number";
+  } else {
+    $statement = "between $min and $max";
+  }
+  return $statement;
+}
+
+
+=head1 JABBER EVENT HANDLING
+
+Volity::Referee inherits from Volity::Jabber, and therefore uses all
+the same callback methods defined in L<Volity::Jabber/"CALLBACK
+METHODS">.
+
+Don't be shy about overriding any handlers you wish, so long as you
+call the parent class's handler at some point so that any special
+Volity::Referee magic will be taken care of. This includes passing
+chat messages along to the contained game object or class (see L<"The
+Game Object">).
+
+=for comment
+
+ARRGH I HATE THIS. The class/object thing... FOOEY. Think of a prettier way!!
+
+=cut
+
+ 
 
 sub handle_groupchat_message {
   my $self = shift;
@@ -306,112 +540,23 @@ sub send_record_to_bookkeeper {
 		       type=>'chat',
 		       body=>'Hello, sailor!',
 		     });
-#  my $xml = $record->render_as_xml;
-#  print "$xml\n";
   my $hash = $record->render_as_hashref;
   $self->make_rpc_request({to=>$bkp_jid,
 			   id=>'record_set',
 			   methodname=>'record_game',
-#			   args=>$xml,
 			   args=>$hash
 			 });
 }
 
-###################
-# MUC user tracking
-###################
+=head1 AUTHOR
 
-# These methods refer to MUC users besides myself as 'players'.
+Jason McIntosh <jmac@jmac.org>
 
-sub add_player {
-  my $self = shift;
-  my ($args) = @_;
-  # Figure out which class to call a player-constructor on.
-  # Games can override Volity::Player, the default class.
+=head1 COPYRIGHT
 
-  my $player_class = $self->game_class->player_class || $default_player_class;
+Copyright (c) 2003 by Jason McIntosh.
 
-  $self->{players}{$$args{jid}} = $player_class->new({jid=>$$args{jid}, nick=>$$args{nick}});
-  $self->{nicks}{$$args{nick}} = $$args{jid};
-}
-
-sub remove_player_with_jid {
-  my $self = shift;
-  my ($jid) = @_;
-  delete($self->{players}{$jid});
-}
-
-sub players {
-  my $self = shift;
-  return values (%{$self->{players}});
-}
-
-# look_up_jid_with_nickname:
-# Takes a nickname, and returns the full JID of the player using it.
-# Returns undef if there's no such nick.
-sub look_up_jid_with_nickname {
-  my $self = shift;
-  my ($nick) = @_;
-  if ($nick =~ m|/(.*)$|) {
-    # Ah, it's an entire MUC-style jid. Parse out the nickname part.
-    $nick = $1;
-  }
-  return $self->{nicks}{$nick};
-}
-
-
-# groupchat:
-# Convenience method for sending a message to the game's MUC.
-sub groupchat {
-  my $self = shift;
-  my ($message) = @_;
-  $self->send_message({
-		       to=>$self->muc_jid,
-		       type=>"groupchat",
-		       body=>$message,
-		     });
-}
-
-######################
-# Game config info & pregame sanity checking
-######################
-
-# check_sanity: Runs some tests on this 
-# new object to make sure that all is well.
-# XXX This could use better exception handling, eh?
-sub check_sanity {
-  my $self = shift;
-  my $player_count = $self->players;
-  warn "Player count is $player_count.";
-  my $player_statement = $self->state_allowed_players;
-  if (defined($self->max_allowed_players) and $self->max_allowed_players < $player_count) {
-    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's too many!");
-    return 0;
-  } elsif (defined($self->min_allowed_players) and $self->min_allowed_players > $player_count) {
-    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's not enough!");
-    return 0;
-  }
-  return 1;
-}
-
-# state_allowed_players: Utility method for stating the number of players
-# that this game supports.
-sub state_allowed_players {
-  my $self = shift;
-  my $max = $self->max_allowed_players;
-  my $min = $self->min_allowed_players;
-  my $statement;
-  if (not($min) and $max) {
-    $statement = "$max or fewer";
-  } elsif ($min and not($max)) {
-    $statement = "$min or more";
-  } elsif (not($min) and not($max)) {
-    $statement = "any number";
-  } else {
-    $statement = "between $min and $max";
-  }
-  return $statement;
-}
+=cut
 
 
 1;
