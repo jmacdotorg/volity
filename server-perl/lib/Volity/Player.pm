@@ -24,7 +24,7 @@ use strict;
 #use base qw(Class::Accessor::Fields);
 use base qw(Volity);
 
-use fields qw(jid name nick);
+use fields qw(jid name nick referee);
 
 #Volity::Player->create_accessors;
 
@@ -37,5 +37,19 @@ sub basic_jid {
   return undef;
 }
 
+# call_ui_function: Usually called by a game object. It tells us to
+# pass along a UI function call to this player's client.
+# We'll have the referee do the dirty work for us.
+sub call_ui_function {
+  my $self = shift;
+  my ($function, @args) = @_;
+  my $rpc_request_name = "game.$function";
+#  warn "Gonna call the ui function $rpc_request_name with args @args.\n";
+  $self->referee->send_rpc_request({
+				    methodname=>$rpc_request_name,
+				    to=>$self->jid,
+				    args=>\@args,
+				   });
+}
 
 1;
