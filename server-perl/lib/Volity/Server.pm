@@ -34,7 +34,7 @@ Volity::Server - A Volity game server!
 				  host=>'volity.net',
 				  resource=>'server',
 				  alias=>'volity',
-				  referee_class=>'MyGame::Referee',
+				  game_class=>'MyGame::Class',
 				}
 				);
 
@@ -65,6 +65,8 @@ L<Volity::Jabber/"Accessors">, for this class inherits from that one, you see. Y
 
 =over
 
+=begin old
+
 =item referee_class
 
 The Perl class of the referee this server will use. When a new game
@@ -74,6 +76,14 @@ hurl the resulting referee object into its own MUC, ready for action!
 This value defaults to C<Volity::Referee>. If you set it to something
 else, it shoudl probably be a subclass of that. See L<Volity::Referee>
 for more information.
+
+=end old
+
+=item game_class
+
+The Perl class of the game that this server will use. It will pass it
+along to all the referee objects it creates. See L<Volity::Referee>
+and L<Volity::Game>.
 
 =item bookkeeper_jid
 
@@ -108,7 +118,7 @@ you will be sad.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class bookkeeper_jid referees referee_host referee_user referee_password);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -119,16 +129,17 @@ use POE qw(
 	  );
 use Jabber::NS qw(:all);
 use RPC::XML::Parser;
+use Volity::Referee;
 use Carp qw(croak carp);
 
 sub initialize {
   my $self = shift;
   if ($self->SUPER::initialize(@_)) {
-    my $referee_class = $self->referee_class or die
-      "No referee class specified at construction!";
-    eval "require $referee_class";
-    if ($@) {
-      die "Failed to require referee class $referee_class: $@";
+    if (my $referee_class = $self->referee_class) {
+      eval "require $referee_class";
+      if ($@) {
+	die "Failed to require referee class $referee_class: $@";
+      }
     }
   }
   return $self;
@@ -151,7 +162,10 @@ sub new_game {
   my ($from_jid, $id, @args) = @_;
 
   my $resource = $self->new_referee_resource;
-  my $ref = $self->referee_class->new(
+  
+  my $referee_class = $self->referee_class || "Volity::Referee";
+
+  my $ref = $referee_class->new(
 				      {
 				       starting_request_jid=>$from_jid,
 				       starting_request_id=>$id,
@@ -166,6 +180,10 @@ sub new_game {
 				     );
   $self->add_referee($ref);
   $ref->server($self);
+  if (defined($self->game_class)) {
+    $ref->game_class($self->game_class);
+  }
+
   # XXX OK, I'm really confused. I don't know where the following repsonse
   # is being sent. Something else _is_ sending it, which is why I'm
   # commenting out the following line. Whaaaaaaaaa?
