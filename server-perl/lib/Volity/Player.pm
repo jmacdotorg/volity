@@ -24,7 +24,7 @@ use strict;
 #use base qw(Class::Accessor::Fields);
 use base qw(Volity);
 
-use fields qw(jid name nick referee);
+use fields qw(jid name nick referee rpc_count);
 
 #Volity::Player->create_accessors;
 
@@ -46,10 +46,22 @@ sub call_ui_function {
   my $rpc_request_name = "game.$function";
 #  warn "Gonna call the ui function $rpc_request_name with args @args.\n";
   $self->referee->send_rpc_request({
+                                    id=>$self->next_rpc_id,
 				    methodname=>$rpc_request_name,
 				    to=>$self->jid,
 				    args=>\@args,
 				   });
+}
+
+# next_rpc_id: Simple method that returns a unique (for this object) RPC id.
+sub next_rpc_id {
+    my $self = shift;
+    my $number;
+    unless ($number = $self->rpc_count) {
+	$number = $self->rpc_count(1);
+    }
+    $self->rpc_count($number++);
+    return "player-$number";
 }
 
 1;
