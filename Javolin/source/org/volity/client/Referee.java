@@ -9,7 +9,7 @@ import org.volity.jabber.RPCException;
 public class Referee extends RPCRequester {
   /**
    * @param table the game table where the game will be played
-   * @param jid the full jid of the referee
+   * @param jid the full JID of the referee
    */
   Referee(GameTable table, String jid) {
     super(table.getConnection(), jid);
@@ -21,7 +21,7 @@ public class Referee extends RPCRequester {
    * @throws RPCException if a RPC fault occurs
    */
   public void addBot() throws XMPPException, RPCException {
-    invoke("add_bot");
+    invoke("volity.add_bot");
   }
 
   /**
@@ -30,7 +30,7 @@ public class Referee extends RPCRequester {
    * @throws RPCException if a RPC fault occurs
    */
   public void startGame() throws XMPPException, RPCException {
-    invoke("start_game");
+    invoke("volity.start_game");
   }
 
   /**

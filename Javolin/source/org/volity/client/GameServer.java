@@ -24,6 +24,6 @@ public class GameServer extends RPCRequester {
    * @throws RPCException if an RPC fault occurs
    */
   public GameTable newTable() throws XMPPException, RPCException {
-    return new GameTable(connection, (String) invoke("new_table"));
+    return new GameTable(connection, (String) invoke("volity.new_table"));
   }
 }
