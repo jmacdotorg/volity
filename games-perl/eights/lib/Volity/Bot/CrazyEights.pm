@@ -111,12 +111,14 @@ sub take_turn {
   return unless $card;
   $self->remove_card($card);
   my ($play_rank, $play_suit) = $self->split_card($card);
+  $self->logger->debug("I'm now sending a turn-taking RPC request.");
   $self->make_rpc_request({
 			   to=>$self->referee_jid,
 			   id=>"go",
 			   methodname=>"game.play_card",
 			   args=>[$card],
 			  });
+  $self->logger->debug("I just sent a turn-taking RPC request.");
   if ($play_rank eq '8') {
     # We just played an eight. So we must follow up with a suit choice.
     # We'll declare our best suit.
