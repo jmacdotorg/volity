@@ -18,6 +18,13 @@ package Volity::Referee;
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
 
+=begin TODO
+
+Refactor the RPC dispatcher into something sexier than an ever-growing
+if-elsif chain.
+
+=end TODO
+
 =head1 NAME
 
 Volity::Referee - Superclass for in-MUC game overseers.
@@ -220,13 +227,64 @@ sub handle_rpc_request {
   my $method = $$rpc_info{method};
   # For security's sake, we explicitly accept only a few method names.
   # In fact, the only one we care about right now is 'start_game'.
+  # XXX The above statement is no longer true... and the below if-chain
+  # XXX is only going to get longer. Refactoring is needed.
   if ($method eq 'start_game') {
     $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } elsif ($method eq 'add_bot') {
     $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+  } elsif ($method =~ /^game\.(.*)$/) {
+    # This appears to be a call to the game object.
+    $$rpc_info{method} = $1;
+    $self->handle_game_rpc_request($rpc_info);
   } else {
     $self->debug( "Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
   }
+}
+
+# handle_game_rpc_request: Called by handle_rpc_request upon receipt of an
+# RPC request in the 'game' namespace... i.e. an RPC request on the current
+# game. Performs some sanity checking, then passes it on.
+sub handle_game_rpc_request {
+  my $self = shift;
+  my ($rpc_info) = @_;
+  unless ($self->game) {
+    $self->send_rpc_fault($$rpc_info{id}, 999, "There is no active game.");
+    return;
+  }
+
+  # We prepend an 'rpc_' to the method's name for ssecurity reasons.
+  my $method = "rpc_$$rpc_info{method}";
+
+  unless ($self->game->can($$rpc_info{method})) {
+    $self->send_rpc_fault($$rpc_info{id}, 999, "This game has no '$$rpc_info{method}' function.");
+  }
+
+  my $player = $self->look_up_player_with_jid($$rpc_info{from});
+  unless ($player) {
+    $self->send_rpc_fault($$rpc_info{id}, 999, "You don't seem to be playing this game!");
+  }
+  
+  # I've we've come this far, then we can pass the request on to the game.
+  my @args;
+  if (defined($$rpc_info{args})) {
+    if (ref($$rpc_info{args}) eq 'ARRAY') {
+      @args = @{$$rpc_info{args}};
+    } else {
+      @args = $$rpc_info{args};
+    }
+  }
+
+
+  # The first arg is always the player who made thiis call.
+  unshift(@args, $player);
+
+#  warn "Calling $method with these args: @args\n";
+
+  $self->game->$method(@args);
+
+  # Send back an ack, just to be nice.
+  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, "ok");
 }
 
 sub jabber_presence {
@@ -311,7 +369,7 @@ sub add_player {
 
   my $player_class = $self->game_class->player_class || $default_player_class;
 
-  $self->{players}{$$args{jid}} = $player_class->new({jid=>$$args{jid}, nick=>$$args{nick}});
+  $self->{players}{$$args{jid}} = $player_class->new({jid=>$$args{jid}, nick=>$$args{nick}, referee=>$self});
   $self->{nicks}{$$args{nick}} = $$args{jid};
 }
 
@@ -509,11 +567,13 @@ sub start_game {
   $self->debug("Created a game!!\n");
   # Send back a positive RPC response.
   $self->send_rpc_response($from_jid, $id, "ok");
-  $self->send_message({
-		       to=>$self->muc_jid,
-		       type=>"groupchat",
-		       body=>"The game has begun!",
-		     });
+#  $self->send_message({
+#		       to=>$self->muc_jid,
+#		       type=>"groupchat",
+#		       body=>"The game has begun!",
+#		     });
+  # Tell the game object to do whatever it wants as its first action.
+  $game->start_game;
 }
 
 sub add_bot {
@@ -622,15 +682,18 @@ sub create_bot {
 # end_game: Not really an RPC call, but putting it here for now for
 # symmetry's sake.
 # It's called by a game object.
-
 sub end_game {
   my $self = shift;
   $self->groupchat("The game is over.");
   my $game = delete($self->{game});
 
-  # Time to register this game with the bookkeeper!
-  # Create an initialize a new game record object.
+  # Tell the players (their clients, really) to wrap it up.
+  foreach ($self->players) {
+    $self->send_end_game_notification_to_player($_);
+  }
 
+  # Time to register this game with the bookkeeper!
+  # Create and initialize a new game record object.
   $self->debug("Preparing game record.");
   my $record = Volity::GameRecord->new({
 					server=>$self->basic_jid,
@@ -648,19 +711,26 @@ sub end_game {
 	  push (@player_jids, $player->basic_jid);
 	}
       }
-#      $record->$player_list(map($_->basic_jid, @players));
       # This is hacky... swerving around the accessor like this. OH WELL.
       $record->{$player_list} = \@player_jids;
     }
   }
 
+  # Give it the ol' John Hancock
   $record->sign;
   
   # Send the record to the bookkeeper!
   $self->send_record_to_bookkeeper($record);
 
-  # That's all.
+}
 
+sub send_end_game_notification_to_player {
+  my $self = shift;
+  my ($player) = @_;
+  $self->make_rpc_request({
+			   methodname=>'end_game',
+			   to=>$player->jid,
+			  });
 }
 
 sub send_record_to_bookkeeper {
