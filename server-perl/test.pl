@@ -107,8 +107,8 @@ sub bot_authed {
   if ($bot->nickname eq 'huey') {
     $bot->make_rpc_request({
 			     to=>$server->jid,
-			     methodname=>'new_game',
-			     id=>'new_game',
+			     methodname=>'new_table',
+			     id=>'new_table',
 			    });
 #    warn "Made an RPC req...\n";
   } elsif ($bot->nickname eq 'louie') {
@@ -214,7 +214,7 @@ sub jabber_presence {
 sub handle_rpc_response {
   my $self = shift;
   my ($data) = @_;
-  if ($$data{id} eq 'new_game') {
+  if ($$data{id} eq 'new_table') {
     $self->game_jid($$data{response});
     # Hardcoding 'volity' below, since it's the hardcoded nickname of the
     # referee's in-MUC presence. Tra la.
@@ -310,7 +310,7 @@ sub set_script_hash {
 	  auth=>
 	  qr{<iq id='1' type='result'/>},
 	  table_creation=>
-	  qr{<iq to='$jid_pattern' from='$jid_pattern' id='new_game' type='result'><query xmlns='jabber:iq:rpc'><methodResponse><params><param><value><string>.*?</string></value></param></params></methodResponse></query></iq>},
+	  qr{<iq to='$jid_pattern' from='$jid_pattern' id='new_table' type='result'><query xmlns='jabber:iq:rpc'><methodResponse><params><param><value><string>.*?</string></value></param></params></methodResponse></query></iq>},
 	  table_configuration=>
 	  qr{<iq to='$jid_pattern' from='$jid_pattern' type='result' id='42' xml:lang='en'/>},
 	  start_game=>
