@@ -760,9 +760,12 @@ sub send_rpc_request {
   my $self = shift;
   $self->logger->debug("in make_rpc_request\n");
   my ($args) = @_;
-  my $iq = POE::Filter::XML::Node->new('iq');
+  my $iq = POE::Filter::XML::Node->new('iq');  
   foreach (qw(to id)) {
-    $iq->attr($_, $$args{$_});
+      unless (defined($$args{$_})) {
+	  $self->expire("send_rpc_request called without an $_ argument.");
+      }
+      $iq->attr($_, $$args{$_});
   }
   $iq->attr(type=>'set');
   my @args;
@@ -783,8 +786,8 @@ sub send_rpc_request {
   }
 
   my $request = RPC::XML::request->new($$args{methodname}, @args);
-
-
+  $self->logger->debug("The request is $$args{methodname}, and the args: @args");
+  $self->logger->debug("It's going out to $$args{to}.");
 
   # I don't like this so much, sliding in the request as raw data.
   # But then, I can't see why it would break.
@@ -793,6 +796,7 @@ sub send_rpc_request {
   $request_xml =~ s/^<\?\s*xml\s+version="1.0"\s*\?>//;
   $iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])->
     rawdata($request_xml);
+  $self->logger->debug("Full, outgoing RPC request:\n" . $iq->to_str);
   $self->kernel->post($self->alias, 'output_handler', $iq);
 }
 
