@@ -140,7 +140,7 @@ use POE qw(
 	   Driver::SysRW
 	   Component::Jabber;
 	  );
-use Jabber::NS qw(:all);
+#use Jabber::NS qw(:all);
 use RPC::XML::Parser;
 use Volity::Referee;
 use Carp qw(croak carp);
@@ -344,25 +344,40 @@ sub handle_disco_items_request {
 
     my $game_class = $self->game_class;
 
-    if (defined($nodes[0]) and $nodes[0] eq 'ruleset') {
-	# Return a pointer to the bookeeper's info about this ruleset.
-	# The JID reveals our bookkeeper, while the node reveals our
-	# ruleset URI.
-	my $uri;
-	$uri = $self->game_class->uri; 
-	warn "Wah, I see no URI under $game_class: $uri.";
-	push (@items, Volity::Jabber::Disco::Item->new({
-	    jid=>$self->bookkeeper_jid,
-	    node=>$uri,
-	    name=>"ruleset information (URI: $uri )",
-	}));
-    }
-    $self->send_disco_items({to=>$iq->attr('from'),
+    if (defined($nodes[0])) {
+	if( $nodes[0] eq 'ruleset') {
+	    # Return a pointer to the bookeeper's info about this ruleset.
+	    # The JID reveals our bookkeeper, while the node reveals our
+	    # ruleset URI.
+	    my $uri;
+	    $uri = $self->game_class->uri; 
+	    warn "Wah, I see no URI under $game_class: $uri.";
+	    push (@items, Volity::Jabber::Disco::Item->new({
+		jid=>$self->bookkeeper_jid,
+		node=>$uri,
+		name=>"ruleset information (URI: $uri )",
+	    }));
+	} elsif ( $nodes[0] eq 'open_games' ) {
+	    # Get a list of referees with open games, and return
+	    # pointers to them.
+	    my @open_referees = grep(
+		not($_->is_hidden),
+		$self->referees
+	    );
+	    foreach (@open_referees) {
+		push (@items, Volity::Jabber::Disco::Item->new({
+		    jid=>$_->jid,
+		    name=>$_->name,
+		}));
+	    } 
+	}     
+	$self->send_disco_items({to=>$iq->attr('from'),
 			     id=>$iq->attr('id'),
-			     items=>\@items,
-			 }
-			     );
-
+				 items=>\@items,
+				}
+			       );
+	
+    }
 }
 
 1;
