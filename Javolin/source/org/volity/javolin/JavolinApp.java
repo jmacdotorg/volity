@@ -27,7 +27,7 @@ import org.volity.javolin.roster.*;
 /**
  * The main application class of Javolin.
  */
-public class JavolinApp extends JFrame implements ActionListener
+public class JavolinApp extends JFrame implements ActionListener, ConnectionListener
 {
     private final static String APPNAME = "Javolin";
     private final static String NODENAME = "MainAppWin";
@@ -188,6 +188,11 @@ public class JavolinApp extends JFrame implements ActionListener
         connDlg.show();
         mConnection = connDlg.getConnection();
 
+        if (mConnection != null)
+        {
+            mConnection.addConnectionListener(this);
+        }
+
         // Assign the roster to the RosterPanel
         Roster connRost = null;
 
@@ -288,6 +293,30 @@ public class JavolinApp extends JFrame implements ActionListener
                 keyMask));
             setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
         }
+    }
+
+    /**
+     * ConnectionListener interface method implementation. Does nothing.
+     */
+    public void connectionClosed()
+    {
+    }
+
+    /**
+     * ConnectionListener interface method implementation. Alerts the user that the
+     * connection was lost.
+     *
+     * @param ex  The exception.
+     */
+    public void connectionClosedOnError(Exception ex)
+    {
+        JOptionPane.showMessageDialog(this, "Connection closed due to exception:\n" +
+            ex.toString(), getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+
+        mConnection = null;
+        mRosterPanel.setRoster(null);
+        updateUI();
+
     }
 
     /**
