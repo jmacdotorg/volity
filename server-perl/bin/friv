@@ -19,16 +19,16 @@ use YAML;
 my %opts;
 getopts('u:h:p:r:o:d:', \%opts);
 
-foreach (qw(user host password)) {
-  unless (defined($opts{substr($_,0,1)})) {
-    my $answer;
-    until (defined($answer) and $answer ne '') {
-      print "$_: ";
-      $answer = <STDIN>;
-      chomp($answer);
+foreach (qw( user host password )) {
+    my $letter = substr( $_, 0, 1 );
+    unless (defined $opts{$letter}) {
+        my $answer = '';
+        until ( $answer ) {
+            print "$_: ";
+            chomp( $answer = <STDIN> );
+        }
+        $opts{ $letter } = $answer;
     }
-    $opts{substr($_,0,1)} = $answer;
-  }
 }
 
 ################
@@ -39,17 +39,16 @@ my $next_rpc_request_id = 0;
 my $last_message_recipient;
 
 POE::Session->create(
-		     inline_states => {
-				       _start => \&start,
-				       user_input => \&user_input,
-				      }
-		    );
+                     inline_states => {
+                                       _start => \&start,
+                                       user_input => \&user_input,
+                                      }
+                    );
 
 POE::Kernel->run;
 
 sub start {
     my($session,$heap) = @_[SESSION,HEAP];
-    print "started...\n";
     $heap->{'user'} = POE::Wheel::ReadLine->new(
         InputEvent => 'user_input',
         PutMode => 'immediate',
@@ -58,22 +57,21 @@ sub start {
        $heap->{'user'}->addhistory($_);
    }
    $heap->{'user'}->get( 'Volity> ' );
-   $heap->{'user'}->put("Connection successful. Weclome to Volity.");
     $heap->{username} = $opts{u};
     $heap->{resource} = $opts{r} || 'friv';
     $heap->{port} = $opts{o} || 5222;
     $heap->{host} = $opts{h};
     my $user = Volity::User->new(
-				 {
-				  host=>$heap->{host},
-				  password=>$opts{p},
-				  resource=>$heap->{resource},
-				  port=>$heap->{port},
-				  alias=>$heap->{resource},
-				  debug=>$opts{d} || 0,
-				  user=>$heap->{username},
-				 }
-				);
+                                 {
+                                  host=>$heap->{host},
+                                  password=>$opts{p},
+                                  resource=>$heap->{resource},
+                                  port=>$heap->{port},
+                                  alias=>$heap->{resource},
+                                  debug=>$opts{d} || 0,
+                                  user=>$heap->{username},
+                                 }
+                                );
     $heap->{user_obj} = $user;
     $user->terminal($heap->{user});
     $user->kernel->run;
@@ -189,8 +187,8 @@ sub cmd_info {
       "Status information:",
       "  JID: ".$user->jid,
       "  Nickname: ".$user->nick,
-      "  Table JID: ".$heap->table_jid,
-      "  Referree JID: ".$heap->referee_jid;
+      "  Table JID: ".$user->table_jid,
+      "  Referee JID: ".$user->referee_jid;
 }
 
 sub cmd_quit {
@@ -222,17 +220,17 @@ sub cmd_help {
     $heap->{'user'}->put("$_") for
         'Volity client commands:',
         '  msg (JID) (text) - send private message to the given JID',
-	'  tmsg (text)      - send groupchat message to the current table',
-	'  rmsg (text)       - send private message to the current referee',
+        '  tmsg (text)      - send groupchat message to the current table',
+        '  rmsg (text)       - send private message to the current referee',
         '',
         '  nick (nickname)  - set a new table nickname for yourself',
-	'  roster           - view your roster',
+        '  roster           - view your roster',
         '',
         '  new_table (JID)  - request a new table from the given server JID',
         '  join_table (JID) - join an existing table',
-	'  add_bot          - request a new bot for the current table',
+        '  add_bot          - request a new bot for the current table',
         '  start_game       - request a new game at the current table',
-	'',
+        '',
         '  info             - see some info about your current status',
         '  help             - this list',
         '  quit             - log off from Volity and exit this program';
@@ -250,27 +248,27 @@ sub cmd_new_table {
     return;
   }
   my $rpc_id = ++$next_rpc_request_id;
-  $user->table_response_id($rpc_id);
   $user->make_rpc_request(
-			  {
-			   to=>$server_jid,
-			   id=>$rpc_id,
-			   methodname=>'new_table',
-			  }
-			 );
+                          {
+                           to=>$server_jid,
+                           id=>$rpc_id,
+                           methodname=>'new_table',
+                           handler=>'new_table',
+                          }
+                         );
 }
 
 sub cmd_add_bot {
   my $user = $_[HEAP]->{user_obj};
   my $rpc_id = ++$next_rpc_request_id;
-  $user->bot_rpc_id($rpc_id);
   $user->make_rpc_request(
-			  {
-			   to=>$user->referee_jid,
-			   id=>$rpc_id,
-			   methodname=>'add_bot',
-			  }
-			 );
+                          {
+                           to=>$user->referee_jid,
+                           id=>$rpc_id,
+                           methodname=>'add_bot',
+                           handler=>'add_bot',
+                          }
+                         );
 }
 
 sub cmd_join_table {
@@ -278,11 +276,11 @@ sub cmd_join_table {
   my $table_jid = $_[ARG0];
   return unless check_jid($_[HEAP]->{user}, $table_jid);
   $user->join_muc(
-		  {
-		   jid=>$table_jid,
-		   nick=>$user->{nick},
-		  }
-		 );
+                  {
+                   jid=>$table_jid,
+                   nick=>$user->{nick},
+                  }
+                 );
   # Tell the user that it's now seated at a table.
   $user->table_jid($table_jid);
 #  $user->referee_jid("$table_jid/volity");
@@ -300,12 +298,12 @@ sub cmd_tmsg {
     return;
   }
   $user->send_message(
-		      {
-		       type=>'groupchat',
-		       body=>$message,
-		       to=>$user->table_jid,
-		      }
-		     );
+                      {
+                       type=>'groupchat',
+                       body=>$message,
+                       to=>$user->table_jid,
+                      }
+                     );
 }
 
 sub cmd_msg {
@@ -317,12 +315,12 @@ sub cmd_msg {
   }
   return unless check_jid($user->terminal, $to);
   $user->send_message(
-		      {
-		       type=>'normal',
-		       body=>$message,
-		       to=>$to,
-		      }
-		     );
+                      {
+                       type=>'normal',
+                       body=>$message,
+                       to=>$to,
+                      }
+                     );
 }
 
 sub cmd_start_game {
@@ -332,14 +330,14 @@ sub cmd_start_game {
     return;
   }
   my $rpc_id = ++$next_rpc_request_id;
-  $user->start_game_id($rpc_id);
   $user->make_rpc_request(
-			  {
-			   id=>$rpc_id,
-			   to=>$user->referee_jid,
-			   methodname=>'start_game',
-			  }
-			 );
+                          {
+                           id=>$rpc_id,
+                           to=>$user->referee_jid,
+                           methodname=>'start_game',
+                           response=>'start_game',
+                          }
+                         );
 }
 
 sub cmd_rmsg {
@@ -354,12 +352,12 @@ sub cmd_rmsg {
     return;
   }
   $user->send_message(
-		      {
-		       type=>'normal',
-		       body=>$message,
-		       to=>$user->referee_jid,
-		      }
-		     );
+                      {
+                       type=>'normal',
+                       body=>$message,
+                       to=>$user->referee_jid,
+                      }
+                     );
 }
 
 sub cmd_roster {
@@ -380,7 +378,11 @@ sub cmd_roster {
     for my $jid (@available_jids) {
 #      $user->print_message($_);
       for my $presence ($roster->presence($jid)) {
-	$user->print_message("$jid/$$presence{resource}");
+        my $full_jid = $jid;
+        if (defined $$presence{'resource'}) {
+            $full_jid .= "/$$presence{resource}";
+        }
+        $user->print_message( $full_jid );
       }
     }
   } else {
@@ -400,12 +402,33 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(table_response_id bot_rpc_id nick terminal table_jid referee_jid start_game_id);
+use fields qw(nick terminal table_jid referee_jid);
 use POE;
 
 sub jabber_authed {
   my $self = $_[OBJECT];
-  $self->request_roster;
+  my( $node ) = @_[ARG0..$#_];
+  
+  # Succesful login!
+  if ( $node->attr('type') eq 'result') {
+    $self->print_message("Connection successful. Weclome to Volity.");
+    $self->request_roster;
+  }
+  # Failed login...
+  elsif ( $node->attr('type') eq 'error') {
+    my $details  = $node->get_children_hash;
+    my $query    = $$details{'query'}->get_children_hash;
+    my $username = $$query{'username'}->data;
+    my $code     = $$details{'error'}->attr('code');
+    my $desc     = $$details{'error'}->data;
+    $self->print_message( "Login failed, username $username: $code $desc");
+    print "\r        \r"; # Delete the prompt
+    exit;
+  }
+  # Huh?
+  else {
+    $self->print_message( "Unknown response from auth request: ".$node->to_str );
+  }
 }
 
 sub receive_roster {
@@ -421,28 +444,36 @@ sub print_message {
   $self->terminal->put($message);
 }
 
-sub handle_rpc_response {
+sub rpc_response_new_table {
   my $self = shift;
-  my ($response_hash) = @_;
-  if ($$response_hash{id} eq $self->table_response_id) {
-    $self->join_muc(
-		    {
-		     jid=>$$response_hash{response},
-		     nick=>$self->nick || $self->user,
-		    }
-		   );
-    my $table_jid = $$response_hash{response};
-    $self->table_jid($table_jid);
-    my ($ref_resource) = $table_jid =~ /^(.*?)@/;
-    my $ref_jid = $$response_hash{from};
-    $self->print_message("New table made, and joined. (Table JID: $table_jid)");
-  } elsif ($$response_hash{id} eq $self->bot_rpc_id) {
-    $self->print_message("Response from the bot-add request was: $$response_hash{response}");
-  } elsif ($$response_hash{id} eq $self->start_game_id) {
-    $self->print_message("The game has begun. Good luck!");
-  } else {
-    $self->print_message("Received an RPC response with id $$response_hash{id}, but I don't know how to handle it.");
-  }
+  my( $message ) = @_;
+  my $table_jid = $$message{'response'};
+  $self->join_muc( {
+    jid  => $table_jid,
+    nick => $self->nick || $self->user,
+    } );
+  $self->table_jid($table_jid);
+  my ($ref_resource) = $table_jid =~ /^(.*?)@/;
+  my $ref_jid = $$message{'from'};
+  $self->print_message("New table made, and joined. (Table JID: $table_jid)");
+}
+
+sub rpc_response_add_bot {
+  my $self = shift;
+  my( $message ) = @_;
+  $self->print_message("Response from the bot-add request was: $$message{'response'}");
+}
+
+sub rpc_response_start_game {
+  my $self = shift;
+  $self->print_message("The game has begun. Good luck!");
+}
+
+sub rpc_response_default {
+  my $self = shift;
+  my ($message) = @_;
+  $self->print_message("Received an RPC response with id ".
+    "$$message{'id'}, but I don't know how to handle it.");
 }
 
 sub handle_rpc_transmission_error {
@@ -501,8 +532,7 @@ sub jabber_presence {
       # This is the table's ref.
       $self->referee_jid($new_person_jid);
     }
-  } elsif (defined($node->attr('from')) and 
-	   $self->roster->has_jid($node->attr('from'))) {
+  } elsif ($self->roster->has_jid( $node->attr('from') )) {
     # Someone on our roster just changed their presence.
     my $roster = $self->roster;
     my $jid = $node->attr('from');
