@@ -145,7 +145,9 @@ sub store_record_in_db {
 #  }
   # Now record how each player placed.
   my $current_place = 1;	# Start with first place, work down.
-  for my $place ($game_record->winners) {
+  my @places = $game_record->winners;
+  my @players_to_update;
+  for my $place (@places) {
     my @player_jids = ref($place)? @$place : ($place);
     for my $player_jid (@player_jids) {
       # Get this player's DB object, since we need its ID.
@@ -157,13 +159,71 @@ sub store_record_in_db {
 			  player_id=>$player->id,
 			 });
       $game_player->place($current_place);
-      # XXX Put ranking figuring-out here.
-      $game_player->update;
+
+      # Figure out the player's new ranking for this game.
+      my $last_rating = $player->current_rating_for_ruleset($ruleset);
+#      warn "***Da last rating for $player and $ruleset is $last_rating. de END.";
+      my @beaten_players; my @tied_players; # Volity::Info::Player objects.
+      my @winning_players;	            # Ibid.
+      # Get the players that beat this one.
+      foreach (1..($current_place - 1)) {
+	my $index = $_ - 1;
+	if (ref($places[$index]) eq 'ARRAY') {
+	  push (@winning_players, map(Volity::Info::Player->search({jid=>$_}), @{$places[$index]}));
+	} else {
+	  push (@winning_players, Volity::Info::Player->search({jid=>$places[$index]}));
+	}
+      }      
+      # Get the players tied with this one.
+      if (ref($places[$current_place - 1]) eq 'ARRAY') {
+	@tied_players = map(Volity::Info::Player->search({jid=>$_}), grep($player->jid ne $_, @{$places[$current_place - 1]}));
+      }
+      # Get the players this one defeated.
+      foreach (($current_place + 1)..scalar(@places)) {
+	my $index = $_ - 1;
+	if (ref($places[$index]) eq 'ARRAY') {
+	  push (@beaten_players, map(Volity::Info::Player->search({jid=>$_}), @{$places[$index]}));
+	} else {
+	  push (@beaten_players, Volity::Info::Player->search({jid=>$places[$index]}));
+	}
+      }
+#      warn "WHEE! I beat @beaten_players";
+      # Get this player's 'K' rating, based on the number of games
+      # they have played, of this ruleset.
+      my $number_of_games_played = $player->number_of_games_played_for_ruleset($ruleset);
+#      warn "****That's $number_of_games_played games.****";
+      my $k_delta = int($number_of_games_played / 50) * 5;
+      $k_delta = 20 if $k_delta > 20;
+      my $k_value = 30 - $k_delta;
+      my $rating_delta = 0;
+      for my $tied_player (@tied_players) {
+	my $opponent_rating = $tied_player->current_rating_for_ruleset($ruleset);
+#	warn "***OPPONENT rating si $opponent_rating\n";
+	$rating_delta += $k_value * (.5 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
+      }
+      for my $beaten_player (@beaten_players) {
+	my $opponent_rating = $beaten_player->current_rating_for_ruleset($ruleset);
+	$rating_delta += $k_value * (1 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
+      }	
+      for my $winning_player (@winning_players) {
+	my $opponent_rating = $winning_player->current_rating_for_ruleset($ruleset);
+	$rating_delta += $k_value * (0 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
+      }
+      my $new_rating = $last_rating + $rating_delta;
+      $game_player->rating($new_rating);
+      push (@players_to_update, $game_player);
+#      $game_player->update;
     }
     $current_place++;
   }
-
+  map($_->update, @players_to_update);
   return $game;
+}
+
+sub get_rating_delta {
+  my $self = shift;
+  my ($current_rating, $opponent_rating) = @_;
+  return 1 / (1 + (10 ^ (abs($current_rating - $opponent_rating) / 400)));
 }
 
 sub _rpc_set_my_attitude_toward_player {
@@ -313,7 +373,7 @@ sub jabber_authed {
   $self->debug("We have authed!\n");
   $self->debug("My jid: " . $self->jid);
   unless ($node->name eq 'handshake') {
-    warn $node->to_str;
+#    warn $node->to_str;
   }
 }
 
