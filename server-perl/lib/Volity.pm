@@ -162,8 +162,8 @@ As with any Volity implementation, you don't need to host any Internet
 services of your own to host a game module; you simply need a valid
 login to a Jabber server somewhere. Frivolity includes a Perl program,
 C<volityd>, that creates a Volity server for you, using a
-C<Volity::Game> subclass that you provide it. See L<volityd(3)> for more
-information.
+C<Volity::Game> subclass that you provide it. See the volityd manpage
+for more information.
 
 =head1 METHODS
 
