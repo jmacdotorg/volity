@@ -159,7 +159,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         int gridY = 0;
 
-        // Add user ID label
+        // Add MUC ID label
         JLabel someLabel = new JLabel("MUC ID:");
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -168,7 +168,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         c.anchor = GridBagConstraints.WEST;
         getContentPane().add(someLabel, c);
 
-        // Add user ID field
+        // Add MUC ID field
         mMucIdField = new JTextField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
