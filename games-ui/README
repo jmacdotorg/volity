@@ -1,0 +1,10 @@
+This CVS module contails UI files for several Volity games. Generally,
+they're the same games whose server-side implementations (in Perl) can
+be found in the games-perl CVS module.
+
+As with all Volity game UI files, their principal language is
+ECMAScript (JavaScript), but they may be intended for different
+"target" clients, such as text-only or SVG.
+
+In some cases, support files (such as bitmapped images) are included
+along with the code.

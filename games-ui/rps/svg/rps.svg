@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- These 'hand' graphics all face right. Rotate them to face left. -->
+    <symbol id="scissors">
+      <image id="scissors" xlink:href="scissors.png" width="118" height="83"/>
+    </symbol>
+    <symbol id="rock">
+      <image id="rock" xlink:href="rock.png" width="86" height="75"/>
+    </symbol>
+    <symbol id="paper">
+      <image id="paper" xlink:href="paper.png" width="108" height="110"/>
+    </symbol>
+    <!-- hand-box is a little box suitable for putting hands into. -->
+    <symbol id="hand-box">
+      <rect width="150" height="125" style="stroke: green; fill-opacity: 0; stroke-width: 2;"/>
+    </symbol>
+    <symbol id="opp-box">
+      <rect width="150" height="125" style="stroke: red; fill-opacity: 0; stroke-width: 2;"/>
+    </symbol>
+    <symbol id="win">
+      <text x="10"  y="100" style="font-size:100; fill=green;">VICTORY!</text>
+    </symbol>
+    <symbol id="lose">
+      <text x="10" y="100" style="font-size:100; fill=red;">DEFEAT!</text>
+    </symbol>
+    <symbol id="draw">
+      <text x="10" y="100" style="font-size:100; fill=gray;">meh...</text>
+    </symbol>
+
+  </defs>
+
+  <script type="text/ecmascript">
+    <![CDATA[
+
+var svg_ns = "http://www.w3.org/2000/svg";
+var xlink_ns = "http://www.w3.org/1999/xlink";
+
+set_up();
+
+function set_up() {
+  set_up_boxes();
+  set_up_buttons();
+}
+
+function set_up_boxes() {
+  set_up_box("hand-box", 0);
+  set_up_box("opp-box", 200);
+}
+
+function set_up_box(type, x) {
+  box = document.createElementNS(svg_ns, "use");
+  box.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  box.setAttribute("y", 0);
+  box.setAttribute("x", x);
+  document.firstChild.appendChild(box);
+}
+
+function set_up_buttons() {
+  set_up_button("rock", 0);
+  set_up_button("paper", 125);
+  set_up_button("scissors", 250);
+}
+
+function set_up_button(type, x) {
+  hand = document.createElementNS(svg_ns, "use");
+  hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  hand.setAttribute("y", 200);
+  hand.setAttribute("x", x);
+  hand.setAttribute("onclick", "choose_hand(evt)");
+  hand.setAttribute("id", "button-" + type);
+  document.firstChild.appendChild(hand);
+}
+
+game.start_game = function() {
+  status = new Object;
+
+  old_hand = document.getElementById("hand-in-box");
+  if (old_hand != null) {
+    document.firstChild.removeChild(old_hand);
+  };
+
+  old_hand = document.getElementById("opp-hand");
+  if (old_hand != null) {
+    document.firstChild.removeChild(old_hand);
+  };
+
+  old_message = document.getElementById("message");
+  if (old_message != null) {
+    document.firstChild.removeChild(old_message);
+  };
+}
+
+function choose_hand(evt) {
+  clicked_hand = evt.getTarget();
+  type = clicked_hand.getAttribute("id");
+
+  hand = document.createElementNS(svg_ns, "use");
+  hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  hand.setAttribute("y", 15);
+  hand.setAttribute("x", 15);
+  hand.setAttribute("id", "hand-in-box");
+  document.firstChild.appendChild(hand);
+
+  status.player = type;
+  rpc("choose_hand", type);
+}
+
+game.player_chose_hand = function(player, type) {
+  if (player != info.nickname) {
+    status.opponent = type;
+    hand = document.createElementNS(svg_ns, "use");
+    hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+    hand.setAttribute("y", 15);
+    hand.setAttribute("x", 215);
+    hand.setAttribute("id", "opp-hand");
+    document.firstChild.appendChild(hand);
+  }
+}
+
+game.end_game = function() {
+  var myHand = status.player;
+  var hand = status.opponent;
+  var result = 0;
+  if (myHand == 'rock') {
+    if (hand == 'scissors') {
+      result = 1;
+    } else if (hand == 'paper') {
+      result = -1;
+    }
+  } else if (myHand == 'paper') {
+    if (hand == 'scissors') {
+      result = -1;
+    } else if (hand == 'rock') {
+      result = 1;
+    }
+  } else {
+    if (hand == 'rock') {
+      result = -1;
+    } else if (hand == 'paper') {
+      result = 1;
+    }
+  }
+  if (result == -1) {
+    declare_end("lose");
+  } else if (result == 1) {
+    declare_end("win");
+  } else {
+    declare_end("draw");
+  }
+}
+
+function declare_end(type) {
+  message = document.createElementNS(svg_ns, "use");
+  message.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  message.setAttribute("y", 350);
+  message.setAttribute("x", 15);
+  message.setAttribute("id", "message");
+  document.firstChild.appendChild(message);
+}
+
+
+// ]]>
+  </script>
+</svg>
