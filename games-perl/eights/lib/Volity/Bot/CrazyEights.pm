@@ -6,7 +6,7 @@ use warnings; use strict;
 
 use base qw(Volity::Bot);
 # Mmm, take note of which fields should go in a bot class.
-use fields qw(last_card cards by_suit by_rank suit_sums eights suit_rank);
+use fields qw(match_card cards by_suit by_rank suit_sums eights suit_rank);
 
 use POE;
 
@@ -14,6 +14,15 @@ __PACKAGE__->name("CrazyEddie");
 __PACKAGE__->description("Generic Crazy Eights-playing bot.");
 __PACKAGE__->user("rps-bot");
 __PACKAGE__->host("volity.net");
+
+## new: call parent's constructor, then init some instance variables.
+sub new {
+  my $class = shift;
+  my $self = $class->SUPER::new(@_);
+  $self->{by_rank} = {};
+  $self->{by_suit} = {};
+  return $self;
+}
 
 sub handle_rpc_request {
   my $self = shift;
@@ -33,13 +42,13 @@ sub handle_rpc_request {
 sub rpc_player_played_card {
   my $self = shift;
   my ($player, $card) = @_;
-  $self->{last_played} = $card;
+  $self->{match_card} = uc($card);
 }
 
 sub rpc_starter_card {
   my $self = shift;
   my ($card) = @_;
-  $self->{last_played} = $card;
+  $self->{match_card} = uc($card);
 }
 
 sub rpc_receive_hand {
@@ -54,13 +63,15 @@ sub rpc_player_chose_suit {
   my $self = shift;
   my ($player, $suit) = @_;
   # Hacky, but who cares.
-  $self->{last_played} = '8' . $suit;
+  $suit = uc(substr($suit, 0, 1));
+  $self->{match_card} = '8' . $suit;
 }
 
 sub rpc_draw_card {
   my $self = shift;
   my ($card) = @_;
   $self->add_card($card);
+  $self->take_turn;
 }
 
 sub rpc_start_turn {
@@ -97,6 +108,8 @@ choose its most favored suit.
 sub take_turn {
   my $self = shift;
   my $card = $self->choose_card_to_play;
+  return unless $card;
+  $self->remove_card($card);
   my ($play_rank, $play_suit) = $self->split_card($card);
   $self->make_rpc_request({
 			   to=>$self->referee_jid,
@@ -124,17 +137,17 @@ sub take_turn {
 			 body=>"I have only one card left.",
 			});
   }
-
 }
 
 sub choose_card_to_play {
   my $self = shift;
-  my $match_card = $self->{last_played};
-  my ($match_suit, $match_rank) = $self->split_card($match_card);
+  my $match_card = $self->{match_card};
+  my ($match_rank, $match_suit) = $self->split_card($match_card);
   my $match_suit_value = $self->{suit_rank}->{$match_suit};
+  $self->logger->debug("I must match the suit $match_suit or the rank $match_rank.");
   #### Seek a suit-switch...
   # Find the most valuable card among the rank-matches.
-  my @rank_matches = @{$self->{by_rank}->{$match_rank}};
+  my @rank_matches = keys(%{$self->{by_rank}->{$match_rank}});
   if (@rank_matches) {
     my $best_rank_match;
     my $best_rank_match_value = 0;
@@ -146,21 +159,25 @@ sub choose_card_to_play {
       }
     }
     if ($best_rank_match_value > $match_suit_value) {
+      $self->logger->debug("I will match ranks with $best_rank_match.");
       return $best_rank_match;
     }
   }
 
   #### Seek the best same-suit card.
   if (my $suit_match = $self->find_highest_card_in_suit($match_suit)) {
+    $self->logger->debug("I will match suits with $suit_match.");
     return $suit_match;
   }
 
   #### Seek an eight.
   if (my $eight = $self->remove_eight) {
+    $self->logger->debug("I will play an 8.");
     return $eight;
   }
 
   #### If we get this far, we have no cards to play.
+  $self->logger->debug("I have no cards to play!!");
   return;
 }
 
@@ -176,9 +193,9 @@ sub add_card {
   my ($card) = @_;
   my ($rank, $suit);
   unless (($rank, $suit) = $self->split_card($card)) {
-    croak ("This doesn't look like a card: $card");
+    $self->expire("This doesn't look like a card: $card");
   }
-  if ($rank == 8) {
+  if ($rank eq '8') {
     push (@{$self->{eights}}, $card);
   } else {
     $self->{cards}->{$card} = 1;
@@ -197,7 +214,7 @@ sub remove_card {
   my ($card) = @_;
   my ($rank, $suit);
   unless (($rank, $suit) = $self->split_card($card)) {
-    croak ("This doesn't look like a card: $card");
+    $self->expire("This doesn't look like a card: $card");
   }  
   delete($self->{cards}->{$card});
   delete($self->{by_suit}->{$suit}->{$card});
@@ -216,10 +233,10 @@ sub remove_eight {
 sub split_card {
   my $self = shift;
   my ($card) = @_;
-  if (my ($rank, $suit) =~ /^(10|[AKQJ2-9])([DCHS])$/) {
+  if (my ($rank, $suit) = $card =~ /^(10|[AKQJ2-9])([DCHS])$/) {
     return ($rank, $suit);
   } else {
-    return 0;
+    return ();
   }
 }
 
