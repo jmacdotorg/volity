@@ -3,6 +3,7 @@ use Tie::Hash;
 use base 'Tie::ExtraHash';
 
 sub STORE {
+    my @callers = caller;
     if ( ref $_[2] eq 'ARRAY'   and
          @{$_[2]} == 2          and
          ref $_[2][0] eq 'CODE' and
@@ -13,7 +14,7 @@ sub STORE {
     } elsif ( exists $_[0][1]{'set'}{$_[1]} ) {
         return &{ $_[0][1]{'set'}{$_[1]} }( $_[2] );
     } else {
-        goto $_[0]->can('SUPER::STORE');
+	shift->SUPER::STORE(@_);
     }
 }
 
@@ -21,7 +22,7 @@ sub FETCH {
     if ( exists $_[0][1]{'get'}{$_[1]} ) {
         return &{ $_[0][1]{'get'}{$_[1]} }();
     } else {
-        goto $_[0]->can('SUPER::FETCH');
+	shift->SUPER::FETCH(@_);
     }
 }
 
@@ -30,7 +31,7 @@ sub DELETE {
         $_[0]->SUPER::DELETE($_[1]);
         return &{ $_[0][1]{'set'}{$_[1]} }();
     } else {
-        goto $_[0]->can('SUPER::DELETE');
+	shift->SUPER::DELETE(@_);
     }
 }
 
