@@ -319,7 +319,9 @@ sub sign {
   close (GPG) or die "Couldn't close gpg command pipe: $!";
 
   open (SIG, $out_filename) or die "Can't read $out_filename: $!";
-  local $/ = undef; my $signature = <SIG>;
+#  local $/ = undef; my $signature = <SIG>;
+  my $signature = '';
+  while (<SIG>) { $signature .= $_ }
   close (SIG) or die "Can't close $out_filename: $!";
 
   # Clean up our messy mess...
@@ -328,6 +330,9 @@ sub sign {
   }
 
   # Finally, attach the signature to the object.
+  # XXX HACK, to get around apparent bug where P::F::X::N strips newlines
+  $signature =~ s/\n/==NEWLINE==/g;
+  
   $self->signature($signature);
   return $signature;
 }
@@ -367,6 +372,7 @@ sub verify {
 
   
   my $gpg_command = $gpg_bin . " --verify $signature_filename $serialized_filename";
+
   my $result = system($gpg_command);
 
   # Clean up my messy mess.
@@ -488,6 +494,9 @@ sub render_as_hashref {
 sub new_from_hashref {
   my $class = shift;
   my ($hashref) = @_;
+  # XXX HACK, to get around apparent bug where P::F::X::N strips newlines
+  $$hashref{signature} =~ s/==NEWLINE==/\n/g;
+
   return $class->new($hashref);
 }
 
