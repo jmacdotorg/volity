@@ -76,7 +76,7 @@ sub expire {
   my $self = shift;
   my ($last_words) = @_;
   $self->logger->fatal($last_words);
-  Carp::croak ($last_words);
+  Carp::confess($last_words);
 }
 
 
