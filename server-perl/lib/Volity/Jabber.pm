@@ -223,11 +223,11 @@ sub initialize {
   $self->rpc_parser(RPC::XML::Parser->new);
   $self->default_language('en') unless defined($self->default_language);
 
-  return $self;
 
   # Give initial values to instance variables what needs 'em.
-  $self->query_handlers = {};
+  $self->{query_handlers} = {};
 
+  return $self;
 }
 
 sub debug {
@@ -355,9 +355,11 @@ sub jabber_iq {
       my $response_obj = $self->rpc_parser->parse($raw_xml);
       $self->debug("Finally, got $response_obj.\n");
       $self->debug("The response is: " . $response_obj->value->value . "\n");
-      $self->handle_rpc_response({id=>$id,
+      $self->handle_rpc_response({
+				  id=>$id,
 				  response=>$response_obj->value->value,
 				  rpc_object=>$response_obj,
+				  from=>$from_jid,
 				});
     }
   } elsif ($node->attr('type') eq 'set') {
@@ -434,7 +436,7 @@ These methods are called by RPC events.
 
 =over
 
-=item handle_rpc_respose({id=>$id, response=>$response, rpc_object=>$obj})
+=item handle_rpc_respose({id=>$id, response=>$response, from=>$from, rpc_object=>$obj})
 
 Called upon receipt of an RPC response. The argument is a hashref containing the response's ID attribute and response value, as well as an RPC::XML object representing the response.
 
