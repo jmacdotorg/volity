@@ -408,11 +408,18 @@ sub jabber_iq {
   } elsif ($node->attr('type') eq 'set') {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
+
+      # Hack, to deal with apparent RPC::XML bug?
+      $raw_xml =~ s/<int\/>/<int>0<\/int>/g;
+
       $self->debug("Got Apparent RPC XML: $raw_xml\n");
       my @kids = @{$query->get_children};
       $self->debug("Got " . scalar(@kids) . " kids.\n");
       $self->debug("I like cheeze. Also: " . $kids[0]->get_id . "\n");
       my $rpc_obj = $self->rpc_parser->parse($raw_xml);
+      unless (ref($rpc_obj)) {
+	  die "Got bad rpc.\n$raw_xml";
+      }
       $self->debug( "Finally, got $rpc_obj.\n");
       my $method = $rpc_obj->name;
       $self->handle_rpc_request({
@@ -730,10 +737,13 @@ sub send_rpc_request {
     @args = ();
   }
 
+#  warn "Arr, me hearties, the args are this: @args\n";
+  
   if ( exists $$args{'handler'} ) {
       $self->add_response_handler( $$args{'id'}, $$args{'handler'} );
   }
 
+#  my $request = RPC::XML::request->new($$args{methodname}, RPC::XML::smart_encode(@args));
   my $request = RPC::XML::request->new($$args{methodname}, @args);
 
 
@@ -741,6 +751,7 @@ sub send_rpc_request {
   # I don't like this so much, sliding in the request as raw data.
   # But then, I can't see why it would break.
   my $request_xml = $request->as_string;
+#  warn "$request_xml\n";
   # The susbtr() chops off the XML prolog. I know, I know.
   $request_xml = substr($request_xml, 22);
   $iq->insert_tag('query', 'jabber:iq:rpc')->
