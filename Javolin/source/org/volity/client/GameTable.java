@@ -82,7 +82,7 @@ public class GameTable extends MultiUserChat {
   }
 
   /**
-   * Get a list of opponent nicknames, i.e. participants not including
+   * Get a list of opponent nicknames. I.e. participants not including
    * the referee or myself.
    */
   public List getOpponents() {
