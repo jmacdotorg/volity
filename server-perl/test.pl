@@ -30,7 +30,7 @@ our $server = TestRPS::Server->new(
 				  referee_class=>'TestRPS::Referee',
 				  alias=>'volity',
 				  bookkeeper_jid=>$bookkeeper_jid,
-				  debug=>1,
+				  debug=>0,
 				 }
 				);
 
