@@ -21,7 +21,6 @@ getopts('u:h:p:r:o:d:', \%opts);
 
 foreach (qw(user host password)) {
   unless (defined($opts{substr($_,0,1)})) {
-#    die "You must define a $_, with the " . substr($_,0,1) . " flag.\n";
     my $answer;
     until (defined($answer) and $answer ne '') {
       print "$_: ";
@@ -184,16 +183,14 @@ sub expand {
 
 sub cmd_info {
     my($heap) = $_[HEAP];
-    my $jid = $heap->{'username'}.'@'.$heap->{'host'};
-    $jid .= ':'.$heap->{'port'} if $heap->{'port'} != 5222;
-    $jid .= "/".$heap->{'resource'};
     no warnings qw(uninitialized);
+    my $user = $heap->{user_obj};
     $heap->{'user'}->put($_) for
       "Status information:",
-      "  JID: ".$jid,
-      "  Nickname: ".$heap->{'nick'},
-      "  Game JID: ".$heap->{'game'},
-      "  Referree JID: ".$heap->{'ref'};
+      "  JID: ".$user->jid,
+      "  Nickname: ".$user->nick,
+      "  Table JID: ".$heap->table_jid,
+      "  Referree JID: ".$heap->referee_jid;
 }
 
 sub cmd_quit {
@@ -224,20 +221,21 @@ sub cmd_help {
     my($heap,$on) = @_[HEAP,ARG0..$#_];
     $heap->{'user'}->put("$_") for
         'Volity client commands:',
-        '  help',
-        '  nick',
-        '  info',
-        '  presence',
-        '  new_table',
-	'  add_bot',
-        '  join_game',
-        '  start_game',
-        '  msg',
-#        '  gmsg',
-	'  tmsg',
-        '  game',
-        '  ref',
-        '  quit';
+        '  msg (JID) (text) - send private message to the given JID',
+	'  tmsg (text)      - send groupchat message to the current table',
+	'  rmsg (text)       - send private message to the current referee',
+        '',
+        '  nick (nickname)  - set a new table nickname for yourself',
+	'  roster           - view your roster',
+        '',
+        '  new_table (JID)  - request a new table from the given server JID',
+        '  join_table (JID) - join an existing table',
+	'  add_bot          - request a new bot for the current table',
+        '  start_game       - request a new game at the current table',
+	'',
+        '  info             - see some info about your current status',
+        '  help             - this list',
+        '  quit             - log off from Volity and exit this program';
 }
 
 sub cmd_new_table {
@@ -401,7 +399,6 @@ package Volity::User;
 use warnings;
 use strict;
 
-use lib qw(/Users/jmac/Documents/migs/cvs/sf-server-perl/lib/);
 use base qw(Volity::Jabber);
 use fields qw(table_response_id bot_rpc_id nick terminal table_jid referee_jid start_game_id);
 use POE;
@@ -438,13 +435,6 @@ sub handle_rpc_response {
     $self->table_jid($table_jid);
     my ($ref_resource) = $table_jid =~ /^(.*?)@/;
     my $ref_jid = $$response_hash{from};
-#    # XXX This, I'm not sure about. Should the Ref's JID be $table_jid/volity
-#    # (which I'm using for now), or its real JID?
-#    $ref_jid =~ s/\/.*//;
-#    $ref_jid .= "/$ref_resource";
-#    $ref_jid = "$table_jid/volity";
-#    print "The ref jid looks like $ref_jid.\n";
-#    $self->referee_jid($ref_jid);
     $self->print_message("New table made, and joined. (Table JID: $table_jid)");
   } elsif ($$response_hash{id} eq $self->bot_rpc_id) {
     $self->print_message("Response from the bot-add request was: $$response_hash{response}");
