@@ -12,9 +12,10 @@
 	- Rewrote and renamed the text client. It's now 'Friv', under
           the executable 'friv'.
 
-	- Added basic roster and service discovery support to Volity::Jabber.
+	- Added basic roster, service discovery support, and user
+	  regsitration to Volity::Jabber.
 
-	- Added the above to Friv, too.
+	- Added (most of) the above to Friv, too.
 
 0.2.2
 
