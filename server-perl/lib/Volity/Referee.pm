@@ -122,7 +122,7 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id uri bookkeeper_jid  max_allowed_players min_allowed_players error_message);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id uri bookkeeper_jid  max_allowed_players min_allowed_players error_message server muc_host);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -136,7 +136,7 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 # kernel
 #   This referee's POE kernel.
 
-use warnings;
+use warnings;  no warnings qw(deprecated);
 use strict;
 
 use lib qw(/Users/jmac/Library/Perl/);
@@ -171,19 +171,18 @@ sub initialize {
 
   $self->SUPER::initialize(@_);
 
-  # XXXXXXX
-  # Setting stuff in a dumb manner!
-  # XXXXXXX
-  $self->muc_jid('game@conference.localhost');
-  # XXXXXXX
-
   my $game_class = $self->game_class or die
-    "No referee class specified at construction!";
+    "No game class specified at construction!";
   eval "require $game_class";
   if ($@) {
-    die "Failed to require referee class $game_class: $@";
+    die "Failed to require game class $game_class: $@";
   }
 
+  # Build the JID of our MUC.
+  unless (defined($self->muc_host)) {
+    croak ("You must define a muc_host on referee construction.");
+  }
+  $self->muc_jid($self->resource . '@' . $self->muc_host);
 
   return $self;
 
@@ -201,13 +200,15 @@ sub jabber_authed {
   $self->debug("***REFEREE*** We have authed!\n");
   $kernel->post($self->alias, 'register', qw(iq presence message));
 
-  # Join the game MUC.
+#  # Join the game MUC.
 
-  my $presence = PXR::Node->new('presence');
-  $presence->attr(from=>$self->jid);
-  $presence->attr(to=>"$self->{muc_jid}/volity");
-  $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
-  $kernel->post($self->alias, 'output_handler', $presence);
+#  my $presence = PXR::Node->new('presence');
+#  $presence->attr(from=>$self->jid);
+#  $presence->attr(to=>"$self->{muc_jid}/volity");
+#  $presence->insert_tag('x', 'http://jabber.org/protocol/muc');
+#  $kernel->post($self->alias, 'output_handler', $presence);
+
+  $self->join_muc({jid=>$self->muc_jid, nick=>'volity'});
 
   $self->debug("I think I sent something?!\n");
 
@@ -219,6 +220,7 @@ sub handle_rpc_request {
   my $method = $$rpc_info{method};
   # For security's sake, we explicitly accept only a few method names.
   # In fact, the only one we care about right now is 'start_game'.
+  warn "******UNTA UNTA $method*****"; sleep(1);
   if ($method eq 'start_game') {
     $self->start_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } else {
@@ -454,18 +456,18 @@ sub start_game {
   # Make sure the player who sent us this request is in the MUC.
   my ($from_nick) = $from_jid =~ /\/(.*)$/;
   my $requester_jid = $self->{nicks}{$from_nick};
+  warn "***DEET***";
   die "I have no record of a nickname '$from_nick'" unless $requester_jid;
   if ($requester_jid ne $self->starting_request_jid) {
+    $self->send_rpc_fault($from_jid, $id, 2, "You asked to start a game, but you did not initiate the game.");
     $self->debug( "Weird... expected a start_game request from $self->{starting_request_jid} but got one from $requester_jid instead.\n");
     return;
+    
   }
 
   # Look at the sender funny, if we're already playing a game.
   if (defined($self->game)) {
-    $self->send_message({
-			 to=>$from_jid,
-			 body=>"You asked to start a new game, but we seem to be playing one already. Sorry?",
-		       });
+    $self->send_rpc_fault($from_jid, $id, 1, "Can't start a new game, because we're playing one already.");
     return;
   }
 
@@ -476,8 +478,8 @@ sub start_game {
 			 to=>$self->muc_jid,
 			 type=>"groupchat",
 			 body=>"I can't create a new game right now! Error message: " . $self->error_message,
-		       });
-    $self->send_rpc_response($self->starting_request_jid, 'start_game', undef);
+			});
+    $self->send_rpc_fault($from_jid, $id, 999, $self->error_message);
     return;
   }
 
@@ -487,7 +489,7 @@ sub start_game {
   $self->game($game);
   $self->debug("Created a game!!\n");
   # Send back a positive RPC response.
-  $self->send_rpc_response($self->starting_request_jid, $id, "ok");
+  $self->send_rpc_response($from_jid, $id, "ok");
   $self->send_message({
 		       to=>$self->muc_jid,
 		       type=>"groupchat",
@@ -546,6 +548,17 @@ sub send_record_to_bookkeeper {
 			   methodname=>'record_game',
 			   args=>$hash
 			 });
+}
+
+sub stop {
+  my $self = shift;
+  $self->kernel->post($self->alias, 'shutdown_socket', 0);
+  $self->server->remove_referee($self);
+}
+
+sub DESTROY {
+  my $self = shift;
+  $self->server(undef);
 }
 
 =head1 AUTHOR

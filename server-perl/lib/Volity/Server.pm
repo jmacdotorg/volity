@@ -22,7 +22,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class bookkeeper_jid);
+use fields qw(referee_class bookkeeper_jid referees referee_host referee_user referee_password);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -33,6 +33,7 @@ use POE qw(
 	  );
 use Jabber::NS qw(:all);
 use RPC::XML::Parser;
+use Carp qw(croak carp);
 
 sub initialize {
   my $self = shift;
@@ -63,26 +64,41 @@ sub new_game {
 
   my ($from_jid, $id, @args) = @_;
 
-#  Volity::Referee->new(
-  $self->referee_class->new(
-		       {
-			starting_request_jid=>$from_jid,
-			starting_request_id=>$id,
-			user=>$self->user,
-			password=>$self->password,
-			resource=>'volity',
-			host=>$self->host,
-			alias=>'game',
-			debug=>$self->debug,
-			bookkeeper_jid=>$self->bookkeeper_jid,
-		      }
-		      );
+  my $resource = $self->new_referee_resource;
+  my $ref = $self->referee_class->new(
+				      {
+				       starting_request_jid=>$from_jid,
+				       starting_request_id=>$id,
+				       user=>$self->user,
+				       password=>$self->password,
+				       resource=>$resource,
+				       host=>$self->host,
+				       alias=>$resource,
+				       debug=>$self->debug,
+				       bookkeeper_jid=>$self->bookkeeper_jid,
+				      }
+				     );
+  $self->add_referee($ref);
+  $ref->server($self);
+  # XXX OK, I'm really confused. I don't know where the following repsonse
+  # is being sent. Something else _is_ sending it, which is why I'm
+  # commenting out the following line. Whaaaaaaaaa?
+
+#  $self->send_rpc_response($from_jid, $id, $ref->muc_jid);
 }
 
 # start: run the kernel.
 sub start {
   my $self = shift;
   $self->kernel->run;
+}
+
+sub stop {
+  my $self = shift;
+  $self->kernel->post($self->alias, 'shutdown_socket', 0);
+  foreach (grep (defined($_), $self->referees)) {
+    $_->stop;
+  }
 }
 
 sub handle_rpc_request {
@@ -93,8 +109,30 @@ sub handle_rpc_request {
   if ($$rpc_info{'method'} eq 'new_game') {
     $self->new_game($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } else {
-    warn "I received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?";
+#    warn "I received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?";
   }
+}
+
+sub add_referee {
+  my $self = shift;
+  my ($referee) = @_;
+  croak("You must provide a referee object with the add_referee() method") unless $referee->isa("Volity::Referee");
+  if (defined($self->{referees})) {
+    push (@{$self->{referees}}, $referee);
+  } else {
+    $self->{referees} = [$referee];
+  }
+}
+
+sub remove_referee {
+  my $self = shift;
+  my ($referee) = @_;
+  $self->referees(grep($_ ne $referee, $self->referees));
+}
+
+sub new_referee_resource {
+  my $self = shift;
+  return $$ . "_" . time;
 }
 
 1;

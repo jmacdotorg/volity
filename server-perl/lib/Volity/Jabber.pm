@@ -121,7 +121,7 @@ simply use a string like this:
 
 use base qw(Class::Accessor::Fields);
 
-use warnings;
+use warnings; no warnings qw(deprecated);
 use strict;
 
 use POE qw(
@@ -202,7 +202,9 @@ use fields qw(kernel alias host port user resource password debug jid rpc_parser
 
 sub initialize {
   my $self = shift;
-  my @caller = caller; die "Dammit! @caller" unless $self->user;
+  unless (defined($self->user)) {
+    croak("You have to initialize this object with a Jabber username!");
+  }
   $self->{kernel} = $poe_kernel;
   $self->{port} ||= 5222;
   POE::Session->create(
@@ -330,9 +332,10 @@ IQ elements, such as handling RPC requests and responses.
 # SUPER::jabber_iq in their own version of the method.
 
 sub jabber_iq {
-  print "I got an IQ object.\n";
   my $self = shift;
+  $self->debug("I ($self) got an IQ object.\n");
   my ($node) = @_;
+  warn $node->to_str;
   my $id = $node->attr('id'); my $from_jid = $node->attr('from');
   my $query;
   if ($node->attr('type') eq 'result') {
@@ -341,8 +344,8 @@ sub jabber_iq {
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
       # We should be getting only RPC responses, not requests.
       my $response_obj = $self->rpc_parser->parse($raw_xml);
-      print "Finally, got $response_obj.\n";
-      print "The response is: " . $response_obj->value->value . "\n";
+      $self->debug("Finally, got $response_obj.\n");
+      $self->debug("The response is: " . $response_obj->value->value . "\n");
       $self->handle_rpc_response({id=>$id,
 				  response=>$response_obj->value->value,
 				  rpc_object=>$response_obj,
@@ -351,12 +354,12 @@ sub jabber_iq {
   } elsif ($node->attr('type') eq 'set') {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
-      print "Got Apparent RPC XML: $raw_xml\n";
+      $self->debug("Got Apparent RPC XML: $raw_xml\n");
       my @kids = @{$query->get_children};
-      print "Got " . scalar(@kids) . " kids.\n";
-      print "I like cheeze. Also: " . $kids[0]->get_id . "\n";
+      $self->debug("Got " . scalar(@kids) . " kids.\n");
+      $self->debug("I like cheeze. Also: " . $kids[0]->get_id . "\n");
       my $rpc_obj = $self->rpc_parser->parse($raw_xml);
-      print "Finally, got $rpc_obj.\n";
+      $self->debug( "Finally, got $rpc_obj.\n");
       my $method = $rpc_obj->name;
       $self->handle_rpc_request({
 				 rpc_object=>$rpc_obj,
@@ -380,7 +383,7 @@ sub jabber_message {
   my ($node) = @_;
   my $info_hash;		# Will be the argument to the delegate method.
   my $type;			# What type of chat is this?
-  $self->debug( "I received a message...\n");
+  $self->debug( "I ($self) received a message...\n");
   foreach (qw(to from)) {
     $$info_hash{$_} = $node->attr($_);
   }
@@ -507,7 +510,7 @@ the RPC::XML module (q.v.).
 
 sub make_rpc_request {
   my $self = shift;
-  print "in make_rpc_request\n";
+  $self->debug("in make_rpc_request\n");
   my ($args) = @_;
   my $iq = PXR::Node->new('iq');
   foreach (qw(to id)) {
@@ -560,6 +563,19 @@ sub send_rpc_response {
     ->rawdata($response_xml);
   $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
   return 1;
+}
+
+=head2 send_rpc_fault ($receiver_jid, $response_id, $fault_code, $fault_string)
+
+Send an RPC fault.
+
+=cut
+
+sub send_rpc_fault {
+  my $self = shift;
+  my ($receiver_jid, $response_id, $fault_code, $fault_string) = @_;
+  my $fault = RPC::XML::fault->new($fault_code, $fault_string);
+  $self->send_rpc_response($receiver_jid, $response_id, $fault);
 }
 
 =head2 send_message($args_hashref)
