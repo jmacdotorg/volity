@@ -5,6 +5,7 @@ use strict;
 
 use base qw(Volity::Jabber);
 use fields qw(dbh);
+our $VERSION = '0.1';
 
 use DBIx::Abstract;
 use Carp qw(carp croak);
