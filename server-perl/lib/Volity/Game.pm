@@ -24,6 +24,34 @@ package Volity::Game;
 
 Volity::Game - base class for Volity game modules
 
+=head1 SYNOPSIS
+
+ package MyGame;
+
+ use base qw(Volity::Game);
+
+ # Override some Volity::Jabber methods.
+
+ sub handle_chat_message {
+   my $self = shift;
+   my ($message) = @_;
+   if (ref($self)) {
+     # I'm an active game object! Talk back to the player!
+     $self->send_message({to=>$$message{from}, body=>"Duh, hello!"});
+   }
+ }
+
+ # ... later on ...
+
+ sub end_game {
+   my $self = shift;
+   # If our end condition is met (whatever that may be), tell the ref.
+   # It will take care of the rest.
+   if ($greeble = 42) {
+     $self->end_game;
+   }
+ }
+
 =head1 DESCRIPTION
 
 This class provides a framework for writing Volity game modules in Perl.
@@ -38,7 +66,37 @@ L<Volity::Server>.
 =head1 USAGE
 
 Create your own Perl package for your game, and have it inherit from
-C<Volity::Game>. You can then have it do whatever you like, but
+C<Volity::Game>. You can then have it do whatever you like, calling
+the C<end_game> method when you're all done.
+
+=head1 METHODS
+
+First of all, see L<Volity::Jabber/"CALLBACK METHODS"> to learn about
+all the methods you can override. Your game module will probably work
+by overriding some of these.
+
+I<Note> that the message-handling methods described in
+L<Volity::Jabber/"Message handler methods"> can be called as I<either>
+either class or object methods, and you should check the C<ref>ness of
+the first argument if it makes any difference. (This is possibly dumb,
+and might change in future versions of this module.)
+
+So here are some object methods peculiar C<Volity::Game>...
+
+=head2 Accessors
+
+=over 
+
+=item player_class
+
+The class that this game's players belong to. When the game wants to make new players, it calls this class's constructor.
+
+If you don't set this, it defaults to using the C<Volity::Player> class.
+
+=item players
+
+An array of this game's players, in turn order. (If turn order doesn't
+matter, then neither does the order of this array, so: hah.)
 
 =cut
 
@@ -120,17 +178,6 @@ sub receive_groupchat_message { }
 # Basic player management
 #################
 
-=head1 Object Methods
-
-=head2 players ([@players])
-
-Simple accessor to get or set the game's internal list of
-Volity::Player objects. If called with an array reference as an
-argument, that will become the new player list. If called with no
-arguments, returns an array of player objects.
-
-=cut
-
 sub players {
   my $self = shift;
   if (exists($_[0])) {
@@ -174,6 +221,14 @@ sub create_player_jid_lookup_hash {
   my $self = shift;
   map ($self->{player_jids}{$_->jid} = $_, @{$self->{players}});
 }
+
+=head2 muc_jid
+
+I<Read-only> accessor for the JID of the MUC which this game is
+running in. (Really, it justs asks the parent referee which MUC it's
+in.)
+
+=cut
 
 sub muc_jid {
   my $self = shift;
