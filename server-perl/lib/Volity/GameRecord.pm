@@ -165,9 +165,9 @@ Returns a string holding the game record as an XML document.
 
 =cut
 
-=begin OLD
+=begin old
 
-I think this sub is obsolete and deserves deletion....
+This next sub is no longer necessary.
 
 sub render_as_xml {
   my $self = shift;
@@ -224,7 +224,7 @@ sub render_as_xml {
   return "$xml_string";
 }
 
-=end OLD
+=end old
 
 =cut
 
@@ -426,7 +426,8 @@ sub serialize {
 sub set {
   my $self = shift;
   my ($field, @values) = @_;
-  if ($field eq 'players' or $field eq 'winners' or $field eq 'quitters') {
+  # XXX This needs to do more JID-checking.
+  if ($field eq 'quitters') {
     foreach (@values) {
       $_ = $self->massage_jid($_);
     }
@@ -443,7 +444,7 @@ sub massage_jid {
     my ($main_jid, $resource) = ($1, $2);
     return $main_jid;
   } else {
-    croak("This does not look like a valid JID: $jid");
+    carp("This does not look like a valid JID: $jid");
   }
 }
 
@@ -487,15 +488,7 @@ sub render_as_hashref {
 sub new_from_hashref {
   my $class = shift;
   my ($hashref) = @_;
-  my $self = Volity::GameRecord->new;
-  foreach (qw(id players quitters winners start_time end_time game_uri server signature)) {
-    if (defined($$hashref{$_}) and ref($$hashref{$_}) eq 'ARRAY') {
-      $self->$_(@{$$hashref{$_}});
-    } elsif (defined($$hashref{$_})) {
-      $self->$_($$hashref{$_});
-    }
-  }
-  return $self;
+  return $class->new($hashref);
 }
 
 #########################
