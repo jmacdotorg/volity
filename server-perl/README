@@ -31,8 +31,14 @@ http://volity.sf.net
 
 This package uses the Module::Build installation style. You should be
 able to set everything up like so:
+
  perl Build.PL
-[ then answer some questions to set up testing ]
+
+This will prompt you for various bits of information that the test
+script requires, including some Jabber login information. You can
+provide _any_ account information here; Volity doesn't need anything
+other than ordinary Jabber magic to work, and the test suite will not
+modify the given account in any way.
 
  ./Build
 
