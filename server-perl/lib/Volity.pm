@@ -54,6 +54,8 @@ sub get {
   if (wantarray) {
     if (defined($self->{$field}) and ref($self->{$field}) eq 'ARRAY') {
       return @{$self->SUPER::get(@_)};
+    } elsif (not(defined($self->{$field}))) {
+      return ();
     } else {
       return ($self->SUPER::get(@_));
     }
