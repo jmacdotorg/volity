@@ -131,26 +131,26 @@ The Jabber username that the game server will use when connecting.
 The password that the game server will use when authenticating with
 the Jabber server.
 
-=item k
+=item g
+
+The full Perl package name of the game module that the game server
+will run. It must be visible to @INC.
+
+=item K
 
 The public ID of the GPG key that the game server will use to sign
 outgoing game records.
-
-=item p
-
-The GPG passphrase that the game server will use to sign outgoing game
-records.
-
-Yes, this isn't very secure. This will be improved.
 
 =item G
 
 A filesystem path leading to a GPG executable.
 
-=item g
+=item P
 
-The full Perl package name of the game module that the game server
-will run. It must be visible to @INC.
+The GPG passphrase that the game server will use to sign outgoing game
+records.
+
+Yes, this isn't very secure. This will be improved.
 
 =back
 
@@ -239,3 +239,5 @@ The server should be launchable with a pointer to a configuration file, as oppos
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org>
+
+=cut
