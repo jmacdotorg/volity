@@ -30,6 +30,9 @@ unless (defined($opts{substr('g', 0, 1)})) {
 # Hardcoded default bookkeeper JID.
 my $default_bkp = 'bookkeeper@volity.com';
 
+# Hardcoded alias.
+my $alias = 'volity';
+
 my $server = Volity::Server->new(
 				 {
 				  user=>$opts{u},
@@ -38,7 +41,7 @@ my $server = Volity::Server->new(
 				  host=>$opts{h},
 				  resource=>$opts{r},
 				  debug=>$opts{d} || 0,
-				  alias=>'volity',
+				  alias=>$alias,
 				  game_class=>$opts{g},
 				  bookkeeper_jid=>$opts{b} || $default_bkp,
 				}
