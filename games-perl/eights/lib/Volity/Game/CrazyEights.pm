@@ -54,9 +54,9 @@ __PACKAGE__->ruleset_version("1.0");
 # Callbacks
 ################
 
-# The server will call start_game on us. Crack open a new deck,
+# The server will call start on us. Crack open a new deck,
 # shuffle it, and kick the players.
-sub start_game {
+sub start {
   my $self = shift;
   my $game = Games::Cards::Game->new(
 				     {cards_in_suit=>{
@@ -83,7 +83,6 @@ sub start_game {
 
   # Tell the players that a new game has begun.
   foreach ($self->players) { $_->hand(Games::Cards::Hand->new($game, "$_")) }
-#   $self->call_ui_function_on_everyone('start_game');
 
   # Deal 'em out...
   $self->deal_cards;
@@ -338,11 +337,11 @@ sub check_for_game_over {
     $self->call_ui_function_on_everyone(scores=>\%scores_by_nickname);
     
     # Set this array as my winner list, and signal that we're all done,
-    # by calling the end_game() method.
+    # by calling the end() method.
     # The ref will take care of the rest!
     $self->winners(@winners);
     
-    $self->end_game;
+    $self->end;
     return 1;
   } else {
     # Else, the player still holds cards, so the game ain't over yet...
