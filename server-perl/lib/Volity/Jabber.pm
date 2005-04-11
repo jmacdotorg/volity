@@ -145,7 +145,7 @@ use POE qw(
 use POE::Filter::XML::Node;
 # use POE::Filter::XML::NS qw( :JABBER :IQ );
 
-use Jabber::NS qw(:all);
+# use Jabber::NS qw(:all);
 use PXR::NS qw(:JABBER :IQ);
 use Scalar::Util qw(weaken);
 use Carp qw(croak);
@@ -208,7 +208,7 @@ Like C<jid>, except it returns the non-resource part of the JID. (e.g. C<foo@bar
 
 =cut
 
-use fields qw(kernel alias host port user resource password jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification);
+use fields qw(kernel alias host port user resource password jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification last_node);
 
 sub initialize {
     my $self = shift;
@@ -275,7 +275,7 @@ sub next_id {
   return ++$self->{last_id};
 }
 
-# post_xml_node: send a given XML node object to the server.
+# post_node: send a given XML node object to the server.
 # Rewrite this sub if our core Jabber/POE thing changes.
 sub post_node {
   my $self = shift;
@@ -283,6 +283,7 @@ sub post_node {
   # I always set the stanza-level xml:lang attribute here.
   # Is it a bit much? Not sure. It's easy, anyway, and I figure it can't hurt.
   $node->attr('xml:lang'=>$self->default_language);
+  $self->last_node($node);
   $self->kernel->post($self->alias, 'output_handler', $node);
 }
 
@@ -340,14 +341,31 @@ sub input_event {
   if ($self->can($method)) {
     $self->$method($node);
   } else {
-    die "I got a $element_type element, and I don't know what to do with it. Sorry." . $node->to_str;
+      die sprintf("Looks like the stream died.\nError: %s\nLast thing posted: %s", $node->to_str, $self->last_node->to_str);
   }
 }
 
 sub error_event {
   my $self = $_[OBJECT];
-  warn "Wups, error.";
-  # Nothing else here yet...
+  my $error = $_[ARG0];
+  
+  my $error_message;
+  if($error == +PCJ_SOCKFAIL)  {
+      my ($call, $code, $err) = @_[ARG1..ARG3];
+      $error_message = "Socket error: $call, $code, $err\n";
+  } elsif ($error == +PCJ_SOCKDISC) {
+      $error_message = "We got disconneted\n";
+  } elsif ($error == +PCJ_AUTHFAIL) {
+      $error_message = "Failed to authenticate\n";
+  } elsif ($error == +PCJ_BINDFAIL) {
+      $error_message = "Failed to bind a resource\n"; # XMPP/J2 Only
+  } elsif ($error == +PCJ_SESSFAIL) {
+      $error_message = "Failed to establish a session\n"; # XMPP Only
+  } else {
+      $error_message = "Unknown PCJ Error: $error";
+  }
+
+  $self->logger->warn($error_message);
 }
 
 # Actually, these are all just stubs. It's up to subclasses for making
@@ -797,11 +815,12 @@ sub send_rpc_request {
   # But then, I can't see why it would break.
   my $request_xml = $request->as_string;
 #  # The susbtr() chops off the XML prolog. I know, I know.
-  $request_xml =~ s/^<\?\s*xml\s+version="1.0"\s*\?>//;
+  $request_xml =~ s/^<\?\s*xml\s.*?\?>//;
   $iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])->
     rawdata($request_xml);
   $self->logger->debug("Full, outgoing RPC request:\n" . $iq->to_str);
-  $self->kernel->post($self->alias, 'output_handler', $iq);
+#  $self->kernel->post($self->alias, 'output_handler', $iq);
+  $self->post_node($iq);
 }
 
 =head2 send_rpc_response ($receiver_jid, $response_id, $response_value)
@@ -824,11 +843,13 @@ sub send_rpc_response {
   my $response_xml = $response->as_string;
   # This s/// chops off the XML prolog.
   # (Ugly, yes. Suggestions welcome.)
-  $response_xml =~ s/^<\s*\?\s*xml\s*version\s*=\s*['"]1\.0['"]\s*\?\s*>//;
+#  $response_xml =~ s/^<\s*\?\s*xml\s*version\s*=\s*['"]1\.0['"]\s*\?\s*>//;
+  $response_xml =~ s/^<\s*\?\s*xml\s.*?\?\s*>//;
   $rpc_iq->insert_tag(query=>[xmlns=>'jabber:iq:rpc'])
     ->rawdata($response_xml);
   $self->logger->debug("Sending response: " . $rpc_iq->to_str);
-  $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
+#  $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
+  $self->post_node($rpc_iq);
   return 1;
 }
 
@@ -1023,7 +1044,8 @@ sub join_muc {
   my $presence = POE::Filter::XML::Node->new('presence');
   $presence->attr(to=>$muc_jid);
   $presence->insert_tag('x', [xmlns=>'http://jabber.org/protocol/muc']);
-  $self->kernel->post($self->alias, 'output_handler', $presence);
+#  $self->kernel->post($self->alias, 'output_handler', $presence);
+  $self->post_node($presence);
   $self->logger->debug("Presence sent.\n");
   return $muc_jid;
 }
@@ -1068,7 +1090,8 @@ sub send_presence {
   foreach (qw(show status priority)) {
     $self->insert_localized_tags($presence, $_, $$config{$_}) if defined($$config{$_});
   }
-  $self->kernel->post($self->alias, 'output_handler', $presence);
+#  $self->kernel->post($self->alias, 'output_handler', $presence);
+  $self->post_node($presence);
 }
 
 # insert_localized_tag: internal method. Receive a POE::Filter::XML::Node object, a child

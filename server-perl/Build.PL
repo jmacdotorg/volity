@@ -24,6 +24,7 @@ my $build = Module::Build->new
 	       'Archive::Zip'=>undef,
 	       'Date::Parse'=>undef,
 	       'Date::Format'=>undef,
+	       'PXR::Node'=>undef,
 	     },
    script_files=>['bin/volityd', 'bin/friv'],
    install_path=>{script=>'/usr/local/volity/bin'},

@@ -135,7 +135,7 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes active_bots active_bot_registry last_rpc_id invitations ready_players is_recorded is_hidden name language seated_players);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language seated_players);
 
 #	      jid 		# This session's JID.
 #	      muc_jid 		# The JID of this game's MUC.
@@ -177,7 +177,7 @@ use POE qw(
 	   Component::Jabber;
 	  );
 use POE::Filter::XML::Node;
-use Jabber::NS qw(:all);
+# use Jabber::NS qw(:all);
 use Scalar::Util qw(weaken);
 use Time::HiRes qw(gettimeofday);
 
@@ -433,12 +433,17 @@ sub jabber_presence {
       $self->logger->debug("Looks like a player just joined.\n");
       my ($nick) = $node->attr('from') =~ /\/(.*)$/;
       if (defined($node->attr('type')) && ($node->attr('type') eq 'unavailable')) {
+	$self->logger->debug("Looks like $nick just left the table.");
 	$self->remove_player_with_jid($new_person_jid);
 	# Remove this player from the nickanme lookup hash.
 	delete($self->{nicks}{$nick});
-	# If the last player left, leaving us alone, disconnect.
-	unless (keys(%{$self->{nicks}})) {
-	  $kernel->post($self->alias, 'disconnect');
+	# If the last non-bot player has left, leaving us alone, disconnect.
+#	unless (keys(%{$self->{nicks}})) {
+	if ($self->non_bot_check) {
+	  $self->logger->debug("But there are still humans here, so I'll keep the table open.");
+        } else {
+          $self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
+	  $self->stop;
 	}
       } else {
 	my $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
@@ -469,6 +474,11 @@ sub add_player {
   my $player = $player_class->new({jid=>$$args{jid}, nick=>$$args{nick}, referee=>$self});
   $self->{players}{$$args{jid}} = $player;
   $self->{nicks}{$$args{nick}} = $$args{jid};
+
+  # Set the new player's bot-bit if it has the JID of a known bot.
+  if (exists($self->{bot_jids}{$$args{jid}})) {
+      $player->is_bot(1);
+  }
 
   return $player;
 }
@@ -514,6 +524,19 @@ sub look_up_jid_with_nickname {
   return $self->{nicks}{$nick};
 }
 
+# look_up_player_with_nickname: Combines the previous two methods in a
+# rather predictable fashion. Convenience method.
+sub look_up_player_with_nickname {
+    my $self = shift;
+    my ($nick) = @_;
+    my $jid = $self->look_up_jid_with_nickname($nick);
+    if ($jid) {
+	return $self->look_up_player_with_jid($jid);
+    } else {
+	return;
+    }
+}
+
 =item groupchat ( $message )
 
 Sends the given message string as a groupchat to the referee's table.
@@ -532,6 +555,21 @@ sub groupchat {
 		       type=>"groupchat",
 		       body=>$message,
 		     });
+}
+
+# non_bot_check: Returns 1 if the MUC contains at least one player who is
+# not a bot. Returns 0 otherwise.
+sub non_bot_check {
+    my $self = shift;
+    for my $nickname (keys(%{$self->{nicks}})) {
+	my $player = $self->look_up_player_with_nickname($nickname);
+	unless ($player->is_bot) {
+	    # This is a human.
+	    return 1;
+	}
+    }
+    # No humans found, if we came this far.
+    return 0;
 }
 
 ######################
@@ -737,6 +775,10 @@ sub create_bot {
 			    }
 			 );
   $self->logger->info("New bot (" . $bot->jid . ") created by referee (" . $self->jid . ").");
+  $self->{bot_jids}->{$bot->jid} = 1;
+
+  push (@{$self->active_bots}, $bot);
+
   return $bot;
 }
 
@@ -882,12 +924,6 @@ sub handle_ready_player_request {
 	$self->send_rpc_fault ($from_jid, $rpc_id, 999, "You wish to state your readiness to play, but you don't seem to be actually playing.");
 	return;
     }
-}
-
-sub stand_player {
-    my $self = shift;
-    my ($player) = @_;
-    delete ($self->seated_players->{$player});
 }
 
 sub handle_stand_request {
@@ -1056,6 +1092,7 @@ sub stop {
   foreach (grep(defined($_), $self->active_bots)) {
       $_->stop;
   }
+  $self->active_bots([]);
   $self->kernel->post($self->alias, 'shutdown_socket', 0);
   $self->server->remove_referee($self);
 }
@@ -1080,6 +1117,8 @@ sub start_game {
 			});
     return;
   }
+
+  $self->logger->debug("I am starting a game.");
 
   # No error message? Great... let's play!
 

@@ -29,17 +29,7 @@ days, do drop me a line: jmac@jmac.org.
 --- PREREQUISITES ---
 
 Frivolity requires several Perl modules to work; the Build script
-checks for their presence on your system. All are available from CPAN,
-except for the following special exception:
-
-* POE::Filter::XML::Node v0.24
-
-I have made some slight modifications to Nick Perez's excellent XML
-node module, which have not (at the time of this writing) been merged
-into its CPAN-release version. Please download and install my version,
-available here:
-
-http://volity.org/projects/frivolity/POE-Filter-XML-0.24.tar.gz
+checks for their presence on your system. All are available from CPAN.
 
 --- INSTALLATION ---
 
@@ -85,7 +75,8 @@ Upon connection, issue the following series of commands to Friv's prompt:
 
 > new_table rps@volity.net/volity
 > add_bot
-> start_game
+> sit
+> ready
 > select rock
 
 As you do so, you should witness an entire game of rock-paper-scissors

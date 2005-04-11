@@ -51,6 +51,12 @@ sub init_finish {
 
 }
 
+sub stop {
+    my $self = shift;
+    $self->kernel->post($self->alias, 'shutdown_socket', 0);
+    $self->referee(undef);
+}
+
 # This presence handler detects a table's referee through MUC attributes.
 # It also watches for general presence updates, and updates the user's
 # internal roster object as needed.
@@ -87,6 +93,7 @@ sub jabber_presence {
 	  if ($nickname eq $self->nickname) {
 	      # Oh, it's me.
 	      $self->referee_jid($self->muc_jid . "/volity");
+	      $self->sit;
 	      $self->declare_readiness;
 	  } else {
 	      # This is a potential opponent!
@@ -178,6 +185,16 @@ sub declare_readiness {
     });
 }
 
+sub sit {
+    my $self = shift;
+    $self->logger->debug("Sitting down at table with referee " . $self->referee_jid);
+    $self->send_rpc_request({
+	to=>$self->referee_jid,
+	id=>'sit',
+	methodname=>'volity.unready',
+    });
+}
+
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
@@ -185,12 +202,10 @@ sub handle_rpc_request {
   if ($method eq 'volity.end_game') {
       # I wanna play again!!!
       $self->declare_readiness;
-  } elsif ($method eq 'volity.player_unready') {
-      if ($rpc_info->{args}->[0] eq $self->nickname) {
-	  # The config must have changed, since I just lost readiness.
-	  # I don't care! I'm still ready!!      
-	  $self->declare_readiness;
-      }
+  } elsif (($method eq 'volity.player_unready' && $rpc_info->{args}->[0] eq $self->nickname) or ($method eq 'volity.player_sat')) {
+      # The config must have changed, since I just lost readiness.
+      # I don't care! I'm still ready!!      
+      $self->declare_readiness;
   }
 }
 

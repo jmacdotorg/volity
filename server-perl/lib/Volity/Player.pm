@@ -21,12 +21,9 @@ package Volity::Player;
 use warnings;
 use strict;
 
-#use base qw(Class::Accessor::Fields);
 use base qw(Volity);
 
-use fields qw(jid name nick referee rpc_count);
-
-#Volity::Player->create_accessors;
+use fields qw(jid name nick referee rpc_count is_bot);
 
 # basic_jid: Return the non-resource part of my JID.
 sub basic_jid {
@@ -59,6 +56,7 @@ sub start_game {
 				    methodname=>'volity.start_game',
 				    to=>$self->jid,
 				   });
+  $self->referee->logger->debug("Sent volity.start_game to " . $self->jid);
 }
 
 sub end_game {

@@ -219,7 +219,11 @@ sub js_call {
     }
     $script .= join ', ', @js_args;
     $script .= ")";
-    return $js->eval( $script );
+    {
+	local $SIG{__WARN__} = sub {};
+	return $js->eval( $script );
+    }
+
 }
 
 sub tokenize {
@@ -685,6 +689,10 @@ sub cmd_new_table {
 
 sub cmd_add_bot {
     my $user = $_[HEAP]->{'default_player'};
+    unless ($user->referee_jid) {
+	$user->print_message("You can't add a bot until you join a table.");
+	return;
+    }
     my $rpc_id = ++$next_rpc_request_id;
     $user->make_rpc_request({
         to         => $user->referee_jid,
@@ -1065,6 +1073,7 @@ sub fetch_ui_file {
     my $js_fh;
     my @js_source;
     if ($js_fh = Archive::Zip::MemberRead->new($zip_reader, "main")) {
+	warn "OK.";
         while (defined(my $line = $js_fh->getline)) { 
             push (@js_source, $line);
         }
@@ -1072,9 +1081,14 @@ sub fetch_ui_file {
         $self->print_message("The archive $local_zipfile doesn't seem to have a main file. I can't use it. Sorry...");
         return;
     }
-    
+
+    unless (@js_source) {
+	$self->print_message("The archive $local_zipfile doesn't seem to have any JavaScript content. I can't use it. Sorry...");
+	return;
+    }
+
     # Having done all that, create the JS interpreter.
-    
+
     $self->load_js_from_source(join("\n", @js_source));
 
     # Now make the actual RPC request.
@@ -1128,15 +1142,17 @@ sub load_js_from_source {
     $js->function_set("rpc", sub { main::js_rpc( $self, @_ ) } );
     $js->function_set("registerCommand", 
                       sub { main::js_registerCommand( $commands, @_ ) } , $referee );
-    
-    $js->eval( $js_source );
+
+    {
+	local $SIG{__WARN__} = sub {};
+	$js->eval( $js_source );
+    }
 
     $js->eval( "info.nickname = '" . ($self->nick || $self->user) . "'" );
     $js->eval( "info.opponents = {}" );
     for my $nickname ($self->opponent_nicknames) {
         $js->eval( "info.opponents['$nickname'] = {}" );
     }
-    
     if ($self->js) {
         $self->js->destroy;
     }
