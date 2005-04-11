@@ -34,23 +34,17 @@ sub take_turn {
 		      });
 }
 
-sub handle_groupchat_message {
-  my $self = shift;
-  my ($message) = @_;
-#  warn "Got a message: $$message{body}\n";
-#  if ($$message{body} =~ /game has begun!/) {
-#    warn "OK, I am " . $self->nickname . " and I'm taking my turn.\n";
-#    $self->take_turn;
-#  }
-#  $self->groupchat("Same to you.");
-}
-
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
-#  $self->groupchat("Ooh, got rpc request $$rpc_info{method}.");
-  if ($$rpc_info{method} eq 'game.start_game') {
-    $self->take_turn;
+  if ($$rpc_info{method} eq 'volity.start_game') {
+      $self->take_turn;
+  } elsif ($$rpc_info{method} eq 'game.player_chose_hand') {
+      # I'm just going to take another turn, whether the server will listen
+      # or not. :)
+      $self->take_turn;
+  } else {
+      $self->SUPER::handle_rpc_request(@_);
   }
 }
 1;
