@@ -319,7 +319,7 @@ players.
 
 =cut
 
-sub start_game { }
+sub start { }
 
 sub handle_normal_message { }
 sub handle_groupchat_message { }
