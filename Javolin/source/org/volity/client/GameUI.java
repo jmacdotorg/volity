@@ -25,6 +25,11 @@ public class GameUI implements RPCHandler, PacketFilter {
     this.errorHandler = errorHandler;
     RPCDispatcher dispatcher = new RPCDispatcher();
     dispatcher.setHandler("game", this);
+    //    VolityHandler volityHandler = new VolityHandler(this, errorHandler);
+    VolityHandler volityHandler = new VolityHandler();
+    volityHandler.gameUI = this;
+    //    volityHandler.errorHandler = errorHandler;
+    dispatcher.setHandler("volity", volityHandler);
     responder = new RPCResponder(connection, this, dispatcher);
     responder.start();
   }
@@ -164,24 +169,24 @@ public class GameUI implements RPCHandler, PacketFilter {
     return ref != null && ref.getResponderJID().equals(packet.getFrom());
   }
 
-  // Inherited from RPCHandler.
-  public void handleRPC(String methodName, List params, RPCResponseHandler k) {
-    Object method = game.get(methodName, scope);
-    if (method instanceof Function)
-      try {
-	k.respondValue(callUIMethod((Function) method, params));
-      } catch (JavaScriptException e) {
-	errorHandler.error(e);
-	// FIXME: Volity protocol should probably define these
-	// error codes.
-	k.respondFault(901, "UI script exception: " + e);
-      } catch (EvaluatorException e) {
-	errorHandler.error(e);
-	k.respondFault(902, "UI script error: " + e);
-      }
-    else
-      k.respondFault(903, "No such UI function.");
-  }
+    // Inherited from RPCHandler.
+    public void handleRPC(String methodName, List params, RPCResponseHandler k) {
+	Object method = game.get(methodName, scope);
+	if (method instanceof Function)
+	    try {
+		k.respondValue(callUIMethod((Function) method, params));
+	    } catch (JavaScriptException e) {
+		errorHandler.error(e);
+		// FIXME: Volity protocol should probably define these
+		// error codes.
+		k.respondFault(901, "UI script exception: " + e);
+	    } catch (EvaluatorException e) {
+		errorHandler.error(e);
+		k.respondFault(902, "UI script error: " + e);
+	    }
+	else
+	    k.respondFault(903, "No such UI function.");
+    }
 
   /**
    * Call a UI method.
