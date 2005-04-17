@@ -123,7 +123,7 @@ function remove_hand(type) {
   remove("hand-" + type);
 }
 
-game.start_game = function() {
+game.START = function() {
   status = new Object;
   remove("hand-in-box");
   remove("opp-hand");
@@ -156,10 +156,11 @@ game.player_chose_hand = function(player, type) {
     hand.setAttribute("x", 215);
     hand.setAttribute("id", "opp-hand");
     document.firstChild.appendChild(hand);
+    end_game();
   }
 }
 
-game.end_game = function() {
+end_game = function() {
   var myHand = status.player;
   var hand = status.opponent;
   var result = 0;
@@ -192,6 +193,11 @@ game.end_game = function() {
   status = null;
 }
 
+game.END = function() {
+  remove_hands();
+  set_up_buttons();
+}
+
 function declare_end(type) {
   message = document.createElementNS(svg_ns, "use");
   message.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
@@ -199,8 +205,6 @@ function declare_end(type) {
   message.setAttribute("x", 15);
   message.setAttribute("id", "message");
   document.firstChild.appendChild(message);
-  remove_hands();
-  set_up_buttons();
 }
 
 

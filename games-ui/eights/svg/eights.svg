@@ -845,7 +845,7 @@ function clicked_start_button() {
   display_loading_message();
 }
 
-game.start_game = function() {
+game.START = function() {
   rpc("get_full_state");
 }
 
@@ -1126,7 +1126,7 @@ game.scores = function(scores) {
 }
 
 
-function end_game() {
+game.END = function() {
     window.alert("Game over!");
     match_card = null;
     match_suit = null;
