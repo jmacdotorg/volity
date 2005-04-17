@@ -429,7 +429,7 @@ sub jabber_iq {
 	  $self->logger->warn("Failed to parse this response: $raw_xml");
 	  return;
       }
-      $self->logger->debug("Finally, got $response_obj.\n");
+#      $self->logger->debug("Finally, got $response_obj.\n");
       $self->logger->debug("The response is: " . $response_obj->value->value . "\n");
       if ($response_obj->value->is_fault) {
 	$self->handle_rpc_fault({
@@ -453,15 +453,13 @@ sub jabber_iq {
 
       # Hack, to deal with apparent RPC::XML bug?
       $raw_xml =~ s/<int\/>/<int>0<\/int>/g;
-      $self->logger->debug("Got Apparent RPC XML: $raw_xml\n");
+      $self->logger->debug("$self got Apparent RPC XML from $from_jid: $raw_xml\n");
       my @kids = @{$query->get_children};
-      $self->logger->debug("Got " . scalar(@kids) . " kids.\n");
-      $self->logger->debug("I like cheeze. Also: " . $kids[0]->get_id . "\n");
       my $rpc_obj = $self->rpc_parser->parse($raw_xml);
       unless (ref($rpc_obj)) {
 	  die "Got bad rpc.\n$raw_xml";
       }
-      $self->logger->debug( "Finally, got $rpc_obj.\n");
+#      $self->logger->debug( "Finally, got $rpc_obj.\n");
       my $method = $rpc_obj->name;
       $self->handle_rpc_request({
 				 rpc_object=>$rpc_obj,

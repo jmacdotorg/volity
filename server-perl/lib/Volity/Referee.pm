@@ -1082,7 +1082,7 @@ sub handle_rpc_fault {
     $self->send_rpc_fault($inviter, $original_rpc_id, $$fault_info{code}, $$fault_info{string});
     delete($self->invitations->{$$fault_info{id}});
   } else {
-    $self->logger->warn("Got unexpected RPC fault, id $$fault_info{id}: $$fault_info{code} - $$fault_info{string}");
+    $self->logger->warn("Got unexpected RPC fault from $$fault_info{from}, id $$fault_info{id}: $$fault_info{code} - $$fault_info{string}");
   }
 }
 

@@ -85,26 +85,27 @@ sub jabber_presence {
   }
   if (($node->get_tag('x')) and (($x) = grep($_->attr('xmlns') eq "http://jabber.org/protocol/muc#user", $node->get_tag('x')))) {
       # Aha, someone has joined the table.
-#      my $new_person_jid = $x->get_tag('item')->attr('jid');
       my $affiliation = $x->get_tag('item')->attr('affiliation');
       $self->logger->debug("I see presence from " . $node->attr('from'));
       my ($nickname) = $node->attr('from') =~ m|/(.*)$|;
+      warn "I see $nickname, with affiliartion $affiliation.\n";
+      warn "Is $nickname " . $self->nickname . "?\n";
       if ($nickname eq $self->nickname) {
-	  if ($nickname eq $self->nickname) {
-	      # Oh, it's me.
-	      $self->referee_jid($self->muc_jid . "/volity");
-	      $self->sit;
-	      $self->declare_readiness;
-	  } else {
-	      # This is a potential opponent!
-	      unless ($node->attr('type')) {
-		  # No 'type' attribute means they're joining us...
-		  # Save the nickname. We'll pass it to the UI file later.
-		  $self->add_opponent_nickname($node->attr('from'));
-	      } elsif ($node->attr('type') eq 'unavailable') {
-		  # Oh, they're leaving...
-		  $self->remove_opponent_nickname($node->attr('from'));
-	      }
+	  # Oh, it's me.
+	  warn "Yeah.\n";
+	  $self->referee_jid($self->muc_jid . "/volity");
+	  # Sit and delcare readiness. I want to play NOW!
+	  $self->sit;
+	  $self->declare_readiness;
+      } else {
+	  # This is a potential opponent!
+	  unless ($node->attr('type')) {
+	      # No 'type' attribute means they're joining us...
+	      # Save the nickname. We'll pass it to the UI file later.
+	      $self->add_opponent_nickname($node->attr('from'));
+	  } elsif ($node->attr('type') eq 'unavailable') {
+	      # Oh, they're leaving...
+	      $self->remove_opponent_nickname($node->attr('from'));
 	  }
       }
   }
@@ -180,7 +181,7 @@ sub declare_readiness {
     $self->logger->debug("Sending a declaration of readiness to " . $self->referee_jid);
     $self->send_rpc_request({
 	to=>$self->referee_jid,
-	id=>'ready',
+	id=>'ready-request',
 	methodname=>'volity.ready',
     });
 }

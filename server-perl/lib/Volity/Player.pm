@@ -73,7 +73,7 @@ sub player_ready {
     my ($other_player) = @_;
     my $nick = $other_player->nick;
     $self->referee->send_rpc_request({
-	id=>'ready',
+	id=>'ready-announce',
 	methodname=>'volity.player_ready',
 	to=>$self->jid,
 	args=>[$nick],

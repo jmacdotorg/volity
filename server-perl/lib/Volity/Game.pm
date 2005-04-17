@@ -172,6 +172,7 @@ use Carp qw(carp croak);
 sub initialize {
   my $self = shift;
   $self->current_player_index(0);
+#  $self->current_player(($self->players)[0]);
   weaken($self->{referee});
   $self->config_variables({});
   $self->config_variable_setters({});
@@ -181,7 +182,7 @@ sub AUTOLOAD {
   my $self = shift;
   our $AUTOLOAD;
   my ($method) = $AUTOLOAD =~ /^.*::(.*)$/;
-  if ($self->referee->can($method)) {
+  if ($self->referee && $self->referee->can($method)) {
     return $self->referee->$method(@_);
   } else {
     croak ("Unknown method $method");
