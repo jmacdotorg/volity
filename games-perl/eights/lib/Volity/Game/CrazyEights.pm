@@ -75,6 +75,10 @@ sub start {
 						      King=>10,
 						     }
 				     });
+
+  # Kludge. Does this fix things?
+  $self->current_player(($self->players)[0]);
+
   # Set up all the different card-holding objects we'll need.
   $self->orig_deck(Games::Cards::Deck->new($game, 'deck'))->shuffle;
   $self->deck(Games::Cards::Stack->new($game, 'draw'));
@@ -360,15 +364,6 @@ use strict;
 
 use base qw(Volity::Player);
 use fields qw(hand score);
-
-# Override the hand() accessor to add sanity-checking.
-#sub hand {
-#  my $self = shift;
-#  if (defined($_[0]) and (not($_[0]->isa('Games::Cards::Hand')))) {
-#    die "The argument to hand() must be a Games::Cards::Hand object."
-#  }
-#  return $self->SUPER::hand(@_);
-#}
 
 # add_points: Convenience method to increase the player's score.
 # (This is useful for multi-deal games.)

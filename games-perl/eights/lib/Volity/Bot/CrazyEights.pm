@@ -25,14 +25,17 @@ sub new {
 }
 
 sub handle_rpc_request {
-  my $self = shift;
-  my ($rpc_info) = @_;
-  if ($$rpc_info{method} =~ /game.(.*)/) {
-    my $method = "rpc_$1";
-    if ($self->can($method)) {
-      $self->$method(@{$$rpc_info{args}});
+    my $self = shift;
+    my ($rpc_info) = @_;
+    if ($$rpc_info{method} =~ /game.(.*)/) {
+	my $method = "rpc_$1";
+	if ($self->can($method)) {
+	    $self->$method(@{$$rpc_info{args}});
+	}
+	
+    } else {
+	return $self->SUPER::handle_rpc_request(@_);
     }
-  }
 }
 
 ##################
