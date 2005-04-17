@@ -58,7 +58,7 @@ public class Referee extends RPCRequester {
    * @throws RPCException if a RPC fault occurs
    */
   public void startGame() throws XMPPException, RPCException {
-    invoke("volity.sit");
+    invoke("volity.unready");
     invoke("volity.ready");
   }
 
