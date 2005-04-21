@@ -30,6 +30,8 @@ import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
 
+import org.volity.client.*;
+
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
 import org.volity.javolin.roster.*;
@@ -38,7 +40,7 @@ import org.volity.javolin.roster.*;
  * The main application class of Javolin.
  */
 public class JavolinApp extends JFrame implements ActionListener, ConnectionListener,
-    RosterPanelListener, PacketListener
+    RosterPanelListener, PacketListener, InvitationListener
 {
     private final static String APPNAME = "Javolin";
     private final static String NODENAME = "MainAppWin";
@@ -317,6 +319,12 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         }
 
         mRosterPanel.setRoster(connRost);
+
+	if (mConnection != null) {
+	  InvitationManager im = new InvitationManager(mConnection);
+	  im.addInvitationListener(this);
+	  im.start();
+	}
 
         // Update the UI
         updateUI();
@@ -705,6 +713,14 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             ex.toString(), getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
 
         doDisconnect();
+    }
+
+    public void invitationReceived(Invitation invitation) {
+      String text = invitation.getPlayerJID() +
+	" has invited you to join a game.";
+      String message = invitation.getMessage();
+      if (message != null) text = text + "\n\"" + message + "\"";
+      JOptionPane.showMessageDialog(this, text);
     }
 
     /**
