@@ -491,7 +491,7 @@ sub cmd_quit {
 
 sub cmd_invite {
     my( $heap, $invited ) = @_[ HEAP, &ARGS ];
-    my $user = $heap->{'user_obj'};
+    my $user = $heap->{'default_player'};
     unless ( $user->referee_jid ) {
         return output( $heap, "Create or join a table first!" );
     }
@@ -511,7 +511,7 @@ sub cmd_invite {
 
 sub cmd_accept {
     my( $heap ) = $_[ HEAP ];
-    my $user = $heap->{'user_obj'};
+    my $user = $heap->{'default_player'};
     if ( my $invitation = $user->invitation ) {
         $user->current_command( 'accept_invitation' );
         $user->discover_uis_for_ruleset( $$invitation{ruleset} );
@@ -942,7 +942,7 @@ use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick output poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load ruleset_menu table_menu server_menu server_timeout awaiting_referee_list awaiting_table_info awaiting_server_list alarm_ids servers_by_ruleset waiting_for_servers salient_servers responding_servers salient_referees responding_referees is_ready);
+use fields qw(nick output poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load ruleset_menu table_menu server_menu server_timeout awaiting_referee_list awaiting_table_info awaiting_server_list alarm_ids servers_by_ruleset waiting_for_servers salient_servers responding_servers salient_referees responding_referees is_ready invitation);
 use POE;
 
 sub init_finish {
