@@ -428,6 +428,12 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         newTableDlg.show();
         TableWindow tableWin = newTableDlg.getTableWindow();
 
+	handleNewTableWindow(tableWin);
+
+    }
+
+    private void handleNewTableWindow(TableWindow tableWin)
+    {
         if (tableWin != null)
         {
             tableWin.show();
@@ -446,6 +452,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                 });
         }
     }
+
 
     /**
      * Handler for the Join Multi-user Chat... menu item.
@@ -716,11 +723,37 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     public void invitationReceived(Invitation invitation) {
+
       String text = invitation.getPlayerJID() +
 	" has invited you to join a game.";
       String message = invitation.getMessage();
       if (message != null) text = text + "\n\"" + message + "\"";
-      JOptionPane.showMessageDialog(this, text);
+      //      JOptionPane.showMessageDialog(this, text);
+      Object[] options = {"Accept", "Decline", "Decline and chat"};
+      int choice = JOptionPane.showOptionDialog(this, text, "Invitation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+      if (choice == 0) {
+	  // Join the table.
+	  String tableJID = invitation.getTableJID();
+	  String serverJID = invitation.getGameServerJID();
+	  GameServer server = new GameServer(mConnection, serverJID);
+	  GameTable table = new GameTable(mConnection, tableJID);
+	  try 
+	      { 
+		  TableWindow tableWindow = TableWindow.makeTableWindow(server, table, mConnection.getUser()); 
+		  handleNewTableWindow(tableWindow);
+	      }
+	  catch (Exception e) {
+	      System.out.println("Invitation: something went wrong.");
+	  }
+	  // Show the resulting table window.
+      } else if (choice == 1) {
+	  System.out.println("Declining an invite.");
+      } else if (choice == 2) {
+	  System.out.println("Declining and invite and opening a chat.");
+	  chatWithUser(invitation.getPlayerJID());
+      } else {
+	  System.out.println("Got bizarre dialog choice: " + choice);
+      }
     }
 
     /**
