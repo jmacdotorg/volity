@@ -8,6 +8,7 @@ import org.volity.jabber.RPCException;
 
 /** A Jabber-RPC connection to a Volity game referee. */
 public class Referee extends RPCRequester {
+
   /**
    * @param table the game table where the game will be played
    * @param jid the full JID of the referee
@@ -37,7 +38,7 @@ public class Referee extends RPCRequester {
    * @throws RPCException if a RPC fault occurs
    */
   public void invitePlayer(String jid)
-    throws XMPPException, RPCException
+   throws XMPPException, RPCException
   {
     invoke("volity.invite_player",
 	   Arrays.asList(new String[] { jid }));
@@ -53,7 +54,9 @@ public class Referee extends RPCRequester {
   }
 
   /**
-   * Ask the referee to start the game.
+   * DEPRECATED. This method should be deleted by the release of Javolin 0.1
+   * --jmac
+   * Ask the ref to start the game, by sitting and then declaring readiness.
    * @throws XMPPException if an XMPP error occurs
    * @throws RPCException if a RPC fault occurs
    */
@@ -69,4 +72,34 @@ public class Referee extends RPCRequester {
   public void sendMessage(String message) throws XMPPException {
     getConnection().createChat(getResponderJID()).sendMessage(message);
   }
+
+    /**
+     * Tell the ref that we're playing but unready.
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void unready() throws XMPPException, RPCException {
+	invoke("volity.unready");
+    }
+
+    /**
+     * Tell the ref that we're ready to play
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void ready() throws XMPPException, RPCException {
+	invoke("volity.ready");
+    }
+
+    /**
+     * Tell the ref that we're not playing at all.
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void stand() throws XMPPException, RPCException {
+	invoke("volity.stand");
+    }
+
+
+
 }
