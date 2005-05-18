@@ -71,48 +71,48 @@ sub end_game {
 sub player_ready {
     my $self = shift;
     my ($other_player) = @_;
-    my $nick = $other_player->nick;
+    my $jid = $other_player->jid;
     $self->referee->send_rpc_request({
 	id=>'ready-announce',
 	methodname=>'volity.player_ready',
 	to=>$self->jid,
-	args=>[$nick],
+	args=>[$jid],
     });
 }
 
 sub player_stood {
     my $self = shift;
     my ($other_player) = @_;
-    my $nick = $other_player->nick;
+    my $jid = $other_player->jid;
     $self->referee->send_rpc_request({
 	id=>'ready',
 	methodname=>'volity.player_stood',
 	to=>$self->jid,
-	args=>[$nick],
+	args=>[$jid],
     });
 }
 
 sub player_sat {
     my $self = shift;
     my ($other_player) = @_;
-    my $nick = $other_player->nick;
+    my $jid = $other_player->jid;
     $self->referee->send_rpc_request({
 	id=>'ready',
 	methodname=>'volity.player_sat',
 	to=>$self->jid,
-	args=>[$nick],
+	args=>[$jid],
     });
 }
 
 sub player_unready {
     my $self = shift;
     my ($other_player) = @_;
-    my $nick = $other_player->nick;
+    my $jid = $other_player->jid;
     $self->referee->send_rpc_request({
 	id=>'unready',
 	methodname=>'volity.player_unready',
 	to=>$self->jid,
-	args=>[$nick],
+	args=>[$jid],
     });
 }
 
