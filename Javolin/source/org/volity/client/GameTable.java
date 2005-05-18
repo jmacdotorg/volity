@@ -12,6 +12,11 @@ import java.util.*;
 
 /** A game table (a Multi-User Chat room for playing a Volity game). */
 public class GameTable extends MultiUserChat {
+
+    public Hashtable mPlayerStatus = new Hashtable();
+    public List statusListeners = new ArrayList();
+
+
   /**
    * @param connection an authenticated connection to an XMPP server.
    * @param room the JID of the game table.
@@ -99,4 +104,43 @@ public class GameTable extends MultiUserChat {
     }
     return opponents;
   }
+
+    /***** Player status-change methods & callbacks *****/
+
+    /**
+     * Return an integer value representing the given nickname's table status.
+     * Possible return values:
+     * 0 - standing
+     * 1 - unready
+     * 2 - ready
+     */
+    public int getPlayerStatus(String jid) {
+	int status = -1;
+	try {
+	    Integer intObj = (Integer)mPlayerStatus.get(jid);
+	    status = intObj.intValue();
+	}
+	catch (Exception e) {
+	    System.err.println("Got an exception. " + e.toString());
+	}
+	return status;
+    }
+
+    public void setPlayerStatus(String jid, int status) {
+	Integer intObj = new Integer(status);
+	mPlayerStatus.put(jid, intObj);
+    }
+
+    /** Add a player status change listener. */
+    public void addStatusListener(StatusListener listener) {
+	statusListeners.add(listener);
+	StatusListener foo = (StatusListener)statusListeners.get(0);
+    }
+    
+    /** Remove a player status change listener. */
+    public void removeStatusListener(StatusListener listener) {
+	statusListeners.remove(listener);
+    }
+
+
 }
