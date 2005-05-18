@@ -34,10 +34,12 @@ import org.volity.jabber.*;
 import org.volity.javolin.*;
 import org.volity.javolin.chat.*;
 
+import org.jivesoftware.smackx.packet.MUCUser;
+
 /**
  * A window for playing a game.
  */
-public class TableWindow extends JFrame implements PacketListener
+public class TableWindow extends JFrame implements PacketListener, StatusListener
 {
     private final static String NODENAME = "TableWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -103,12 +105,13 @@ public class TableWindow extends JFrame implements PacketListener
     {
         TableWindow retVal = null;
 
+
         URL uiUrl = getUIURL(server);
 
         if (uiUrl != null)
         {
             retVal = new TableWindow(server, table, nickname, uiUrl);
-        }
+	}
 
         return retVal;
     }
@@ -193,6 +196,9 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Register as participant listener.
         mGameTable.addParticipantListener(this);
+
+	// Register as a player-status listener.
+	mGameTable.addStatusListener(this);
 
         // Last but not least, join the table
         mGameTable.join(nickname);
@@ -443,4 +449,14 @@ public class TableWindow extends JFrame implements PacketListener
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
     }
+
+    /**
+     * Handle announcements of player status changes.
+     * This implements the method defined by the StatusListener interface.
+     */
+    public void playerStatusChange(String jid, int status) {
+	System.out.println("I am the table window, and I see a status change!!");
+    }
+
+
 }
