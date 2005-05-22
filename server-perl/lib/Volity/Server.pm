@@ -339,9 +339,6 @@ sub handle_disco_items_request {
     
     my @items;			# Disco items to return to the requester.
 
-    # It should probably return a list of conference tables, or something?
-    # Now things get interesting...
-
     my $game_class = $self->game_class;
 
     if (defined($nodes[0])) {
@@ -371,13 +368,27 @@ sub handle_disco_items_request {
 		}));
 	    } 
 	}     
-	$self->send_disco_items({to=>$iq->attr('from'),
-			     id=>$iq->attr('id'),
-				 items=>\@items,
-				}
-			       );
-	
+    } else {
+	# Just return the two nodes we support.
+	foreach (qw(ruleset open_games)) {
+	    push (@items,
+		  Volity::Jabber::Disco::Item->new({
+		      jid=>$self->jid,
+		      node=>$_,
+		  })
+		  );
+	}
     }
+
+    $self->send_disco_items(
+			    {
+				to=>$iq->attr('from'),
+				id=>$iq->attr('id'),
+				items=>\@items,
+			    }
+			    );
+	
+	
 }
 
 1;
