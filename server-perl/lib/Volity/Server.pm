@@ -233,9 +233,14 @@ sub handle_rpc_request {
   # For security's sake, we explicitly accept only a few method names.
   # In fact, the only one we care about right now is 'new_table'.
   if ($$rpc_info{'method'} eq 'volity.new_table') {
-    $self->new_table($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      $self->new_table($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
   } else {
-#    warn "I received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?";
+      $self->logger->WARN("Got weird rpc request $$rpc_info{method} from $$rpc_info{from}.");
+      $self->($$rpc_info{from},
+	      $$rpc_info{id},
+	      603,
+	      "Unknown methodName: '$$rpc_info{method}'",
+	      );
   }
 }
 
