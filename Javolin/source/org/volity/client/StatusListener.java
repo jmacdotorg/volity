@@ -9,7 +9,7 @@ import org.jivesoftware.smackx.packet.MUCUser;
 public interface StatusListener {
   /**
    * Called when one of the players at the table has changed its status.
-   * @param user The MUCUser object whose status changed.
+   * @param jid The Jabber ID of the user whose status changed.
    * @param status An integer representing the new status of this user.
    *               0 - Standing
    *               1 - Unready
