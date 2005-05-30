@@ -81,6 +81,11 @@ public class SVGCanvas extends JSVGCanvas
     }
     return interpreter = new GameUIInterpreter();
   }
+  
+  // Inherited from InterpreterFactory.
+  public String getMimeType() {
+    return "image/svg+xml";
+  } 
 
   SVGUI ui;
   RhinoInterpreter interpreter;
