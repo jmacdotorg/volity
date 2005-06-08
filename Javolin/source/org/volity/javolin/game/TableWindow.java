@@ -26,15 +26,17 @@ import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.text.*;
+
+import org.apache.batik.swing.gvt.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
+import org.jivesoftware.smackx.packet.MUCUser;
+
 import org.volity.client.*;
 import org.volity.jabber.*;
 import org.volity.javolin.*;
 import org.volity.javolin.chat.*;
-
-import org.jivesoftware.smackx.packet.MUCUser;
 
 /**
  * A window for playing a game.
@@ -46,6 +48,9 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
     private final static String BOARD_SPLIT_POS = "BoardSplitPos";
 
+    private final static String VIEW_GAME = "GameViewport";
+    private final static String VIEW_LOADING = "LoadingMessage";
+
     private static Map sLocalUiFileMap = new HashMap();
 
     private JSplitPane mChatSplitter;
@@ -55,6 +60,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     private JTextArea mInputText;
     private JTextPane mUserListText;
     private SVGCanvas mGameViewport;
+    private JPanel mGameViewWrapper;
+    private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
 
     private UserColorMap mUserColorMap;
@@ -105,13 +112,12 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     {
         TableWindow retVal = null;
 
-
         URL uiUrl = getUIURL(server);
 
         if (uiUrl != null)
         {
             retVal = new TableWindow(server, table, nickname, uiUrl);
-	}
+        }
 
         return retVal;
     }
@@ -142,6 +148,20 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
 
         mGameViewport = new SVGCanvas(mGameTable, uiUrl);
+        mGameViewport.addGVTTreeRendererListener(
+            new GVTTreeRendererAdapter()
+            {
+                public void gvtRenderingCompleted(GVTTreeRendererEvent evt)
+                {
+                    switchView(VIEW_GAME);
+                    mGameViewport.forceRedraw();
+
+                    // Remove loading component, since it's no longer needed
+                    ((CardLayout)mGameViewWrapper.getLayout()).removeLayoutComponent(
+                        mLoadingComponent);
+                    mLoadingComponent = null;
+                }
+            });
 
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(nickname); // Give user first color
@@ -197,8 +217,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         // Register as participant listener.
         mGameTable.addParticipantListener(this);
 
-	// Register as a player-status listener.
-	mGameTable.addStatusListener(this);
+        // Register as a player-status listener.
+        mGameTable.addStatusListener(this);
 
         // Last but not least, join the table
         mGameTable.join(nickname);
@@ -272,7 +292,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
-     * Restores window state from the preferences storage, including window size and 
+     * Restores window state from the preferences storage, including window size and
      * position, and splitter bar positions.
      */
     private void restoreWindowState()
@@ -408,12 +428,75 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
+     * StatusListener interface method implementation. Handles announcements of player
+     * status changes.
+     *
+     * @param jid     The Jabber ID of the user whose status has changed.
+     * @param status  The status value.
+     */
+    public void playerStatusChange(String jid, int status)
+    {
+        System.out.println("I am the table window, and I see a status change!!");
+    }
+
+    /**
+     * Switches the mGameViewWrapper to show either the loading message or the game view.
+     *
+     * @param viewStr  The selector for the view, either VIEW_LOADING or VIEW_GAME.
+     */
+    private void switchView(String viewStr)
+    {
+        ((CardLayout)mGameViewWrapper.getLayout()).show(mGameViewWrapper, viewStr);
+    }
+
+    /**
+     * Creates and returns a JComponent that indicates that the game UI is loading.
+     *
+     * @return   A JComponent that indicates that the game UI is loading.
+     */
+    private JComponent makeLoadingComponent()
+    {
+        JPanel retVal = new JPanel(new GridBagLayout());
+        GridBagConstraints c;
+
+        int gridY = 0;
+
+        // Add Loading label
+        JLabel someLabel = new JLabel("Loading...");
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = gridY;
+        c.anchor = GridBagConstraints.SOUTH;
+        retVal.add(someLabel, c);
+        gridY++;
+
+        // Add progress bar
+        JProgressBar progress = new JProgressBar();
+        progress.setIndeterminate(true);
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = gridY;
+        c.insets = new Insets(6, 0, 0, 0);
+        c.anchor = GridBagConstraints.NORTH;
+        retVal.add(progress, c);
+
+        return retVal;
+    }
+
+    /**
      * Populates the frame with UI controls.
      */
     private void buildUI()
     {
         Container cPane = getContentPane();
         cPane.setLayout(new BorderLayout());
+
+        // JPanel with CardLayout to hold game viewport and "Loading" message
+        mGameViewWrapper = new JPanel(new CardLayout());
+        mGameViewWrapper.add(mGameViewport, VIEW_GAME);
+        mLoadingComponent = makeLoadingComponent();
+        mGameViewWrapper.add(mLoadingComponent, VIEW_LOADING);
+        switchView(VIEW_LOADING);
 
         // Split pane for message text area and input text area
         mChatSplitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -433,7 +516,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         mBoardSplitter.setResizeWeight(1);
         mBoardSplitter.setBorder(BorderFactory.createEmptyBorder());
 
-        mBoardSplitter.setTopComponent(mGameViewport);
+        mBoardSplitter.setTopComponent(mGameViewWrapper);
 
         mBoardSplitter.setBottomComponent(mChatSplitter);
 
@@ -449,14 +532,4 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
     }
-
-    /**
-     * Handle announcements of player status changes.
-     * This implements the method defined by the StatusListener interface.
-     */
-    public void playerStatusChange(String jid, int status) {
-	System.out.println("I am the table window, and I see a status change!!");
-    }
-
-
 }

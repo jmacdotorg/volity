@@ -34,14 +34,20 @@ public class SVGCanvas extends JSVGCanvas
     setDocumentState(ALWAYS_DYNAMIC);
     setURI(uiDocument.toString());
     addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
-	public void gvtRenderingCompleted(GVTTreeRendererEvent evt) {
-	  Dimension2D size = getSVGDocumentSize();
-	  setSize(new Dimension((int)(size.getWidth() + 10),
-	                        (int)(size.getHeight() + 10)));
-	  revalidate();
-	}
-      });
+	  public void gvtRenderingCompleted(GVTTreeRendererEvent evt) {
+	    forceRedraw();
+	  }
+    });
   }
+  
+  /**
+   * Kludge to force the component to redraw itself.
+   */
+  public void forceRedraw() {
+	Dimension2D size = getSVGDocumentSize();
+	setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
+	revalidate();
+  }  
 
   XMPPConnection connection;
   GameTable table;
