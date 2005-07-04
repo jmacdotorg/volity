@@ -54,7 +54,6 @@ sub init_finish {
 sub stop {
     my $self = shift;
     $self->kernel->post($self->alias, 'shutdown_socket', 0);
-    $self->referee(undef);
 }
 
 # This presence handler detects a table's referee through MUC attributes.
