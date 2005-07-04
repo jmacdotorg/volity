@@ -20,11 +20,10 @@ sub take_turn {
   my @choices = qw(rock paper scissors);
   my $hand = $choices[rand(@choices)];
   $self->make_rpc_request({
-			   to=>$self->referee->jid,
+			   to=>$self->referee_jid,
 			   id=>"hand_choice",
 			   methodname=>"game.choose_hand",
 			   args=>[$hand],
-#			   handler=>sub {},
 			  });
 
   $self->send_message({
@@ -39,9 +38,8 @@ sub handle_rpc_request {
   my ($rpc_info) = @_;
   if ($$rpc_info{method} eq 'volity.start_game') {
       $self->take_turn;
-  } elsif ($$rpc_info{method} eq 'game.player_chose_hand') {
-      # I'm just going to take another turn, whether the server will listen
-      # or not. :)
+  } elsif ($$rpc_info{method} eq 'volity.state_sent') {
+      warn "OK I should be takin a turn now.\n";
       $self->take_turn;
   } else {
       $self->SUPER::handle_rpc_request(@_);
