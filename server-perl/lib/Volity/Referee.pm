@@ -1501,14 +1501,14 @@ sub stop {
       $_->stop;
   }
   $self->active_bots([]);
-  $self->kernel->post($self->alias, 'shutdown_socket', 0);
   $self->server->remove_referee($self);
+  $self->kernel->post($self->alias, 'shutdown_socket', 0);
 }
 
-sub DESTROY {
-  my $self = shift;
-  $self->server(undef);
-}
+#sub DESTROY {
+#  my $self = shift;
+#  $self->server(undef);
+#}
 
 # start_game: Internal method called when all the players have confirmed
 # their readiness to begin.
