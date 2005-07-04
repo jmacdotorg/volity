@@ -6,7 +6,7 @@ package Volity::Bot;
 use warnings;
 use strict;
 use base qw(Volity::Jabber Class::Data::Inheritable);
-use fields qw(muc_jid referee referee_jid opponents name_modifier nickname);
+use fields qw(muc_jid referee_jid name_modifier nickname am_seated am_ready seat);
 # Why separate referee and referee_jid fields?
 # Because the 'referee' field is to hold a Volity::Referee object, if one
 # is available (i.e. this is being used as a Retainer-bot).
@@ -88,25 +88,11 @@ sub jabber_presence {
       my $affiliation = $x->get_tag('item')->attr('affiliation');
       $self->logger->debug("I see presence from " . $node->attr('from'));
       my ($nickname) = $node->attr('from') =~ m|/(.*)$|;
-      warn "I see $nickname, with affiliartion $affiliation.\n";
-      warn "Is $nickname " . $self->nickname . "?\n";
       if ($nickname eq $self->nickname) {
 	  # Oh, it's me.
-	  warn "Yeah.\n";
 	  $self->referee_jid($self->muc_jid . "/volity");
-	  # Sit and delcare readiness. I want to play NOW!
+	  # Try to have a seat. I want to play NOW!
 	  $self->sit;
-	  $self->declare_readiness;
-      } else {
-	  # This is a potential opponent!
-	  unless ($node->attr('type')) {
-	      # No 'type' attribute means they're joining us...
-	      # Save the nickname. We'll pass it to the UI file later.
-	      $self->add_opponent_nickname($node->attr('from'));
-	  } elsif ($node->attr('type') eq 'unavailable') {
-	      # Oh, they're leaving...
-	      $self->remove_opponent_nickname($node->attr('from'));
-	  }
       }
   }
 }
@@ -119,52 +105,6 @@ sub join_table {
     my $nick = $self->name . $self->name_modifier;
     $self->join_muc({jid=>$self->muc_jid, nick=>$nick});
     $self->nickname($nick);
-}
-
-# add_opponent_nickname: Add the given nickname (either a full JID in MUC
-# format, or a bare string containing only the nickname) to our internal
-# list of known opponents at the current table.
-sub add_opponent_nickname {
-  my $self = shift;
-  my ($name) = @_;
-  my $nickname;
-  if (is_jid($name)) {
-    ($nickname) = $name =~ /\/(.*)$/;
-    unless ($nickname) {
-      die "GACK. I couldn't tease a nickname out of the jid $name.";
-    }
-  } else {
-    $nickname = $name;
-  }
-  my $my_nickname = $self->nickname;
-  unless ($my_nickname eq $nickname) {
-    $self->{opponents}{$nickname} = 1;
-  }
-}
-
-sub remove_opponent_nickname {
-  my $self = shift;
-  my ($name) = @_;
-  my $nickname;
-  if (is_jid($name)) {
-    ($nickname) = $name =~ /\/(.*)$/;
-    unless ($nickname) {
-      die "GACK. I couldn't tease a nickname out of the jid $name.";
-    }
-  } else {
-    $nickname = $name;
-  }
-  return(delete($self->{opponents}{$nickname}));
-}
-
-sub opponent_nicknames {
-  my $self = shift;
-  return keys(%{$self->{opponents}});
-}
-
-sub clear_opponent_nicknames {
-  my $self = shift;
-  $self->{opponents} = {};
 }
 
 sub is_jid {
@@ -183,6 +123,7 @@ sub declare_readiness {
 	to=>$self->referee_jid,
 	id=>'ready-request',
 	methodname=>'volity.ready',
+	handler=>'ready',
     });
 }
 
@@ -192,22 +133,72 @@ sub sit {
     $self->send_rpc_request({
 	to=>$self->referee_jid,
 	id=>'sit',
-	methodname=>'volity.unready',
+	methodname=>'volity.sit',
+	args=>[$self->jid],
+	handler=>'seat',
     });
 }
+
 
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
   my $method = $$rpc_info{method};
-  if ($method eq 'volity.end_game') {
-      # I wanna play again!!!
-      $self->declare_readiness;
-  } elsif (($method eq 'volity.player_unready' && $rpc_info->{args}->[0] eq $self->nickname) or ($method eq 'volity.player_sat')) {
-      # The config must have changed, since I just lost readiness.
-      # I don't care! I'm still ready!!      
+
+  # Handle possible changes to my own seated/readiness states.
+  if ($method eq 'volity.player_sat') {
+      if ($$rpc_info{args}[0] eq $self->jid) {
+	  $self->am_seated(1);
+	  $self->seat($$rpc_info{args}[1]);
+      }
+  } elsif ($method eq 'volity.player_stood') {
+      if ($$rpc_info{args}[0] eq $self->jid) {
+	  $self->am_seated(0);
+      }
+  } elsif ($method eq 'volity.player_unready') {
+      if ($$rpc_info{args}[0] eq $self->jid) {
+	  $self->am_ready(0);
+      }
+  } elsif ($method eq 'volity.player_ready') {
+      if ($$rpc_info{args}[0] eq $self->jid) {
+	  $self->am_ready(1);
+      }
+  } elsif ($method eq 'volity.end_game') {
+      $self->am_ready(0);
+  } elsif ($method eq 'volity.suspend_game') {
+      $self->am_ready(0);
+  }
+  # If I'm seated and not ready, try to become ready.
+  if ($self->am_seated && not($self->am_ready)) {
       $self->declare_readiness;
   }
+}
+
+sub rpc_response_ready {
+    my $self = shift;
+    my ($message) = @_;
+    my ($flag) = @{$$message{response}};
+    $self->logger->debug("Got a $flag response to my ready request.");
+}
+
+sub rpc_response_seat {
+    my $self = shift;
+    my ($message) = @_;
+    my ($flag) = @{$$message{response}};
+    $self->logger->debug("Got a $flag response to my seat request.");
+    # Possibly babble to the MUC, if I can't sit down.
+    # XXX This should be internationalized.
+    my $chat_message;
+    if ($flag eq 'volity.no_seats') {
+	$chat_message = "I can't sit down; all the seats are full.";
+    }
+    if ($chat_message) {
+	$self->send_message({
+	    to=>$self->muc_jid,
+	    type=>"groupchat",
+	    body=>$message,
+	});
+    }
 }
 
 1;

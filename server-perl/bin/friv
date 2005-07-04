@@ -41,9 +41,10 @@ use LWP;
 use File::Spec;
 use Archive::Zip::MemberRead;
 use Tie::ExecHash;
+use URI;
 
 my %opts;
-getopts( 'u:h:p:r:o:f:b:c:l:d', \%opts );
+getopts( 'u:h:p:r:o:f:b:c:l:dL:', \%opts );
 # u == username
 # h == host
 # p == password
@@ -54,6 +55,7 @@ getopts( 'u:h:p:r:o:f:b:c:l:d', \%opts );
 # c == command to run on start
 # d == daemonize
 # l == logger configuration file (no logging, if undefined)
+# L == preferred language code for UI files.
 
 ################
 # GLOBALS
@@ -345,7 +347,9 @@ sub act_connect {
         user           => $username,
         poe_heap       => $heap,
         bookkeeper_jid => $heap->{'env'}{'bookkeeper'},
-        });
+	language      => $opts{L} || 'en',
+    });
+
     $jid = $user->jid;
     $heap->{'players'}{$jid}  = $user;
     $heap->{'default_player'} = $user;
@@ -583,6 +587,7 @@ Volity client commands:
   source (file)    - run commands from file
   help             - this list
   quit             - log off from Volity and exit this program
+  language (code)  - change your preferred language
 CMDLIST
   return unless $heap->{'commands'};
   output( $heap, "" );
@@ -623,19 +628,54 @@ sub js_writeln {
 sub js_rpc {
     my( $user, $cmd, @args ) = @_;
     
-#    warn "Da command is: $cmd\n";
-#    warn "Da args are: @args\n";
-
-# XXX
-#    $user->print_message( "Making RPC call to $cmd..." );
     $user->make_rpc_request({
         to         => $user->referee_jid,
         id         => "$cmd.".time,
         methodname => "game.$cmd",
         args       => \@args,
-        handler    => sub {},
+        handler    => "game",
         });
 }
+
+# js_load: load a file containing some JS stuff, and eval it into the
+# active JS interpreter.
+sub js_load {
+    my $user = shift;
+    my $uri = URI->new($_[0]);
+    unless ($uri) {
+	$user->print_message("Problem with the UI file: Asked to load '$_[0]', but that doesn't appear to be a valid URI.");
+    }
+    if ($uri->scheme eq 'chrome') {
+	# OK, we're using the Mozilla chrome schema.
+	# (But the only part we use right now is l10n.
+	my $language_code = $user->language;
+	my $localized_path = $uri->path;
+	$localized_path =~ s|locale/|locale/$language_code/|;
+	# XXXXX What follows is a big cut-n-paste.
+	# Refactor this code if it actually works.
+	my $local_zipfile = File::Spec->catfile($working_dir, "ui.zip");
+	unless (-r $local_zipfile) {
+	    $user->print_message("Bizarre error: I couldn't find the UI ZIPfile where I expected to see it ($local_zipfile). Sorry.");
+	    return;
+	}
+	my $zip_reader;
+	unless ($zip_reader = Archive::Zip->new($local_zipfile)) {
+	    $user->print_message("Oh, there was a problem reading the zipfile $local_zipfile. Sorry.");
+	    return;
+	}
+	my @js_source; my $js_fh;
+	if ($js_fh = Archive::Zip::MemberRead->new($zip_reader, "main")) {
+	    while (defined(my $line = $js_fh->getline)) { 
+		push (@js_source, $line);
+	    }
+	} else {
+	    $user->print_message("The archive $local_zipfile doesn't seem to have a file with path '$localized_path'. I can't use it. Sorry...");
+	    return;
+	}
+	$user->js(join("\n", @js_source));
+    }
+}
+    
 
 sub js_registerCommand {
     my( $commands, $command, $shortdesc, $longdesc ) = @_;
@@ -792,19 +832,67 @@ sub cmd_stand {
     unless ( defined $user->table_jid ) {
       return output( $heap,"You're not seated at a table.");
     }
+    make_stand_request( $user, $user->jid );
+}
+
+sub cmd_stand_other {
+    my( $heap, $jid ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $user->table_jid ) {
+      return output( $heap,"You're not seated at a table.");
+    }
+    make_stand_request( $user, $jid );
+}
+
+sub make_stand_request {
+    my ($user, $jid) = @_;
     my $rpc_id = ++$next_rpc_request_id;
     $user->make_rpc_request({
         id         => $rpc_id,
         to         => $user->referee_jid,
         methodname => 'volity.stand',
+	args       => [ $jid ],
         handler    => 'stand',
         });
 }
 
+
 sub cmd_sit {
-    # Sitting is actually just an alias to an unreadiness call request,
-    # since they really do the same thing.
-    return cmd_unready(@_);
+    my( $heap, $seat_id ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $user->table_jid ) {
+      return output( $heap,"You're not at a table.");
+    }
+    make_sit_request ( $user, $user->jid, $seat_id );
+}
+
+sub cmd_sit_other {
+    my( $heap, $jid, $seat_id ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    unless ( defined $user->table_jid ) {
+      return output( $heap,"You're not at a table.");
+    }
+    make_sit_request ( $user, $jid, $seat_id );
+}
+
+sub make_sit_request {
+    my ($user, $jid, $seat_id) = @_;
+
+    my $rpc_id = ++$next_rpc_request_id;
+    my @args;
+    if (defined($seat_id)) {
+	@args = ($jid, $seat_id);
+    } else {
+	@args = ($jid);
+    }
+
+    $user->make_rpc_request({
+        id         => $rpc_id,
+        to         => $user->referee_jid,
+        methodname => 'volity.sit',
+	args       => \@args,
+        handler    => 'sit',
+        });
 }
 
 sub cmd_unready {
@@ -936,14 +1024,60 @@ sub cmd_tables {
     
 }
 
+sub cmd_language {
+    my( $heap, $language_code ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    if ($language_code =~ /^[a-z][a-z]$/) {
+	$user->language = $language_code;
+	$user->print_message("Preferred UI file language is now $language_code.");
+    } else {
+	$user->print_message("Usage: language [two-letter_language_code]");
+    }
+}
+
+sub cmd_table_language {
+    my( $heap, $language_code ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    $user->make_rpc_request({
+        id         => 'set-language',
+        to         => $user->referee_jid,
+        methodname => 'volity.set_language',
+	args       => [$language_code],
+    });
+}
+
+sub cmd_timeout {
+    my( $heap, $timeout ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    $user->make_rpc_request({
+        id         => 'set-timeout',
+        to         => $user->referee_jid,
+        methodname => 'volity.set_timeout',
+        args       => [$timeout],
+    });
+}
+
+sub cmd_timeout_reaction {
+    my( $heap, $reaction ) = @_[ HEAP, &ARGS ];
+    my $user = $heap->{'default_player'};
+    $user->make_rpc_request({
+        id         => 'set-timeout-reaction',
+        to         => $user->referee_jid,
+        methodname => 'volity.set_timeout_reaction',
+	args       => [$reaction],
+    });
+}
+
 package Volity::User;
 
 use warnings;
 use strict;
 
 use base qw(Volity::Jabber);
-use fields qw(nick output poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load ruleset_menu table_menu server_menu server_timeout awaiting_referee_list awaiting_table_info awaiting_server_list alarm_ids servers_by_ruleset waiting_for_servers salient_servers responding_servers salient_referees responding_referees is_ready invitation);
+use fields qw(nick output poe_heap table_jid referee_jid server_jid js opponents available_uis current_ui_url bookkeeper_jid uis_to_check current_command manual_ui_load ruleset_menu table_menu server_menu server_timeout awaiting_referee_list awaiting_table_info awaiting_server_list alarm_ids servers_by_ruleset waiting_for_servers salient_servers responding_servers salient_referees responding_referees is_ready invitation language);
 use POE;
+
+use Locale::Language;
 
 sub init_finish {
   my $self = $_[OBJECT];
@@ -981,13 +1115,87 @@ sub print_message {
 sub rpc_response_new_table {
   my $self = shift;
   my( $message ) = @_;
-  my $table_jid = $$message{'response'};
+#  my $table_jid = $$message{'response'}->[0];
+  my ($flag, $table_jid) = @{$$message{response}};
+
   $self->join_table($table_jid);
 
   my ($ref_resource) = $table_jid =~ /^(.*?)@/;
   my $ref_jid = $$message{'from'};
   $self->print_message("New table made, and joined. (Table JID: $table_jid)");
 }
+
+sub rpc_response_sit {
+    my $self = shift;
+    my ($message) = @_;
+    my ($flag, $seat_id) = @{$$message{response}};
+    if ($flag eq 'volity.no_seat') {
+	$self->print_message("Unfortunately, it looks like no empty seats are left here.");
+    } elsif ($flag eq 'volity.ok') {
+	# Nothin' doin'.
+    } else {
+	$self->print_message("That's weird... got unexpected response to the sit request: $flag");
+    }
+}
+
+sub rpc_response_ready {
+    my $self = shift;
+    my ($message) = @_;
+    my ($flag) = @{$$message{response}};
+    if ($flag eq 'volity.ok') {
+	# Nothing to do.
+    } elsif ($flag eq 'volity.empty_seats') {
+	$self->print_message("The ref won't let you be ready, because not all the required seats are occupied.");
+    } elsif ($flag eq 'volity.bad_config') {
+	$self->print_message("The ref won't let you be ready, because the table configuration is not in a launchable state.");
+    } else {
+	$self->print_message("Weird... I got the flag '$flag' in response to the ready command. I don't know what to do with it.");
+    }
+}
+
+# rpc_response_game: RPC response handler for game.* requests to the ref.
+# It's always an array, and if the first value is anything other than
+# "volity.ok", then we're looking at an in-game error of some sort.
+sub rpc_response_game {
+    my $self = shift;
+    my ($message) = @_;
+    my ($flag, @tokens) = @{$$message{response}};
+    if ($flag ne 'volity.ok') {
+	my $natural_string = $self->localize_tokens($flag, @tokens);
+	$self->print_message($natural_string);
+    }
+}
+
+# localize_tokens: Internal method. Accept a bunch of tokens (probably
+# spelling out an in-game error message) and return a natural-language
+# string.
+sub localize_tokens {
+    my $self = shift;
+    my ($flag, @tokens) = @_;
+    my ($namespace, $key_token) = $flag =~ /^(.*?)\.(.*)$/;
+    if ($namespace eq 'game') {
+	# We have to ask the UI file for this flag's template.
+	my $template = $self->get_localized_token_value($key_token);
+	# Now we will fill out the interpolicated bits.
+	# Rather we _will_, once we determine that everything so far works.
+    }
+}
+
+# get_localized_game_token_value: Internal method. Given a token that was in
+# the "game" namespace, poke the ES file for a translated value.
+sub get_localized_token_value {
+    my $self = shift;
+    my ($token) = @_;
+    $token =~ s/'/\\'/g;		# Escape quotes.
+    my $rv = $self->js->eval("client.last_token_value = client.get_game_token_value('$token');");
+    unless ($rv) {
+	$self->print_message("ERROR: Couldn't translate the token '$token': $@");
+    }
+    my $token_value = $self->js->property_get("client.last_token_value");
+    return $token_value;
+}
+    
+
 
 sub _rpc_receive_invitation {
     my $self = shift;
@@ -1004,16 +1212,35 @@ sub _rpc_receive_invitation {
 
 sub _rpc_player_ready {
     my $self = shift;
-    my ($sender_jid, $player_nickname) = @_;
-    $self->print_message("$player_nickname is ready to play.");
+    my ($sender_jid, $player_jid) = @_;
+    $self->print_message("$player_jid is ready to play.");
     return 1;
 }
 
 sub _rpc_player_unready {
     my $self = shift;
-    my ($sender_jid, $player_nickname) = @_;
-    $self->print_message("Oops; $player_nickname is no longer ready to play.");
+    my ($sender_jid, $player_jid) = @_;
+    $self->print_message("Oops; $player_jid is no longer ready to play.");
     return 1;
+}
+
+sub _rpc_player_sat {
+    my $self = shift;
+    my ($sender_jid, $player_jid, $seat_id) = @_;
+    $self->print_message("$player_jid is sitting in $seat_id.");
+    return 1;
+}
+
+sub _rpc_required_seat_list {
+    my $self = shift;
+    my ($send_jid, $seat_ids) = @_;
+    $self->print_message("Required seats: @$seat_ids");
+}
+
+sub _rpc_seat_list {
+    my $self = shift;
+    my ($send_jid, $seat_ids) = @_;
+    $self->print_message("Full seat list: @$seat_ids");
 }
 
 sub _rpc_start_game {
@@ -1022,20 +1249,39 @@ sub _rpc_start_game {
     main::js_call($self->js, 'START');
 }
 
+sub _rpc_resume_game {
+    my $self = shift;
+    my ($send_jid) = @_;
+    $self->print_message("The game is resuming.");
+}
+
+sub _rpc_language {
+    my $self = shift;
+    my ($send_jid, $setter_jid, $language) = @_;
+    my $language_name = Locale::Language::code2language($language);
+    $self->print_message("$setter_jid changed the table language to $language_name ($language).");
+}
+
+sub _rpc_timeout {
+    my $self = shift;
+    my ($send_jid, $setter_jid, $timeout) = @_;
+    $self->print_message("$setter_jid changed the table timeout to $timeout seconds.");
+}
+
+sub _rpc_timeout_reaction {
+    my $self = shift;
+    my ($send_jid, $setter_jid, $reaction) = @_;
+    my %prose = (bot=>"replacing a missing player with a bot",
+		 throw=>"throwing the game",
+		 suspend=>"suspending the game",
+		 );
+    $self->print_message("$setter_jid changed the table timeout reaction to $prose{$reaction}.");
+}
+
 sub _rpc_end_game {
     my $self = shift;
     # Tell the UI to end the game.
     main::js_call($self->js, 'END');
-}
-
-sub _rpc_player_sat {
-    my $self = shift;
-    my ($sender_jid, $player_nickname) = @_;
-    $self->print_message("$player_nickname sits, joining as a player.");
-    if ($self->is_ready) {
-	$self->print_message("This has made you unready.");
-	$self->is_ready(0);
-    }
 }
 
 sub _rpc_player_stood {
@@ -1046,6 +1292,23 @@ sub _rpc_player_stood {
 	$self->print_message("This has made you unready.");
 	$self->is_ready(0);
     }
+}
+
+sub _rpc_receive_state {
+    my $self = shift;
+    $self->print_message("Initiating state recovery...");
+    # A graphical UI would care about this, setting the UI to not redraw
+    # itself.
+    # We don't care. Start the UI file, and let the referee spam away.
+    main::js_call($self->js, 'START');
+}
+
+sub _rpc_state_sent {
+    # A graphical UI would care about this, setting the UI to start
+    # redrawing everything again.
+    # We don't care, having already spammed the player.
+    my $self = shift;
+    $self->print_message("State recovery completed.");
 }
 
 sub fetch_ui_file {
@@ -1073,7 +1336,6 @@ sub fetch_ui_file {
     my $js_fh;
     my @js_source;
     if ($js_fh = Archive::Zip::MemberRead->new($zip_reader, "main")) {
-	warn "OK.";
         while (defined(my $line = $js_fh->getline)) { 
             push (@js_source, $line);
         }
@@ -1142,6 +1404,7 @@ sub load_js_from_source {
     $js->function_set("rpc", sub { main::js_rpc( $self, @_ ) } );
     $js->function_set("registerCommand", 
                       sub { main::js_registerCommand( $commands, @_ ) } , $referee );
+    $js->function_set("use", sub { main::js_use( $self, @_) });
 
     {
 	local $SIG{__WARN__} = sub {};
@@ -1162,18 +1425,13 @@ sub load_js_from_source {
 sub rpc_response_add_bot {
   my $self = shift;
   my( $message ) = @_;
-  $self->print_message("Response from the bot-add request was: $$message{'response'}");
+  my ($flag) = @{$$message{response}};
+  $self->print_message("Response from the bot-add request was: $flag");
 }
 
 sub rpc_response_invite_player {
     my $self = shift;
     $self->print_message("The invitation has been sent.");
-}
-
-sub rpc_response_ready {
-  my $self = shift;  
-  $self->print_message("You're ready to play. (Use the 'unready' command to cancel.)");
-  $self->is_ready(1);
 }
 
 sub rpc_response_unready {
@@ -1184,7 +1442,7 @@ sub rpc_response_unready {
 sub rpc_response_default {
   my $self = shift;
   my ($message) = @_;
-  $self->print_message("Received an RPC response with id ".
+  $self->logger->warn("Received an RPC response with id ".
     "$$message{'id'}, but I don't know how to handle it.");
 }
 
@@ -1827,9 +2085,29 @@ The TCP port to connect to. Defaults to 5222 (Jabber's default port).
 
 The resource to use with the Jabber account. Defaults to 'friv'.
 
+=item L
+
+The language to use with localized UI files, expressed in a two-letter
+ISO language code. Defaults to 'en'.
+
 =back
 
 =head1 COMMANDS
+
+=head2 General preferences
+
+=over
+
+=item language C<code>
+
+Changes the preferred language. C<code> is a two-letter ISO language
+code, like C<en> for english or C<es> for Spanish.
+
+Friv is currently not a localized program; its own interface is only
+in English. However, this command will let use UI files' different
+localization capabilities.
+
+=back
 
 =head2 Connecting and disconnecting
 

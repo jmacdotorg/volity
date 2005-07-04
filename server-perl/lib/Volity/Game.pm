@@ -32,8 +32,8 @@ Volity::Game - base class for Volity game modules
 
  # Set some configuration information.
 
- __PACKAGE__->min_allowed_players(2);
- __PACKAGE__->max_allowed_players(4);
+ __PACKAGE__->min_allowed_seats(2);
+ __PACKAGE__->max_allowed_seats(4);
  __PACKAGE__->uri("http://mydomain.com/games/mygame");
  __PACKAGE__->name("MyGame");
  __PACKAGE__->description("This is my awesome game. It's great.");
@@ -87,22 +87,22 @@ So here are some object methods peculiar to C<Volity::Game>...
 
 =over 
 
-=item player_class
+=item seat_class
 
-The class that this game's players belong to. When the game wants to make new players, it calls this class's constructor.
+The class that this game's seats belong to. When the game wants to make new seats, it calls this class's constructor.
 
-If you don't set this, it defaults to using the C<Volity::Player> class.
+If you don't set this, it defaults to using the C<Volity::Seat> class.
 
 =item referee
 
 Returns the C<Volity::Referee> object that owns this game. Use this
-object to fetch player information while the game is afoot; see
+object to fetch seat information while the game is afoot; see
 L<Volity::Referee> for the salient methods.
 
 I<Shortcut> You can call any of the referee's methods simply by
 calling them on the game object. For example, calling
-C<$game->players> is exactly equivalent to (and will return exactly
-the same player objects as) calling C<$game->referee->players>.
+C<$game->seats> is exactly equivalent to (and will return exactly
+the same seat objects as) calling C<$game->referee->seats>.
 
 =item is_afoot
 
@@ -127,17 +127,6 @@ A I<brief> name of this game module, which the game server will use to advertise
 
 A longer text description of this game module.
 
-=item max_allowed_players
-
-An integer specifying the maximum number of players this game
-allows. If undefined, then there is no limit to the number of players
-who can join.
-
-=item min_allowed_players
-
-An integer specifying the minimum number of players this game requires
-for play. Defaults to 1.
-
 =item uri
 
 I<Required.> The URI of the ruleset that this particular game module
@@ -150,6 +139,14 @@ I<Required.> The version number of the ruleset that this particular
 game module implements. A client-side UI file consults this number to
 determine its own compatibility with a game server.
 
+=item seat_ids 
+
+An array of strings representing the IDs of I<all> the seats that this game implementation supports. In order words, if it support
+
+=item required_seat_ids
+
+An array of strings representing the IDs of role-differentiated seats that players should be aware of, as defined by the ruleset.
+
 =back
 
 =cut
@@ -159,10 +156,14 @@ use strict;
 
 use base qw(Volity Class::Data::Inheritable);
 
-use fields qw(winners quitters current_player current_player_index referee config_variables is_afoot config_variable_setters);
+use fields qw(winners quitters current_seat current_seat_index referee config_variables is_afoot is_suspended is_finished config_variable_setters);
 
-foreach (qw(uri name description ruleset_version website max_allowed_players min_allowed_players player_class)) {
+# Define some class accessors.
+foreach (qw(uri name description ruleset_version website max_allowed_seats min_allowed_seats seat_class seat_ids required_seat_ids)) {
   __PACKAGE__->mk_classdata($_);
+}
+foreach (qw(seat_ids required_seat_ids)) {
+  __PACKAGE__->$_([]);
 }
 
 use Scalar::Util qw(weaken);
@@ -171,55 +172,57 @@ use Carp qw(carp croak);
 
 sub initialize {
   my $self = shift;
-  $self->current_player_index(0);
+  $self->current_seat_index(0);
 #  $self->current_player(($self->players)[0]);
   weaken($self->{referee});
   $self->config_variables({});
   $self->config_variable_setters({});
+  $self->winners([]);
+  $self->is_finished(0);
 }
 
 sub AUTOLOAD {
   my $self = shift;
   our $AUTOLOAD;
   my ($method) = $AUTOLOAD =~ /^.*::(.*)$/;
-  if ($self->referee && $self->referee->can($method)) {
+  if ($self->can('referee') && $self->referee && $self->referee->can($method)) {
     return $self->referee->$method(@_);
   } else {
-    croak ("Unknown method $method");
+    Carp::confess ("Unknown method $method");
   }
 }
 
-=head2 current_player ($player)
+=head2 current_seat ($seat)
 
-Called with no arguments, returns the player whose turn is up.
+Called with no arguments, returns the seat whose turn is up.
 
-Called with a Volity::Player object as an argument, sets that player as the current player.
+Called with a Volity::Seat object as an argument, sets that seat as the current seat.
 
-=head2 rotate_current_player
+=head2 rotate_current_seat
 
-Convenience method that simply sets the next player in the players list as the current player.
+Convenience method that simply sets the next seat in the seats list as the current seat.
 
 This method is useful to call at the end of a turn.
 
 =cut
 
-sub rotate_current_player {
+sub rotate_current_seat {
   my $self = shift;
-  my $index = $self->current_player_index;
-  if ($index + 1< ($self->referee->players)) {
+  my $index = $self->current_seat_index;
+  if ($index + 1< ($self->referee->seats)) {
     $index++;
   } else {
     $index = 0;
   }
-  $self->current_player_index($index);
-  $self->current_player(($self->referee->players)[$index]);
+  $self->current_seat_index($index);
+  $self->current_seat(($self->referee->seats)[$index]);
 }
 
 # call_ui_function_on_everyone: A convenience method for blasting something
-# at every single player.
+# at every single seat.
 sub call_ui_function_on_everyone {
   my $self = shift;
-  map($_->call_ui_function(@_), $self->referee->players);
+  map($_->call_ui_function(@_), $self->referee->seats);
 }
 
 # register_config_variables: Turn the given strings into class variables,
@@ -231,8 +234,6 @@ sub register_config_variables {
     foreach (@_) {
 	$self->config_variables->{$_} = 1;
     }
-    use Data::Dumper;
-    warn Dumper($self->config_variables);
 
 }
 
@@ -259,18 +260,35 @@ sub is_config_variable {
     return $self->config_variables->{$variable_name};
 }
 
-# tell_player_about_config: Tell the given player about the current game
-# configuaration. Called by the ref when a new player joins.
-sub tell_player_about_config {
+# tell_seat_about_config: Tell the given seat about the current game
+# configuaration. Called by the ref when a new seat joins.
+sub tell_seat_about_config {
     my $self = shift;
-    my ($player) = @_;
+    my ($seat) = @_;
     while (my ($config_variable_name, $setter) = each(%{$self->config_variable_setters})) {
 	unless ($setter) {
 	    $setter = $self->referee->table_creator;
 	}
 	my $value = $self->$config_variable_name;
-	$player->call_ui_function($config_variable_name, $setter->nick, $value);
+	$seat->call_ui_function($config_variable_name, $setter->nick, $value);
     }
+}
+
+# is_active: Convenience method to determine whether the game is actually in
+# play and not suspended.
+sub is_active {
+    my $self = shift;
+    return $self->is_afoot && not($self->is_suspended);
+}
+
+
+# send_full_state_to_player: Blast the given player (not seat) with full
+# game state. By default it's a no-op. Subclasses should override this.
+sub send_full_state_to_player {
+    my $self = shift;
+    my ($player) = @_;
+    my $player_jid = $player->jid;
+    $self->logger->warn("Base class recover_state called for $player_jid. Nothing to do.");
 }
 
 ###################
@@ -279,7 +297,7 @@ sub tell_player_about_config {
 
 =head2 end
 
-Ends the game. The referee will automatically handle player
+Ends the game. The referee will automatically handle seat
 notification. The bookkeeper will be sent a record of the game's
 results at this time, so be sure you have the game's winner-list
 arranged correctly.
@@ -295,6 +313,7 @@ sub end {
   my $self = shift;
   my ($args) = @_;
   $self->is_afoot(0);
+  $self->is_finished(1);
   $self->referee->end_game;
 }
 
@@ -311,16 +330,35 @@ C<Volity::Game> provides default handlers for these methods, called on the game 
 
 Called by the referee after it creates the game object and is ready to
 begin play. It gives the object a chance to perform whatever it would
-like to do as its first actions, prior to players starting to send
+like to do as its first actions, prior to seats starting to send
 messages to it.
 
 The default behavior is a no-op. A common reason to override
 this method is the need to send a set-up function call to the game's
-players.
+seats.
+
+=head2 has_acceptable_config
+
+Called by the referee every time a player signals readiness. Returns 1
+if the current configuration settings are OK to start a new
+game. Returns 0 if the config settings are currently wedged in an
+unplayable state. 
+
+In the latter case, the referee will not allow the
+player to delcare readiness.
+
+By default, it just returns 1 without checking anything.
+
+Note: You I<don't> need to check required-seat occupancy; this is
+handled for you, before has_acceptable_config is called.
 
 =cut
 
 sub start { }
+
+sub has_acceptable_config {
+    return 1;
+}
 
 sub handle_normal_message { }
 sub handle_groupchat_message { }

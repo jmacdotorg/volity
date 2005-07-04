@@ -18,12 +18,136 @@ package Volity::Player;
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ############################################################################
 
+=head1 NAME
+
+Volity::Player - Volity players, from a referee's perspective.
+
+=head1 DESCRIPTION
+
+An object of this class represents a Volity player present at a
+table. The referee creates one of these objects for every player who
+comes to that ref's table. The player might not actually I<play> the
+game (i.e. sit in a seat), but is nontheless recognized by the referee
+as a potential game player and table presence.
+
+In certain circumstances a ref may choose to keep an object for a
+given player persistent, even after that player leaves the table,
+while other times the player's departure results in the object's
+destruction. Generally, it just does the right thing.
+
+=head1 USAGE
+
+You should never need to create or destroy player objects yourself;
+the referee object takes care of that. However, there are a number of
+methods defined by Volity::Referee and Volity::Seat that return player
+objects, so you may find yourself interacting with them anyway.
+
+=head1 METHODS
+
+This class defines two kinds of object methods: accessors to basic,
+informational attributes about the player, and triggers to send RPC
+methods to the player's client.
+
+=head2 Basic attributes
+
+Consider these methods as read-only accessors to attributes that the
+referee sets. (Well, you can write to them if you'd like, but I can't
+predict what might happen if you do, so don't.)
+
+=over
+
+=item jid
+
+This player's full JID.
+
+=item basic_jid
+
+The player's JID, minus the resource part.
+
+=item nick
+
+This player's MUC nickname.
+
+=item referee
+
+The Volity::Referee object of the table this player is at.
+
+=item is_bot
+
+1 if this player is a referee-created bot, 0 otherwise.
+
+=item seat
+
+The Volity::Seat object this player occupies. undef if the player isn't sitting or missing.
+
+=item is_missing
+
+1 if the player has abruptly vanished while sitting at an active game, 0 otherwise.
+
+=back
+
+=head2 Volity RPC methods
+
+These methods all send volity-namespaced RPC methods to the player's client.
+
+Generally, you shouldn't have to call any of these yourself. The ref
+takes care of all this stuff.
+
+=over
+
+=item start_game
+
+=item end_game
+
+=item player_ready ( $ready_player )
+
+=item player_stood ( $standing_player )
+
+=item player_sat ( $sitting_player )
+
+=item suspend_game ( $suspending_player )
+
+=item resume_game
+
+=item player_unready ( $unready_player )
+
+=item seat_list
+
+=item required_seat_list
+
+=item timeout
+
+=item timeout_reaction
+
+=item table_language
+
+=back
+
+=head2 Other methods
+
+=cut
+
 use warnings;
 use strict;
 
 use base qw(Volity);
 
-use fields qw(jid name nick referee rpc_count is_bot);
+use fields qw(jid nick referee rpc_count is_bot seat is_missing);
+# FIELDS:
+# jid
+#   This player's full jid.
+# nick
+#   This player's MUC nickname.
+# referee
+#   The Volity::Referee object of the table this player is at.
+# rpc_count
+#   Counter that helps generate unique RPC request IDs.
+# is_bot
+#   1 if this player is a referee-created bot.
+# seat
+#   The Volity::Seat object this player occupies.
+# is_missing
+#   1 if the player has abruptly vanished while sitting at an active game.
 
 # basic_jid: Return the non-resource part of my JID.
 sub basic_jid {
@@ -33,6 +157,13 @@ sub basic_jid {
   }
   return undef;
 }
+
+=item call_ui_function ($function, @args)
+
+Sends the RPC request "game.$function(@args)" from the referee to the
+player's client.
+
+=cut
 
 # call_ui_function: Usually called by a game object. It tells us to
 # pass along a UI function call to this player's client.
@@ -61,11 +192,14 @@ sub start_game {
 
 sub end_game {
   my $self = shift;
+
+  my $finished_boolean = RPC::XML::boolean->new($self->referee->game->is_finished);
   $self->referee->send_rpc_request({
       id=>'end_game',
-				    methodname=>'volity.end_game',
-				    to=>$self->jid,
-				   });
+      methodname=>'volity.end_game',
+      to=>$self->jid,
+      args=>[$finished_boolean],
+  });
 }
 
 sub player_ready {
@@ -92,15 +226,34 @@ sub player_stood {
     });
 }
 
+sub suspend_game {
+    my $self = shift;
+    $self->referee->send_rpc_request({
+	id=>'suspend-game',
+	methodname=>'volity.suspend_game',
+	to=>$self->jid,
+    });
+}
+
+sub resume_game {
+    my $self = shift;
+    $self->referee->send_rpc_request({
+	id=>'resume-game',
+	methodname=>'volity.resume_game',
+	to=>$self->jid,
+    });
+}
+
 sub player_sat {
     my $self = shift;
-    my ($other_player) = @_;
+    my ($other_player, $seat) = @_;
     my $jid = $other_player->jid;
+    my $seat_id = $seat->id;
     $self->referee->send_rpc_request({
 	id=>'ready',
 	methodname=>'volity.player_sat',
 	to=>$self->jid,
-	args=>[$jid],
+	args=>[$jid, $seat_id],
     });
 }
 
@@ -116,6 +269,76 @@ sub player_unready {
     });
 }
 
+sub seat_list {
+    my $self = shift;
+    my (@seat_ids) = @{$self->referee->game_class->seat_ids};
+    $self->referee->send_rpc_request({
+	id=>'seat-list',
+	methodname=>'volity.seat_list',
+	to=>$self->jid,
+	args=>[\@seat_ids],
+    });
+}
+
+sub required_seat_list {
+    my $self = shift;
+    my (@seat_ids) = @{$self->referee->game_class->required_seat_ids};
+    $self->referee->send_rpc_request({
+	id=>'seat-list',
+	methodname=>'volity.required_seat_list',
+	to=>$self->jid,
+	args=>[\@seat_ids],
+    });
+}
+
+sub timeout {
+    my $self = shift;
+    my ($setting_jid) = @_;
+    $self->referee->send_rpc_request({
+	id=>'timeout',
+	methodname=>'volity.timeout',
+	to=>$self->jid,
+	args=>[$setting_jid, $self->referee->timeout],
+    });
+}
+
+sub timeout_reaction {
+    my $self = shift;
+    my ($setting_jid) = @_;
+    $self->referee->send_rpc_request({
+	id=>'timeout-reaction',
+	methodname=>'volity.timeout_reaction',
+	to=>$self->jid,
+	args=>[$setting_jid, $self->referee->timeout_reaction],
+    });
+}
+
+sub table_language {
+    my $self = shift;
+    my ($setting_jid) = @_;
+    $self->referee->send_rpc_request({
+	id=>'language',
+	methodname=>'volity.language',
+	to=>$self->jid,
+	args=>[$setting_jid, $self->referee->language],
+    });
+}
+
+sub receive_game_state {
+    my $self = shift;
+    $self->referee->send_rpc_request({
+	id=>'receive-state',
+	methodname=>'volity.receive_state',
+	to=>$self->jid,
+    });
+    $self->referee->game->send_full_state_to_player($self);
+    $self->referee->send_rpc_request({
+	id=>'state-sent',
+	methodname=>'volity.state_sent',
+	to=>$self->jid,
+    });
+}
+    
 
 # next_rpc_id: Simple method that returns a unique (for this object) RPC id.
 sub next_rpc_id {
@@ -129,3 +352,29 @@ sub next_rpc_id {
 }
 
 1;
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item *
+
+L<Volity::Referee>
+
+=item *
+
+L<Volity::Seat>
+
+=back
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2005 by Jason McIntosh.
+
+=cut

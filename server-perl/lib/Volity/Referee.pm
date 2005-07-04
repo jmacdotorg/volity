@@ -90,10 +90,6 @@ detailed in L<Class::Accessor> apply here as well.
 
 =over
 
-=item error_message
-
-A string to display to the MUC if something goes wrong.
-
 =item bookkeeper_jid
 
 The JID of the network's bookkeeper. Initially set by the server,
@@ -135,19 +131,21 @@ referee will undefine this variable after a game ends.)
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid error_message server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language seated_players);
-
-#	      jid 		# This session's JID.
-#	      muc_jid 		# The JID of this game's MUC.
-#	      game 		# The game object!
-#	      game_class	# The Perl class of our game.
-#	      players		# The MUC's roster, as Volity::Player objects.
-#	      starting_request_jid # The JID of the person who started the MUC.
-#	      starting_request_id # The ID of the MUC-starting request.
-# session
-#   This referee's POE session.
-# kernel
-#   This referee's POE kernel.
+# See comment below for what all these fields do.
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language timeout max_timeout timeout_reaction internal_timeout seats max_seats);
+# FIELDS:
+# muc_jid
+#   The JID of this game's MUC.
+# game
+#   The game object!
+# game_class	
+#   The Perl class of our game.
+# players		
+#   Hash of all the Volity::Player objects at the table.
+# starting_request_jid 
+#   The JID of the person who started the MUC.
+# starting_request_id 
+#   The ID of the MUC-starting request.
 # bot_classes
 #   An array reference of retainer-bot classes.
 # invitations
@@ -158,12 +156,27 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 #   1 if the next game-ending event will result in a game record.
 # is_hidden
 #   1 if this ref's game hides itself from the bookkeeper's game finder.
+# name
+#  The referee's name, as it will appear in service discovery.
+# language
+#  Two-letter code representing this table's preferred human language.
+# timeout
+#  Integer representing the current table timeout, in seconds.
+# internal_timeout
+#  Number of seconds for "small" internal timeouts, like waiting for bots.
+# seats
+#  Array of seat objects for this table. (It's an array since order matters.)
+# timeout_reaction
+#  What this ref will do on timeout. One of: 'throw', 'suspend', 'bot'.
+# max_timeout
+#  The maximum player-settable timeout. Defaults to 3600 (one hour).
 
 use warnings;  no warnings qw(deprecated);
 use strict;
 
 use lib qw(/Users/jmac/Library/Perl/);
 use Volity::Player;
+use Volity::Seat;
 use Volity::GameRecord;
 use RPC::XML;
 
@@ -177,15 +190,21 @@ use POE qw(
 	   Component::Jabber;
 	  );
 use POE::Filter::XML::Node;
-# use Jabber::NS qw(:all);
+
 use Scalar::Util qw(weaken);
 use Time::HiRes qw(gettimeofday);
+use Locale::Language;
 
 ###################
-# Configgish variables 
+# Internal config variables 
 ###################
 
-our $default_player_class = "Volity::Player";
+our $default_seat_class = "Volity::Seat";
+our $default_internal_timeout = 5;
+our $default_language = "en";
+our $default_max_timeout = 3600;
+our $default_timeout = 300;
+our $default_timeout_reaction = 'suspend';
 
 ###################
 # Object init
@@ -211,6 +230,10 @@ sub initialize {
 
   # Set some query namespace handlers.
   $self->query_handlers->{'volity:iq:botchoice'} = {set=>'choose_bot'};
+  $self->query_handlers->{'http://jabber.org/protocol/muc#owner'} = {
+      result=>'muc_creation',
+      error=>'muc_failure',
+  };
 
   $self->{active_bots} = [];
 
@@ -221,10 +244,11 @@ sub initialize {
   $self->invitations({});
 
   $self->ready_players({});
-  $self->seated_players({});
 
   $self->is_recorded(1);
   $self->is_hidden(0);
+  
+  $self->internal_timeout($default_internal_timeout);
 
   unless (defined($self->name)) {
       # XXX Fix this...
@@ -233,11 +257,27 @@ sub initialize {
   }
 
   unless (defined($self->language)) {
-      $self->language("en");
+      $self->language($default_language);
   }
 
   # Create our first game object.
   $self->create_game;
+
+  # Initialize the seats.
+  $self->{seats} = [];
+  $self->build_listed_seats;
+
+  # Initialize Volity-level config options (if the parlor hasn't already
+  # set them.)
+  unless (defined($self->timeout)) {
+      $self->timeout($default_timeout);
+  }
+  unless (defined($self->max_timeout)) {
+      $self->max_timeout($default_max_timeout);
+  }
+  unless (defined($self->timeout_reaction)) {
+      $self->timeout_reaction($default_timeout_reaction);
+  }
 
   return $self;
 
@@ -276,6 +316,7 @@ sub handle_rpc_request {
       # game-level one).
       $method = $1;
       if ($method eq 'start_game') {
+          # Still here for backwards compatibility. Read as "ready()".
 	  $self->handle_ready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'add_bot') {
 	  $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
@@ -289,9 +330,17 @@ sub handle_rpc_request {
 	  $self->handle_recorded_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'stand') {
 	  $self->handle_stand_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'sit') {
+	  $self->handle_sit_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'set_language') {
+	  $self->handle_language_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'set_timeout') {
+	  $self->handle_timeout_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'set_timeout_reaction') {
+	  $self->handle_reaction_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});          
       } else {
 	  $self->logger->warn("Got weird RPC request 'volity.$method' from $$rpc_info{from}.");
-	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "Unknown method: volity.$method");
+	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown method: volity.$method");
 	  return;
       }
   } elsif ($method =~ /^game\.(.*)$/) {
@@ -301,13 +350,13 @@ sub handle_rpc_request {
       my $ok_to_call = 0;
       if ($self->game->is_afoot) {
 	  if ($self->game->is_config_variable($method)) {
-	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "You can't configure the game once it has started.");
+	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "You can't configure the game once it has started.");
 	  } else {
 	      $ok_to_call = 1;
 	  }
       } else {
 	  unless ($self->game->is_config_variable($method)) {
-	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "Can't call $method! The game hasn't started yet.");
+	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "Can't call $method! The game hasn't started yet.");
 	  } else {
 	      $ok_to_call = 1;
 	  }
@@ -328,9 +377,8 @@ sub handle_game_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
 
-  unless ($self->game) {
-    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "There is no active game.");
-    warn "No game.";
+  unless ($self->game->is_active) {
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "There is no active game.");
     return;
   }
 
@@ -338,14 +386,14 @@ sub handle_game_rpc_request {
   my $method = "rpc_$$rpc_info{method}";
 
   unless ($self->game->can($method)) {
-    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "This game has no '$$rpc_info{method}' function.");
-    warn "No function $method on " . $self->game;
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "This game has no '$$rpc_info{method}' function.");
+    $self->logger->warn("Got unknown request game.$method from $$rpc_info{from}.");
     return;
   }
 
   my $player = $self->look_up_player_with_jid($$rpc_info{from});
   unless ($player) {
-    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 999, "You don't seem to be playing this game!");
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 607, "You don't seem to be playing this game!");
     return;
   }
   
@@ -360,29 +408,76 @@ sub handle_game_rpc_request {
   }
 
 
-  # The first arg is always the player who made thiis call.
-  unshift(@args, $player);
+  # The first arg is always the seat of the player who made this call.
+  unshift(@args, $player->seat);
 
 #  warn "Calling $method with these args: @args\n";
 
   my @response = $self->game->$method(@args);
 
   if (@response) {
-    my $response_type = shift(@response);
-    if ($response_type eq 'fault') {
-      # Oh, there's some in-game problem with the player's request.
-      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
-    } else {
-      # The game has a specific, non-fault response to send back.
-      $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, @response);
-    }
+      my $response_flag = $response[0];
+      if ($response_flag eq 'fault') {
+	  # Oh, there's some in-game problem with the player's request.
+	  # (This is here for backwards compatibility.)
+	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
+      } elsif ($response_flag =~ /^\d\d\d$/) {
+	  # Looks like a fault error code. So, send back a fault.
+	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
+      } else {
+	  # The game has a specific, non-fault response to send back.
+	  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, @response);
+      }
   } else {
     # The game silently approved the request,
     # so send back a minimal positive response.
-    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, "ok");
+    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
   }
 
 }
+
+# We'll set up an IQ catcher to look for a response to the MUC-creation call.
+# Other IQs get popped up to the superclass.
+sub jabber_iq {
+    my $self = shift;
+    my ($node) = @_;
+    if ($node->attr('id') eq 'muc-creation') {
+	if ($node->attr('type') eq 'result') {
+	    # Send the table-creating JID an RPC response letting them know
+	    # where the action is.
+	    # The game server sends the response, since it was the critter
+	    # that fielded the original request.
+	    my $starting_jid = $self->starting_request_jid;
+	    $self->server->send_rpc_response($starting_jid,
+					     $self->starting_request_id,
+					     ['volity.ok',
+					      $self->muc_jid,
+					      ],
+					     );
+	    # Now wait to see if the player actually comes by.
+	    # If not, self-destruct.
+	    my $deadline = time + $self->timeout;
+	    until ((time >= $deadline) or ($self->look_up_player_with_jid($starting_jid))) {
+		$self->kernel->run_one_timeslice;
+	    }
+	    unless ($self->look_up_player_with_jid($starting_jid)) {
+		$self->stop;
+	    }
+	} elsif ($node->attr('type') eq 'error') {
+	    # Something went awry with our attempt to make a MUC. Um...
+	    $self->logger->error("Failed to a MUC. Full error: " . $node->to_str);
+	    $self->server->send_rpc_fault($self->starting_request_jid,
+					  $self->starting_request_id,
+					  608,
+					  "Unable to create MUC (" . $self->muc_jid . ")",
+					  );
+	}
+    } else {
+	return $self->SUPER::jabber_iq(@_);
+    }
+}
+
+
 
 sub jabber_presence {
   my $self = shift;
@@ -401,7 +496,7 @@ sub jabber_presence {
       # If there's no JID for this user, that means that the MUC hasn't
       # been configured yet, and _that_ means that the user is me!
       # I must have just created it. Well, then.
-      $self->logger->debug("Let's configure, robots!\n");
+      $self->logger->debug("Configuring the new MUC...\n");
       # Configure the MUC.
 
       my $config_form = Volity::Jabber::Form->new({type=>'submit'});
@@ -410,22 +505,17 @@ sub jabber_presence {
 		           Volity::Jabber::Form::Field->new({var=>"muc#owner_whois"})->values("anyone"),
 			   );
 
+      # We'll listen for this query's return before telling the user
+      # about the table.
       $self->send_query({
 	  to=>$self->muc_jid,
 	  from=>$self->jid,
-	  id=>42,
+	  id=>'muc-creation',
 	  type=>'set',
 	  query_ns=>"http://jabber.org/protocol/muc#owner",
 	  content=>[$config_form],
       });
 
-
-      # Send the game-creating JID an RPC response letting them know
-      # where the action is.
-      $self->send_rpc_response($self->starting_request_jid,
-			       $self->starting_request_id,
-			       $self->muc_jid,
-			       );
     } else {
       # All right, some other yahoo has changed presence.
       # Note in my list of potential players, depending upon whether
@@ -433,23 +523,88 @@ sub jabber_presence {
       $self->logger->debug("Looks like a player just joined.\n");
       my ($nick) = $node->attr('from') =~ /\/(.*)$/;
       if (defined($node->attr('type')) && ($node->attr('type') eq 'unavailable')) {
+	# Someone's left.
+	my $player = $self->look_up_player_with_jid($new_person_jid);
 	$self->logger->debug("Looks like $nick just left the table.");
-	$self->remove_player_with_jid($new_person_jid);
-	# Remove this player from the nickanme lookup hash.
-	delete($self->{nicks}{$nick});
-	# If the last non-bot player has left, leaving us alone, disconnect.
-#	unless (keys(%{$self->{nicks}})) {
-	if ($self->non_bot_check) {
-	  $self->logger->debug("But there are still humans here, so I'll keep the table open.");
-        } else {
-          $self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
-	  $self->stop;
+	if ($self->game->is_active) {
+	    # They bolted from an active game!
+	    $player->is_missing(1);
+	    # Check to see if that seat is now abandoned.
+	    my $seat = $player->seat;
+	    unless ($seat->is_under_control) {
+		# The seat is uncontrolled!
+		# Wait for some occupant to return.
+		my $deadline = time + $self->timeout;
+		# Grumble at the table.
+		# XXX No 18n.
+		$self->groupchat(sprintf("%s left, leaving seat %s empty. Waiting %s seconds for their return.", $player->nick, $seat->id, $self->timeout));
+		until ((time >= $deadline) or ($seat->is_under_control)) {
+		    $self->kernel->run_one_timeslice;
+		}
+		if ($seat->is_under_control) {
+		    # Grumble some more at the table.
+		    # XXX No 18n.
+		    $self->groupchat(sprintf("%s has returned. %s of %s seconds elapsed.", $player->nick, $self->timeout - ($deadline - time), $self->timeout));
+		} else {
+		    # Give up.
+		    # Strip the player of its seat.
+		    $seat->remove_player($player);
+		    # Sneakily, the player object gets to keep its "seat"
+		    # instance variable. Should it ever return, we'll then
+		    # remember which seat it used to be in.
+		    # But for now:
+		    $self->react_to_departure($player);
+		}
+	    }
+	} else {
+	    # They left during game config? We'll just forget about them.
+	    # If this player was seated, we'll stand them first.
+	    # That way everyone gets zapped with the right status updates.
+	    if ($player->seat) {
+		$self->stand_player($player);
+	    }
+	    # Now just forget about this person.
+	    $self->remove_player_with_jid($new_person_jid);
+	    # Remove this player from the nickanme lookup hash.
+	    delete($self->{nicks}{$nick});
+	    # If the last non-bot player has left, leaving us alone, disconnect.
+	    if ($self->non_bot_check) {
+		$self->logger->debug("But there are still humans here, so I'll keep the table open.");
+	    } else {
+		$self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
+		if ($self->game->is_afoot) {
+		    $self->logger->debug("But first, I'm sending a game record.");
+		    $self->end_game;
+		}
+		$self->stop;
+	    }
 	}
-      } else {
-	my $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
-	# Also store this player's nickname, for later lookups.
-	$self->logger->debug( "Storing $new_person_jid, under $nick");
-	$self->game->tell_player_about_config($player);
+    } else {
+	my $player;
+	# See if this is a known player, rejoining the table.
+	if ($player = $self->look_up_player_with_jid($new_person_jid)) {
+	    if ($player->is_missing) {
+		$self->logger->debug("$new_person_jid has rejoined the table.");
+		# Blast the sucker with full game state.
+		$player->receive_game_state;
+		# Mark him as no longer MIA.
+		$player->is_missing(0);
+	    } else {
+		$self->logger->error("Weird... $new_person_jid has rejoined the table, but I don't seem to remember them leaving.");
+	    }
+	} else {
+	    # OK, this player is new to us.
+	    $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
+	    # Also store this player's nickname, for later lookups.
+	    $self->logger->debug( "Storing $new_person_jid, under $nick");
+	    
+	    # Tell this newcomer about the current table configuration.
+	    $player->seat_list;
+	    if (my @required_seat_ids = @{$self->game_class->required_seat_ids}) {
+		$player->required_seat_list;
+	    }
+	    $self->game->tell_seat_about_config($player);	
+	}
       }
     }
   }
@@ -466,12 +621,8 @@ sub jabber_presence {
 sub add_player {
   my $self = shift;
   my ($args) = @_;
-  # Figure out which class to call a player-constructor on.
-  # Games can override Volity::Player, the default class.
 
-  my $player_class = $self->game_class->player_class || $default_player_class;
-
-  my $player = $player_class->new({jid=>$$args{jid}, nick=>$$args{nick}, referee=>$self});
+  my $player = Volity::Player->new({jid=>$$args{jid}, nick=>$$args{nick}, referee=>$self});
   $self->{players}{$$args{jid}} = $player;
   $self->{nicks}{$$args{nick}} = $$args{jid};
 
@@ -493,6 +644,44 @@ sub players {
   my $self = shift;
   return values (%{$self->{players}});
 }
+
+# add_seat: Given the ID for a new seat, add it to the table's list of seats,
+# and return the resulting seat object.
+sub add_seat {
+    my $self = shift;
+    my ($seat_id) = @_;
+    unless ($seat_id) {
+	$self->logger->error("ERROR: Attempt to add a seat with no ID!!");
+	return;
+    }
+
+    # Figure out which class to call a seat-constructor on.
+    # Games can override Volity::Seat, the default class.
+    my $seat_class = $self->game_class->seat_class || $default_seat_class;
+    my $seat = $seat_class->new({id=>$seat_id});
+
+    push (@{$self->{seats}}, $seat);
+    return $seat;
+}
+
+# build_listed_seats: Create all seats referenced by the game's seat list,
+# Seats that already happen to exist (perhaps from past games at this table)
+# are let alone.
+sub build_listed_seats {
+    my $self = shift;
+    for my $seat_id (@{$self->game_class->seat_ids}) {
+	$self->add_seat($seat_id) unless $self->look_up_seat_with_id($seat_id);
+    }
+}
+
+# clear_empty_seats: Usually called as a game starts. Blow away seats with
+# no players in them.
+sub clear_empty_seats {
+    my $self = shift;
+    my @good_seats = grep($_->players, $self->seats);
+    $self->{seats} = \@good_seats;
+}
+
 
 # look_up_player_with_jid:
 # Takes a JID, and returns the corresponding player object, or undef.
@@ -537,6 +726,15 @@ sub look_up_player_with_nickname {
     }
 }
 
+# look_up_seat_with_id: Given a seat ID, returns a seat object, or undef if
+# there is no such seat.
+sub look_up_seat_with_id {
+    my $self = shift;
+    my ($seat_id) = @_;
+    my ($seat) = grep($_->id eq $seat_id, $self->seats);
+    return $seat;
+}
+
 =item groupchat ( $message )
 
 Sends the given message string as a groupchat to the referee's table.
@@ -571,48 +769,6 @@ sub non_bot_check {
     # No humans found, if we came this far.
     return 0;
 }
-
-######################
-# Game config info & pregame sanity checking
-######################
-
-# check_sanity: Runs some tests on this 
-# new object to make sure that all is well.
-# XXX This could use better exception handling, eh?
-sub check_sanity {
-  my $self = shift;
-  my $player_count = $self->players;
-  $self->logger->debug("Player count is $player_count.");
-  my $player_statement = $self->state_allowed_players;
-  if (defined($self->game_class->max_allowed_players) and $self->game_class->max_allowed_players < $player_count) {
-    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's too many!");
-    return 0;
-  } elsif (defined($self->game_class->min_allowed_players) and $self->game_class->min_allowed_players > $player_count) {
-    $self->error_message("This game takes $player_statement players, but there are $player_count players here. That's not enough!");
-    return 0;
-  }
-  return 1;
-}
-
-# state_allowed_players: Utility method for stating the number of players
-# that this game supports.
-sub state_allowed_players {
-  my $self = shift;
-  my $max = $self->game_class->max_allowed_players;
-  my $min = $self->game_class->min_allowed_players;
-  my $statement;
-  if (not($min) and $max) {
-    $statement = "$max or fewer";
-  } elsif ($min and not($max)) {
-    $statement = "$min or more";
-  } elsif (not($min) and not($max)) {
-    $statement = "any number";
-  } else {
-    $statement = "between $min and $max";
-  }
-  return $statement;
-}
-   
 
 =head1 JABBER EVENT HANDLING
 
@@ -658,13 +814,13 @@ sub handle_recorded_request {
     my $self = shift;
     my ($from_jid, $id, $recorded_boolean) = @_;
     if ($self->game->is_afoot) {
-	$self->send_rpc_fault($from_jid, $id, 999, "You can't configure the game once it has started.");
+	$self->send_rpc_fault($from_jid, $id, 609, "You can't configure the game once it has started.");
     } else {
 	unless (($recorded_boolean eq '0') or ($recorded_boolean eq '1')) {
-	    $self->send_rpc_fault($from_jid, $id, 999, "The argument to recorded() must be 0 or 1.");
+	    $self->send_rpc_fault($from_jid, $id, 606, "The argument to recorded() must be 0 or 1.");
 	    return;
 	}
-	$self->send_rpc_response($from_jid, $id, "ok");
+	$self->send_rpc_response($from_jid, $id, ["volity.ok"]);
 	if ($recorded_boolean ne $self->is_recorded) {
 	    # It's a change, so inform everyone.
 	    $self->is_recorded($recorded_boolean);
@@ -695,7 +851,7 @@ sub add_bot {
   my @bot_classes = $self->bot_classes;
   if (@bot_classes == 1) {
     if (my $bot = $self->create_bot(($self->bot_classes)[0])) {
-      $self->send_rpc_response($from_jid, $id, "ok");
+      $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
       $bot->kernel->run;
     } else {
       $self->send_rpc_fault($from_jid, $id, 4, "I couldn't create a bot for some reason.");
@@ -725,7 +881,7 @@ sub add_bot {
 		    type=>'form',
 		   });
   # Form sent; we're done here.
-  $self->send_rpc_response($from_jid, $id, "ok");
+  $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
 }
 
 # choose_bot: Called on receipt of a form with bot choice.
@@ -771,7 +927,7 @@ sub create_bot {
 			     resource=>$resource,
 			     alias=>$resource,
 			     muc_jid=>$self->muc_jid,
-			     referee=>$self,
+#			     referee=>$self,
 			    }
 			 );
   $self->logger->info("New bot (" . $bot->jid . ") created by referee (" . $self->jid . ").");
@@ -787,9 +943,6 @@ sub create_bot {
 # It's called by a game object.
 sub end_game {
   my $self = shift;
-  $self->groupchat("The game is over.");
-
-  my $game = delete($self->{game});
 
   # Tell the players (their clients, really) to wrap it up.
   foreach ($self->players) {
@@ -804,16 +957,17 @@ sub end_game {
 				      });
   $record->game_uri($self->game_class->uri);
   $record->end_time(scalar(localtime));
-  foreach my $player_list (qw(players winners quitters)) {
-    my @players = $game->$player_list;
-    if (@players and defined($players[0])) {
+  foreach my $player_list (qw(winners)) {
+    my @slots = $self->game->$player_list;
+    if (@slots and defined($slots[0])) {
       my @player_jids;
-      for my $player (@players) {
-	if (ref($player) eq 'ARRAY') {
-	  push (@player_jids, [map($_->basic_jid, @$player)]);
-	} else {
-	  push (@player_jids, $player->basic_jid);
-	}
+      for my $slot (@slots) {
+	  my @slot_jids;
+	  my @seats = @$slot;
+	  for my $seat (@seats) {
+	      push (@slot_jids, $seat->registered_player_jids);
+	  }
+	  push (@player_jids, \@slot_jids);
       }
       # This is hacky... swerving around the accessor like this. OH WELL.
       $record->{$player_list} = \@player_jids;
@@ -825,11 +979,20 @@ sub end_game {
   if (defined($Volity::GameRecord::gpg_bin) and defined($Volity::GameRecord::gpg_secretkey) and defined($Volity::GameRecord::gpg_passphrase)) {
       $record->sign;
   }
+
+  # Mark whether or not the game actually finished.
+  $record->finished($self->game->is_finished);
   
   # Send the record to the bookkeeper!
   $self->send_record_to_bookkeeper($record);
 
+  # Reset seat histories.
+  foreach ($self->seats) {
+      $_->clear_registry;
+  }
+
   # Create a fresh new game.
+  delete($self->{game});
   $self->create_game;
 }
 
@@ -843,7 +1006,63 @@ sub create_game {
     return $game;
 }
 	
+# react_to_departure: A player (given) has gone missing, and we have given
+# up on waiting. Do something about it.
+sub react_to_departure {
+    my $self = shift;
+    my ($player) = @_;
+    if ($self->timeout_reaction eq 'throw') {
+	$self->groupchat(sprintf("I've given up waiting for %s to return. I'm throwing the game. Sorry about this.", $player->nick));
+	$self->throw_game;
+    } elsif ($self->timeout_reaction eq 'bot') {
+	my $bot;
+	if ($bot = $self->create_bot(($self->bot_classes)[0])) {
+	}
+	# Wait a few seconds for this bot to actually join.
+	my $deadline = time + $self->internal_timeout;
+	until ((time == $deadline) or ($self->look_up_player_with_jid($bot->jid))) {
+	    $self->kernel->run_one_timeslice;
+	}
+	if (my $bot_player = $self->look_up_player_with_jid($bot->jid)) {
+	    $self->sit_player($bot_player, $player->seat);
+	    # Blast the bot with the current state.
+	    $bot_player->receive_game_state;
+	} else {
+	    # Something is screwy.
+	    $self->logger->error("Replacement bot failed to join the table?!");
+	}
+    } elsif ($self->timeout_reaction eq 'suspend') {
+	$self->suspend_game();
+    }
+}
+	
+sub suspend_game {
+    my $self = shift;
+    $self->game->is_suspended(1);
+    foreach ($self->players) { $_->suspend_game }
+    $self->unready_all_players;
+}
 
+sub resume_game {
+    my $self = shift;
+    $self->game->is_suspended(0);
+
+    # Tell seats to remember their occupants (which may have changed).
+    # Note that former occupants will stay registered. This is correct.
+    map ($_->register_occupants, $self->seats);
+
+    foreach ($self->players) { $_->resume_game }
+}
+
+# throw_game: Just make a fakey "winners" list out of the current players,
+# and and the game. The game knows it's not finished and the resulting
+# record will say as much.
+sub throw_game {
+    my $self = shift;
+    $self->game->winners([[$self->seats]]);
+    $self->end_game;
+}
+    
 sub send_record_to_bookkeeper {
   my $self = shift;
   my ($record) = @_;
@@ -871,7 +1090,7 @@ sub invite_player {
   $invitation_id++; $self->last_rpc_id($invitation_id);
   $self->invitations->{$invitation_id} = [$rpc_id, $from_jid];
   $self->logger->debug("$from_jid will invite $args[0]. New ID is $invitation_id. Old id was $rpc_id.");
-  $self->send_rpc_response($from_jid, $rpc_id, "ok");			    
+  $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);			    
   $self->make_rpc_request({to=>$args[0],
 			   id=>$invitation_id,
 			   methodname=>'volity.receive_invitation',
@@ -884,6 +1103,82 @@ sub invite_player {
 			   handler=>'invitation',
 			  });
 }
+
+sub handle_language_request {
+    my $self = shift;
+    my ($from_jid, $id, $language_code) = @_;
+    unless ($language_code) {
+	$self->send_rpc_fault($from_jid, $id, 604, "Missing language code");
+	return;
+    }
+    if ($self->game->is_active) {
+	$self->send_rpc_fault($from_jid, $id, 609, "The game is active.");
+	return;
+    }
+    if (Locale::Language::code2language($language_code)) {
+	$self->send_rpc_response($from_jid, $id, ["volity.ok"]);
+	if ($language_code ne $self->language) {
+	    $self->language($language_code);
+	    map ($_->table_language($from_jid), $self->players);
+	}
+    } else {
+	$self->send_rpc_fault($from_jid, $id, 606, "Unknown language code '$language_code'");
+    }
+}
+
+
+sub handle_timeout_request {
+    my $self = shift;
+    my ($from_jid, $id, $new_timeout) = @_;
+    if ($self->game->is_active) {
+	$self->send_rpc_fault($from_jid, $id, 609, "The game is active.");
+	return;
+    }
+    unless ($new_timeout) {
+	$self->send_rpc_fault($from_jid, $id, 604, "Missing new timeout value");
+	return;
+    }
+    if ($new_timeout =~ /^\d+$/) {
+	if ($new_timeout >= 0 && $new_timeout <= $self->max_timeout) {
+	    $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
+	    if ($new_timeout != $self->timeout) {
+		$self->timeout($new_timeout);
+		map ($_->timeout($from_jid), $self->players);
+	    }
+	} else {
+	    $self->send_rpc_fault($from_jid, $id, 606, "New timeout value must be an integer between 0 and " . $self->max_timeout);
+	}
+    } else {
+	$self->send_rpc_fault($from_jid, $id, 606, "New timeout value must be an integer.");
+    }
+}
+
+
+
+sub handle_reaction_request {
+    my $self = shift;
+    my ($from_jid, $id, $reaction) = @_;
+    if ($self->game->is_active) {
+	$self->send_rpc_fault($from_jid, $id, 609, "The game is active.");
+	return;
+    }
+    unless ($reaction) {
+	$self->send_rpc_fault($from_jid, $id, 604, "Missing new reaction value");
+	return;
+    }
+    if ($reaction eq 'bot' || $reaction eq 'throw' || $reaction eq 'suspend') {
+	$self->send_rpc_response($from_jid, $id, ["volity.ok"]);
+	if ($reaction ne $self->timeout_reaction) {
+	    $self->timeout_reaction($reaction);
+	    map ($_->timeout_reaction($from_jid), $self->players);
+	}
+    } else {
+	$self->send_rpc_fault($from_jid, $id, 606, "Reaction must be one of: bot, suspend, throw");
+    }
+}
+
+
+	
 
 #######################
 # Player readiness
@@ -900,7 +1195,11 @@ sub ready_player {
     }
     if ($self->are_all_players_ready) {
 	$self->logger->debug("Everyone is ready to play!");
-	$self->start_game;
+	if ($self->game->is_suspended) {
+	    $self->resume_game;
+	} else {
+	    $self->start_game;
+	}
     } else {
 	$self->logger->debug("But there are still unready players.");
     }
@@ -912,36 +1211,140 @@ sub handle_ready_player_request {
   $self->logger->debug("$from_jid has announced readiness.");
   my $player = $self->look_up_player_with_jid($from_jid);
   if ($player) {
-      if ($self->seated_players->{$player}) {
-	  $self->send_rpc_response($from_jid, $rpc_id, "ok");
-	  $self->ready_player($player);
+      if ($player->seat) {
+	  # Make sure that the game is ready for readiness.
+	  # First, check that the required seats are occupied.
+	  my @empty_required_seats;
+	  for my $required_seat_id (@{$self->game->required_seat_ids}) {
+	      my $seat = $self->look_up_seat_with_id($required_seat_id);
+	      my @p = @{$seat->players};
+	      if (@{$seat->players} == 0) {
+		  push (@empty_required_seats, $seat);
+	      }
+	  }
+	  if (@empty_required_seats) {
+	      # Nope, too many empty seats to start.
+	      $self->send_rpc_response($from_jid, $rpc_id, ["volity.empty_seats"]);
+	  } elsif ($self->game->has_acceptable_config) {
+	      # All config is A-OK! Let's ready this player.
+	      $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+	      $self->ready_player($player);
+	  } else {
+	      # No, the config is wedged.
+	      $self->send_rpc_response($from_jid, $rpc_id, ["volity.bad_config"]);
+	  }
       } else {
 	  $self->logger->debug("But that player isn't sitting down!");
-	  $self->send_rpc_fault ($from_jid, $rpc_id, 999, "You wish to state your readiness to play, but you are not seated at the table.");
+	  $self->send_rpc_fault ($from_jid, $rpc_id, 609, "You wish to state your readiness to play, but you are not seated at the table.");
       }
     } else {
   	$self->logger->debug("But I don't recognize that JID as a player.");
-	$self->send_rpc_fault ($from_jid, $rpc_id, 999, "You wish to state your readiness to play, but you don't seem to be actually playing.");
+	$self->send_rpc_fault ($from_jid, $rpc_id, 607, "You wish to state your readiness to play, but you don't seem to be actually playing.");
 	return;
     }
 }
 
+# handle_stand_request: The caller wants the named player to vacate its seat.
+# For the time being, we will always allow this, even when the two JIDs
+# involved don't match (which is certainly acceptable input).
 sub handle_stand_request {
     my $self = shift;
     my ($from_jid, $rpc_id, @args) = @_;
-    $self->logger->debug("$from_jid wishes to stand up.");
-    my $player = $self->look_up_player_with_jid($from_jid);
-    if ($player) {
-	if ($self->seated_players->{$player}) {
-	    $self->send_rpc_response($from_jid, $rpc_id, "ok");
-	    $self->stand_player($player);
+    my ($standing_jid) = @args;
+    unless ($standing_jid) {
+	$self->send_rpc_fault($from_jid, $rpc_id, 604, "Missing JID parameter.");
+	return;
+    }
+    $self->logger->debug("$from_jid wants $standing_jid to stand up.");
+    my $standee = $self->look_up_player_with_jid($standing_jid);
+    my $requester = $self->look_up_player_with_jid($from_jid);
+    if ($requester) {
+	if ($standee && $standee->seat) {
+	    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+	    $self->stand_player($standee);
 	} else {
 	    $self->logger->debug("But that player isn't sitting down!");
-	    $self->send_rpc_fault ($from_jid, $rpc_id, 999, "You seem to be standing already.");
+	    $self->send_rpc_fault($from_jid, $rpc_id, 606, "Player $standing_jid doesn't appear to be seated at this table.");
 	}
     } else {
   	$self->logger->debug("But I don't recognize that JID as a player.");
-	$self->send_rpc_fault ($from_jid, $rpc_id, 999, "You don't seem to be at this table.");
+	$self->send_rpc_fault ($from_jid, $rpc_id, 607, "You don't seem to be at this table.");
+	return;
+    }
+}
+
+# handle_sit_request: The caller wants the named player to sit. There is an
+# optional second arg for the seat ID. If it's missing, we'll try to sit
+# the named player in a new seat by itself.
+# For the time being, we will always allow this, even when the two JIDs
+# involved don't match (which is certainly acceptable input).
+sub handle_sit_request {
+    my $self = shift;
+    my ($from_jid, $rpc_id, @args) = @_;
+    my ($sitting_jid, $seat_id) = @args;
+    unless ($sitting_jid) {
+	$self->send_rpc_fault($from_jid, $rpc_id, 604, "Missing JID parameter.");
+	return;
+    }
+    $self->logger->debug("$from_jid wants $sitting_jid to sit.");
+
+    my $requester = $self->look_up_player_with_jid($from_jid);
+    my $sitter = $self->look_up_player_with_jid($sitting_jid);
+    # Bounce back any identity errors.
+    unless ($requester) {
+  	$self->logger->debug("But I don't recognize that JID as a player.");
+	$self->send_rpc_fault ($from_jid, $rpc_id, 607, "You don't seem to be at this table.");
+	return;
+    }
+    unless ($sitter) {
+	$self->logger->debug("But that player isn't at this table!");
+	$self->send_rpc_fault($from_jid, $rpc_id, 606, "Player $sitting_jid doesn't appear to be present at this table.");
+	return;
+    }
+
+    unless ($seat_id) {
+	# No seat id specified. 
+
+	# Return a fault if this player is already seated.
+	if ($sitter->seat) {
+	    $self->send_rpc_fault($from_jid, $rpc_id, 609, "Player is already seated.");
+	    return;
+	}
+
+	# Try to get the ID of an available, empty seat.
+	# First we look for empty seats among the known ones.
+	# If there aren't any, _AND_ we haven't hit our player maximum yet,
+	# call a class method on the game to get a new seat name.
+
+	my $empty_seat;
+	for my $seat ($self->seats) {
+	    my @players = $seat->players;
+	    unless (@players) {
+		$empty_seat = $seat;
+		next;
+	    }
+	}
+
+	if ($empty_seat) {
+	    $seat_id = $empty_seat->id;
+	}
+	unless ($seat_id) {
+	    # We can't sit this player down. Signify this by returning
+	    # an empty string.
+	    $self->logger->debug("But there is no room to sit!");
+	    $self->send_rpc_response($from_jid, $rpc_id, ['volity.no_seats']);
+	    return;
+	}
+    }
+    $self->logger->debug("$sitting_jid will sit in seat $seat_id.");
+    my $seat = $self->look_up_seat_with_id($seat_id);
+    unless ($seat) {
+	$self->logger->warn("Refusing $from_jid\'s request to sit $sitting_jid in seat with id '$seat_id' since that seat doesn't exist.");
+	$self->send_rpc_fault($from_jid, $rpc_id, 606, "Unknown seat id '$seat_id'.");
+	return;
+    } else {
+	$self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", $seat_id]);
+	$self->sit_player($sitter, $seat);
 	return;
     }
 }
@@ -959,19 +1362,8 @@ sub unready_player {
     delete($self->ready_players->{$player});
 
     # Tell all the players about this.
-    # The message we sent depends on whether or not this player was sitting.
-    if ($self->seated_players->{$player}) {
-	for my $other_player ($self->players) {
-	    $other_player->player_unready($player);
-	}
-    } else {
-	$self->seated_players->{$player} = $player;
-	for my $other_player ($self->players) {
-	    $other_player->player_sat($player);
-	}
-	# This player's sitting down has changed the configuration.
-	# So, everyone loses readiness.
-	$self->unready_all_players;
+    for my $other_player ($self->players) {
+	$other_player->player_unready($player);
     }
 }
 
@@ -982,26 +1374,26 @@ sub handle_unready_player_request {
     $self->logger->debug("$from_jid has announced UNreadiness.");
     my $player = $self->look_up_player_with_jid($from_jid);
     if ($player) {
-	if ($self->game->is_afoot) {
+	if ($self->game->is_active) {
 	    $self->logger->debug("But they were slow on the trigger, because the game has already started!");
-	    $self->send_rpc_fault($from_jid, $rpc_id, 999, "Too late, the game is already underway!");
+	    $self->send_rpc_fault($from_jid, $rpc_id, 609, "Too late, the game is already underway!");
 	    return;
 	} else {
-	    $self->send_rpc_response($from_jid, $rpc_id, "ok");
+	    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
 	    $self->unready_player($player);
 	}
     } else {
 	$self->logger->debug("But I don't recognize that JID as a player.");
-	$self->send_rpc_fault ($from_jid, $rpc_id, 999, "You wish to state your unreadiness to play, but you don't seem to be actually playing.");
+	$self->send_rpc_fault ($from_jid, $rpc_id, 607, "You wish to state your unreadiness to play, but you don't seem to be actually playing.");
 	return;
     }
 }
 
-# Are all players ready: returns truth if all the players are ready to go,
-# falsehood otherwise.
+# Are all players ready: returns truth if all the seated players are 
+# ready to go, falsehood otherwise.
 sub are_all_players_ready {
     my $self = shift;
-    if ($self->players == $self->ready_player_list) {
+    if (grep($_->seat, $self->players) == $self->ready_player_list) {
 	return 1;
     } else {
 	return 0;
@@ -1027,20 +1419,24 @@ sub unready_all_players {
     foreach (@ready_players) { $self->unready_player($_) }
 }
 
-# handle_stand_player_request: Handle a player's request to stand up.
-sub handle_stand_player_request {
-  my $self = shift;
-  my ($from_jid, $rpc_id, @args) = @_;
-  $self->logger->debug("$from_jid wishes to stand up.");
-  my $player = $self->look_up_player_with_jid($from_jid);
-  if ($player) {
-      $self->send_rpc_response($from_jid, $rpc_id, "ok");
-      $self->stand_player($player);
-    } else {
-  	$self->logger->debug("But I don't recognize that JID as a player.");
-	$self->send_rpc_fault($from_jid, $rpc_id, 999, "You wish to stand up, but you don't seem to be in the room.");
-	return;
+# sit_player: Put the given player in the given seat, and announce to the table.
+sub sit_player {
+    my $self = shift;
+    my ($player, $seat) = @_;
+    $seat->add_player($player);
+    if (my $seat = $player->seat) {
+	# First, silently pluck this player from its current seat.
+	my $found = $seat->remove_player($player);
+	unless ($found) {
+	    $self->logger->error(sprintf ("Player %s not in expected seat %s.", $player->jid, $seat->id));
+	    return;
+	}
     }
+    $player->seat($seat);
+    # Tell the table what just happened.
+    foreach ($self->players) { $_->player_sat($player, $seat) }
+    # Sitting down is a config change, so everyone gets unreadied.
+    $self->unready_all_players;
 }
 
 # stand_player: Set the given player as standing, and announce to the table.
@@ -1048,15 +1444,27 @@ sub stand_player {
     my $self = shift;
     my ($player) = @_;
     # Only do something if the player was actually in the "seated" hash.
-    if (delete($self->seated_players->{$player})) {
+    # XXX DEBUG
+    Carp::confess unless $player;
+    if (my $seat = $player->seat) {
+	$player->seat(undef);
+	$seat->remove_player($player);
 	# Tell all the players about this.
 	for my $other_player ($self->players) {
 	    $other_player->player_stood($player);
 	}
-	# Standing up means this player doesn't want to play _at all_,
-	# and that counts as a configuation change. Everyone loses
-	# readiness.
-	$self->unready_all_players;
+	if ($self->game->is_active) {
+	    unless ($seat->is_under_control) {
+		# Oh crap, that seat is now empty.
+		# Pull the brakes.
+		$self->suspend_game;
+	    }
+	} else {
+	    # Standing up means this player doesn't want to play _at all_,
+	    # and that counts as a configuation change. Everyone loses
+	    # readiness.
+	    $self->unready_all_players;
+	}
     }
 }
 
@@ -1067,7 +1475,7 @@ sub rpc_response_invitation {
   my $invitation_info = $self->invitations->{$$response{id}};
   if ($invitation_info) {
     my ($original_rpc_id, $inviter) = @$invitation_info;
-    $self->send_rpc_response($inviter, $original_rpc_id, $$response{response});
+    $self->send_rpc_response($inviter, $original_rpc_id, ["volity.ok", $$response{response}]);
     delete($self->invitations->{$$response{id}});
   } else {
     $self->logger->warn("Got unexpected invitation response from $$response{from}, id of $$response{id}.");
@@ -1106,21 +1514,13 @@ sub DESTROY {
 # their readiness to begin.
 sub start_game {
   my $self = shift;
-  # Time for a sanity check.
-  unless ($self->check_sanity) {
-    # Something seems to have gone awry. Alas!
-    $self->logger->debug("Not starting a game; failed sanity check.");
-    $self->send_message({
-			 to=>$self->muc_jid,
-			 type=>"groupchat",
-			 body=>"I can't create a new game right now! Error message: " . $self->error_message,
-			});
-    return;
-  }
 
   $self->logger->debug("I am starting a game.");
 
   # No error message? Great... let's play!
+
+  # Tell seats to remember their occupants.
+  map ($_->register_occupants, $self->seats);
 
   # Tell the game to start itself.
   $self->game->start;
@@ -1137,6 +1537,8 @@ sub start_game {
   # Tell the game object to do whatever it wants as its first action.
   $self->game->start;
 }
+
+
 
 ##############################
 # Service Discovery handlers
@@ -1162,7 +1564,7 @@ sub handle_disco_info_request {
 	push (@fields, Volity::Jabber::Form::Field->new({var=>$_}));
     }
     my $game_class = $self->game_class;
-    $fields[0]->values($game_class->max_allowed_players);
+    $fields[0]->values($game_class->max_allowed_seats);
     $fields[1]->values($self->server->jid);
     $fields[2]->values($self->muc_jid);
     $fields[3]->values($self->game->is_afoot);

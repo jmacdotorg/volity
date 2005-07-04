@@ -64,7 +64,7 @@ use Date::Parse;
 use Date::Format;
 
 use base qw(Volity);
-use fields qw(id players signature winners quitters start_time end_time game_uri_object game_name server);
+use fields qw(id signature winners start_time end_time game_uri_object game_name server finished);
 
 # Set up package variables for GPG config.
 our ($gpg_bin, $gpg_secretkey, $gpg_passphrase);
@@ -103,13 +103,9 @@ detailed in L<Class::Accessor> apply here as well.
 
 =item id
 
-=item players
-
 =item signature
 
 =item winners
-
-=item quitters
 
 =item start_time
 
@@ -120,6 +116,8 @@ detailed in L<Class::Accessor> apply here as well.
 =item game_name
 
 =item server
+
+=item finished
 
 =back
 
@@ -394,7 +392,7 @@ E<lt>sructE<gt> argument. Fancy that!
 sub render_as_hashref {
   my $self = shift;
   my $hashref = {};
-  foreach (qw(id players winners quitters start_time end_time game_uri server signature)) {
+  foreach (qw(id winners start_time end_time game_uri server signature finished)) {
     $$hashref{$_} = $self->$_ if defined($self->$_);
   }
   return $hashref;

@@ -560,7 +560,7 @@ These methods are called by RPC events.
 
 =over
 
-=item handle_rpc_respose({id=>$id, response=>$response, from=>$from, rpc_object=>$obj})
+=item handle_rpc_response({id=>$id, response=>$response, from=>$from, rpc_object=>$obj})
 
 Called upon receipt of an RPC response. The argument is a hashref containing the response's ID attribute and response value, as well as an RPC::XML object representing the response.
 
