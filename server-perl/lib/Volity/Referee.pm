@@ -565,8 +565,6 @@ sub jabber_presence {
 	if ($player = $self->look_up_player_with_jid($new_person_jid)) {
 	    if ($player->is_missing) {
 		$self->logger->debug("$new_person_jid has rejoined the table.");
-		# Blast the sucker with full game state.
-		$player->receive_game_state;
 		# Mark him as no longer MIA.
 		$player->is_missing(0);
 	    } else {
@@ -583,8 +581,9 @@ sub jabber_presence {
 	    if (my @required_seat_ids = @{$self->game_class->required_seat_ids}) {
 		$player->required_seat_list;
 	    }
-	    $self->game->tell_seat_about_config($player);	
 	}
+	# Whoever it is, blast the newcomer with full game state.
+	$player->receive_game_state;
       }
     }
   }
@@ -991,9 +990,19 @@ sub create_game {
 sub suspend_game {
     my $self = shift;
     my ($player) = @_;
+
+    # Tell the game it's suspended.
     $self->game->is_suspended(1);
-    foreach ($self->players) { $_->suspend_game($player) }
+
+    # The the players what happened.
+    foreach ($self->players) { 
+	$_->last_active_seat($_->seat);
+	$_->suspend_game($player);
+    }
+
+    # Make sure they're unready.
     $self->unready_all_players;
+
 }
 
 sub resume_game {
