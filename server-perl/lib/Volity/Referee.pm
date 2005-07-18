@@ -27,7 +27,7 @@ if-elsif chain.
 
 =head1 NAME
 
-Volity::Referee - Superclass for in-MUC game overseers.
+Volity::Referee - Class for in-MUC game overseers.
 
 =head1 DESCRIPTION
 
@@ -57,7 +57,15 @@ more useful for accessing methods like C<groupchat()>.
 In many cases, you can program your game module without ever directly
 referring to the referee. It's just there if you need it (and for the
 use of the lower-level Volity::Game base class, which does carry on a
-continual conversation with its embedded referee object).
+continual conversation with its embedded referee object). Other than
+that, the referee object takes care of all the Volity protocol-level
+stuff for you, letting you concentrate on making your game work.
+
+=head2 For wizardly game programmers
+
+If you feel the need to subclass Volity::Referee, you can run C<volityd> with 
+
+Note that you can use the stock Volity::Referee class for most situations.
 
 =head2 For everyone else
 
@@ -116,11 +124,10 @@ The referee superclass already knows how and when to create a game
 object from the class specified by the C<game_class> instance
 variable, and when it does so, it stores that object under C<game>.
 
-You should treat-this as a read-only variable. This variable pulls
-double-duty as a quick way to check whether a game is actively being
-played, or if the ref is "idle" and waiting for a player to kick it
-into action: if C<game> is defined, then a game is underway. (The
-referee will undefine this variable after a game ends.)
+You should treat-this as a read-only variable. Generally, it will
+always be defined, as a referee creates a new game object as soon as
+it can. When a game ends, the object is destroyed a new one
+automatically takes its place.
 
 =back
 
@@ -132,7 +139,7 @@ referee will undefine this variable after a game ends.)
 
 use base qw(Volity::Jabber);
 # See comment below for what all these fields do.
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language timeout max_timeout timeout_reaction internal_timeout seats max_seats);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch);
 # FIELDS:
 # muc_jid
 #   The JID of this game's MUC.
@@ -160,16 +167,12 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 #  The referee's name, as it will appear in service discovery.
 # language
 #  Two-letter code representing this table's preferred human language.
-# timeout
-#  Integer representing the current table timeout, in seconds.
 # internal_timeout
 #  Number of seconds for "small" internal timeouts, like waiting for bots.
 # seats
 #  Array of seat objects for this table. (It's an array since order matters.)
-# timeout_reaction
-#  What this ref will do on timeout. One of: 'throw', 'suspend', 'bot'.
-# max_timeout
-#  The maximum player-settable timeout. Defaults to 3600 (one hour).
+# kill_switch
+#  1 if resuming the game at this point would kill it.
 
 use warnings;  no warnings qw(deprecated);
 use strict;
@@ -202,9 +205,6 @@ use Locale::Language;
 our $default_seat_class = "Volity::Seat";
 our $default_internal_timeout = 5;
 our $default_language = "en";
-our $default_max_timeout = 3600;
-our $default_timeout = 300;
-our $default_timeout_reaction = 'suspend';
 
 ###################
 # Object init
@@ -267,18 +267,6 @@ sub initialize {
   $self->{seats} = [];
   $self->build_listed_seats;
 
-  # Initialize Volity-level config options (if the parlor hasn't already
-  # set them.)
-  unless (defined($self->timeout)) {
-      $self->timeout($default_timeout);
-  }
-  unless (defined($self->max_timeout)) {
-      $self->max_timeout($default_max_timeout);
-  }
-  unless (defined($self->timeout_reaction)) {
-      $self->timeout_reaction($default_timeout_reaction);
-  }
-
   return $self;
 
 }
@@ -334,10 +322,10 @@ sub handle_rpc_request {
 	  $self->handle_sit_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'set_language') {
 	  $self->handle_language_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'set_timeout') {
-	  $self->handle_timeout_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'set_timeout_reaction') {
-	  $self->handle_reaction_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});          
+      } elsif ($method eq 'suspend_game') {
+	  $self->handle_suspend_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'kill_game') {
+	  $self->handle_kill_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } else {
 	  $self->logger->warn("Got weird RPC request 'volity.$method' from $$rpc_info{from}.");
 	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown method: volity.$method");
@@ -456,7 +444,7 @@ sub jabber_iq {
 					     );
 	    # Now wait to see if the player actually comes by.
 	    # If not, self-destruct.
-	    my $deadline = time + $self->timeout;
+	    my $deadline = time + $self->internal_timeout;
 	    until ((time >= $deadline) or ($self->look_up_player_with_jid($starting_jid))) {
 		$self->kernel->run_one_timeslice;
 	    }
@@ -533,27 +521,19 @@ sub jabber_presence {
 	    my $seat = $player->seat;
 	    unless ($seat->is_under_control) {
 		# The seat is uncontrolled!
-		# Wait for some occupant to return.
-		my $deadline = time + $self->timeout;
 		# Grumble at the table.
 		# XXX No 18n.
-		$self->groupchat(sprintf("%s left, leaving seat %s empty. Waiting %s seconds for their return.", $player->nick, $seat->id, $self->timeout));
-		until ((time >= $deadline) or ($seat->is_under_control)) {
-		    $self->kernel->run_one_timeslice;
-		}
-		if ($seat->is_under_control) {
-		    # Grumble some more at the table.
-		    # XXX No 18n.
-		    $self->groupchat(sprintf("%s has returned. %s of %s seconds elapsed.", $player->nick, $self->timeout - ($deadline - time), $self->timeout));
-		} else {
-		    # Give up.
-		    # Strip the player of its seat.
-		    $seat->remove_player($player);
-		    # Sneakily, the player object gets to keep its "seat"
-		    # instance variable. Should it ever return, we'll then
-		    # remember which seat it used to be in.
-		    # But for now:
-		    $self->react_to_departure($player);
+		if ($self->game->is_abandoned) {
+		    # Holy crap, _everyone_ has left! Bastards.
+		    # All right, we'll wait for someone to come back.
+		    my $deadline = time + $self->internal_timeout;
+		    until ((time >= $deadline) or (not($self->game->is_abandoned))) {
+			$self->kernel->run_one_timeslice;
+		    }
+		    if ($self->game->is_abandoned) {
+			# OK, give up waiting.
+			$self->suspend_game;
+		    }
 		}
 	    }
 	} else {
@@ -852,7 +832,7 @@ sub add_bot {
   if (@bot_classes == 1) {
     if (my $bot = $self->create_bot(($self->bot_classes)[0])) {
       $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
-      $bot->kernel->run;
+#      $bot->kernel->run;
     } else {
       $self->send_rpc_fault($from_jid, $id, 4, "I couldn't create a bot for some reason.");
     }
@@ -1005,41 +985,14 @@ sub create_game {
     $self->logger->debug("Created a game!!\n");
     return $game;
 }
-	
-# react_to_departure: A player (given) has gone missing, and we have given
-# up on waiting. Do something about it.
-sub react_to_departure {
-    my $self = shift;
-    my ($player) = @_;
-    if ($self->timeout_reaction eq 'throw') {
-	$self->groupchat(sprintf("I've given up waiting for %s to return. I'm throwing the game. Sorry about this.", $player->nick));
-	$self->throw_game;
-    } elsif ($self->timeout_reaction eq 'bot') {
-	my $bot;
-	if ($bot = $self->create_bot(($self->bot_classes)[0])) {
-	}
-	# Wait a few seconds for this bot to actually join.
-	my $deadline = time + $self->internal_timeout;
-	until ((time == $deadline) or ($self->look_up_player_with_jid($bot->jid))) {
-	    $self->kernel->run_one_timeslice;
-	}
-	if (my $bot_player = $self->look_up_player_with_jid($bot->jid)) {
-	    $self->sit_player($bot_player, $player->seat);
-	    # Blast the bot with the current state.
-	    $bot_player->receive_game_state;
-	} else {
-	    # Something is screwy.
-	    $self->logger->error("Replacement bot failed to join the table?!");
-	}
-    } elsif ($self->timeout_reaction eq 'suspend') {
-	$self->suspend_game();
-    }
-}
-	
+
+# suspend_game: Suspend the game, and tell everyone about it.
+# Optional argument is a suspending player object.
 sub suspend_game {
     my $self = shift;
+    my ($player) = @_;
     $self->game->is_suspended(1);
-    foreach ($self->players) { $_->suspend_game }
+    foreach ($self->players) { $_->suspend_game($player) }
     $self->unready_all_players;
 }
 
@@ -1047,9 +1000,20 @@ sub resume_game {
     my $self = shift;
     $self->game->is_suspended(0);
 
+    $self->logger->debug("Resuming the game.");
+
+    if ($self->kill_switch) {
+	$self->logger->debug("But the kill-switch is set, so instead I'm just ending it.");
+	$self->throw_game;
+	return;
+    }
+
     # Tell seats to remember their occupants (which may have changed).
     # Note that former occupants will stay registered. This is correct.
     map ($_->register_occupants, $self->seats);
+
+    # Flush the ready-players list.
+    $self->quietly_unready_all_players;
 
     foreach ($self->players) { $_->resume_game }
 }
@@ -1127,58 +1091,52 @@ sub handle_language_request {
 }
 
 
-sub handle_timeout_request {
+sub handle_suspend_request {
     my $self = shift;
-    my ($from_jid, $id, $new_timeout) = @_;
-    if ($self->game->is_active) {
-	$self->send_rpc_fault($from_jid, $id, 609, "The game is active.");
+    my ($from_jid, $id) = @_;
+
+    # To suspend a game, a player must be seated at an active game.
+    my $player;
+    unless ($player = $self->look_up_player_with_jid($from_jid)) {
+	$self->send_rpc_fault($from_jid, $id, 607, "You don't seem to be at my table (Table JID: " . $self->muc_jid . ")");
+	return;
+    }	
+    unless ($self->game->is_active) {
+	$self->send_rpc_fault($from_jid, $id, 609, "The game is not active.");
 	return;
     }
-    unless ($new_timeout) {
-	$self->send_rpc_fault($from_jid, $id, 604, "Missing new timeout value");
-	return;
-    }
-    if ($new_timeout =~ /^\d+$/) {
-	if ($new_timeout >= 0 && $new_timeout <= $self->max_timeout) {
-	    $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
-	    if ($new_timeout != $self->timeout) {
-		$self->timeout($new_timeout);
-		map ($_->timeout($from_jid), $self->players);
-	    }
-	} else {
-	    $self->send_rpc_fault($from_jid, $id, 606, "New timeout value must be an integer between 0 and " . $self->max_timeout);
-	}
-    } else {
-	$self->send_rpc_fault($from_jid, $id, 606, "New timeout value must be an integer.");
-    }
+ 
+    $self->suspend_game($player);
 }
 
-
-
-sub handle_reaction_request {
+sub handle_kill_request {
     my $self = shift;
-    my ($from_jid, $id, $reaction) = @_;
-    if ($self->game->is_active) {
-	$self->send_rpc_fault($from_jid, $id, 609, "The game is active.");
+    my ($from_jid, $id, $kill_boolean) = @_;
+
+    # To propose killing the game, a player must be seated in a suspended game.
+    my $player;
+    unless ($player = $self->look_up_player_with_jid($from_jid)) {
+	$self->send_rpc_fault($from_jid, $id, 607, "You don't seem to be at my table (Table JID: " . $self->muc_jid . ")");
 	return;
     }
-    unless ($reaction) {
-	$self->send_rpc_fault($from_jid, $id, 604, "Missing new reaction value");
+    unless ($player->seat) {
+	$self->send_rpc_fault($from_jid, $id, 607, "You are not seated.");
+    }
+    unless ($self->game->is_suspended) {
+	$self->send_rpc_fault($from_jid, $id, 609, "The game is not suspended..");
 	return;
     }
-    if ($reaction eq 'bot' || $reaction eq 'throw' || $reaction eq 'suspend') {
-	$self->send_rpc_response($from_jid, $id, ["volity.ok"]);
-	if ($reaction ne $self->timeout_reaction) {
-	    $self->timeout_reaction($reaction);
-	    map ($_->timeout_reaction($from_jid), $self->players);
-	}
-    } else {
-	$self->send_rpc_fault($from_jid, $id, 606, "Reaction must be one of: bot, suspend, throw");
-    }
+
+    # OK, it's a legit call. Make this our new kill value.
+    $self->kill_switch($kill_boolean);
+
+    # Tell everyone about this development.
+    foreach ($self->players) { $_->kill_game($player) }
+
+    # This is a config change, so...
+    $self->unready_all_players;
+
 }
-
-
-	
 
 #######################
 # Player readiness
@@ -1253,6 +1211,10 @@ sub handle_stand_request {
     my ($standing_jid) = @args;
     unless ($standing_jid) {
 	$self->send_rpc_fault($from_jid, $rpc_id, 604, "Missing JID parameter.");
+	return;
+    }
+    if ($self->game->is_active) {
+	$self->send_rpc_fault ($from_jid, $rpc_id, 609, "The game is active.");
 	return;
     }
     $self->logger->debug("$from_jid wants $standing_jid to stand up.");
@@ -1444,8 +1406,6 @@ sub stand_player {
     my $self = shift;
     my ($player) = @_;
     # Only do something if the player was actually in the "seated" hash.
-    # XXX DEBUG
-    Carp::confess unless $player;
     if (my $seat = $player->seat) {
 	$player->seat(undef);
 	$seat->remove_player($player);
@@ -1453,18 +1413,10 @@ sub stand_player {
 	for my $other_player ($self->players) {
 	    $other_player->player_stood($player);
 	}
-	if ($self->game->is_active) {
-	    unless ($seat->is_under_control) {
-		# Oh crap, that seat is now empty.
-		# Pull the brakes.
-		$self->suspend_game;
-	    }
-	} else {
-	    # Standing up means this player doesn't want to play _at all_,
-	    # and that counts as a configuation change. Everyone loses
-	    # readiness.
-	    $self->unready_all_players;
-	}
+	# Standing up means this player doesn't want to play _at all_,
+	# and that counts as a configuation change. Everyone loses
+	# readiness.
+	$self->unready_all_players;
     }
 }
 
@@ -1503,6 +1455,23 @@ sub stop {
   $self->active_bots([]);
   $self->server->remove_referee($self);
   $self->kernel->post($self->alias, 'shutdown_socket', 0);
+}
+
+# current_state: return a short string (suitable for the 'state' field of disco
+# info) about the state of this referee's game.
+sub current_state {
+    my $self = shift;
+    unless ($self->game->is_afoot) {
+	return 'setup';
+    } elsif ($self->game->is_suspended) {
+	return 'suspended';
+    } elsif ($self->game->is_disrupted) {
+	return 'disrputed';
+    } elsif ($self->game->is_abandoned) {
+	return 'abandoned';
+    } else {
+	return 'active';
+    }
 }
 
 #sub DESTROY {
@@ -1560,14 +1529,14 @@ sub handle_disco_info_request {
     push (@items, $identity);
     # Now build up our list of JEP-0128 data form fields.
     my @fields;
-    foreach ('max-players', 'server', 'table', 'afoot', 'players', 'language', 'name') {
+    foreach ('max-players', 'server', 'table', 'state', 'players', 'language', 'name') {
 	push (@fields, Volity::Jabber::Form::Field->new({var=>$_}));
     }
     my $game_class = $self->game_class;
     $fields[0]->values($game_class->max_allowed_seats);
     $fields[1]->values($self->server->jid);
     $fields[2]->values($self->muc_jid);
-    $fields[3]->values($self->game->is_afoot);
+    $fields[3]->values($self->current_state);
     $fields[4]->values(scalar($self->players));
     $fields[5]->values($self->language);
     $fields[6]->values($self->name);

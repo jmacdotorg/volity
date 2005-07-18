@@ -109,6 +109,17 @@ the same seat objects as) calling C<$game->referee->seats>.
 If the game is still being set up, returns falsehood. If the game has
 already started, returns truth.
 
+=item is_suspended
+ 
+If the game is in play but suspended (as a result of a player asking
+the ref to suspend the game, or the ref reacting to a player's sudden
+departure), this returns 1. Otherwise, returns 0.
+
+=item is_active
+
+Convenience method: If the game is afoot and not suspended, returns
+truth. Otherwise, returns falsehood.
+
 =back
 
 =head2 Class Accessor methods
@@ -192,17 +203,34 @@ sub AUTOLOAD {
   }
 }
 
-=head2 current_seat ($seat)
+=head2 Other methods
+
+=over
+
+=item current_seat ($seat)
 
 Called with no arguments, returns the seat whose turn is up.
 
 Called with a Volity::Seat object as an argument, sets that seat as the current seat.
 
-=head2 rotate_current_seat
+=item rotate_current_seat
 
 Convenience method that simply sets the next seat in the seats list as the current seat.
 
 This method is useful to call at the end of a turn.
+
+=item register_config_variables (@variables)
+
+Registers the given instance variables (which should be declared in
+your subclass's C<use fields} pragma) as holding game configuation
+information. This will allow your game to accept RPC calls of the form
+"game.$variable_name([args])" even when there is no game active. (The
+referee normally kicks back such requests with an RPC fault.)
+
+Normally you'll only call this method once, as part of your
+C<initialize()> method definition.
+
+=back
 
 =cut
 
@@ -218,9 +246,42 @@ sub rotate_current_seat {
   $self->current_seat(($self->referee->seats)[$index]);
 }
 
-# call_ui_function_on_everyone: A convenience method for blasting something
-# at every single seat.
+=item call_ui_function_on_everyone
+
+A convenience method for blasting a game.* call to I<all> players at a
+table, seated and otherwise.
+
+See the C<call_ui_function> method of L<Volity::Player> for arguments and return values.
+
+=item call_ui_function_on_observers
+
+A convenience method for blasting a game.* call to every player at the
+table who is not seated.
+
+See the C<call_ui_function> method of L<Volity::Player> for arguments and return values.
+
+=item call_ui_function_on_seats
+
+A convenience method for blasting a game.* call to every seat, but not
+to players who are standing.
+
+See the C<call_ui_function> method of L<Volity::Player> for arguments and return values.
+
+=cut
+
+# See the POD section above for what this group of methods does...
 sub call_ui_function_on_everyone {
+  my $self = shift;
+  map($_->call_ui_function(@_), $self->referee->players);
+}
+
+sub call_ui_function_on_observers {
+  my $self = shift;
+  my @observers = grep(not(defined($_->seat)), $self->referee->players);
+  map($_->call_ui_function(@_), @observers);
+}
+
+sub call_ui_function_on_seats {
   my $self = shift;
   map($_->call_ui_function(@_), $self->referee->seats);
 }
@@ -281,6 +342,27 @@ sub is_active {
     return $self->is_afoot && not($self->is_suspended);
 }
 
+# is_disrupted: Return 1 if at least one seat is lacking control. 0 otherwise.
+sub is_disrupted {
+    my $self = shift;
+    if (grep(not($_->is_under_control), grep(not($_->is_eliminated), $self->seats)) && not($self->is_abandoned)) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+# is_abandoned: Return 1 if the game appears to be utterly devoid of controlled
+# seats.
+sub is_abandoned {
+    my $self = shift;
+    if (grep($_->is_under_control, grep(not($_->is_eliminated),$self->seats))) {
+	return 0;
+    } else {
+	return 1;
+    }
+}
+
 
 # send_full_state_to_player: Blast the given player (not seat) with full
 # game state. By default it's a no-op. Subclasses should override this.
@@ -295,7 +377,7 @@ sub send_full_state_to_player {
 # Game actions
 ###################
 
-=head2 end
+=item end
 
 Ends the game. The referee will automatically handle seat
 notification. The bookkeeper will be sent a record of the game's
@@ -322,11 +404,13 @@ sub end {
 # Callbacks
 ############
 
-=head1 Callback methods
+=head2 Callback methods
+
+=over
 
 C<Volity::Game> provides default handlers for these methods, called on the game object by different parts of Frivolity. You may override these methods if you want your game module to behave in some way other than the default (usually a no-op).
 
-=head2 start
+=item start
 
 Called by the referee after it creates the game object and is ready to
 begin play. It gives the object a chance to perform whatever it would
@@ -337,7 +421,7 @@ The default behavior is a no-op. A common reason to override
 this method is the need to send a set-up function call to the game's
 seats.
 
-=head2 has_acceptable_config
+=item has_acceptable_config
 
 Called by the referee every time a player signals readiness. Returns 1
 if the current configuration settings are OK to start a new
@@ -351,6 +435,26 @@ By default, it just returns 1 without checking anything.
 
 Note: You I<don't> need to check required-seat occupancy; this is
 handled for you, before has_acceptable_config is called.
+
+=item send_full_state_to_player ($player)
+
+If your game is complex enough to carry a state between turns (and it
+probably is), then you'll want to define this method. It will allow
+players who are returning to the table after the game has started to
+learn about the game's current state all at once, either because
+they're observers wandering into the table or they're players
+returning to the table (perhaps after a network drop or crash on their
+end). It also allows bots who jump in to replace a vanished player to
+catch up on what they've missed.
+
+The argument is the Volity::Player object who needs to be brought up to speed.
+
+B<Important note>: Use the C<state_seat> method of the player object,
+I<not> the C<seat> method, to see what the player's point of view is
+for purposes of sending state. This always returns the last seat that
+the player sat in
+
+=back
 
 =cut
 

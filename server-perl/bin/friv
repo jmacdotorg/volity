@@ -1046,6 +1046,8 @@ sub cmd_table_language {
     });
 }
 
+=begin unimplemented
+
 sub cmd_timeout {
     my( $heap, $timeout ) = @_[ HEAP, &ARGS ];
     my $user = $heap->{'default_player'};
@@ -1067,6 +1069,43 @@ sub cmd_timeout_reaction {
 	args       => [$reaction],
     });
 }
+
+=end unimplemented
+
+=cut
+
+sub cmd_suspend {
+    my ( $heap ) = @_[ HEAP ];
+    my $user = $heap->{default_player};
+    $user->make_rpc_request({
+        id         => 'suspend',
+        to         => $user->referee_jid,
+        methodname => 'volity.suspend_game',
+    });
+}
+
+sub cmd_kill {
+    my ( $heap ) = @_[ HEAP ];
+    my $user = $heap->{default_player};
+    $user->make_rpc_request({
+        id         => 'suspend',
+        to         => $user->referee_jid,
+        methodname => 'volity.kill_game',
+	args       => [RPC::XML::boolean->new(1)],
+    });
+}
+
+sub cmd_keep {
+    my ( $heap ) = @_[ HEAP ];
+    my $user = $heap->{default_player};
+    $user->make_rpc_request({
+        id         => 'suspend',
+        to         => $user->referee_jid,
+        methodname => 'volity.kill_game',
+	args       => [RPC::XML::boolean->new(0)],
+    });
+}
+    
 
 package Volity::User;
 
@@ -1309,6 +1348,26 @@ sub _rpc_state_sent {
     # We don't care, having already spammed the player.
     my $self = shift;
     $self->print_message("State recovery completed.");
+}
+
+sub _rpc_suspend_game {
+    my $self = shift;
+    my ($suspending_player) = @_;
+    if ($suspending_player) {
+	$self->print_message("The game has been suspended by $suspending_player.");
+    } else {
+	$self->print_message("The referee has suspended the game.");
+    }
+}
+
+sub _rpc_kill_game {
+    my $self = shift;
+    my ($killing_player, $kill_boolean) = @_;
+    if ($kill_boolean) {
+	$self->print_message("$killing_player has suggested killing the game!");
+    } else {
+	$self->print_message("$killing_player has negated the game-killing suggestion.");
+    }
 }
 
 sub fetch_ui_file {

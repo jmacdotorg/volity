@@ -42,6 +42,9 @@ the referee object takes care of that. However, there are a number of
 methods defined by Volity::Referee and Volity::Seat that return player
 objects, so you may find yourself interacting with them anyway.
 
+Volity::Game subclasses refer to seats more often than to individual
+players, since most game interaction takes place at the seat level.
+
 =head1 METHODS
 
 This class defines two kinds of object methods: accessors to basic,
@@ -78,11 +81,19 @@ The Volity::Referee object of the table this player is at.
 
 =item seat
 
-The Volity::Seat object this player occupies. undef if the player isn't sitting or missing.
+The Volity::Seat object this player occupies. undef if the player
+isn't sitting or missing.
+
+=item state_seat
+
+A Volity::Seat object that's most appropriate to use when sending
+state to the player, preventing suspension-mode state-snooping. See
+the C<send_full_state_to_player> method documented in L<Volity::Game>.
 
 =item is_missing
 
 1 if the player has abruptly vanished while sitting at an active game, 0 otherwise.
+
 
 =back
 
@@ -132,7 +143,7 @@ use strict;
 
 use base qw(Volity);
 
-use fields qw(jid nick referee rpc_count is_bot seat is_missing);
+use fields qw(jid nick referee rpc_count is_bot seat is_missing last_active_seat);
 # FIELDS:
 # jid
 #   This player's full jid.
@@ -146,6 +157,8 @@ use fields qw(jid nick referee rpc_count is_bot seat is_missing);
 #   1 if this player is a referee-created bot.
 # seat
 #   The Volity::Seat object this player occupies.
+# last_active_seat
+#   The Volity::Seat object this player occupies prior to the last suspension.
 # is_missing
 #   1 if the player has abruptly vanished while sitting at an active game.
 
@@ -162,6 +175,12 @@ sub basic_jid {
 
 Sends the RPC request "game.$function(@args)" from the referee to the
 player's client.
+
+I<Note> that in most cases, you'll actually want to call UI functions
+on the seat level, not on individual players. Luckily, the
+Volity::Seat class defines this same method, which works in the same
+manner. (To tell you the truth, it just mirrors the
+C<call_ui_function> call to all of the player objects it holds...)
 
 =cut
 
@@ -226,12 +245,34 @@ sub player_stood {
     });
 }
 
+
+sub kill_game {
+    my $self = shift;
+    my ($other_player) = @_;
+    my $args = [$self->referee->kill_switch];
+    if (defined($other_player)) {
+	push (@$args, $other_player->jid);
+    }
+    $self->referee->send_rpc_request({
+	id=>'timeout',
+	methodname=>'volity.kill_game',
+	to=>$self->jid,
+	args=>[$args],
+    });
+}
+
 sub suspend_game {
     my $self = shift;
+    my ($other_player) = @_;
+    my $args = [];
+    if (defined($other_player)) {
+	$args = [$other_player->jid];
+    }
     $self->referee->send_rpc_request({
 	id=>'suspend-game',
 	methodname=>'volity.suspend_game',
 	to=>$self->jid,
+	args=>$args,
     });
 }
 
@@ -339,6 +380,13 @@ sub receive_game_state {
     });
 }
     
+
+# state_seat: If the game is suspended, return the player's last active seat.
+# Otherwise, return the player's current seat.
+sub state_seat {
+    my $self = shift;
+    
+}
 
 # next_rpc_id: Simple method that returns a unique (for this object) RPC id.
 sub next_rpc_id {
