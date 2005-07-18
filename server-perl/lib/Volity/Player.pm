@@ -381,11 +381,14 @@ sub receive_game_state {
 }
     
 
-# state_seat: If the game is suspended, return the player's last active seat.
-# Otherwise, return the player's current seat.
+# state_seat: Return the seat safest to use for state-sending POV purposes.
 sub state_seat {
     my $self = shift;
-    
+    if ($self->referee->game->is_suspended) {
+	return $self->last_active_seat;
+    } else {
+	return $self->seat;
+    }
 }
 
 # next_rpc_id: Simple method that returns a unique (for this object) RPC id.

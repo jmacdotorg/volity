@@ -222,7 +222,7 @@ This method is useful to call at the end of a turn.
 =item register_config_variables (@variables)
 
 Registers the given instance variables (which should be declared in
-your subclass's C<use fields} pragma) as holding game configuation
+your subclass's C<use fields> pragma) as holding game configuation
 information. This will allow your game to accept RPC calls of the form
 "game.$variable_name([args])" even when there is no game active. (The
 referee normally kicks back such requests with an RPC fault.)
@@ -322,7 +322,8 @@ sub is_config_variable {
 }
 
 # tell_seat_about_config: Tell the given seat about the current game
-# configuaration. Called by the ref when a new seat joins.
+# configuaration, complete with the setter info.
+# This can be convenient to call in the middle of a state-sending blast.
 sub tell_seat_about_config {
     my $self = shift;
     my ($seat) = @_;
@@ -452,7 +453,9 @@ The argument is the Volity::Player object who needs to be brought up to speed.
 B<Important note>: Use the C<state_seat> method of the player object,
 I<not> the C<seat> method, to see what the player's point of view is
 for purposes of sending state. This always returns the last seat that
-the player sat in
+the player sat in I<while the game was active>, preventing
+"accidental" snooping of other seats' game states while the game is
+suspended.
 
 =back
 
