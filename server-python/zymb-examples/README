@@ -1,0 +1,14 @@
+Zymb examples
+
+Designed by Andrew Plotkin <erkyrath@eblong.com>
+   <http://www.eblong.com/zarf/zymb/>
+
+The Python programs in this directory are simple examples of Zymb
+applications. They are heavily commented. Go to.
+
+cat.py -- cat a file or stdin.
+readln.py -- accept input from readline.
+wget.py -- fetch an http or https URL.
+relay.py -- proxy a TCP connection to some server.
+rpcserver.py -- a sample Jabber-RPC server application.
+

@@ -1,0 +1,22 @@
+This module contains the Python code you will need to run a Volity
+game parlor.
+
+This module contains no actual games. For some sample games, see the
+"games-python" module in the Volity CVS repository.
+
+In this module, find:
+    volityd.py: Python script to start a Volity parlor.
+    volity: Python implementation of Volity components.
+        (See volity/__init__.py for details)
+    zymb: A generic Python Jabber communications module.
+        (See zymb/__init__.py for details)
+    zymb-examples: Sample script that use Zymb.
+        (See zymb-examples/__init__.py for details)
+
+For more information about Volity: 
+    <http://volity.org/>
+
+Zymb is not part of Volity; it is a communications module which the
+Volity code uses. It is included here for convenience. For more
+information about Zymb:
+    <http://eblong.com/zarf/zymb/>
