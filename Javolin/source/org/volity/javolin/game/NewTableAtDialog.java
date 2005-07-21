@@ -22,6 +22,8 @@ import java.awt.event.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
+import org.volity.client.TokenFailure;
+import org.volity.client.TranslateToken;
 import org.volity.javolin.*;
 
 /**
@@ -120,6 +122,21 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
 
             dispose();
         }
+	catch (TokenFailure ex)
+	{
+	    /* We don't have a log window, so shove the failure message
+	       up in a MessageDialog. */
+	    String msg = TranslateToken.translate(ex);
+	    
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            JOptionPane.showMessageDialog(this, msg,
+                JavolinApp.getAppName() + ": Cannot Create Table", 
+		JOptionPane.ERROR_MESSAGE);
+
+            // Destroy TableWindow object
+            mTableWindow = null;
+	}
         catch (Exception ex)
         {
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));

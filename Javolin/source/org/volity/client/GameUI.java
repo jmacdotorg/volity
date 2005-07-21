@@ -10,6 +10,7 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
+import org.volity.client.TokenFailure;
 import org.volity.jabber.*;
 
 /**
@@ -73,6 +74,10 @@ public class GameUI implements RPCHandler, PacketFilter {
 	    try {
 	      List params = Arrays.asList(args).subList(1, args.length);
 	      return table.getReferee().invoke("game." + args[0], params);
+	    } catch (TokenFailure ex) {
+	      String msg = TranslateToken.translate(ex);
+	      errorHandler.error(new Exception(msg)); /* XXX should be printed to the window log instead */
+	      return null;
 	    } catch (Exception e) {
 	      errorHandler.error(e);
 	      return null;
@@ -83,6 +88,10 @@ public class GameUI implements RPCHandler, PacketFilter {
 	  public Object run(Object[] args) {
 	    try {
 	      table.getReferee().startGame();
+	    } catch (TokenFailure ex) {
+	      String msg = TranslateToken.translate(ex);
+	      errorHandler.error(new Exception(msg)); /* XXX should be printed to the window log instead */
+	      return null;
 	    } catch (Exception e) {
 	      errorHandler.error(e);
 	    }
@@ -93,6 +102,10 @@ public class GameUI implements RPCHandler, PacketFilter {
 	  public Object run(Object[] args) {
 	    try {
 	      table.getReferee().addBot();
+	    } catch (TokenFailure ex) {
+	      String msg = TranslateToken.translate(ex);
+	      errorHandler.error(new Exception(msg)); /* XXX should be printed to the window log instead */
+	      return null;
 	    } catch (Exception e) {
 	      errorHandler.error(e);
 	    }

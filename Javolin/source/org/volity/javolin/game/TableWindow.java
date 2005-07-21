@@ -85,7 +85,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      */
     public static TableWindow makeTableWindow(XMPPConnection connection, String serverId,
         String nickname) throws XMPPException, RPCException, IOException,
-        MalformedURLException
+        TokenFailure, MalformedURLException
     {
         GameServer server = new GameServer(connection, serverId);
         GameTable table = server.newTable();
@@ -108,7 +108,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      */
     public static TableWindow makeTableWindow(GameServer server, GameTable table,
         String nickname) throws XMPPException, RPCException, IOException,
-        MalformedURLException
+        TokenFailure, MalformedURLException
     {
         TableWindow retVal = null;
 
@@ -132,11 +132,12 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * @param uiUrl                      The URL for the UI file.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
+     * @exception TokenFailure           If a new_table RPC failed.
      * @exception IOException            If a UI file could not be downloaded.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
     protected TableWindow(GameServer server, GameTable table, String nickname, URL uiUrl)
-         throws XMPPException, RPCException, IOException, MalformedURLException
+         throws XMPPException, RPCException, IOException, TokenFailure, MalformedURLException
     {
         mGameTable = table;
 

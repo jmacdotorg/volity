@@ -8,8 +8,9 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
-import org.volity.jabber.RPCRequester;
 import org.volity.jabber.RPCException;
+import org.volity.client.TokenRequester;
+import org.volity.client.TokenFailure;
 
 // WORKAROUND -- REMOVE THESE WHEN SMACK SUPPORTS JEP-0128
 import org.jivesoftware.smack.util.PacketParserUtils;
@@ -19,7 +20,7 @@ import org.jivesoftware.smack.provider.ProviderManager;
 import org.xmlpull.v1.XmlPullParser;
 
 /** A Jabber-RPC connection to a Volity game server. */
-public class GameServer extends RPCRequester {
+public class GameServer extends TokenRequester {
   /**
    * @param connection an authenticated connection to an XMPP server
    * @param JID the JID of the game server
@@ -36,8 +37,8 @@ public class GameServer extends RPCRequester {
    */
   public URI getRuleset() throws XMPPException {
     ServiceDiscoveryManager discoMan = 
-      ServiceDiscoveryManager.getInstanceFor(connection);
-    DiscoverInfo info = discoMan.discoverInfo(responderJID);
+      ServiceDiscoveryManager.getInstanceFor(getConnection());
+    DiscoverInfo info = discoMan.discoverInfo(getResponderJID());
     Form form = Form.getFormFrom(info);
     if (form != null) {
       FormField field = form.getField("ruleset");
@@ -54,8 +55,14 @@ public class GameServer extends RPCRequester {
    * @throws XMPPException if an XMPP error occurs
    * @throws RPCException if an RPC fault occurs
    */
-  public GameTable newTable() throws XMPPException, RPCException {
-    return new GameTable(connection, (String) invoke("volity.new_table"));
+  public GameTable newTable() 
+      throws XMPPException, RPCException, TokenFailure {
+    Object res = invokeTimeout("volity.new_table", 120);
+    /* We allow an extra-long timeout for the new_table call, because
+     * the server may have to do a lot of work. (I've seen it take over
+     * a minute, if the server is on a different Jabber server from
+     * the conference host.) */
+    return new GameTable(getConnection(), (String) res);
   }
 
   // WORKAROUND -- REMOVE EVERYTHING BELOW WHEN SMACK SUPPORTS JEP-0128

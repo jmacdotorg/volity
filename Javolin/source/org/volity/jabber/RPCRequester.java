@@ -17,6 +17,7 @@ import java.util.*;
  * @author Doug Orleans (dougo@place.org)
  */
 public class RPCRequester {
+
   static {
     // Register the provider so that response packets get parsed correctly.
     ProviderManager.addIQProvider(RPC.elementName,
@@ -43,8 +44,8 @@ public class RPCRequester {
   public String getResponderJID() { return responderJID; }
 
   /**
-   * Invoke a remote method with no parameters and wait 5 seconds for
-   * the response.
+   * Invoke a remote method with no parameters and wait (up to 30 seconds)
+   * for the response.
    * @param methodName the name of the remote method
    * @return the result of the remote method invocation
    * @throws XMPPException if there was an XMPP error
@@ -54,11 +55,11 @@ public class RPCRequester {
   public Object invoke(String methodName)
     throws XMPPException, RPCException
   {
-    return invoke(methodName, null);
+    return invokeTimeout(methodName, null, 30);
   }
 
   /**
-   * Invoke a remote method and wait 5 seconds for the response.
+   * Invoke a remote method and wait (up to 30 seconds) for the response.
    * @param methodName the name of the remote method
    * @param params the list of method parameters
    * @return the result of the remote method invocation
@@ -67,6 +68,38 @@ public class RPCRequester {
    *                      or timed out
    */
   public Object invoke(String methodName, List params)
+    throws XMPPException, RPCException
+  {
+    return invokeTimeout(methodName, params, 30);
+  }
+
+  /**
+   * Invoke a remote method, with no parameters, and wait (up to a limit) 
+   * for the response.
+   * @param methodName the name of the remote method
+   * @param timeout the time (in seconds) to wait for a response
+   * @return the result of the remote method invocation
+   * @throws XMPPException if there was an XMPP error
+   * @throws RPCException if the remote method resulted in a fault
+   *                      or timed out
+   */
+  public Object invokeTimeout(String methodName, int timeout)
+    throws XMPPException, RPCException
+  {
+    return invokeTimeout(methodName, null, timeout);
+  }
+
+  /**
+   * Invoke a remote method and wait (up to a limit) for the response.
+   * @param methodName the name of the remote method
+   * @param params the list of method parameters
+   * @param timeout the time (in seconds) to wait for a response
+   * @return the result of the remote method invocation
+   * @throws XMPPException if there was an XMPP error
+   * @throws RPCException if the remote method resulted in a fault
+   *                      or timed out
+   */
+  public Object invokeTimeout(String methodName, List params, int timeout)
     throws XMPPException, RPCException
   {
     RPCRequest request = new RPCRequest(methodName, params);
@@ -80,7 +113,7 @@ public class RPCRequester {
 	  }
 	});
     connection.sendPacket(request);
-    RPCResponse response = (RPCResponse) collector.nextResult(5000);
+    RPCResponse response = (RPCResponse) collector.nextResult(1000*timeout);
     collector.cancel();
     if (response == null)
       throw new RPCException(1, "Timed out waiting for response.");

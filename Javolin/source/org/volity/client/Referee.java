@@ -3,11 +3,12 @@ package org.volity.client;
 import java.util.Arrays;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.volity.jabber.RPCRequester;
 import org.volity.jabber.RPCException;
+import org.volity.client.TokenRequester;
+import org.volity.client.TokenFailure;
 
 /** A Jabber-RPC connection to a Volity game referee. */
-public class Referee extends RPCRequester {
+public class Referee extends TokenRequester {
 
   /**
    * @param table the game table where the game will be played
@@ -25,7 +26,7 @@ public class Referee extends RPCRequester {
    * @throws RPCException if a RPC fault occurs
    */
   public void invitePlayer(String jid, String message)
-    throws XMPPException, RPCException
+    throws XMPPException, RPCException, TokenFailure
   {
     invoke("volity.invite_player",
 	   Arrays.asList(new String[] { jid, message }));
@@ -38,7 +39,7 @@ public class Referee extends RPCRequester {
    * @throws RPCException if a RPC fault occurs
    */
   public void invitePlayer(String jid)
-   throws XMPPException, RPCException
+    throws XMPPException, RPCException, TokenFailure
   {
     invoke("volity.invite_player",
 	   Arrays.asList(new String[] { jid }));
@@ -49,7 +50,9 @@ public class Referee extends RPCRequester {
    * @throws XMPPException if an XMPP error occurs
    * @throws RPCException if a RPC fault occurs
    */
-  public void addBot() throws XMPPException, RPCException {
+  public void addBot() 
+    throws XMPPException, RPCException, TokenFailure
+  {
     invoke("volity.add_bot");
   }
 
@@ -60,7 +63,8 @@ public class Referee extends RPCRequester {
    * @throws XMPPException if an XMPP error occurs
    * @throws RPCException if a RPC fault occurs
    */
-  public void startGame() throws XMPPException, RPCException {
+  public void startGame() throws XMPPException, RPCException, TokenFailure
+  {
     invoke("volity.unready");
     invoke("volity.ready");
   }
@@ -78,7 +82,8 @@ public class Referee extends RPCRequester {
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
-    public void unready() throws XMPPException, RPCException {
+    public void unready() throws XMPPException, RPCException, TokenFailure 
+    {
 	invoke("volity.unready");
     }
 
@@ -87,7 +92,8 @@ public class Referee extends RPCRequester {
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
-    public void ready() throws XMPPException, RPCException {
+    public void ready() throws XMPPException, RPCException, TokenFailure
+    {
 	invoke("volity.ready");
     }
 
@@ -96,10 +102,9 @@ public class Referee extends RPCRequester {
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
-    public void stand() throws XMPPException, RPCException {
+    public void stand() throws XMPPException, RPCException, TokenFailure
+    {
 	invoke("volity.stand");
     }
-
-
 
 }
