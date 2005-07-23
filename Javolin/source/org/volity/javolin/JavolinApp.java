@@ -71,6 +71,11 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private JMenuItem mNewTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
 
+    private JPopupMenu mRosterContextMenu;
+    private JMenuItem mChatContextItem;
+    private JMenuItem mAddUserContextItem;
+    private JMenuItem mDelUserContextItem;
+
     private RosterPanel mRosterPanel;
     private JLabel mConnectedLabel;
 
@@ -278,15 +283,15 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             doShowHideUnavailBut();
         }
-        else if (e.getSource() == mAddUserBut)
+        else if ((e.getSource() == mAddUserBut) || (e.getSource() == mAddUserContextItem))
         {
             doAddUserBut();
         }
-        else if (e.getSource() == mDelUserBut)
+        else if ((e.getSource() == mDelUserBut) || (e.getSource() == mDelUserContextItem))
         {
             doDeleteUserBut();
         }
-        else if (e.getSource() == mChatBut)
+        else if ((e.getSource() == mChatBut) || (e.getSource() == mChatContextItem))
         {
             doChatBut();
         }
@@ -320,11 +325,12 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
         mRosterPanel.setRoster(connRost);
 
-	if (mConnection != null) {
-	  InvitationManager im = new InvitationManager(mConnection);
-	  im.addInvitationListener(this);
-	  im.start();
-	}
+        if (mConnection != null)
+        {
+            InvitationManager im = new InvitationManager(mConnection);
+            im.addInvitationListener(this);
+            im.start();
+        }
 
         // Update the UI
         updateUI();
@@ -428,10 +434,15 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         newTableDlg.show();
         TableWindow tableWin = newTableDlg.getTableWindow();
 
-	handleNewTableWindow(tableWin);
-
+        handleNewTableWindow(tableWin);
     }
 
+    /**
+     * Incorporates a newly created TableWindow properly into the system. This method
+     * should be called any time a new TableWindow is created.
+     *
+     * @param tableWin  The newly created TableWindow.
+     */
     private void handleNewTableWindow(TableWindow tableWin)
     {
         if (tableWin != null)
@@ -499,7 +510,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
     /**
      * Activates a chat session with the specified user. If a ChatWindow exists for the
-     * user, it brings that window to the front. Otherwise, it creates a new chat window 
+     * user, it brings that window to the front. Otherwise, it creates a new chat window
      * for communicating with the specified user.
      *
      * @param userId  The Jabber ID of the user to chat with.
@@ -531,7 +542,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                         public void windowClosed(WindowEvent we)
                         {
                             ChatWindow win = (ChatWindow)we.getWindow();
-                            
+
                             mChatWindows.remove(win);
                             mWindowMenu.remove(win);
                             mUserChatWinMap.remove(win.getRemoteUserId());
@@ -611,8 +622,8 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
-     * Helper method for setUpMenus. Assigns a keyboard mnemonic to a menu or menu item,
-     * but only if not running on the Mac platform.
+     * Helper method for setUpAppMenus. Assigns a keyboard mnemonic to a menu or menu
+     * item, but only if not running on the Mac platform.
      *
      * @param item  The menu or menu item to assign the mnemonic to
      * @param key   The keyboard mnemonic.
@@ -722,38 +733,58 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         doDisconnect();
     }
 
-    public void invitationReceived(Invitation invitation) {
+    /**
+     * InvitationListener interface method implementation.
+     *
+     * @param invitation  The invitation that was received.
+     */
+    public void invitationReceived(Invitation invitation)
+    {
+        String text = invitation.getPlayerJID() + " has invited you to join a game.";
+        String message = invitation.getMessage();
+        if (message != null)
+        {
+            text = text + "\n\"" + message + "\"";
+        }
 
-      String text = invitation.getPlayerJID() +
-	" has invited you to join a game.";
-      String message = invitation.getMessage();
-      if (message != null) text = text + "\n\"" + message + "\"";
-      //      JOptionPane.showMessageDialog(this, text);
-      Object[] options = {"Accept", "Decline", "Decline and chat"};
-      int choice = JOptionPane.showOptionDialog(this, text, "Invitation", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-      if (choice == 0) {
-	  // Join the table.
-	  String tableJID = invitation.getTableJID();
-	  String serverJID = invitation.getGameServerJID();
-	  GameServer server = new GameServer(mConnection, serverJID);
-	  GameTable table = new GameTable(mConnection, tableJID);
-	  try 
-	      { 
-		  TableWindow tableWindow = TableWindow.makeTableWindow(server, table, mConnection.getUser()); 
-		  handleNewTableWindow(tableWindow);
-	      }
-	  catch (Exception e) {
-	      System.out.println("Invitation: something went wrong.");
-	  }
-	  // Show the resulting table window.
-      } else if (choice == 1) {
-	  System.out.println("Declining an invite.");
-      } else if (choice == 2) {
-	  System.out.println("Declining and invite and opening a chat.");
-	  chatWithUser(invitation.getPlayerJID());
-      } else {
-	  System.out.println("Got bizarre dialog choice: " + choice);
-      }
+        //      JOptionPane.showMessageDialog(this, text);
+        Object[] options = {"Accept", "Decline", "Decline and chat"};
+        int choice = JOptionPane.showOptionDialog(this, text, "Invitation",
+            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
+            options[0]);
+
+        if (choice == 0)
+        {
+            // Join the table.
+            String tableJID = invitation.getTableJID();
+            String serverJID = invitation.getGameServerJID();
+            GameServer server = new GameServer(mConnection, serverJID);
+            GameTable table = new GameTable(mConnection, tableJID);
+            try
+            {
+                TableWindow tableWindow =
+                    TableWindow.makeTableWindow(server, table, mConnection.getUser());
+                handleNewTableWindow(tableWindow);
+            }
+            catch (Exception e)
+            {
+                System.out.println("Invitation: something went wrong.");
+            }
+            // Show the resulting table window.
+        }
+        else if (choice == 1)
+        {
+            System.out.println("Declining an invite.");
+        }
+        else if (choice == 2)
+        {
+            System.out.println("Declining and invite and opening a chat.");
+            chatWithUser(invitation.getPlayerJID());
+        }
+        else
+        {
+            System.out.println("Got bizarre dialog choice: " + choice);
+        }
     }
 
     /**
@@ -771,7 +802,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      * RosterPanelListener interface method implementation. Starts chat if the double-
      * clicked user is available.
      *
-     * @param e  Description of the Parameter
+     * @param e  The event received.
      */
     public void itemDoubleClicked(RosterPanelEvent e)
     {
@@ -779,8 +810,31 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
         if (item.isAvailable())
         {
-            chatWithUser(e.getUserTreeItem().getId());
+            chatWithUser(item.getId());
         }
+    }
+
+    /**
+     * RosterPanelListener interface method implementation. Shows the appropriate context
+     * menu.
+     *
+     * @param e  The event received.
+     */
+    public void contextMenuInvoked(RosterPanelEvent e)
+    {
+        // Don't show menu if menu is already visible
+        if (mRosterContextMenu.isVisible())
+        {
+            return;
+        }
+
+        UserTreeItem item = e.getUserTreeItem();
+
+        // Enable/disable appropriate items
+        mChatContextItem.setEnabled((item != null) && item.isAvailable());
+        mDelUserContextItem.setEnabled(item != null);
+
+        mRosterContextMenu.show(mRosterPanel, e.getX(), e.getY());
     }
 
     /**
@@ -806,11 +860,11 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             Message message = (Message)packet;
             String remoteId = StringUtils.parseBareAddress(message.getFrom());
-            
+
             // If there is not already a chat window for the current user, create one
             // and give it the message.
             ChatWindow chatWin = getChatWindowForUser(remoteId);
-            
+
             if (chatWin == null)
             {
                 chatWithUser(remoteId);
@@ -823,7 +877,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     /**
      *  Creates and sets up the menus for the application.
      */
-    private void setUpMenus()
+    private void setUpAppMenus()
     {
         // Platform independent accelerator key
         int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
@@ -879,6 +933,32 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
+     * Creates the contextual menu for the roster.
+     *
+     * @return   The menu to display when the user right-clicks the roster.
+     */
+    private JPopupMenu createRosterContextMenu()
+    {
+        JPopupMenu retVal = new JPopupMenu();
+
+        mChatContextItem = new JMenuItem("Chat");
+        mChatContextItem.addActionListener(this);
+        retVal.add(mChatContextItem);
+
+        retVal.addSeparator();
+
+        mAddUserContextItem = new JMenuItem("Add User...");
+        mAddUserContextItem.addActionListener(this);
+        retVal.add(mAddUserContextItem);
+
+        mDelUserContextItem = new JMenuItem("Delete User");
+        mDelUserContextItem.addActionListener(this);
+        retVal.add(mDelUserContextItem);
+
+        return retVal;
+    }
+
+    /**
      * Populates the frame with UI controls.
      */
     private void buildUI()
@@ -930,6 +1010,9 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         cPane.add(panel, BorderLayout.SOUTH);
 
         // Create menu bar
-        setUpMenus();
+        setUpAppMenus();
+
+        // Create contextual menu for roster
+        mRosterContextMenu = createRosterContextMenu();
     }
 }

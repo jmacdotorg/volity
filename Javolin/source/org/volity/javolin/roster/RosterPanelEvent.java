@@ -26,13 +26,15 @@ import java.util.*;
 public class RosterPanelEvent extends EventObject
 {
     private UserTreeItem mUserItem;
+    private int mX;
+    private int mY;
 
     /**
      * Constructor.
      *
      * @param source  The object on which the Event initially occurred.
      * @param item    The UserTreeItem that was affected. Is null if the event is a
-     * selection change such that the selection was cleared.
+     *                selection change such that the selection was cleared.
      */
     public RosterPanelEvent(Object source, UserTreeItem item)
     {
@@ -41,13 +43,52 @@ public class RosterPanelEvent extends EventObject
     }
 
     /**
-     * Gets the UserTreeItem that pertains to the event. 
+     * Constructor.
      *
-     * @return   The UserTreeItem that pertains to the event. Returns null if the event 
+     * @param source  The object on which the Event initially occurred.
+     * @param item    The UserTreeItem that was affected. Is null if the event is a
+     *                selection change such that the selection was cleared.
+     * @param x       X coordinate of the relevant mouse event.
+     * @param y       Y coordinate of the relevant mouse event.
+     */
+    public RosterPanelEvent(Object source, UserTreeItem item, int x, int y)
+    {
+        super(source);
+        mUserItem = item;
+        mX = x;
+        mY = y;
+    }
+
+    /**
+     * Gets the UserTreeItem that pertains to the event.
+     *
+     * @return   The UserTreeItem that pertains to the event. Returns null if the event
      * is a selection change such that the selection was cleared.
      */
     public UserTreeItem getUserTreeItem()
     {
         return mUserItem;
+    }
+
+    /**
+     * Gets the x coordinate of the relevant mouse event that triggered the
+     * RosterPanelEvent.
+     *
+     * @return   The x coordinate of the triggering mouse event.
+     */
+    public int getX()
+    {
+        return mX;
+    }
+
+    /**
+     * Gets the y coordinate of the relevant mouse event that triggered the
+     * RosterPanelEvent.
+     *
+     * @return   The y coordinate of the triggering mouse event.
+     */
+    public int getY()
+    {
+        return mY;
     }
 }

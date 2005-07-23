@@ -125,6 +125,23 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     }
 
     /**
+     * Notifies all listeners that have registered interest for notification on this
+     * event type.
+     *
+     * @param e  The RosterPanelEvent to be fired; generated when the roster is right-
+     * clicked.
+     */
+    private void fireRosterPanelContextMenuInvoke(RosterPanelEvent e)
+    {
+        Iterator iter = mRosterListeners.iterator();
+
+        while (iter.hasNext())
+        {
+            ((RosterPanelListener)iter.next()).contextMenuInvoked(e);
+        }
+    }
+
+    /**
      * Sets the roster object for the panel.
      *
      * @param roster  The roster object. This value can be null, which generally means
@@ -309,5 +326,48 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         mTree = new JTree();
         JScrollPane scrollPane = new JScrollPane(mTree);
         add(scrollPane, BorderLayout.CENTER);
+
+        mTree.addMouseListener(
+            new MouseAdapter()
+            {
+                public void mousePressed(MouseEvent e)
+                {
+                    maybeShowPopup(e);
+                }
+
+                public void mouseReleased(MouseEvent e)
+                {
+                    maybeShowPopup(e);
+                }
+            });
+    }
+
+    /**
+     * Checks whether the received mouse event was a popup trigger, and if so, selects
+     * the clicked item (if any) and fires a context menu event to the RosterPanel
+     * listeners.
+     *
+     * @param e  The event that was triggered.
+     */
+    private void maybeShowPopup(MouseEvent e)
+    {
+        if (!e.isPopupTrigger())
+        {
+            return;
+        }
+
+        UserTreeItem selectedItem = null;
+
+        // Select item under cursor
+        TreePath path = mTree.getPathForLocation(e.getX(), e.getY());
+
+        if (path != null)
+        {
+            mTree.setSelectionPath(path);
+            selectedItem = getSelectedUserItem();
+        }
+
+        fireRosterPanelContextMenuInvoke(
+            new RosterPanelEvent(this, selectedItem, e.getX(), e.getY()));
     }
 }
