@@ -395,20 +395,24 @@ def makecall(method, *argls):
         callnod.addchild(parnod)
     return callnod
 
-def makeresponse(arg=None):
-    """makeresponse( [arg=None] ) -> Node
+def makeresponse(arg=True):
+    """makeresponse(arg=True) -> Node
 
     Return a <methodResponse> node containing the <params> given
-    by the (optional) argument *arg*.
+    by the argument *arg*.
 
-    The argument (if any) is converted with makevalue(), so you can pass 
+    The argument is converted with makevalue(), so you can pass 
     in either an RPCType object or Python data.
+
+    An RPC response requires a value. There is no equivalent of null/None,
+    so if you pass that in here, it is taken to be (boolean) True.
     """
     
     callnod = interface.Node('methodResponse')
-    if (arg != None):
-        parnod = makeparams([arg])
-        callnod.addchild(parnod)
+    if (arg == None):
+        arg = True
+    parnod = makeparams([arg])
+    callnod.addchild(parnod)
     return callnod
     
 def makefaultresponse(faultcode, faultstring=''):
@@ -517,14 +521,14 @@ class RPCResponse(Exception):
     handler raises this, it is equivalent to returning the value. This
     class is not used when parsing incoming RPC responses.
 
-    RPCResponse(value=None) -- constructor.
+    RPCResponse(value=True) -- constructor.
 
     Public member variables:
 
     rpcresponse.value -- value.
     """
 
-    def __init__(self, value=None):
+    def __init__(self, value=True):
         self.value = value
 
     def __repr__(self):
@@ -567,8 +571,7 @@ class RPCFault(Exception):
 def parseresponse(respnod):
     """parseresponse(Node) -> value
 
-    Return the value parsed from a <methodResponse> Node. This may be
-    None, since the contents of <methodResponse> are optional.
+    Return the value parsed from a <methodResponse> Node.
 
     If the response is a fault, this will raise an RPCFault exception.
     You can examine ex.code and ex.string to get the specifics.
@@ -577,7 +580,7 @@ def parseresponse(respnod):
     checknodename(respnod, 'methodResponse')
     nodls = respnod.getchildren()
     if (not nodls):
-        return None
+        raise ValueError('methodResponse has no child')
     if (len(nodls) > 1):
         raise ValueError('methodResponse has more than one child')
     nod = nodls[0]
@@ -797,7 +800,6 @@ class TestRpcData(unittest.TestCase):
 
     def test_parseresponse(self):
         validlist = [
-            None,
             5, -5, 1.234, 'string',
             [], {},
             [1, 2, 'three', [4, 5], 6],
@@ -821,6 +823,11 @@ class TestRpcData(unittest.TestCase):
         
         nod = interface.Node.parse('<methodResponse><fault></fault></methodResponse>')
         self.assertRaises(ValueError, parseresponse, nod)
+
+        nod = makeresponse()
+        self.assertEqual(True, parseresponse(nod))
+        nod = makeresponse(None)
+        self.assertEqual(True, parseresponse(nod))
         
         for val in validlist:
             nod = makeresponse(val)

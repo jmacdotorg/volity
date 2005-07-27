@@ -1177,7 +1177,7 @@ class RefVolityOpset(rpc.MethodOpset):
             args=bool)
         self.validators['kill_game'] = Validator(state=STATE_SUSPENDED,
             args=bool)
-        self.validators['get_full_state'] = Validator(argcount=0)
+        self.validators['send_state'] = Validator(argcount=0)
 
     def precondition(self, sender, namehead, nametail, *callargs):
         if (self.referee.state != 'running'):
@@ -1224,7 +1224,7 @@ class RefVolityOpset(rpc.MethodOpset):
     def rpc_kill_game(self, sender, *args):
         return self.referee.configkillgame(sender, args[0])
 
-    def rpc_get_full_state(self, sender, *args):
+    def rpc_send_state(self, sender, *args):
         player = self.referee.game.getplayer(sender)
         if (not player):
             raise Exception('sender could not be found')

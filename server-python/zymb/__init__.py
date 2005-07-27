@@ -30,6 +30,11 @@ simple tasks.
 
 * Version history:
 
+- 1.2.3:
+Fixed the RPC service to disallow empty RPC replies. (I thought that was
+    legal, but it isn't.) An RPC handler which returns None will now
+    generate a True response.
+
 - 1.2.2:
 Added a way to customize the "RPC not found" response of the RPC service.
 More comments.

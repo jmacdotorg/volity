@@ -19,10 +19,9 @@ class RPCService(service.Service):
     The code in the opset has several options:
 
     * Return a Python value. This will become the RPC response value.
-    * Return None. This will cause an RPC response with no value.
+    * Return None. This will cause an RPC response with a boolean True value.
     * Raise an RPCResponse(value). This is equivalent to returning the
-        value -- it causes an RPC response with that value (or no value,
-        for None).
+        value -- it causes an RPC response with that value.
     * Raise an RPCFault(code, string). This will cause an RPC fault reply,
         with the given *code* and *string*.
     * Raise a CallNotFound. This will become a stanza-level 'item-not-found'
