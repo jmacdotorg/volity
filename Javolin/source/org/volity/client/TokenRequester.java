@@ -27,19 +27,19 @@ public class TokenRequester {
      *         authenticated
      */
     public TokenRequester(XMPPConnection connection, String responderJID) {
-	this.requester = new RPCRequester(connection, responderJID);
+        this.requester = new RPCRequester(connection, responderJID);
     }
 
     protected RPCRequester requester;
 
     public XMPPConnection getConnection() 
     { 
-	return requester.getConnection(); 
+        return requester.getConnection(); 
     }
 
     public String getResponderJID() 
     { 
-	return requester.getResponderJID(); 
+        return requester.getResponderJID(); 
     }
 
     /**
@@ -53,9 +53,9 @@ public class TokenRequester {
      * @throws TokenFailure if the remote method returned a non-success token
      */
     public Object invoke(String methodName)
-	throws XMPPException, RPCException, TokenFailure
+        throws XMPPException, RPCException, TokenFailure
     {
-	return invokeTimeout(methodName, null, 30);
+        return invokeTimeout(methodName, null, 30);
     }
 
     /**
@@ -69,9 +69,9 @@ public class TokenRequester {
      * @throws TokenFailure if the remote method returned a non-success token
      */
     public Object invoke(String methodName, List params)
-	throws XMPPException, RPCException, TokenFailure
+        throws XMPPException, RPCException, TokenFailure
     {
-	return invokeTimeout(methodName, params, 30);
+        return invokeTimeout(methodName, params, 30);
     }
 
     /**
@@ -86,9 +86,9 @@ public class TokenRequester {
      * @throws TokenFailure if the remote method returned a non-success token
      */
     public Object invokeTimeout(String methodName, int timeout)
-	throws XMPPException, RPCException, TokenFailure
+        throws XMPPException, RPCException, TokenFailure
     {
-	return invokeTimeout(methodName, null, timeout);
+        return invokeTimeout(methodName, null, timeout);
     }
 
     /**
@@ -103,31 +103,31 @@ public class TokenRequester {
      * @throws TokenFailure if the remote method returned a non-success token
      */
     public Object invokeTimeout(String methodName, List params, int timeout)
-	throws XMPPException, RPCException, TokenFailure
+        throws XMPPException, RPCException, TokenFailure
     {
-	Object val = this.requester.invokeTimeout(methodName, params, timeout);
+        Object val = this.requester.invokeTimeout(methodName, params, timeout);
 
-	if (!(val instanceof List)) {
-	    throw new RPCException(606, "Response did not begin with a token");
-	}
+        if (!(val instanceof List)) {
+            throw new RPCException(606, "Response did not begin with a token");
+        }
 
-	List lval = (List) val;
-	if (lval.isEmpty()) {
-	    throw new RPCException(606, "Response did not begin with a token");
-	}
-	if (!VOLITY_OK_TOKEN.equals(lval.get(0))) {
-	    /* A failure response is a list of tokens. */
-	    throw new TokenFailure(lval);
-	}
-	/* A success response must contain zero or one values after
-	 * the "volity.ok". 
-	 */
-	if (lval.size() == 1)
-	    return null;
-	if (lval.size() > 2) {
-	    throw new RPCException(606, 
-		"Response of volity.ok contained more than one value");
-	}
-	return lval.get(1);
+        List lval = (List) val;
+        if (lval.isEmpty()) {
+            throw new RPCException(606, "Response did not begin with a token");
+        }
+        if (!VOLITY_OK_TOKEN.equals(lval.get(0))) {
+            /* A failure response is a list of tokens. */
+            throw new TokenFailure(lval);
+        }
+        /* A success response must contain zero or one values after
+         * the "volity.ok". 
+         */
+        if (lval.size() == 1)
+            return null;
+        if (lval.size() > 2) {
+            throw new RPCException(606, 
+                "Response of volity.ok contained more than one value");
+        }
+        return lval.get(1);
     }
 }

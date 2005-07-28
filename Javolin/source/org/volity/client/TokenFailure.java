@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class TokenFailure extends Exception {
     public TokenFailure(List tokenlist) {
-	this.tokenlist = tokenlist;
+        this.tokenlist = tokenlist;
     }
 
     protected List tokenlist;
