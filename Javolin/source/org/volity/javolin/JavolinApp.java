@@ -58,7 +58,9 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static ImageIcon HIDE_UNAVAIL_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
-    private static UIFileCache sUIFileCache = new UIFileCache();
+    private static UIFileCache sUIFileCache = new UIFileCache(isRunningOnMac());
+
+    private static TranslateToken sTranslator = new TranslateToken(null);
 
     private JButton mShowHideUnavailBut;
     private JButton mAddUserBut;
@@ -204,6 +206,22 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
+     * Gets the generic token translator (volity.* and literal.*
+     * tokens only) belonging to the application.
+     *
+     * This really only exists to handle failures in parlor RPCs
+     * (i.e., volity.new_table). Any failures that happen in the
+     * context of a given table/referee should go to
+     * TableWindow.getTranslator() instead.
+     *
+     * @return   The TranslateToken belonging to the application.
+     */
+    public static TranslateToken getTranslator()
+    {
+        return sTranslator;
+    }
+    
+     /**
      * Gets the UIFileCache belonging to the application.
      *
      * @return   The UIFileCache belonging to the application.

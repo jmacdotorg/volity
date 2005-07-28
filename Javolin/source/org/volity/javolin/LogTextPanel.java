@@ -101,9 +101,12 @@ public class LogTextPanel extends JPanel implements ChangeListener
         setLayout(new BorderLayout());
 
         mLogTextPane = new JTextPane();
+        mLogTextPane.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
         mLogTextPane.setEditable(false);
 
-        mLogScroller = new JScrollPane(mLogTextPane);
+        mLogScroller = new JScrollPane(mLogTextPane,
+            JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         mLogScroller.getVerticalScrollBar().getModel().addChangeListener(this);
         add(mLogScroller, BorderLayout.CENTER);
     }

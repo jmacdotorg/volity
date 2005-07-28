@@ -24,13 +24,16 @@ import org.volity.jabber.RPCResponseHandler;
 public class SVGCanvas extends JSVGCanvas 
   implements InterpreterFactory, GameUI.ErrorHandler
 {
-  public SVGCanvas(GameTable table, URL uiDocument) {
-    this(table.getConnection(), uiDocument);
+  public SVGCanvas(GameTable table, URL uiDocument,
+    TokenTranslationHandler failureMessageHandler) {
+    this(table.getConnection(), uiDocument, failureMessageHandler);
     this.table = table;
   }
-  public SVGCanvas(XMPPConnection connection, URL uiDocument) {
+  public SVGCanvas(XMPPConnection connection, URL uiDocument,
+    TokenTranslationHandler failureMessageHandler) {
     super();
     this.connection = connection;
+    this.failureMessageHandler = failureMessageHandler;
     setDocumentState(ALWAYS_DYNAMIC);
     setURI(uiDocument.toString());
     addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
@@ -51,6 +54,7 @@ public class SVGCanvas extends JSVGCanvas
 
   XMPPConnection connection;
   GameTable table;
+  TokenTranslationHandler failureMessageHandler;
 
   // Inherited from JSVGComponent.
   protected BridgeContext createBridgeContext() {
@@ -129,7 +133,12 @@ public class SVGCanvas extends JSVGCanvas
 
   // Inherited from GameUI.ErrorHandler.
   public void error(Exception e) {
-    userAgent.displayError(e);
+    if (e instanceof TokenFailure) {
+      failureMessageHandler.handle((TokenFailure)e);
+    }
+    else {
+      userAgent.displayError(e);
+    }
   }
 
   /**

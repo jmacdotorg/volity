@@ -10,7 +10,6 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
-import org.volity.client.TokenFailure;
 import org.volity.jabber.*;
 
 /**
@@ -74,12 +73,10 @@ public class GameUI implements RPCHandler, PacketFilter {
 	    try {
 	      List params = Arrays.asList(args).subList(1, args.length);
 	      return table.getReferee().invoke("game." + args[0], params);
-	    } catch (TokenFailure ex) {
-	      String msg = TranslateToken.translate(ex);
-	      errorHandler.error(new Exception(msg)); /* XXX should be printed to the window log instead */
-	      return null;
 	    } catch (Exception e) {
 	      errorHandler.error(e);
+              /* This will print TokenFailures in window log, and display
+               * other exceptions as dialog box */
 	      return null;
 	    }
 	  }
@@ -88,12 +85,10 @@ public class GameUI implements RPCHandler, PacketFilter {
 	  public Object run(Object[] args) {
 	    try {
 	      table.getReferee().startGame();
-	    } catch (TokenFailure ex) {
-	      String msg = TranslateToken.translate(ex);
-	      errorHandler.error(new Exception(msg)); /* XXX should be printed to the window log instead */
-	      return null;
 	    } catch (Exception e) {
 	      errorHandler.error(e);
+              /* This will print TokenFailures in window log, and display
+               * other exceptions as dialog box */
 	    }
 	    return Undefined.instance;
 	  }
@@ -102,12 +97,10 @@ public class GameUI implements RPCHandler, PacketFilter {
 	  public Object run(Object[] args) {
 	    try {
 	      table.getReferee().addBot();
-	    } catch (TokenFailure ex) {
-	      String msg = TranslateToken.translate(ex);
-	      errorHandler.error(new Exception(msg)); /* XXX should be printed to the window log instead */
-	      return null;
 	    } catch (Exception e) {
 	      errorHandler.error(e);
+              /* This will print TokenFailures in window log, and display
+               * other exceptions as dialog box */
 	    }
 	    return Undefined.instance;
 	  }

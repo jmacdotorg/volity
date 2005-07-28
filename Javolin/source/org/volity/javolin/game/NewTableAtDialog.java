@@ -126,7 +126,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         {
             // We don't have a log window, so shove the failure message
             // up in a MessageDialog.
-            String msg = TranslateToken.translate(ex);
+            String msg = JavolinApp.getTranslator().translate(ex);
 
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 

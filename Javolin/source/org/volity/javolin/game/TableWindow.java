@@ -24,6 +24,7 @@ import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.prefs.*;
+import java.util.zip.ZipException;
 import javax.swing.*;
 import javax.swing.text.*;
 
@@ -70,6 +71,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
     private SizeAndPositionSaver mSizePosSaver;
     private GameTable mGameTable;
+    private TranslateToken mTranslator;
 
     /**
      * Factory method for a TableWindow. This form will create a new table.
@@ -108,18 +110,22 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * @exception MalformedURLException  If an invalid UI file URL was used.
      * @exception TokenFailure           If a new_table RPC failed.
      */
-    public static TableWindow makeTableWindow(GameServer server, GameTable table,
-        String nickname) throws XMPPException, RPCException, IOException,
-        TokenFailure, MalformedURLException
+    public static TableWindow makeTableWindow(GameServer server, 
+        GameTable table, String nickname) 
+        throws XMPPException, RPCException, IOException,
+               TokenFailure, MalformedURLException, ZipException
     {
         TableWindow retVal = null;
 
         URL uiUrl = getUIURL(server);
 
-        if (uiUrl != null)
+        if (uiUrl == null)
         {
-            retVal = new TableWindow(server, table, nickname, uiUrl);
+            return null;
         }
+
+        File dir = JavolinApp.getUIFileCache().getUIDir(uiUrl);
+        retVal = new TableWindow(server, table, nickname, dir);
 
         return retVal;
     }
@@ -128,21 +134,69 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * Constructor.
      *
      * @param server                     The GameServer
-     * @param table                      The GameTable to join. If null, a new table will
-     *  be created.
+     * @param table                      The GameTable to join. If null, 
+     *        a new table will be created.
      * @param nickname                   The nickname to use to join the table.
-     * @param uiUrl                      The URL for the UI file.
+     * @param uiDir                      The UI directory.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
      * @exception TokenFailure           If a new_table RPC failed.
      * @exception IOException            If a UI file could not be downloaded.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
-    protected TableWindow(GameServer server, GameTable table, String nickname, URL uiUrl)
-         throws XMPPException, RPCException, IOException, TokenFailure,
-        MalformedURLException
+    protected TableWindow(GameServer server, GameTable table, String nickname,
+        File uiDir)
+        throws XMPPException, RPCException, IOException, TokenFailure,
+               MalformedURLException
     {
         mGameTable = table;
+
+        /* We must now locate the "main" files in the UI directory. The
+         * first task is to skip down through any directories that are
+         * empty except for one subdirectory. */
+
+        while (true) 
+        {
+            File[] entries = uiDir.listFiles();
+            if (entries.length != 1) 
+            {
+                break;
+            }
+            if (!(entries[0].isDirectory()))
+            {
+                break;
+            }
+            uiDir = entries[0];
+        }
+
+        /* If there's exactly one file, that's it. Otherwise, look for
+         * main.svg or MAIN.SVG.
+         * XXX Or config.svg, main.html, config.html... */
+
+        File uiMainFile;
+        File[] entries = uiDir.listFiles();
+        if (entries.length == 1 && !entries[0].isDirectory())
+        {
+            uiMainFile = entries[0];
+        }
+        else {
+            uiMainFile = new File(uiDir, "main.svg");
+            if (!uiMainFile.exists()) 
+            {
+                uiMainFile = new File(uiDir, "MAIN.SVG");
+            }
+            if (!uiMainFile.exists()) 
+            {
+                throw new IOException("unable to locate UI file in cache");
+            }
+        }
+
+        URL uiMainUrl = uiMainFile.toURI().toURL();
+
+        /* Set up a translator which knows about the "locale"
+         * subdirectory. This will be used for all token translation
+         * at the table. */
+        mTranslator = new TranslateToken(new File(uiDir, "locale"));
 
         if (mGameTable == null)
         {
@@ -150,8 +204,20 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         }
 
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
+        //XXX nicer display of game name?
 
-        mGameViewport = new SVGCanvas(mGameTable, uiUrl);
+        /* Create the SVG object. The third argument is an anonymous
+         * TokenTranslationHandler subclass which knows how to print
+         * failure messages to the message pane. */
+        mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, 
+            new TokenTranslationHandler(mTranslator)
+            {
+                public void output(String msg)
+                {
+                    writeMessageText(null, msg);
+                }
+            });
+
         mGameViewport.addGVTTreeRendererListener(
             new GVTTreeRendererAdapter()
             {
@@ -228,6 +294,15 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         mGameTable.join(nickname);
     }
 
+    /**
+     * Gets the game token translator belonging to the table.
+     *
+     * @return   The TranslateToken belonging to the table.
+     */
+    public TranslateToken getTranslator()
+    {
+        return mTranslator;
+    }
 
     /**
      * Helper method for the makeTableWindow. Returns the URL for the given game server's
@@ -513,6 +588,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);
         mInputText.setWrapStyleWord(true);
+        mInputText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
         mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
 
         // Split pane separating game viewport from message text and input text

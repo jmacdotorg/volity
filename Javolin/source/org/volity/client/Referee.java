@@ -29,7 +29,7 @@ public class Referee extends TokenRequester {
     throws XMPPException, RPCException, TokenFailure
   {
     invoke("volity.invite_player",
-	   Arrays.asList(new String[] { jid, message }));
+           Arrays.asList(new String[] { jid, message }));
   }
 
   /**
@@ -42,7 +42,7 @@ public class Referee extends TokenRequester {
     throws XMPPException, RPCException, TokenFailure
   {
     invoke("volity.invite_player",
-	   Arrays.asList(new String[] { jid }));
+           Arrays.asList(new String[] { jid }));
   }
 
   /**
@@ -84,7 +84,7 @@ public class Referee extends TokenRequester {
      */
     public void unready() throws XMPPException, RPCException, TokenFailure 
     {
-	invoke("volity.unready");
+        invoke("volity.unready");
     }
 
     /**
@@ -94,7 +94,7 @@ public class Referee extends TokenRequester {
      */
     public void ready() throws XMPPException, RPCException, TokenFailure
     {
-	invoke("volity.ready");
+        invoke("volity.ready");
     }
 
     /**
@@ -104,7 +104,7 @@ public class Referee extends TokenRequester {
      */
     public void stand() throws XMPPException, RPCException, TokenFailure
     {
-	invoke("volity.stand");
+        invoke("volity.stand");
     }
 
 }
