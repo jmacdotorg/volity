@@ -79,30 +79,49 @@ public class UIFileCache
     }
 
     /**
-     * Takes a UI URL and returned a munged string which can serve as
-     * a single component of a pathname in the UI cache. The hope is
-     * that two different URLs will never produce the same munged
-     * string.
+     * Takes a UI URL, and returns a munged string which can serve as a single
+     * component of a pathname in the UI cache. The plan is that two different
+     * URLs will never produce the same munged string.
      *
-     * The algorithm is to convert "/" to "_", and then delete any
-     * character except for alphanumerics, period, plus, minus, and
-     * underscore. (So "http://volity.org/games/rps/svg/rps.svg"
-     * becomes "http__volity.org_games_rps_svg_rps.svg".) It is
-     * obviously possible to contrive collisions, but hopefully they
-     * won't occur in real life.
+     * The algorithm is to accept alphanumerics, "-", and "." as they stand.
+     * All "/" are converted to "+". Anything else is converted to a "$HH" hex
+     * sequence (or "$HHH" or "$HHHH" if the URL manages to contain Unicode
+     * values beyond 255).
+     *
+     * So "http://volity.org/games/rps/svg/rps.svg" becomes
+     * "http$3a++volity.org+games+rps+svg+rps.svg".
      *
      * @param fileLoc  A URL pointing at a Volity UI file.
-     * @return         A munged string which contains no slashes and can 
-     *                 be used as a directory name.
+     * @return         A munged string which contains no slashes and can be
+     *                 used as a file or directory name.
      */
-    private String urlToCacheName(URL fileLoc)
+    private static String urlToCacheName(URL fileLoc)
     {
-        String retVal;
+        StringBuffer res = new StringBuffer();
 
-        retVal = fileLoc.toString().replace('/', '_');
-        retVal = retVal.replaceAll("[^a-zA-Z0-9.+_-]+", "");
-
-        return retVal;
+        char arr[] = fileLoc.toString().toCharArray();
+        for (int ix=0; ix<arr.length; ix++) 
+        {
+            char ch = arr[ix];
+            if ((ch >= 'a' && ch <= 'z')
+                || (ch >= 'A' && ch <= 'Z')
+                || (ch >= '0' && ch <= '9')
+                || ch == '.' || ch == '-')
+            {
+                res.append(ch);
+            }
+            else if (ch == '/')
+            {
+                res.append('+');
+            }
+            else 
+            {
+                res.append('$');
+                res.append(Integer.toHexString((int)ch));
+            }
+        }
+        
+        return res.toString();            
     }
 
     /**
