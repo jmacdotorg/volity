@@ -27,7 +27,7 @@
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
-      deprecation="on"/>
+      deprecation="on" />
     <!-- Copy all .png files from ${src} to ${build}-->
     <copy todir="${build}">
       <fileset dir="${src}">
@@ -64,9 +64,16 @@
 
   <target name="clean"
         description="clean up" >
-    <!-- Delete the ${build} directory tree and .jar file -->
+    <!-- Delete the docs, the ${build} directory tree, and the .jar file -->
     <delete dir="${build}"/>
     <delete dir="${doc}"/>    
+    <delete file="${jarfile}"/>
+  </target>
+
+  <target name="cleanbuild"
+        description="clean up" >
+    <!-- Delete the ${build} directory tree and .jar file -->
+    <delete dir="${build}"/>
     <delete file="${jarfile}"/>
   </target>
 </project>

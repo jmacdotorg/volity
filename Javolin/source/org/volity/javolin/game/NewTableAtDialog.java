@@ -131,7 +131,8 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
             JOptionPane.showMessageDialog(this, msg,
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+                JavolinApp.getAppName() + ": Cannot Create Table",
+                JOptionPane.ERROR_MESSAGE);
 
             // Destroy TableWindow object
             mTableWindow = null;

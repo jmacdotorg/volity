@@ -107,6 +107,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
      * @exception IOException            If a UI file could not be downloaded.
+     * @exception ZipException           If a UI file could not be unpacked.
      * @exception MalformedURLException  If an invalid UI file URL was used.
      * @exception TokenFailure           If a new_table RPC failed.
      */
@@ -151,23 +152,9 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     {
         mGameTable = table;
 
-        /* We must now locate the "main" files in the UI directory. The
-         * first task is to skip down through any directories that are
-         * empty except for one subdirectory. */
-
-        while (true) 
-        {
-            File[] entries = uiDir.listFiles();
-            if (entries.length != 1) 
-            {
-                break;
-            }
-            if (!(entries[0].isDirectory()))
-            {
-                break;
-            }
-            uiDir = entries[0];
-        }
+        /* We must now locate the "main" files in the UI directory. First, find
+         * the directory which actually contains the significant files. */
+        uiDir = locateTopDirectory(uiDir);
 
         /* If there's exactly one file, that's it. Otherwise, look for
          * main.svg or MAIN.SVG.
@@ -180,12 +167,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
             uiMainFile = entries[0];
         }
         else {
-            uiMainFile = new File(uiDir, "main.svg");
-            if (!uiMainFile.exists()) 
-            {
-                uiMainFile = new File(uiDir, "MAIN.SVG");
-            }
-            if (!uiMainFile.exists()) 
+            uiMainFile = findFileCaseless(uiDir, "main.svg");
+            if (uiMainFile == null) 
             {
                 throw new IOException("unable to locate UI file in cache");
             }
@@ -193,10 +176,12 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         URL uiMainUrl = uiMainFile.toURI().toURL();
 
-        /* Set up a translator which knows about the "locale"
-         * subdirectory. This will be used for all token translation
-         * at the table. */
-        mTranslator = new TranslateToken(new File(uiDir, "locale"));
+        /* Set up a translator which knows about the "locale" subdirectory.
+         * This will be used for all token translation at the table. (If there
+         * is no "locale" or "LOCALE" subdir, then the argument to
+         * TranslateToken() will be null. In this case, no game.* or seat.*
+         * tokens will be translatable.) */
+        mTranslator = new TranslateToken(findFileCaseless(uiDir, "locale"));
 
         if (mGameTable == null)
         {
@@ -209,12 +194,12 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         /* Create the SVG object. The third argument is an anonymous
          * TokenTranslationHandler subclass which knows how to print
          * failure messages to the message pane. */
-        mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, 
-            new TokenTranslationHandler(mTranslator)
+        mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
+            new GameUI.MessageHandler()
             {
-                public void output(String msg)
+                public void print(String msg)
                 {
-                    writeMessageText(null, msg);
+                    writeMessageText(msg);
                 }
             });
 
@@ -356,6 +341,87 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
+     * Look in a directory to see if it contains anything interesting, or if
+     * it's just a wrapper around a subdirectory (and nothing else). In the
+     * latter case, look into the subdirectory, and so on recursively.
+     *
+     * The first directory which is "interesting" (contains any files, or
+     * contains more than one subdirectory) is the final result. This may be
+     * the same as the directory that was passed in to begin with.
+     *
+     * This function is useful to search a directory created by unpacking a ZIP
+     * file (or other archive). Some people create archives with the important
+     * files at the top level; others create archives with everything important
+     * wrapped in a folder. This function handles both -- or, indeed, any
+     * number of wrappers -- and gives you back the directory in which to find
+     * things.
+     *
+     * @param dir the directory in which to search
+     * @return the directory which contains significant files
+     */
+    public static File locateTopDirectory(File dir)
+    {
+        while (true) 
+        {
+            File[] entries = dir.listFiles();
+            if (entries.length != 1) 
+            {
+                break;
+            }
+            if (!(entries[0].isDirectory()))
+            {
+                break;
+            }
+            dir = entries[0];
+        }
+
+        return dir;
+    }
+
+    /**
+     * Given a directory and a string, locate a directory entry which matches
+     * the string, case-insensitively. More precisely: this looks for an entry
+     * which matches name, name.toLowerCase(), or name.toUpperCase(). It will
+     * not find arbitrary mixed-case entries.
+     *
+     * @param dir the directory to search.
+     * @param name the file/dir name to search for.
+     * @return a File representing an existing file/dir; or null, if no entry
+     *         was found.
+     */
+    public static File findFileCaseless(File dir, String name) 
+    {
+        File res;
+        String newname;
+
+        res = new File(dir, name);
+        if (res.exists())
+        {
+            return res;
+        }
+
+        newname = name.toUpperCase();
+        if (!newname.equals(name)) {
+            res = new File(dir, newname);
+            if (res.exists())
+            {
+                return res;
+            }
+        }
+
+        newname = name.toLowerCase();
+        if (!newname.equals(name)) {
+            res = new File(dir, newname);
+            if (res.exists())
+            {
+                return res;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Saves window state to the preferences storage, including window size and position,
      * and splitter bar positions.
      */
@@ -482,8 +548,9 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     /**
      * Appends the given message text to the message text area.
      *
-     * @param nickname  The nickname of the user who sent the message. If null or empty,
-     * it is assumed to have come from the MultiUserChat itself.
+     * @param nickname  The nickname of the user who sent the message. 
+     *                  If null or empty, it is assumed to have come from the
+     *                  client or from the MultiUserChat itself.
      * @param message   The text of the message.
      */
     private void writeMessageText(String nickname, String message)
@@ -504,6 +571,17 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         mMessageText.append(nickText + " ", nameColor);
         mMessageText.append(message + "\n", textColor);
+    }
+
+    /**
+     * Appends the given message text to the message text area. The message is
+     * assumed to have come from the client or from the MultiUserChat itself.
+     *
+     * @param message   The text of the message.
+     */
+    private void writeMessageText(String message)
+    {
+        writeMessageText(null, message);
     }
 
     /**

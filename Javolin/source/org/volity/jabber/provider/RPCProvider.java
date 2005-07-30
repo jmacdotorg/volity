@@ -37,12 +37,15 @@ public class RPCProvider implements IQProvider {
     String methodName = parser.nextText();
     parser.require(parser.END_TAG, null, "methodName");
 
-    List params = null;
+    List params;
     if (parser.nextTag() == parser.START_TAG) {
       parser.require(parser.START_TAG, null, "params");
       params = parseParams(parser);
       parser.require(parser.END_TAG, null, "params");
       parser.nextTag();
+    }
+    else {
+      params = new ArrayList();
     }
 
     return new RPCRequest(methodName, params);

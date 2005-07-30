@@ -24,16 +24,30 @@ import org.volity.jabber.RPCResponseHandler;
 public class SVGCanvas extends JSVGCanvas 
   implements InterpreterFactory, GameUI.ErrorHandler
 {
+  /**
+   * @param table represents a game table (MUC)
+   * @param uiDocument the top-level SVG document
+   * @param translator service to translate tokens into a string
+   * @param messageHandler service to display a string to the user
+   */
   public SVGCanvas(GameTable table, URL uiDocument,
-    TokenTranslationHandler failureMessageHandler) {
-    this(table.getConnection(), uiDocument, failureMessageHandler);
+    TranslateToken translator, GameUI.MessageHandler messageHandler) {
+    this(table.getConnection(), uiDocument, translator, messageHandler);
     this.table = table;
   }
+
+  /**
+   * @param connection Jabber connection
+   * @param uiDocument the top-level SVG document
+   * @param translator service to translate tokens into a string
+   * @param messageHandler service to display a string to the user
+   */
   public SVGCanvas(XMPPConnection connection, URL uiDocument,
-    TokenTranslationHandler failureMessageHandler) {
+    TranslateToken translator, GameUI.MessageHandler messageHandler) {
     super();
     this.connection = connection;
-    this.failureMessageHandler = failureMessageHandler;
+    this.messageHandler = messageHandler;
+    this.translator = translator;
     setDocumentState(ALWAYS_DYNAMIC);
     setURI(uiDocument.toString());
     addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
@@ -54,7 +68,8 @@ public class SVGCanvas extends JSVGCanvas
 
   XMPPConnection connection;
   GameTable table;
-  TokenTranslationHandler failureMessageHandler;
+  TranslateToken translator;
+  GameUI.MessageHandler messageHandler;
 
   // Inherited from JSVGComponent.
   protected BridgeContext createBridgeContext() {
@@ -100,9 +115,12 @@ public class SVGCanvas extends JSVGCanvas
   SVGUI ui;
   RhinoInterpreter interpreter;
 
+  public GameUI getUI() { return ui; }
+
   class SVGUI extends GameUI {
     SVGUI() {
-      super(connection, SVGCanvas.this);
+      super(connection, SVGCanvas.this.translator, 
+        SVGCanvas.this.messageHandler, SVGCanvas.this);
     }
     public void handleRPC(final String methodName,
 			  final List params,
@@ -131,10 +149,11 @@ public class SVGCanvas extends JSVGCanvas
     }
   }
 
-  // Inherited from GameUI.ErrorHandler.
+  // Implements error() for GameUI.ErrorHandler.
   public void error(Exception e) {
     if (e instanceof TokenFailure) {
-      failureMessageHandler.handle((TokenFailure)e);
+      String msg = translator.translate((TokenFailure)e);
+      messageHandler.print(msg);
     }
     else {
       userAgent.displayError(e);

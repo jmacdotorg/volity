@@ -11,18 +11,31 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
 import org.volity.jabber.*;
+import org.volity.client.TranslateToken;
 
 /**
  * A game user interface.
  */
 public class GameUI implements RPCHandler, PacketFilter {
   /**
+   * (The arguments here are slightly redundant -- we could implement
+   * errorHandler in this class using translator and messageHandler. But then
+   * we'd have to catch more exceptions. Maybe we should do it anyway.)
+   *
    * @param connection an authenticated connection to an XMPP server
-   * @param errorHandler a handler for UI script and RPC errors
+   * @param translator a token translation instance
+   * @param messageHandler a handler for UI script and RPC messages
+   *        (will display messages in-line -- e.g., in a message pane)
+   * @param errorHandler   a handler for UI script and RPC exceptions
+   *        (will display problems out-of-band -- e.g., a dialog box)
    * @throws IllegalStateException if the connection has not been authenticated
    */
-  public GameUI(XMPPConnection connection, ErrorHandler errorHandler) {
+  public GameUI(XMPPConnection connection, TranslateToken translator,
+    MessageHandler messageHandler, ErrorHandler errorHandler) {
+
+    this.translator = translator;
     this.errorHandler = errorHandler;
+    this.messageHandler = messageHandler;
     RPCDispatcher dispatcher = new RPCDispatcher();
     dispatcher.setHandler("game", this);
     VolityHandler volityHandler = new VolityHandler();
@@ -32,7 +45,9 @@ public class GameUI implements RPCHandler, PacketFilter {
     responder.start();
   }
 
+  TranslateToken translator;
   ErrorHandler errorHandler;
+  MessageHandler messageHandler;
   RPCResponder responder;
   Scriptable scope, game, info, client;
   GameTable table;
@@ -43,6 +58,13 @@ public class GameUI implements RPCHandler, PacketFilter {
      * Report a command error.
      */
     public abstract void error(Exception e);
+  }
+
+  public interface MessageHandler {
+    /**
+     * Report a status or game-response message.
+     */
+    public abstract void print(String msg);
   }
 
   /**
@@ -81,7 +103,49 @@ public class GameUI implements RPCHandler, PacketFilter {
 	    }
 	  }
 	});
+      scope.put("literalmessage", scope, new Callback() {
+	  public Object run(Object[] args) {
+	    try {
+              if (args.length != 1) {
+                throw new Exception("message() requires one argument");
+              }
+              messageHandler.print((String)args[0]);
+              return null;
+	    } catch (Exception e) {
+	      errorHandler.error(e);
+	      return null;
+	    }
+	  }
+	});
+      scope.put("localize", scope, new Callback() {
+	  public Object run(Object[] args) {
+	    try {
+              if (args.length == 0)
+                throw new Exception("localize() requires at least one argument");
+              List params = massageTokenList(args);
+              return translator.translate(params);
+	    } catch (Exception e) {
+	      errorHandler.error(e);
+	      return null;
+	    }
+	  }
+	});
+      scope.put("message", scope, new Callback() {
+	  public Object run(Object[] args) {
+	    try {
+              if (args.length == 0)
+                throw new Exception("message() requires at least one argument");
+              List params = massageTokenList(args);
+              messageHandler.print(translator.translate(params));
+              return null;
+	    } catch (Exception e) {
+	      errorHandler.error(e);
+	      return null;
+	    }
+	  }
+	});
       scope.put("start_game", scope, new Callback() {
+          // XXX Deprecated -- seating UI will handle this.
 	  public Object run(Object[] args) {
 	    try {
 	      table.getReferee().startGame();
@@ -94,6 +158,7 @@ public class GameUI implements RPCHandler, PacketFilter {
 	  }
 	});
       scope.put("add_bot", scope, new Callback() {
+          // XXX Deprecated -- seating UI will handle this.
 	  public Object run(Object[] args) {
 	    try {
 	      table.getReferee().addBot();
@@ -113,16 +178,49 @@ public class GameUI implements RPCHandler, PacketFilter {
     return scope;
   }
 
+  /**
+   * A couple of Javascript-accessible functions (message and localize) take
+   * translation tokens as arguments. We need to ensure that these lists
+   * contains only strings.
+   *
+   * Also, as a convenience, we convert Java numeric objects to literal
+   * strings. That way, message("game.your_score_was", 6) will work nicely.
+   *
+   * @param args a list of anything (preferably tokens strings)
+   */
+  protected List massageTokenList(Object[] args) {
+    List ls = new ArrayList();
+    for (int ix=0; ix<args.length; ix++) {
+        Object obj = args[ix];
+        if (obj instanceof String) {
+            // ok as is
+        }
+        else if (obj instanceof Number) {
+            obj = "literal." + String.valueOf(obj);
+        }
+        else if (obj == null) {
+            obj = "literal.(null)";
+        }
+        else {
+            obj = "literal.(unprintable object " + obj.toString() + ")";
+        }
+        ls.add(obj);
+    }
+    return ls;
+  }
+
   class Info extends ScriptableObject {
     public String getClassName() { return "Info"; }
     {
       try {
 	defineProperty("nickname", Info.class, PERMANENT);
+	defineProperty("seat", Info.class, PERMANENT);
 	defineProperty("opponents", Info.class, PERMANENT);
       } catch (PropertyException e) {
 	throw new RuntimeException(e.toString());
       }
     }
+    public String getSeat() { return "XXX-seat-id-here"; }
     public String getNickname() { return table.getNickname(); }
     public void setNickname(String nickname) throws XMPPException {
       table.changeNickname(nickname);

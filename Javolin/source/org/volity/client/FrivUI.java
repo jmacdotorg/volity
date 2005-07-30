@@ -17,20 +17,13 @@ public class FrivUI extends GameUI {
    */
   public FrivUI(XMPPConnection connection,
 		ErrorHandler errorHandler,
-		WritelnHandler writelnHandler)
+		GameUI.MessageHandler writelnHandler)
   {
-    super(connection, errorHandler);
+    super(connection, new TranslateToken(null), writelnHandler, errorHandler);
     this.writelnHandler = writelnHandler;
   }
 
-  public interface WritelnHandler {
-    /**
-     * Display a line of text to the user.  Called by the UI script.
-     */
-    public abstract void writeln(String line);
-  }
-
-  WritelnHandler writelnHandler;
+  MessageHandler writelnHandler;
 
   // Inherited from GameUI.
   public ScriptableObject initGameObjects(ScriptableObject scope) {
@@ -38,7 +31,7 @@ public class FrivUI extends GameUI {
     Context context = Context.enter();
     scope.put("writeln", scope, new Callback() {
 	public Object run(Object[] args) {
-	  writelnHandler.writeln(String.valueOf(args[0]));
+	  writelnHandler.print(String.valueOf(args[0]));
 	  return null;
 	}
       });
