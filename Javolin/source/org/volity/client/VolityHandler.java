@@ -31,9 +31,10 @@ public class VolityHandler implements RPCHandler {
 	    // The ref is telling us that it's time to start this game.
 	    //	    Object method = gameUI.game.get("START", gameUI.scope);
 	    Object method = gameUI.game.get("START", gameUI.scope);
-
 	    try {
-		k.respondValue(gameUI.callUIMethod((Function) method, params));
+                if (method != Scriptable.NOT_FOUND) {
+                    k.respondValue(gameUI.callUIMethod((Function) method, params));
+                }
 	    } catch (JavaScriptException e) {
 		gameUI.errorHandler.error(e);
 		k.respondFault(901, "UI script exception: " + e);
@@ -45,7 +46,9 @@ public class VolityHandler implements RPCHandler {
 	    // The ref is telling us that this game is over.
 	    Object method = gameUI.game.get("END", gameUI.scope);
 	    try {
-		k.respondValue(gameUI.callUIMethod((Function) method, params));
+                if (method != Scriptable.NOT_FOUND) {
+                    k.respondValue(gameUI.callUIMethod((Function) method, params));
+                }
 	    } catch (JavaScriptException e) {
 		gameUI.errorHandler.error(e);
 		k.respondFault(901, "UI script exception: " + e);
