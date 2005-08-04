@@ -39,7 +39,6 @@ sub handle_rpc_request {
   if ($$rpc_info{method} eq 'volity.start_game') {
       $self->take_turn;
   } elsif ($$rpc_info{method} eq 'volity.state_sent') {
-      warn "OK I should be takin a turn now.\n";
       $self->take_turn;
   } else {
       $self->SUPER::handle_rpc_request(@_);
