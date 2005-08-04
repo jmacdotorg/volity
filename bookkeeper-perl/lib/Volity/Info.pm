@@ -31,9 +31,12 @@ use Volity::Info::Ruleset;
 use Volity::Info::File;
 use Volity::Info::Feature;
 use Volity::Info::FileFeature;
-use Volity::Info::FileLanguage;
+# use Volity::Info::FileLanguage;
 use Volity::Info::Game;
-use Volity::Info::GamePlayer;
-use Volity::Info::GameQuitter;
+use Volity::Info::Seat;
+use Volity::Info::PlayerSeat;
+use Volity::Info::GameSeat;
+# use Volity::Info::GamePlayer;
+# use Volity::Info::GameQuitter;
 
 1;

@@ -113,9 +113,9 @@ sub handle_disco_info_request {
 	    $identity->type('ui');
 	    my $ruleset_uri = $file->ruleset_id->uri;
 	    my @features = $file->features;
-	    my @languages = $file->languages;
+	    my @language_codes = $file->language_codes;
 	    $fields{"client-type"} = [map($_->uri, @features)];
-	    $fields{languages} = [map($_->code, @languages)];
+	    $fields{languages} = \@language_codes;
 	    $fields{ruleset} = [$ruleset_uri];
 	    $fields{reputation} = [$file->reputation || 0];
 	    $fields{"contact-email"} = [$file->player_id->email];
@@ -338,8 +338,8 @@ sub store_record_in_db {
     # XXX Do other magic here to update the values.
     # XXX This is all kinds of not implemented yet.
   } else {
-    $game = Volity::Info::Game->create({start_time=>$game_record->start_time,
-					end_time=>$game_record->end_time,
+    $game = Volity::Info::Game->create({start_time=>$game_record->start_time || undef,
+					end_time=>$game_record->end_time || undef,
 					server_id=>$server->id,
 					ruleset_id=>$ruleset->id,
 					signature=>$game_record->signature,
@@ -349,6 +349,12 @@ sub store_record_in_db {
   }
   # Now go through the player lists. It's always a case of drop-and-insert,
   # for they're all many-to-many linking tables.
+
+=begin old
+
+I'm cutting out this "quitters" code for now, since we're not really using it.
+We may come back to it later.
+
   foreach my $player_list (qw(quitters)) {
     my $class = "Volity::Info::Game" . ucfirst(substr($player_list, 0, length($player_list) - 1));
     foreach ($class->search({game_id=>$game->id})) {
@@ -361,80 +367,112 @@ sub store_record_in_db {
     }
   }
   
+=end old
+
+=cut
+
   # The winners list is a special case, since we must also record how
   # each player placed.
   my $current_place = 1;	# Start with first place, work down.
   my @places = $game_record->winners;
-  my @players_to_update;
+  my @seats_to_update;
+
+  # First, we will convert the seat descriptions in the winners list
+  # to actual seat objects.
+
+  # A "seat description", here, is a list of player JIDs in a seat.
+
+  use Data::Dumper; warn Dumper(\@places);
+
+  for my $place_index (0..$#places) {
+    my $place = $places[$place_index];
+    my @seat_descriptions = @$place;
+    my @seats; # Actual seat objects.
+    for my $seat_description (@seat_descriptions) {
+      # Get the DB object for this seat.
+      # To do this, we have to get the player objects first.
+      my @players;
+      for my $player_jid (@$seat_description) {
+	  my ($player) = Volity::Info::Player->find_or_create({jid=>$player_jid});
+	  push (@players, $player);
+      }
+      my ($seat) = Volity::Info::Seat->search_with_exact_players(@players);
+      unless ($seat) {
+	  # This seat is brand new to me! Make some new DB records for it.
+	  $seat = Volity::Info::Seat->create({});
+	  for my $player (@players) {
+	      Volity::Info::PlayerSeat->create({seat_id=>$seat->id, player_id=>$player->id});
+	  }
+      }
+      push (@seats, $seat);
+      warn "I declare that players (@players) are in seat $seat.";
+    }
+    # Replace the seat descriptions with the real seat objects.
+    $places[$place_index] = \@seats;
+    warn "Putting seats (@seats) into place [$place_index].";
+  }
+
+  # That done, loop through the places a second time, creating the actual
+  # result and ranking records (in the game_seat table).
+
   for my $place (@places) {
-    my @player_jids = ref($place)? @$place : ($place);
-    for my $player_jid (@player_jids) {
-      # Get this player's DB object, since we need its ID.
-      my ($player) = Volity::Info::Player->find_or_create({jid=>$player_jid});
-      # Record how this player placed!
-      my $game_player = Volity::Info::GamePlayer->
+    my @seats = @$place;
+    for my $seat (@seats) {
+      # Record how this seat placed!
+      my $game_seat = Volity::Info::GameSeat->
 	  find_or_create({
 			  game_id=>$game->id,
-			  player_id=>$player->id,
+			  seat_id=>$seat->id,
 			 });
-      $game_player->place($current_place);
+      $game_seat->place($current_place);
+      
 
-      # Figure out the player's new ranking for this game.
-      my $last_rating = $player->current_rating_for_ruleset($ruleset);
-      my @beaten_players; my @tied_players; # Volity::Info::Player objects.
-      my @winning_players;	            # Ibid.
-      # Get the players that beat this one.
+      # Figure out the seat's new ranking for this game.
+      my $last_rating = $seat->current_rating_for_ruleset($ruleset);
+      my @beaten_seats; my @tied_seats; # Volity::Info::Seat objects.
+      my @winning_seats;	            # Ibid.
+      # Get the seats that beat this one.
       foreach (1..($current_place - 1)) {
 	my $index = $_ - 1;
-	if (ref($places[$index]) eq 'ARRAY') {
-	  push (@winning_players, map(Volity::Info::Player->search({jid=>$_}), @{$places[$index]}));
-	} else {
-	  push (@winning_players, Volity::Info::Player->search({jid=>$places[$index]}));
-	}
+	push (@winning_seats, @{$places[$index]});
       }      
-      # Get the players tied with this one.
-      if (ref($places[$current_place - 1]) eq 'ARRAY') {
-	@tied_players = map(Volity::Info::Player->search({jid=>$_}), grep($player->jid ne $_, @{$places[$current_place - 1]}));
-      }
-      # Get the players this one defeated.
+      # Get the seats tied with this one.
+      @tied_seats = grep($seat ne $_, @{$places[$current_place - 1]});
+      # Get the seats this one defeated.
       foreach (($current_place + 1)..scalar(@places)) {
 	my $index = $_ - 1;
-	if (ref($places[$index]) eq 'ARRAY') {
-	  push (@beaten_players, map(Volity::Info::Player->search({jid=>$_}), @{$places[$index]}));
-	} else {
-	  push (@beaten_players, Volity::Info::Player->search({jid=>$places[$index]}));
-	}
+	push (@beaten_seats, @{$places[$index]});
       }
-#      warn "WHEE! I beat @beaten_players";
-      # Get this player's 'K' rating, based on the number of games
+#      warn "WHEE! I beat @beaten_seats";
+      # Get this seat's 'K' rating, based on the number of games
       # they have played, of this ruleset.
-      my $number_of_games_played = $player->number_of_games_played_for_ruleset($ruleset);
+      my $number_of_games_played = $seat->number_of_games_played_for_ruleset($ruleset);
 #      warn "****That's $number_of_games_played games.****";
       my $k_delta = int($number_of_games_played / 50) * 5;
       $k_delta = 20 if $k_delta > 20;
       my $k_value = 30 - $k_delta;
       my $rating_delta = 0;
-      for my $tied_player (@tied_players) {
-	my $opponent_rating = $tied_player->current_rating_for_ruleset($ruleset);
+      for my $tied_seat (@tied_seats) {
+	my $opponent_rating = $tied_seat->current_rating_for_ruleset($ruleset);
 #	warn "***OPPONENT rating si $opponent_rating\n";
 	$rating_delta += $k_value * (.5 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
       }
-      for my $beaten_player (@beaten_players) {
-	my $opponent_rating = $beaten_player->current_rating_for_ruleset($ruleset);
+      for my $beaten_seat (@beaten_seats) {
+	my $opponent_rating = $beaten_seat->current_rating_for_ruleset($ruleset);
 	$rating_delta += $k_value * (1 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
       }	
-      for my $winning_player (@winning_players) {
-	my $opponent_rating = $winning_player->current_rating_for_ruleset($ruleset);
+      for my $winning_seat (@winning_seats) {
+	my $opponent_rating = $winning_seat->current_rating_for_ruleset($ruleset);
 	$rating_delta += $k_value * (0 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
       }
       my $new_rating = $last_rating + $rating_delta;
-      $game_player->rating($new_rating);
-      push (@players_to_update, $game_player);
-#      $game_player->update;
+      $game_seat->rating($new_rating);
+      push (@seats_to_update, $game_seat);
+#      $game_seat->update;
     }
     $current_place++;
   }
-  map($_->update, @players_to_update);
+  map($_->update, @seats_to_update);
   return $game;
 }
 
