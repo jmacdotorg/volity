@@ -1,10 +1,16 @@
-This is the very first release of the Volity bookkeeper software. The
-bookkeeper serves as informational center for the Jabber-based Volity
-network, acting as front-end to a database of player and game
-information.
+This is the Volity bookkeeper software. The bookkeeper serves as
+informational center for the Jabber-based Volity network, acting as
+front-end to a database of player and game information.
 
 This release offers no documentation. It's probably of very little use
 to anyone but the core Volity development team, at present.
+
+You generally don't need to care about this software anyway. Unless
+you are planning on running your own Volity _network_, you don't need
+to worry about running your own bookkeeper. If you want to create,
+host or simply play games on the central Volity network, then you can
+use the public bookkeeper running at bookkeeper@volity.net/volity
+. See the URLs below for further documentation.
 
 For more information about Volity:
 Volity Developers' Site:
@@ -13,4 +19,5 @@ http://www.volity.org
 Volity at SourceForge:
 http://volity.sf.net
 
-
+Enduser-friendly Volity info:
+http://volity.net
