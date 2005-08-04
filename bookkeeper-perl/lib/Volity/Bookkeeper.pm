@@ -382,8 +382,6 @@ We may come back to it later.
 
   # A "seat description", here, is a list of player JIDs in a seat.
 
-  use Data::Dumper; warn Dumper(\@places);
-
   for my $place_index (0..$#places) {
     my $place = $places[$place_index];
     my @seat_descriptions = @$place;
@@ -405,11 +403,9 @@ We may come back to it later.
 	  }
       }
       push (@seats, $seat);
-      warn "I declare that players (@players) are in seat $seat.";
     }
     # Replace the seat descriptions with the real seat objects.
     $places[$place_index] = \@seats;
-    warn "Putting seats (@seats) into place [$place_index].";
   }
 
   # That done, loop through the places a second time, creating the actual
@@ -443,18 +439,15 @@ We may come back to it later.
 	my $index = $_ - 1;
 	push (@beaten_seats, @{$places[$index]});
       }
-#      warn "WHEE! I beat @beaten_seats";
       # Get this seat's 'K' rating, based on the number of games
       # they have played, of this ruleset.
       my $number_of_games_played = $seat->number_of_games_played_for_ruleset($ruleset);
-#      warn "****That's $number_of_games_played games.****";
       my $k_delta = int($number_of_games_played / 50) * 5;
       $k_delta = 20 if $k_delta > 20;
       my $k_value = 30 - $k_delta;
       my $rating_delta = 0;
       for my $tied_seat (@tied_seats) {
 	my $opponent_rating = $tied_seat->current_rating_for_ruleset($ruleset);
-#	warn "***OPPONENT rating si $opponent_rating\n";
 	$rating_delta += $k_value * (.5 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
       }
       for my $beaten_seat (@beaten_seats) {

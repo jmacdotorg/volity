@@ -24,7 +24,6 @@ sub search_with_exact_players {
 	push (@bind_values, $_->id);
 	$statement .= " and exists (select player_seat.id from player_seat where seat_id = seat.id and player_id = ?) ";
     }
-    warn $statement;
     no warnings;
     Volity::Info::Seat->set_sql("with_players_internal", $statement);
     use warnings;
