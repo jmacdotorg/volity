@@ -944,7 +944,7 @@ sub end_game {
 	  my @slot_jids;
 	  my @seats = @$slot;
 	  for my $seat (@seats) {
-	      push (@slot_jids, $seat->registered_player_jids);
+	      push (@slot_jids, [$seat->registered_player_jids]);
 	  }
 	  push (@player_jids, \@slot_jids);
       }
