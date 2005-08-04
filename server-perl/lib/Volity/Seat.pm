@@ -45,7 +45,7 @@ main Volity documentation for more information about the seat concept.
 As a game programmer, you need never create or modify these objects
 yourself; that is all handled for you by the other objects that make
 up a Frivolity-run table, particularly the referee (see
-L<Volity::Referee). However, you will interact with seat objects in
+L<Volity::Referee>). However, you will interact with seat objects in
 order to perform any sort of game-level function, including the
 all-important C<call_ui_function> method (described below).
 
