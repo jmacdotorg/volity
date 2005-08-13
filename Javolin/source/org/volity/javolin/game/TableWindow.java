@@ -28,7 +28,7 @@ import java.util.zip.ZipException;
 import javax.swing.*;
 import javax.swing.text.*;
 
-import org.apache.batik.swing.gvt.*;
+import org.apache.batik.bridge.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
@@ -71,6 +71,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
     private SizeAndPositionSaver mSizePosSaver;
     private GameTable mGameTable;
+    private String mNickname;
     private TranslateToken mTranslator;
 
     /**
@@ -111,10 +112,9 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * @exception MalformedURLException  If an invalid UI file URL was used.
      * @exception TokenFailure           If a new_table RPC failed.
      */
-    public static TableWindow makeTableWindow(GameServer server, 
-        GameTable table, String nickname) 
-        throws XMPPException, RPCException, IOException,
-               TokenFailure, MalformedURLException, ZipException
+    public static TableWindow makeTableWindow(GameServer server,
+        GameTable table, String nickname) throws XMPPException, RPCException,
+        IOException, TokenFailure, MalformedURLException, ZipException
     {
         TableWindow retVal = null;
 
@@ -135,7 +135,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * Constructor.
      *
      * @param server                     The GameServer
-     * @param table                      The GameTable to join. If null, 
+     * @param table                      The GameTable to join. If null,
      *        a new table will be created.
      * @param nickname                   The nickname to use to join the table.
      * @param uiDir                      The UI directory.
@@ -146,29 +146,30 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
     protected TableWindow(GameServer server, GameTable table, String nickname,
-        File uiDir)
-        throws XMPPException, RPCException, IOException, TokenFailure,
-               MalformedURLException
+        File uiDir) throws XMPPException, RPCException, IOException, TokenFailure,
+        MalformedURLException
     {
         mGameTable = table;
+        mNickname = nickname;
 
-        /* We must now locate the "main" files in the UI directory. First, find
-         * the directory which actually contains the significant files. */
+        // We must now locate the "main" files in the UI directory. First, find
+        // the directory which actually contains the significant files.
         uiDir = locateTopDirectory(uiDir);
 
-        /* If there's exactly one file, that's it. Otherwise, look for
-         * main.svg or MAIN.SVG.
-         * XXX Or config.svg, main.html, config.html... */
-
+        //If there's exactly one file, that's it. Otherwise, look for
+        // main.svg or MAIN.SVG.
+        // XXX Or config.svg, main.html, config.html...
         File uiMainFile;
         File[] entries = uiDir.listFiles();
+
         if (entries.length == 1 && !entries[0].isDirectory())
         {
             uiMainFile = entries[0];
         }
-        else {
+        else
+        {
             uiMainFile = findFileCaseless(uiDir, "main.svg");
-            if (uiMainFile == null) 
+            if (uiMainFile == null)
             {
                 throw new IOException("unable to locate UI file in cache");
             }
@@ -176,11 +177,11 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         URL uiMainUrl = uiMainFile.toURI().toURL();
 
-        /* Set up a translator which knows about the "locale" subdirectory.
-         * This will be used for all token translation at the table. (If there
-         * is no "locale" or "LOCALE" subdir, then the argument to
-         * TranslateToken() will be null. In this case, no game.* or seat.*
-         * tokens will be translatable.) */
+        // Set up a translator which knows about the "locale" subdirectory.
+        // This will be used for all token translation at the table. (If there
+        // is no "locale" or "LOCALE" subdir, then the argument to
+        // TranslateToken() will be null. In this case, no game.* or seat.*
+        // tokens will be translatable.)
         mTranslator = new TranslateToken(findFileCaseless(uiDir, "locale"));
 
         if (mGameTable == null)
@@ -189,11 +190,10 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         }
 
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
-        //XXX nicer display of game name?
 
-        /* Create the SVG object. The third argument is an anonymous
-         * TokenTranslationHandler subclass which knows how to print
-         * failure messages to the message pane. */
+        // Create the SVG object. The third argument is an anonymous
+        // TokenTranslationHandler subclass which knows how to print
+        // failure messages to the message pane.
         mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
             new GameUI.MessageHandler()
             {
@@ -203,18 +203,12 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
                 }
             });
 
-        mGameViewport.addGVTTreeRendererListener(
-            new GVTTreeRendererAdapter()
+        mGameViewport.addUpdateManagerListener(
+            new UpdateManagerAdapter()
             {
-                public void gvtRenderingCompleted(GVTTreeRendererEvent evt)
+                public void managerStarted(UpdateManagerEvent evt)
                 {
-                    switchView(VIEW_GAME);
-                    mGameViewport.forceRedraw();
-
-                    // Remove loading component, since it's no longer needed
-                    ((CardLayout)mGameViewWrapper.getLayout()).removeLayoutComponent(
-                        mLoadingComponent);
-                    mLoadingComponent = null;
+                    finishInit();
                 }
             });
 
@@ -274,9 +268,34 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         // Register as a player-status listener.
         mGameTable.addStatusListener(this);
+    }
 
-        // Last but not least, join the table
-        mGameTable.join(nickname);
+    /**
+     * Performs final steps of initialization of the GameTable, after the UI file has
+     * been loaded.
+     */
+    private void finishInit()
+    {
+        switchView(VIEW_GAME);
+        mGameViewport.forceRedraw();
+
+        // Remove loading component, since it's no longer needed
+        ((CardLayout)mGameViewWrapper.getLayout()).removeLayoutComponent(
+            mLoadingComponent);
+
+        mLoadingComponent = null;
+
+        // Join the table
+        try
+        {
+            mGameTable.join(mNickname);
+        }
+        catch (XMPPException ex)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Cannot join table due to error:\n" + ex.toString(),
+                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -290,7 +309,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
-     * Helper method for the makeTableWindow. Returns the URL for the given game server's
+     * Helper method for makeTableWindow. Returns the URL for the given game server's
      * UI.
      *
      * @param server                     The game server for which to retrieve the UI URL.
@@ -356,15 +375,15 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * number of wrappers -- and gives you back the directory in which to find
      * things.
      *
-     * @param dir the directory in which to search
-     * @return the directory which contains significant files
+     * @param dir  the directory in which to search
+     * @return     the directory which contains significant files
      */
     public static File locateTopDirectory(File dir)
     {
-        while (true) 
+        while (true)
         {
             File[] entries = dir.listFiles();
-            if (entries.length != 1) 
+            if (entries.length != 1)
             {
                 break;
             }
@@ -384,12 +403,12 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * which matches name, name.toLowerCase(), or name.toUpperCase(). It will
      * not find arbitrary mixed-case entries.
      *
-     * @param dir the directory to search.
-     * @param name the file/dir name to search for.
-     * @return a File representing an existing file/dir; or null, if no entry
+     * @param dir   the directory to search.
+     * @param name  the file/dir name to search for.
+     * @return      a File representing an existing file/dir; or null, if no entry
      *         was found.
      */
-    public static File findFileCaseless(File dir, String name) 
+    public static File findFileCaseless(File dir, String name)
     {
         File res;
         String newname;
@@ -401,7 +420,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         }
 
         newname = name.toUpperCase();
-        if (!newname.equals(name)) {
+        if (!newname.equals(name))
+        {
             res = new File(dir, newname);
             if (res.exists())
             {
@@ -410,7 +430,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         }
 
         newname = name.toLowerCase();
-        if (!newname.equals(name)) {
+        if (!newname.equals(name))
+        {
             res = new File(dir, newname);
             if (res.exists())
             {
@@ -548,7 +569,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     /**
      * Appends the given message text to the message text area.
      *
-     * @param nickname  The nickname of the user who sent the message. 
+     * @param nickname  The nickname of the user who sent the message.
      *                  If null or empty, it is assumed to have come from the
      *                  client or from the MultiUserChat itself.
      * @param message   The text of the message.
@@ -577,7 +598,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * Appends the given message text to the message text area. The message is
      * assumed to have come from the client or from the MultiUserChat itself.
      *
-     * @param message   The text of the message.
+     * @param message  The text of the message.
      */
     private void writeMessageText(String message)
     {
