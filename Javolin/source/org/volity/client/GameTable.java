@@ -13,9 +13,12 @@ import java.util.*;
 /** A game table (a Multi-User Chat room for playing a Volity game). */
 public class GameTable extends MultiUserChat {
 
-    public Hashtable mPlayerStatus = new Hashtable();
-    public List statusListeners = new ArrayList();
-
+    public ArrayList mReadyPlayers = new ArrayList();
+    public Hashtable mSeatsById = new Hashtable();
+    public ArrayList mSeats = new ArrayList();
+    public ArrayList statusListeners = new ArrayList();
+    public int mGameStatus = 0;
+    public ArrayList mRequiredSeatIds = new ArrayList();
 
   /**
    * @param connection an authenticated connection to an XMPP server.
@@ -108,39 +111,87 @@ public class GameTable extends MultiUserChat {
     /***** Player status-change methods & callbacks *****/
 
     /**
-     * Return an integer value representing the given nickname's table status.
-     * Possible return values:
-     * 0 - standing
-     * 1 - unready
-     * 2 - ready
+     * Return truth if the player is ready, falsehood otherwise.
      */
-    public int getPlayerStatus(String jid) {
-	int status = -1;
-	try {
-	    Integer intObj = (Integer)mPlayerStatus.get(jid);
-	    status = intObj.intValue();
+    public boolean isPlayerReady(String jid) {
+	boolean readiness;
+	if (mReadyPlayers.indexOf(jid) > -1) {
+	    return true;
+	} else {
+	    return false;
 	}
-	catch (Exception e) {
-	    System.err.println("Got an exception. " + e.toString());
-	}
-	return status;
     }
 
-    public void setPlayerStatus(String jid, int status) {
-	Integer intObj = new Integer(status);
-	mPlayerStatus.put(jid, intObj);
+    /**
+     * Declare that player is ready.
+     * @param jid The JID of a player.
+     */ 
+    public void playerIsReady(String jid) {
+	if (mReadyPlayers.indexOf(jid) == -1) {
+	    mReadyPlayers.add(jid);
+	}
     }
 
-    /** Add a player status change listener. */
+    /**
+     * Declare that player is unready.
+     * @param jid The JID of a player.
+     */ 
+    public void playerIsUnready(String jid) {
+	int index = mReadyPlayers.indexOf(jid);
+	if (index > -1) {
+	    mReadyPlayers.remove(index);
+	}
+    }
+
+    /** Add a player readiness change listener. */
     public void addStatusListener(StatusListener listener) {
 	statusListeners.add(listener);
 	StatusListener foo = (StatusListener)statusListeners.get(0);
     }
     
-    /** Remove a player status change listener. */
+    /** Remove a player readiness change listener. */
     public void removeStatusListener(StatusListener listener) {
 	statusListeners.remove(listener);
     }
 
+
+    /** Return the array of required seat IDs. */
+    public ArrayList requiredSeatIds() {
+	return mRequiredSeatIds;
+    }
+
+    /** Set the array of required seat IDs. */
+    public void setRequiredSeatIds(ArrayList requiredSeatIds) {
+	mRequiredSeatIds = requiredSeatIds;
+    }
+
+    /** Return an array of seat objects which have players in them. */
+    public ArrayList occupiedSeats() {
+	ArrayList occupiedSeats = new ArrayList();
+	for (Iterator it = mSeats.iterator(); it.hasNext();) {
+	    Seat seat = (Seat)it.next();
+	    if (seat.isOccupied()) {
+		occupiedSeats.add(seat);
+	    }
+	}
+	return occupiedSeats;
+    }
+
+    /** 
+     * Return an array of seat objects which are worth displaying
+     * in the seat UI.
+     */
+    public ArrayList seatsToDisplay() {
+	ArrayList seatsToDisplay = new ArrayList();
+	for (Iterator it = mSeats.iterator(); it.hasNext();) {
+	    Seat seat = (Seat)it.next();
+	    if (seat.isOccupied()) {
+		seatsToDisplay.add(seat);
+	    } else if (mRequiredSeatIds.indexOf(seat.id()) > -1) {
+		seatsToDisplay.add(seat);
+	    }
+	}
+	return seatsToDisplay;
+    }
 
 }
