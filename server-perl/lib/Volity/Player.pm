@@ -325,7 +325,7 @@ sub required_seat_list {
     my $self = shift;
     my (@seat_ids) = @{$self->referee->game_class->required_seat_ids};
     $self->referee->send_rpc_request({
-	id=>'seat-list',
+	id=>'required-seat-list',
 	methodname=>'volity.required_seat_list',
 	to=>$self->jid,
 	args=>[\@seat_ids],
