@@ -286,6 +286,9 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         mLoadingComponent = null;
 
         // Join the table
+
+	System.out.println("Joining the table..");	
+
         try
         {
             mGameTable.join(mNickname);
@@ -606,15 +609,27 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
-     * StatusListener interface method implementation. Handles announcements of player
-     * status changes.
-     *
-     * @param jid     The Jabber ID of the user whose status has changed.
-     * @param status  The status value.
-     */
-    public void playerStatusChange(String jid, int status)
+     * StatusListener interface method implementations.
+     **/
+
+    public void playerBecameReady(String jid)
     {
-        System.out.println("I am the table window, and I see a status change!!");
+        System.out.println("I am the table window, and a player became ready!!");
+    }
+
+    public void playerBecameUnready(String jid)
+    {
+        System.out.println("I am the table window, and a player became unready!!");
+    }
+
+    public void playerStood(String jid)
+    {
+        System.out.println("I am the table window, and a player stood up!!");
+    }
+
+    public void playerSat(String jid, String seatId)
+    {
+        System.out.println("I am the table window, and a player sat down!!");
     }
 
     /**
