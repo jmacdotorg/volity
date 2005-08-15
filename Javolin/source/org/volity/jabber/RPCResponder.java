@@ -59,6 +59,15 @@ public class RPCResponder implements PacketListener {
 
   // Inherited from PacketListener.
   public void processPacket(Packet packet) {
+
+    // This redundant check against the filter might be necessary
+    // because org.jivesoftware.smack.PacketReader runs the filters in
+    // a different thread from the listeners (!) and a filter might
+    // depend on previous packets having been processed.  A future
+    // version of Smack may fix this, in which case this check should
+    // be removed to avoid running the filter twice.
+    if (filter != null && !filter.accept(packet)) return;
+
     final RPCRequest req = (RPCRequest) packet;
     // Look, ma, continuation-passing style!
     RPCResponseHandler k = new RPCResponseHandler() {
