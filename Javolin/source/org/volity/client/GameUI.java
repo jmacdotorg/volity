@@ -265,30 +265,42 @@ public class GameUI implements RPCHandler, PacketFilter {
 
   // Inherited from PacketFilter.
   public boolean accept(Packet packet) {
-    // Only accept packets from the referee at this table.
+    // Only accept packets from the referee at this table, because the
+    // user might be playing at multiple tables (perhaps even in
+    // multiple instances of the application).
     if (table == null) return false;
     Referee ref = table.getReferee();
-    return ref != null && ref.getResponderJID().equals(packet.getFrom());
+    // If the referee is missing, we should usually assume that this
+    // packet is a wayward request and ignore it.  But because filters
+    // run in a different thread from listeners (!) the referee's
+    // presence packet might still be waiting to be processed, so we
+    // are lenient here and accept this packet, with a second check in
+    // the actual listener (see RPCResponder.processPacket).  A future
+    // version of Smack may fix this, in which case the check should
+    // be made more restrictive again.
+    /* return ref != null && */
+    return ref == null ||
+      ref.getResponderJID().equals(packet.getFrom());
   }
 
-    // Inherited from RPCHandler.
-    public void handleRPC(String methodName, List params, RPCResponseHandler k) {
-	Object method = game.get(methodName, scope);
-	if (method instanceof Function)
-	    try {
-		k.respondValue(callUIMethod((Function) method, params));
-	    } catch (JavaScriptException e) {
-		errorHandler.error(e);
-		// FIXME: Volity protocol should probably define these
-		// error codes.
-		k.respondFault(901, "UI script exception: " + e);
-	    } catch (EvaluatorException e) {
-		errorHandler.error(e);
-		k.respondFault(902, "UI script error: " + e);
-	    }
-	else
-	    k.respondFault(903, "No such UI function.");
-    }
+  // Inherited from RPCHandler.
+  public void handleRPC(String methodName, List params, RPCResponseHandler k) {
+    Object method = game.get(methodName, scope);
+    if (method instanceof Function)
+      try {
+	k.respondValue(callUIMethod((Function) method, params));
+      } catch (JavaScriptException e) {
+	errorHandler.error(e);
+	// FIXME: Volity protocol should probably define these
+	// error codes.
+	k.respondFault(901, "UI script exception: " + e);
+      } catch (EvaluatorException e) {
+	errorHandler.error(e);
+	k.respondFault(902, "UI script error: " + e);
+      }
+    else
+      k.respondFault(903, "No such UI function.");
+  }
 
   /**
    * Call a UI method.
