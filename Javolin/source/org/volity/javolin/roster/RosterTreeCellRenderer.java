@@ -1,5 +1,5 @@
 /*
- * UserTreeCellRenderer.java
+ * RosterTreeCellRenderer.java
  *
  * Copyright 2004 Karl von Laudermann
  *
@@ -24,7 +24,7 @@ import javax.swing.tree.*;
 /**
  * Custom tree item renderer for displaying a Jabber user in the roster tree.
  */
-public class UserTreeCellRenderer extends DefaultTreeCellRenderer
+public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
 {
     private final static ImageIcon AVAILABLE_ICON;
     private final static ImageIcon UNAVAILABLE_ICON;
@@ -32,11 +32,11 @@ public class UserTreeCellRenderer extends DefaultTreeCellRenderer
 
     static
     {
-        AVAILABLE_ICON = new ImageIcon(UserTreeCellRenderer.class.getResource(
+        AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Avail_TreeIcon.png"));
-        UNAVAILABLE_ICON = new ImageIcon(UserTreeCellRenderer.class.getResource(
+        UNAVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Unavail_TreeIcon.png"));
-        BUSY_ICON = new ImageIcon(UserTreeCellRenderer.class.getResource(
+        BUSY_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Busy_TreeIcon.png"));
     }
 
@@ -61,9 +61,9 @@ public class UserTreeCellRenderer extends DefaultTreeCellRenderer
 
         DefaultMutableTreeNode theNode = (DefaultMutableTreeNode)value;
 
-        if (theNode.getUserObject() instanceof UserTreeItem)
+        if (theNode.getUserObject() instanceof RosterTreeItem)
         {
-            UserTreeItem userItem = (UserTreeItem)(theNode.getUserObject());
+            RosterTreeItem userItem = (RosterTreeItem)(theNode.getUserObject());
 
             // Set the user icon
             if (userItem.isAvailable())

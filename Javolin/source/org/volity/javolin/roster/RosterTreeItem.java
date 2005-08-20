@@ -1,5 +1,5 @@
 /*
- * UserTreeItem.java
+ * RosterTreeItem.java
  *
  * Copyright 2004-2005 Karl von Laudermann
  *
@@ -23,7 +23,7 @@ import org.jivesoftware.smack.packet.*;
 /**
  * Object representing a Jabber user, to be used in a node of the roster tree.
  */
-public class UserTreeItem
+public class RosterTreeItem
 {
     private String mID;
     private String mNickname;
@@ -37,7 +37,7 @@ public class UserTreeItem
      * @param entry     A RosterEntry for the user.
      * @param presence  The user's presence descriptor. Can be null.
      */
-    public UserTreeItem(RosterEntry entry, Presence presence)
+    public RosterTreeItem(RosterEntry entry, Presence presence)
     {
         mID = entry.getUser();
 

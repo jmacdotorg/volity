@@ -516,7 +516,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     private void doChatBut()
     {
-        UserTreeItem selItem = mRosterPanel.getSelectedUserItem();
+        RosterTreeItem selItem = mRosterPanel.getSelectedRosterItem();
 
         if (selItem == null)
         {
@@ -604,7 +604,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     private void doDeleteUserBut()
     {
-        UserTreeItem selUser = mRosterPanel.getSelectedUserItem();
+        RosterTreeItem selUser = mRosterPanel.getSelectedRosterItem();
 
         if (selUser == null)
         {
@@ -697,7 +697,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         }
 
         // Enable/disable appropriate buttons
-        UserTreeItem selectedUser = mRosterPanel.getSelectedUserItem();
+        RosterTreeItem selectedUser = mRosterPanel.getSelectedRosterItem();
 
         mAddUserBut.setEnabled(isConnected());
         mDelUserBut.setEnabled(selectedUser != null);
@@ -824,7 +824,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     public void itemDoubleClicked(RosterPanelEvent e)
     {
-        UserTreeItem item = e.getUserTreeItem();
+        RosterTreeItem item = e.getRosterTreeItem();
 
         if (item.isAvailable())
         {
@@ -846,7 +846,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             return;
         }
 
-        UserTreeItem item = e.getUserTreeItem();
+        RosterTreeItem item = e.getRosterTreeItem();
 
         // Enable/disable appropriate items
         mChatContextItem.setEnabled((item != null) && item.isAvailable());

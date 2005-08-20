@@ -25,7 +25,7 @@ import java.util.*;
  */
 public class RosterPanelEvent extends EventObject
 {
-    private UserTreeItem mUserItem;
+    private RosterTreeItem mUserItem;
     private int mX;
     private int mY;
 
@@ -33,10 +33,10 @@ public class RosterPanelEvent extends EventObject
      * Constructor.
      *
      * @param source  The object on which the Event initially occurred.
-     * @param item    The UserTreeItem that was affected. Is null if the event is a
+     * @param item    The RosterTreeItem that was affected. Is null if the event is a
      *                selection change such that the selection was cleared.
      */
-    public RosterPanelEvent(Object source, UserTreeItem item)
+    public RosterPanelEvent(Object source, RosterTreeItem item)
     {
         super(source);
         mUserItem = item;
@@ -46,12 +46,12 @@ public class RosterPanelEvent extends EventObject
      * Constructor.
      *
      * @param source  The object on which the Event initially occurred.
-     * @param item    The UserTreeItem that was affected. Is null if the event is a
+     * @param item    The RosterTreeItem that was affected. Is null if the event is a
      *                selection change such that the selection was cleared.
      * @param x       X coordinate of the relevant mouse event.
      * @param y       Y coordinate of the relevant mouse event.
      */
-    public RosterPanelEvent(Object source, UserTreeItem item, int x, int y)
+    public RosterPanelEvent(Object source, RosterTreeItem item, int x, int y)
     {
         super(source);
         mUserItem = item;
@@ -60,12 +60,12 @@ public class RosterPanelEvent extends EventObject
     }
 
     /**
-     * Gets the UserTreeItem that pertains to the event.
+     * Gets the RosterTreeItem that pertains to the event.
      *
-     * @return   The UserTreeItem that pertains to the event. Returns null if the event
+     * @return   The RosterTreeItem that pertains to the event. Returns null if the event
      * is a selection change such that the selection was cleared.
      */
-    public UserTreeItem getUserTreeItem()
+    public RosterTreeItem getRosterTreeItem()
     {
         return mUserItem;
     }

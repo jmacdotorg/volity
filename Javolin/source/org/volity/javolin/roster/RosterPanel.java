@@ -32,7 +32,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 {
     private JTree mTree;
     private DefaultTreeModel mTreeModel;
-    private java.util.List mRosterListeners;
+    private java.util.List mRosterPanelListeners;
     private boolean mShowUnavailUsers;
     private Roster mRoster;
 
@@ -41,7 +41,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public RosterPanel()
     {
-        mRosterListeners = new ArrayList();
+        mRosterPanelListeners = new ArrayList();
         buildUI();
 
         // Set up tree
@@ -49,7 +49,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         mTreeModel = new DefaultTreeModel(rootNode);
 
         mTree.setModel(mTreeModel);
-        mTree.setCellRenderer(new UserTreeCellRenderer());
+        mTree.setCellRenderer(new RosterTreeCellRenderer());
         mTree.getSelectionModel().setSelectionMode
             (TreeSelectionModel.SINGLE_TREE_SELECTION);
         mTree.setRootVisible(false);
@@ -77,7 +77,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public void addRosterPanelListener(RosterPanelListener listener)
     {
-        mRosterListeners.add(listener);
+        mRosterPanelListeners.add(listener);
     }
 
     /**
@@ -87,7 +87,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public void removeRosterPanelListener(RosterPanelListener listener)
     {
-        mRosterListeners.remove(listener);
+        mRosterPanelListeners.remove(listener);
     }
 
     /**
@@ -99,7 +99,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     private void fireRosterPanelSelection(RosterPanelEvent e)
     {
-        Iterator iter = mRosterListeners.iterator();
+        Iterator iter = mRosterPanelListeners.iterator();
 
         while (iter.hasNext())
         {
@@ -116,7 +116,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     private void fireRosterPanelDoubleClick(RosterPanelEvent e)
     {
-        Iterator iter = mRosterListeners.iterator();
+        Iterator iter = mRosterPanelListeners.iterator();
 
         while (iter.hasNext())
         {
@@ -133,7 +133,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     private void fireRosterPanelContextMenuInvoke(RosterPanelEvent e)
     {
-        Iterator iter = mRosterListeners.iterator();
+        Iterator iter = mRosterPanelListeners.iterator();
 
         while (iter.hasNext())
         {
@@ -177,9 +177,9 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         // Save selected user ID so we can reselect the node for that user after
         // repopulating
         String selUserId = null;
-        if (getSelectedUserItem() != null)
+        if (getSelectedRosterItem() != null)
         {
-            selUserId = getSelectedUserItem().getId();
+            selUserId = getSelectedRosterItem().getId();
         }
 
         TreeNode nodeToSelect = null;
@@ -198,8 +198,8 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             while (usersIter.hasNext())
             {
                 RosterEntry entry = (RosterEntry)usersIter.next();
-                UserTreeItem item =
-                    new UserTreeItem(entry, mRoster.getPresence(entry.getUser()));
+                RosterTreeItem item =
+                    new RosterTreeItem(entry, mRoster.getPresence(entry.getUser()));
 
                 newNode = new DefaultMutableTreeNode(item);
 
@@ -241,20 +241,20 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     }
 
     /**
-     * Gets the UserTreeItem for the selected tree node.
+     * Gets the RosterTreeItem for the selected tree node.
      *
-     * @return   The selected UserTreeItem, or null if no item is selected.
+     * @return   The selected RosterTreeItem, or null if no item is selected.
      */
-    public UserTreeItem getSelectedUserItem()
+    public RosterTreeItem getSelectedRosterItem()
     {
-        UserTreeItem retVal = null;
+        RosterTreeItem retVal = null;
 
         DefaultMutableTreeNode node =
             (DefaultMutableTreeNode)(mTree.getLastSelectedPathComponent());
 
-        if ((node != null) && (node.getUserObject() instanceof UserTreeItem))
+        if ((node != null) && (node.getUserObject() instanceof RosterTreeItem))
         {
-            retVal = (UserTreeItem)node.getUserObject();
+            retVal = (RosterTreeItem)node.getUserObject();
         }
 
         return retVal;
@@ -280,10 +280,10 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
 
-        if (node.getUserObject() instanceof UserTreeItem)
+        if (node.getUserObject() instanceof RosterTreeItem)
         {
             fireRosterPanelDoubleClick(
-                new RosterPanelEvent(this, (UserTreeItem)node.getUserObject()));
+                new RosterPanelEvent(this, (RosterTreeItem)node.getUserObject()));
         }
     }
 
@@ -312,7 +312,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public void valueChanged(TreeSelectionEvent e)
     {
-        fireRosterPanelSelection(new RosterPanelEvent(this, getSelectedUserItem()));
+        fireRosterPanelSelection(new RosterPanelEvent(this, getSelectedRosterItem()));
     }
 
     /**
@@ -356,7 +356,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             return;
         }
 
-        UserTreeItem selectedItem = null;
+        RosterTreeItem selectedItem = null;
 
         // Select item under cursor
         TreePath path = mTree.getPathForLocation(e.getX(), e.getY());
@@ -364,7 +364,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         if (path != null)
         {
             mTree.setSelectionPath(path);
-            selectedItem = getSelectedUserItem();
+            selectedItem = getSelectedRosterItem();
         }
 
         fireRosterPanelContextMenuInvoke(
