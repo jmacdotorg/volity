@@ -1,13 +1,9 @@
 package org.volity.client;
 
-import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.PacketExtension;
-import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.muc.MultiUserChat;
-import org.jivesoftware.smackx.packet.MUCUser;
+import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
+import org.jivesoftware.smackx.muc.Occupant;
 import java.util.*;
 
 /** A game table (a Multi-User Chat room for playing a Volity game). */
@@ -27,45 +23,38 @@ public class GameTable extends MultiUserChat {
   public GameTable(XMPPConnection connection, String room) {
     super(connection, room);
     this.connection = connection;
-    addParticipantListener(new PacketListener() {
-	public void processPacket(Packet packet) {
-	  Presence presence = (Presence) packet;
-	  MUCUser user = getUser(presence);
-	  if (isReferee(user))
-	    if (presence.getType() == Presence.Type.AVAILABLE) {
-	      String jid = user.getItem().getJid();
-	      if (jid == null) jid = presence.getFrom();
-	      referee = new Referee(GameTable.this, jid);
-	    } else if (presence.getType() == Presence.Type.UNAVAILABLE)
-	      referee = null;
+    addParticipantStatusListener(new DefaultParticipantStatusListener() {
+	public void joined(String roomJID) {
+	  Occupant occupant = getOccupant(roomJID);
+	  if (occupant != null && isReferee(occupant)) {
+	    refereeRoomJID = roomJID;
+	    referee = new Referee(GameTable.this, occupant.getJid());
+	  }
+	}
+	public void left(String roomJID) { unjoined(roomJID); }
+	public void kicked(String roomJID) { unjoined(roomJID); }
+	public void banned(String roomJID) { unjoined(roomJID); }
+	/**
+	 * Called when an occupant is no longer in the room, either
+	 * because it left or was kicked or banned.
+	 */
+	void unjoined(String roomJID) {
+	  // FIXME: This assumes the referee's nickname doesn't
+	  // change!  But keeping track of changed nicknames is
+	  // difficult currently.  See
+	  // http://www.jivesoftware.org/issues/browse/SMACK-55.
+	  if (roomJID.equals(refereeRoomJID)) {
+	    refereeRoomJID = null;
+	    referee = null;
+	  }
 	}
       });
   }
 
-  /**
-   * Get the user extension from a Presence packet.
-   * @return null if the packet has no user extension.
-   */
-  public static MUCUser getUser(Presence presence) {
-    PacketExtension ext = presence.getExtension("x", userNamespace);
-    return ext == null ? null : (MUCUser) ext;
-  }
-
-  static final String userNamespace = "http://jabber.org/protocol/muc#user";
-
-  /**
-   * Get the user information for a participant.
-   * @param participant a fully-qualified MUC JID, e.g. an element of
-   *                    getParticipants()
-   */
-  public MUCUser getUser(String participant) {
-    return getUser(getParticipantPresence(participant));
-  }
-
-
   XMPPConnection connection;
   public XMPPConnection getConnection() { return connection; }
 
+  String refereeRoomJID;
   Referee referee;
 
   /**
@@ -76,31 +65,23 @@ public class GameTable extends MultiUserChat {
   }
 
   /**
-   * Is a user the referee?
+   * Is an occupant the referee?
    */
-  public static boolean isReferee(MUCUser user) {
-    return user != null && user.getItem().getAffiliation().equals("owner");
+  public boolean isReferee(Occupant occupant) {
+    return occupant.getAffiliation().equals("owner");
   }
 
   /**
-   * Is a participant the referee?
-   * @param participant a fully-qualified MUC JID, e.g. an element of
-   *                    getParticipants()
-   */
-  public boolean isReferee(String participant) {
-    return isReferee(getUser(participant));
-  }
-
-  /**
-   * Get a list of opponent nicknames. I.e. participants not including
+   * Get a list of opponent nicknames, i.e., occupants not including
    * the referee or myself.
    */
   public List getOpponents() {
     List opponents = new ArrayList();
-    for (Iterator it = getParticipants(); it.hasNext();) {
-      String participant = (String) it.next();
-      if (!isReferee(participant)) {
-	String nickname = StringUtils.parseResource(participant);
+    for (Iterator it = getOccupants(); it.hasNext();) {
+      String roomJID = (String) it.next();
+      Occupant occupant = getOccupant(roomJID);
+      if (occupant != null && !isReferee(occupant)) {
+	String nickname = occupant.getNick();
 	if (!getNickname().equals(nickname))
 	  opponents.add(nickname);
       }

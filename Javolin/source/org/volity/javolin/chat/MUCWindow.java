@@ -206,7 +206,7 @@ public class MUCWindow extends JFrame implements PacketListener
     private void updateUserList()
     {
         mUserListText.setText("");
-        Iterator iter = mMucObject.getParticipants();
+        Iterator iter = mMucObject.getOccupants();
 
         while (iter.hasNext())
         {

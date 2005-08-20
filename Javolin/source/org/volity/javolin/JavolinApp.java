@@ -634,7 +634,15 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
             if (entry != null)
             {
-                theRoster.removeEntry(entry);
+                try
+                {
+                    theRoster.removeEntry(entry);
+                }
+                catch (XMPPException ex)
+                {
+                    JOptionPane.showMessageDialog(this, ex.toString(),
+                        getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }

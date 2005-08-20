@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
+import org.xmlpull.mxp1.MXParser;
 
 import org.volity.client.TokenFailure;
 
@@ -351,10 +351,8 @@ public class TranslateToken {
     protected void importLocaleTable(Map tab, File tokenFile) 
         throws XmlPullParserException, IOException
     {
-        XmlPullParserFactory factory = XmlPullParserFactory.newInstance(
-            System.getProperty(XmlPullParserFactory.PROPERTY_NAME), null);
-        factory.setNamespaceAware(true);
-        XmlPullParser xpp = factory.newPullParser();
+        XmlPullParser xpp = new MXParser();
+        xpp.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
 
         FileReader in = new FileReader(tokenFile);
         xpp.setInput(in);

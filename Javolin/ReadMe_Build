@@ -46,8 +46,8 @@ when we move to a new version of a library that we are already using.)
 
 ---
 Name: Smack
-Version: 1.4.0
-Download: http://www.jivesoftware.com/builds/docs/smack/smack-1.4.0.zip
+Version: 1.5.1
+Download: http://www.jivesoftware.org/builds/smack/smack-1.5.1.zip
 Lib file(s): smack.jar, smackx.jar
 ---
 Name: Rhino

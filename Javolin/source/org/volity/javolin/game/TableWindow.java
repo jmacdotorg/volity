@@ -483,7 +483,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     private void updateUserList()
     {
         mUserListText.setText("");
-        Iterator iter = mGameTable.getParticipants();
+        Iterator iter = mGameTable.getOccupants();
 
         while (iter.hasNext())
         {
