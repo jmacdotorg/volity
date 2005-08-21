@@ -440,6 +440,7 @@ public class TranslateToken {
         "game_not_in_progress", "The game has not yet started.",
         "jid_not_present", "The player \\1 has not joined the table.",
         "not_seated", "You are not seated.",
-        "are_seated", "You are seated."
+        "are_seated", "You are seated.",
+        "not_your_turn", "It's not your turn."
     };
 }
