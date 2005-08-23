@@ -203,7 +203,7 @@ use Locale::Language;
 ###################
 
 our $default_seat_class = "Volity::Seat";
-our $default_internal_timeout = 5;
+our $default_internal_timeout = 300;
 our $default_language = "en";
 
 ###################
@@ -326,6 +326,8 @@ sub handle_rpc_request {
 	  $self->handle_suspend_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'kill_game') {
 	  $self->handle_kill_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'send_state') {
+	  $self->handle_state_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});	  
       } else {
 	  $self->logger->warn("Got weird RPC request 'volity.$method' from $$rpc_info{from}.");
 	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown method: volity.$method");
@@ -575,15 +577,15 @@ sub jabber_presence {
 	    $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
 	    # Also store this player's nickname, for later lookups.
 	    $self->logger->debug( "Storing $new_person_jid, under $nick");
-	    
-	    # Tell this newcomer about the current table configuration.
-	    $player->seat_list;
-	    if (my @required_seat_ids = @{$self->game_class->required_seat_ids}) {
-		$player->required_seat_list;
-	    }
+
+#	    # Tell this newcomer about the current table configuration.
+#	    if (my @required_seat_ids = @{$self->game_class->required_seat_ids}) {
+#		$player->required_seat_list;
+#	    }
+#	    $player->seat_list;
 	}
-	# Whoever it is, blast the newcomer with full game state.
-	$player->receive_game_state;
+#	# Whoever it is, blast the newcomer with full game state.
+#	$player->receive_game_state;
       }
     }
   }
@@ -669,12 +671,12 @@ sub clear_empty_seats {
 sub look_up_player_with_jid {
   my $self = shift;
   my ($jid) = @_;
-  $self->logger->debug("Fetching player object for JID $jid.");
+#  $self->logger->debug("Fetching player object for JID $jid.");
   my $muc_jid = $self->muc_jid;
   if (my ($nickname) = $jid =~ m|^$muc_jid/(.*)$|) {
-      $self->logger->debug("Oh, it was a table-based JID.");
+#      $self->logger->debug("Oh, it was a table-based JID.");
       $jid = $self->look_up_jid_with_nickname($nickname);
-      $self->logger->debug("Right, then; doing a lookup on $jid instead.");
+#      $self->logger->debug("Right, then; doing a lookup on $jid instead.");
   }
   return $self->{players}{$jid};
 }
@@ -1414,7 +1416,7 @@ sub sit_player {
 sub stand_player {
     my $self = shift;
     my ($player) = @_;
-    # Only do something if the player was actually in the "seated" hash.
+    # Only do something if the player was actually seated.
     if (my $seat = $player->seat) {
 	$player->seat(undef);
 	$seat->remove_player($player);
@@ -1516,7 +1518,19 @@ sub start_game {
   $self->game->start;
 }
 
-
+sub handle_state_request {
+    my $self = shift;
+    my ($from_jid, $rpc_id, @args) = @_;
+    $self->logger->debug("$from_jid is asking for a state update.");
+    my $player = $self->look_up_player_with_jid($from_jid);
+    if ($player) {
+	$self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+	$player->update;
+    } else {
+	$self->logger->debug("But I don't recognize that JID as a player.");
+	$self->send_rpc_fault ($from_jid, $rpc_id, 607, "I don't recognize you as a player.");
+    }
+}
 
 ##############################
 # Service Discovery handlers
