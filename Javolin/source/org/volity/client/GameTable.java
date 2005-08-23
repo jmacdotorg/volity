@@ -12,7 +12,9 @@ public class GameTable extends MultiUserChat {
     public ArrayList mReadyPlayers = new ArrayList();
     public Hashtable mSeatsById = new Hashtable();
     public ArrayList mSeats = new ArrayList();
-    public ArrayList statusListeners = new ArrayList();
+    public boolean mInitialJoined = false;
+    public List statusListeners = new ArrayList();
+    public List readyListeners = new ArrayList();
     public int mGameStatus = 0;
     public ArrayList mRequiredSeatIds = new ArrayList();
 
@@ -29,6 +31,10 @@ public class GameTable extends MultiUserChat {
 	  if (occupant != null && isReferee(occupant)) {
 	    refereeRoomJID = roomJID;
 	    referee = new Referee(GameTable.this, occupant.getJid());
+            if (!mInitialJoined) {
+              mInitialJoined = true;
+              fireReadyListeners();
+            }
 	  }
 	}
 	public void left(String roomJID) { unjoined(roomJID); }
@@ -124,10 +130,45 @@ public class GameTable extends MultiUserChat {
 	}
     }
 
+    /**
+     * Listener interface for addReadyListener / removeReadyListener. This
+     * allows a listener to be notified when the GameTable has successfully
+     * joined the MUC and located the referee.
+     */
+    public interface ReadyListener {
+        /**
+         * Report that the GameTable has successfully joined the MUC
+         * and located the referee.
+         */
+        public abstract void ready();
+    }
+
+    /** Add a table-joined listener. */
+    public void addReadyListener(ReadyListener listener) {
+	readyListeners.add(listener);
+    }
+    
+    /** Remove a table-joined listener. */
+    public void removeReadyListener(ReadyListener listener) {
+	readyListeners.remove(listener);
+    }
+
+    /**
+     * Notify all listeners that have registered for notification of
+     * MUC-joinedness.
+     */
+    private void fireReadyListeners()
+    {
+        Iterator iter = readyListeners.iterator();
+        while (iter.hasNext())
+        {
+            ((ReadyListener)iter.next()).ready();
+        }
+    }
+
     /** Add a player readiness change listener. */
     public void addStatusListener(StatusListener listener) {
 	statusListeners.add(listener);
-	StatusListener foo = (StatusListener)statusListeners.get(0);
     }
     
     /** Remove a player readiness change listener. */

@@ -50,6 +50,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static String MENUCMD_DISCONNECT = "Disconnect";
     private final static String MENUCMD_QUIT = "Exit";
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
+    private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
 
     private final static ImageIcon CONNECTED_ICON;
@@ -71,6 +72,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private JMenuItem mConnectMenuItem;
     private JMenuItem mQuitMenuItem;
     private JMenuItem mNewTableAtMenuItem;
+    private JMenuItem mJoinTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
 
     private JPopupMenu mRosterContextMenu;
@@ -293,6 +295,10 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             doNewTableAt();
         }
+        else if (e.getSource() == mJoinTableAtMenuItem)
+        {
+            doJoinTableAt();
+        }
         else if (e.getSource() == mJoinMucMenuItem)
         {
             doJoinMuc();
@@ -451,6 +457,18 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         NewTableAtDialog newTableDlg = new NewTableAtDialog(this, mConnection);
         newTableDlg.show();
         TableWindow tableWin = newTableDlg.getTableWindow();
+
+        handleNewTableWindow(tableWin);
+    }
+
+    /**
+     * Handler for the Join Table At... menu item.
+     */
+    private void doJoinTableAt()
+    {
+        JoinTableAtDialog joinTableDlg = new JoinTableAtDialog(this, mConnection);
+        joinTableDlg.show();
+        TableWindow tableWin = joinTableDlg.getTableWindow();
 
         handleNewTableWindow(tableWin);
     }
@@ -735,6 +753,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         }
 
         mNewTableAtMenuItem.setEnabled(isConnected());
+        mJoinTableAtMenuItem.setEnabled(isConnected());
         mJoinMucMenuItem.setEnabled(isConnected());
     }
 
@@ -789,7 +808,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             try
             {
                 TableWindow tableWindow =
-                    TableWindow.makeTableWindow(server, table, mConnection.getUser());
+                    TableWindow.makeTableWindow(mConnection, server, table, mConnection.getUser());
                 handleNewTableWindow(tableWindow);
             }
             catch (Exception e)
@@ -945,6 +964,13 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
             keyMask));
         setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_E);
         gameMenu.add(mNewTableAtMenuItem);
+
+        mJoinTableAtMenuItem = new JMenuItem(MENUCMD_JOIN_TABLE_AT);
+        mJoinTableAtMenuItem.addActionListener(this);
+        mJoinTableAtMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
+            keyMask));
+        setPlatformMnemonic(mJoinTableAtMenuItem, KeyEvent.VK_T);
+        gameMenu.add(mJoinTableAtMenuItem);
 
         // Window menu
         mWindowMenu = new WindowMenu();

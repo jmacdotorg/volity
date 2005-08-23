@@ -1,5 +1,5 @@
 /*
- * NewTableAtDialog.java
+ * JoinTableAtDialog.java
  *
  * Copyright 2004 Karl von Laudermann
  *
@@ -19,27 +19,35 @@ package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smackx.Form;
+import org.jivesoftware.smackx.FormField;
+import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.packet.DiscoverInfo;
+import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.*;
+import org.volity.client.GameTable;
+import org.volity.client.GameServer;
 
 /**
- * The dialog for creating a new game table.
+ * The dialog for joining an existing game table.
  */
-public class NewTableAtDialog extends BaseDialog implements ActionListener
+public class JoinTableAtDialog extends BaseDialog implements ActionListener
 {
-    private final static String NODENAME = "NewTableAtDialog";
-    private final static String SERVERID_KEY = "GameServerID";
+    private final static String NODENAME = "JoinTableAtDialog";
+    private final static String TABLEID_KEY = "GameTableID";
     private final static String NICKNAME_KEY = "Nickname";
-    // XXX Should the nickname pref be unified with JoinTableAtDialog?
+    // XXX Should the nickname pref be unified with NewTableAtDialog?
 
-    private JTextField mServerIdField;
+    private JTextField mTableIdField;
     private JTextField mNicknameField;
     private JButton mCancelButton;
-    private JButton mCreateButton;
+    private JButton mJoinButton;
 
     private XMPPConnection mConnection;
     private TableWindow mTableWindow;
@@ -50,9 +58,9 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
      * @param owner       The Frame from which the dialog is displayed.
      * @param connection  The current active XMPPConnection.
      */
-    public NewTableAtDialog(Frame owner, XMPPConnection connection)
+    public JoinTableAtDialog(Frame owner, XMPPConnection connection)
     {
-        super(owner, JavolinApp.getAppName() + ": New Table At", true, NODENAME);
+        super(owner, JavolinApp.getAppName() + ": Join Table At", true, NODENAME);
 
         mConnection = connection;
 
@@ -71,8 +79,8 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
     /**
      * Gets the TableWindow that was created.
      *
-     * @return   The TableWindow for the game table that was created and joined when the
-     * user pressed the Create button, or null if the user pressed Cancel.
+     * @return   The TableWindow for the game table that was joined when the
+     * user pressed the Join button, or null if the user pressed Cancel.
      */
     public TableWindow getTableWindow()
     {
@@ -86,9 +94,9 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
      */
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getSource() == mCreateButton)
+        if (e.getSource() == mJoinButton)
         {
-            doCreate();
+            doJoin();
         }
         else if (e.getSource() == mCancelButton)
         {
@@ -97,74 +105,136 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Handles the Create button.
+     * Handles the Join button.
      */
-    private void doCreate()
+    private void doJoin()
     {
         // Store field values in preferences
         saveFieldValues();
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        // Create the TableWindow
+        // Create the TableWindow. Note that we don't have a GameServer.
         try
         {
-            String serverID = mServerIdField.getText();
+            String tableID = mTableIdField.getText();
 
-            if (serverID.indexOf('/') == -1)
+            final GameTable gameTable = new GameTable(mConnection, tableID);
+            final String nickname = mNicknameField.getText();
+
+            /* To get the GameServer, we need to join the MUC early. */
+
+            GameTable.ReadyListener listener = new GameTable.ReadyListener() {
+                    public void ready() {
+                        doJoinCont(gameTable, nickname);
+                    }
+                };
+            gameTable.addReadyListener(listener);
+
+            gameTable.join(nickname);
+
+            /**
+             * One possible error case: the user typed the name of a
+             * nonexistent MUC on a real MUC host. If that's happened, we just
+             * accidentally created a new MUC! To check for this, we call
+             * getConfigurationForm -- if that *succeeds*, then we're in the
+             * bad case and have to abort.
+             */
+
+            Form form = null;
+            try {
+                form = gameTable.getConfigurationForm();
+            }
+            catch (Exception ex)
             {
-                serverID = serverID + "/volity";
+                // do nothing -- form stays null
             }
 
-            mTableWindow = TableWindow.makeTableWindow(mConnection, serverID,
-                mNicknameField.getText());
+            if (form != null) {
+                gameTable.removeReadyListener(listener);
+                gameTable.leave();
+                throw new IOException("No such table exists.");
+            }
 
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            dispose();
-        }
-        catch (TokenFailure ex)
-        {
-            // We don't have a log window, so shove the failure message
-            // up in a MessageDialog.
-            String msg = JavolinApp.getTranslator().translate(ex);
-
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            JOptionPane.showMessageDialog(this,
-                "Cannot create table:\n" + msg,
-                JavolinApp.getAppName() + ": Error",
-                JOptionPane.ERROR_MESSAGE);
-
-            // Destroy TableWindow object
-            mTableWindow = null;
+            /*
+             * Now we wait for the ReadyListener to fire, which will invoke
+             * doJoinCont(), below. 
+             */
         }
         catch (Exception ex)
         {
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
-            JOptionPane.showMessageDialog(this, ex.toString(),
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
-
-            // Destroy TableWindow object
-            mTableWindow = null;
+            JOptionPane.showMessageDialog(this, 
+                ex.toString(),
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
     }
 
     /**
-     * Saves the current text of the server ID and nickname fields to the preferences
+     * More handling of the Join button, after the MUC join succeeds.
+     */
+    private void doJoinCont(GameTable gameTable, String nickname)
+    {
+        try {
+            String refJID = gameTable.getReferee().getResponderJID();
+            String serverID = null;
+
+            ServiceDiscoveryManager discoMan = 
+                ServiceDiscoveryManager.getInstanceFor(mConnection);
+            DiscoverInfo info = discoMan.discoverInfo(refJID);
+
+            Form form = Form.getFormFrom(info);
+            if (form != null) {
+                // This form field is still called "server", not "parlor".
+                FormField field = form.getField("server");
+                if (field != null)
+                    serverID = (String) field.getValues().next();
+            }
+            
+            if (serverID == null || serverID.equals("")) {
+                throw new IOException("Unable to fetch parlor ID from referee");
+            }
+
+            GameServer server = new GameServer(mConnection, serverID);
+
+            mTableWindow = TableWindow.makeTableWindow(mConnection, 
+              server, gameTable, nickname);
+
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            dispose();
+        }
+        catch (Exception ex)
+        {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            JOptionPane.showMessageDialog(this,
+                ex.toString(),
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+
+            // Destroy TableWindow object
+            mTableWindow = null;
+            gameTable.leave();
+        }
+    }
+
+    /**
+     * Saves the current text of the table ID and nickname fields to the preferences
      * storage.
      */
     private void saveFieldValues()
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        prefs.put(SERVERID_KEY, mServerIdField.getText());
+        prefs.put(TABLEID_KEY, mTableIdField.getText());
         prefs.put(NICKNAME_KEY, mNicknameField.getText());
     }
 
     /**
-     * Reads the default server ID and nickname values from the preferences storage and
+     * Reads the default table ID and nickname values from the preferences storage and
      * fills in the text fields.
      */
     private void restoreFieldValues()
@@ -175,7 +245,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
 
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        mServerIdField.setText(prefs.get(SERVERID_KEY, ""));
+        mTableIdField.setText(prefs.get(TABLEID_KEY, ""));
         mNicknameField.setText(prefs.get(NICKNAME_KEY, defNick));
     }
 
@@ -190,8 +260,8 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
 
         int gridY = 0;
 
-        // Add game server ID label
-        JLabel someLabel = new JLabel("Game Parlor ID:");
+        // Add game table ID label
+        JLabel someLabel = new JLabel("Game Table ID:");
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -199,13 +269,13 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         c.anchor = GridBagConstraints.WEST;
         getContentPane().add(someLabel, c);
 
-        // Add game server ID field
-        mServerIdField = new JTextField(20);
+        // Add game table ID field
+        mTableIdField = new JTextField(28);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
         c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        getContentPane().add(mServerIdField, c);
+        getContentPane().add(mTableIdField, c);
         gridY++;
 
         // Add nickname label
@@ -218,15 +288,16 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         getContentPane().add(someLabel, c);
 
         // Add nickname field
-        mNicknameField = new JTextField(20);
+        mNicknameField = new JTextField(28);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
         c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
+        c.anchor = GridBagConstraints.WEST;
         getContentPane().add(mNicknameField, c);
         gridY++;
 
-        // Add panel with Cancel and Create buttons
+        // Add panel with Cancel and Join buttons
         JPanel buttonPanel = new JPanel(new GridBagLayout());
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -249,20 +320,20 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         c.weightx = 0.5;
         buttonPanel.add(mCancelButton, c);
 
-        // Add Create button
-        mCreateButton = new JButton("Create");
-        mCreateButton.addActionListener(this);
+        // Add Join button
+        mJoinButton = new JButton("Join");
+        mJoinButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = 0;
         c.insets = new Insets(0, SPACING, 0, 0);
         c.anchor = GridBagConstraints.EAST;
-        buttonPanel.add(mCreateButton, c);
-        // Make Create button default
-        getRootPane().setDefaultButton(mCreateButton);
+        buttonPanel.add(mJoinButton, c);
+        // Make Join button default
+        getRootPane().setDefaultButton(mJoinButton);
 
         // Make the buttons the same width
-        Dimension dim = mCreateButton.getPreferredSize();
+        Dimension dim = mJoinButton.getPreferredSize();
 
         if (mCancelButton.getPreferredSize().width > dim.width)
         {
@@ -270,6 +341,6 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         }
 
         mCancelButton.setPreferredSize(dim);
-        mCreateButton.setPreferredSize(dim);
+        mJoinButton.setPreferredSize(dim);
     }
 }

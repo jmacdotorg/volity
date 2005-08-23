@@ -82,6 +82,19 @@ public class Referee extends TokenRequester {
   }
 
     /**
+     * Tell the ref to send us all the seating and configuration information. 
+     * (After the first invocation, we will receive seating/config updates
+     * as they occur.)
+     *
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void send_state() throws XMPPException, RPCException, TokenFailure 
+    {
+        invoke("volity.send_state");
+    }
+
+    /**
      * Tell the ref that we're playing but unready.
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs

@@ -74,6 +74,11 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     private String mNickname;
     private TranslateToken mTranslator;
 
+    private boolean mGameTableStarted = false;
+    private boolean mGameViewportStarted = false;
+    private boolean mGameStartFinished = false;
+
+
     /**
      * Factory method for a TableWindow. This form will create a new table.
      *
@@ -94,12 +99,13 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         GameServer server = new GameServer(connection, serverId);
         GameTable table = server.newTable();
 
-        return makeTableWindow(server, table, nickname);
+        return makeTableWindow(connection, server, table, nickname);
     }
 
     /**
      * Factory method for a TableWindow. This form will join an existing table.
      *
+     * @param connection                 The current active XMPPConnection
      * @param server                     The GameServer.
      * @param table                      The GameTable to join.
      * @param nickname                   The nickname to use to join the table.
@@ -112,8 +118,10 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
      * @exception MalformedURLException  If an invalid UI file URL was used.
      * @exception TokenFailure           If a new_table RPC failed.
      */
-    public static TableWindow makeTableWindow(GameServer server,
-        GameTable table, String nickname) throws XMPPException, RPCException,
+    public static TableWindow makeTableWindow(XMPPConnection connection, 
+        GameServer server,
+        GameTable table, 
+        String nickname) throws XMPPException, RPCException,
         IOException, TokenFailure, MalformedURLException, ZipException
     {
         TableWindow retVal = null;
@@ -208,7 +216,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
             {
                 public void managerStarted(UpdateManagerEvent evt)
                 {
-                    finishInit();
+                    mGameViewportStarted = true;
+                    tryFinishInit();
                 }
             });
 
@@ -268,14 +277,58 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         // Register as a player-status listener.
         mGameTable.addStatusListener(this);
+
+        // Join the table, if we haven't already
+        try
+        {
+            if (!mGameTable.isJoined()) {
+                mGameTable.addReadyListener(new GameTable.ReadyListener() {
+                        public void ready() {
+                            mGameTableStarted = true;
+                            tryFinishInit();
+                        }
+                    });
+                mGameTable.join(mNickname);
+            }
+            else {
+                mGameTableStarted = true;
+                tryFinishInit();
+            }
+        }
+        catch (XMPPException ex)
+        {
+            JOptionPane.showMessageDialog(this,
+                "Cannot join table:\n" + ex.toString(),
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+            //XXX We should really kill the table window in this case.
+        }
     }
 
     /**
-     * Performs final steps of initialization of the GameTable, after the UI file has
-     * been loaded.
+     * Performs final steps of initialization of the GameTable, after the UI
+     * file has been loaded.
+     *
+     * Two operations must be complete before we do this: the UI must be
+     * created, and the MUC must be joined. Conveniently, these happen in
+     * parallel. So the listener for *each* op calls this function. The
+     * function checks to make sure that *both* flags are set before it starts
+     * work (and it also checks to make sure it's never run before).
      */
-    private void finishInit()
+    private void tryFinishInit()
     {
+        if (!mGameTableStarted || !mGameViewportStarted) 
+        {
+            // Need both operations finished.
+            return;
+        }
+        if (mGameStartFinished) 
+        {
+            // Should only do this once.
+            return;
+        }
+        mGameStartFinished = true;
+
         switchView(VIEW_GAME);
         mGameViewport.forceRedraw();
 
@@ -285,19 +338,16 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         mLoadingComponent = null;
 
-        // Join the table
-
-        System.out.println("Joining the table..");
-
+        // Begin the flood of seating/config info.
         try
         {
-            mGameTable.join(mNickname);
+            mGameTable.getReferee().send_state();
         }
-        catch (XMPPException ex)
-        {
-            JOptionPane.showMessageDialog(this,
-                "Cannot join table due to error:\n" + ex.toString(),
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+        catch (TokenFailure ex) {
+            writeMessageText(mTranslator.translate(ex));
+        }
+        catch (Exception ex) {
+            writeMessageText(ex.toString());
         }
     }
 
