@@ -20,7 +20,7 @@ MAXPLAYERS = 8
 
 class TwoPlayer(volity.game.Game):
     gamename = 'Seat-testing: two players'
-    description = 'Exactly two seats, must be filled'
+    gamedescription = 'Exactly two seats, must be filled'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/TwoPlayer.html'
 
     def __init__(self, ref):
@@ -37,7 +37,7 @@ class TwoPlayer(volity.game.Game):
 
 class FourPlayer(volity.game.Game):
     gamename = 'Seat-testing: four players'
-    description = 'Exactly four seats, must be filled'
+    gamedescription = 'Exactly four seats, must be filled'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/FourPlayer.html'
 
     def __init__(self, ref):
@@ -56,7 +56,7 @@ class FourPlayer(volity.game.Game):
 
 class AnyNumber(volity.game.Game):
     gamename = 'Seat-testing: any number of players'
-    description = 'Any number of seats, at least one must be filled'
+    gamedescription = 'Any number of seats, at least one must be filled'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/AnyNumber.html'
 
     def __init__(self, ref):
@@ -73,7 +73,7 @@ class AnyNumber(volity.game.Game):
 
 class TwoPlusAnyNumber(volity.game.Game):
     gamename = 'Seat-testing: any number of players, including two captains'
-    description = 'Two captains, and any number of further seats'
+    gamedescription = 'Two captains, and any number of further seats'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/TwoPlusAnyNumber.html'
 
     def __init__(self, ref):
@@ -92,7 +92,7 @@ class TwoPlusAnyNumber(volity.game.Game):
 
 class TwoOrMore(volity.game.Game):
     gamename = 'Seat-testing: two or more players'
-    description = 'Any number of seats, at least two must be filled'
+    gamedescription = 'Any number of seats, at least two must be filled'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/TwoOrMore.html'
 
     def __init__(self, ref):
@@ -115,7 +115,7 @@ class TwoOrMore(volity.game.Game):
 
 class AnyNumberPairs(volity.game.Game):
     gamename = 'Seat-testing: even number of players, seated in pairs'
-    description = 'Any even number of players, seated in pairs'
+    gamedescription = 'Any even number of players, seated in pairs'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/AnyNumberPairs.html'
 
     def __init__(self, ref):
@@ -154,7 +154,7 @@ class AnyNumberPairs(volity.game.Game):
 
 class ConfigSeatCount(volity.game.Game):
     gamename = 'Seat-testing: configurable number of seats'
-    description = 'A number of seats configured by the game'
+    gamedescription = 'A number of seats configured by the game'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/seattest/ConfigSeatCount.html'
 
     def __init__(self, ref):
