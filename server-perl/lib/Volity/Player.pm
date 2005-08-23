@@ -136,6 +136,8 @@ takes care of all this stuff.
 
 =head2 Other methods
 
+=over
+
 =cut
 
 use warnings;
@@ -379,7 +381,33 @@ sub receive_game_state {
 	to=>$self->jid,
     });
 }
+
+=item update 
+
+Updates the player about the game state and seats, sending it the proper
+volity RPCs.
+
+=cut
     
+# update: Convenience method that updates the player about the game state,
+# the seat lists, and seat occupants.
+sub update {
+    my $self = shift;
+    $self->required_seat_list;
+    $self->seat_list;
+    $self->seat_occupants;
+    $self->receive_game_state;   
+}
+
+# seat_occupants: Call player_sat for every seated player.
+sub seat_occupants {
+    my $self = shift;
+    for my $player ($self->referee->players) {
+	if (my $seat = $player->seat) {
+	    $self->player_sat($player, $seat);
+	}
+    }
+}
 
 # state_seat: Return the seat safest to use for state-sending POV purposes.
 sub state_seat {
