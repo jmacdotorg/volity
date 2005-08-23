@@ -149,15 +149,25 @@ class Referee(volent.VolEntity):
         if (not self.seatsetupphase):
             ls = [ seat.id for seat in self.seatlist if seat.required ]
             self.game.sendtable('volity.required_seat_list', ls)
+
+    def resolvemetharg(val):
+        if (isinstance(val, game.Seat)):
+            return val.id
+        if (isinstance(val, Player)):
+            return val.jidstr
+        return val
+    resolvemetharg = staticmethod(resolvemetharg)
             
     def sendone(self, player, methname, *methargs, **keywords):
         op = keywords.pop('callback', self.defaultcallback)
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
             
-        if (not player.live):
+        if (not (player.live and player.aware)):
             return
-            
+
+        methargs = [ self.resolvemetharg(val) for val in methargs ]
+        
         self.rpccli.send(op, player.jidstr,
             methname, *methargs, **keywords)
 
@@ -166,8 +176,10 @@ class Referee(volent.VolEntity):
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
             
+        methargs = [ self.resolvemetharg(val) for val in methargs ]
+        
         for player in self.players.values():
-            if (player.live):
+            if (player.live and player.aware):
                 self.rpccli.send(op, player.jidstr,
                     methname, *methargs, **keywords)
 
@@ -461,6 +473,7 @@ class Referee(volent.VolEntity):
                 self.log.info('player %s has rejoined the table',
                     unicode(player))
                 player.live = True
+                player.aware = False
                 
             return
 
@@ -468,9 +481,6 @@ class Referee(volent.VolEntity):
         player = Player(self, jid, nick)
         self.players[jidstr] = player
         self.playernicks[nick] = player
-
-        self.queueaction(self.sendseatingchart, player)
-        self.queueaction(self.sendfullstate, player)
 
     def playerleft(self, jid, nick):
         jidstr = unicode(jid)
@@ -492,6 +502,7 @@ class Referee(volent.VolEntity):
             self.playernicks.pop(player.nick, None)
             player.nick = None
             player.live = False
+            player.aware = False
             return
         
         if (player.seat):
@@ -509,13 +520,15 @@ class Referee(volent.VolEntity):
         self.playernicks.pop(player.nick, None)
         player.nick = None
         player.live = False
+        player.aware = False
 
     def playersit(self, sender, jidstr, seatid=None):
         if (not self.players.has_key(jidstr)):
-            raise rpc.RPCFault(606,
-                'jid %s is not present at table' % jidstr)
+            raise game.FailureToken('volity.jid_not_present', jidstr)
 
         player = self.players[jidstr]
+        if (not player.aware):
+            raise game.FailureToken('volity.jid_not_ready', jidstr)
         
         if (not seatid):
         
@@ -567,10 +580,8 @@ class Referee(volent.VolEntity):
         return seat.id
 
     def playerstand(self, sender, jidstr):
-
         if (not self.players.has_key(jidstr)):
-            raise rpc.RPCFault(606,
-                'jid %s is not present at table' % jidstr)
+            raise game.FailureToken('volity.jid_not_present', jidstr)
                 
         player = self.players[jidstr]
 
@@ -692,31 +703,34 @@ class Referee(volent.VolEntity):
             player.ready = False
         self.queueaction(self.reportunreadylist, ls)
 
-    def sendseatingchart(self, player):
-        if (not player.live):
-            return
-
-        ls = [ seat.id for seat in self.seatlist ]
-        subls = [ seat.id for seat in self.seatlist if seat.required ]
-        self.sendone(player, 'volity.seat_list', ls)
-        if (subls):
-            self.sendone(player, 'volity.required_seat_list', subls)
-
-        for pla in self.players.values():
-            if (pla.seat):
-                self.sendone(player, 'volity.player_sat', pla.jidstr, pla.seat.id)
-
     def sendfullstate(self, player):
         if (not player.live):
             return
+        player.aware = True
 
         self.game.sendplayer(player, 'volity.receive_state')
+
+        # First, the seating information        
+        ls = [ seat.id for seat in self.seatlist ]
+        subls = [ seat.id for seat in self.seatlist if seat.required ]
+        self.game.sendplayer(player, 'volity.seat_list', ls)
+        if (subls):
+            self.game.sendplayer(player, 'volity.required_seat_list', subls)
+
+        for pla in self.players.values():
+            if (pla.seat):
+                self.game.sendplayer(player, 'volity.player_sat', pla.jidstr, pla.seat.id)
+
+        # Then, the game config information
         self.game.sendconfigstate(player)
+
+        # Then, the game state (if in progress)
         if (self.refstate != STATE_SETUP):
             seat = self.game.getplayerseat(player)
             ### or the last known seat, if in suspended state
             ### or no seat?
             self.game.sendgamestate(player, seat)
+            
         self.game.sendplayer(player, 'volity.state_sent')
 
     def reportsit(self, player, seat):
@@ -931,6 +945,7 @@ class Player:
         self.nick = nick
         
         self.live = True
+        self.aware = False
         self.seat = None
         self.ready = False
 
@@ -1089,7 +1104,10 @@ class Validator:
                         pass # ok
                     else:
                         raise rpc.RPCFault(605,
-                            '%s: argument %d must be %s' % (callname, ix+1, self.typespecstring(typ)))
+                            '%s: argument %d must be %s, not %s' % (callname,
+                                ix+1,
+                                self.typespecstring(typ),
+                                self.typespecstring(argtyp)))
                 ix = ix+1
                 
             # ix is now the length of ls, or perhaps the index of the

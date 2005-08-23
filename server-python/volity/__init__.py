@@ -65,6 +65,17 @@ game -- the base class used to develop a new game
 
 * Version history:
 
+- 1.3:
+Permitted Seat and Player arguments in the game RPC-sending methods
+    (these send the seat ID and the player JID, respectively).
+Updated volity.send_state to include seating info.
+Changed referee to not send seating/config info until requested.
+Improved some RPC fault messages.
+
+- 1.2.1:
+Added the volity.send_state RPC (previously available as get_full_state)
+    to the referee.
+
 - 1.2:
 Changed the class name "server" (and its module) to "parlor", to match
     current Volity terminology.

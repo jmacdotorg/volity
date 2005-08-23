@@ -4,6 +4,8 @@ import zymb.jabber.interface
 import referee
 from volent import FailureToken
 
+from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED, STATE_SUSPENDED
+
 class Game:
     gamename = None
     gamedescription = 'A Volity game.'
