@@ -727,6 +727,15 @@ sub cmd_new_table {
     }
 }
 
+sub cmd_send_state {
+    my $user = $_[HEAP]->{'default_player'};
+    unless ($user->referee_jid) {
+	$user->print_message("You can't request state until you join a table.");
+	return;
+    }
+    $user->request_state;
+}
+
 sub cmd_add_bot {
     my $user = $_[HEAP]->{'default_player'};
     unless ($user->referee_jid) {
@@ -1449,6 +1458,15 @@ sub join_table {
   $self->table_jid($table_jid);
 }
 
+sub request_state {
+    my $self = shift;
+    $self->make_rpc_request({
+        to         => $self->referee_jid,
+        id         => 'send-state',
+        methodname => 'volity.send_state',
+    });
+}
+
 sub load_js_from_source {
     my $self = shift;
     my ($js_source) = @_;
@@ -1599,12 +1617,14 @@ sub jabber_presence {
     if ($affiliation eq 'owner') {
       # This is the table's ref.
       $self->referee_jid($new_person_jid);
+      # Ask it for some state info.
+      $self->request_state;
     } else {
       # This is a potential opponent!
       unless ($node->attr('type')) {
         # No 'type' attribute means they're joining us...
-        # Save the nickname. We'll pass it to the UI file later.
-        $self->add_opponent_nickname($node->attr('from'));
+	  # Save the nickname. We'll pass it to the UI file later.
+	  $self->add_opponent_nickname($node->attr('from'));
       } elsif ($node->attr('type') eq 'unavailable') {
         # Oh, they're leaving...
         $self->remove_opponent_nickname($node->attr('from'));
