@@ -3,8 +3,8 @@
         Build file for Javolin app
     </description>
   <!-- project-specific properties; change these -->
-  <property name="jarfile" value="Javolin.jar"/>
-  <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
+  <property name="jarfilejavolin" value="Javolin.jar"/>
+  <property name="jarfiletestbench" value="Testbench.jar"/>
   <!-- set global properties for this build -->
   <property name="src" location="source"/>
   <property name="build" location="build"/>
@@ -27,17 +27,52 @@
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
-      deprecation="on" />
+      deprecation="on" debug="on">
+      <include name="org/volity/javolin/**/*.java" />
+      <include name="org/volity/client/**/*.java" />
+      <include name="org/volity/jabber/**/*.java" />
+    </javac>
     <!-- Copy all .png files from ${src} to ${build}-->
     <copy todir="${build}">
       <fileset dir="${src}">
         <include name="**/*.png"/> 
       </fileset>
     </copy> 
-</target>
+  </target>
+
+  <target name="compiletestbench" depends="init, compile"
+        description="compile the source" >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
+      deprecation="on" debug="on">
+      <include name="org/volity/testbench/**/*.java" />
+    </javac>
+  </target>
 
   <target name="archive" depends="compile"
         description="generate the jar file" >
+    <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
+    <!-- Transform classpath into space-separated list for manifest -->
+    <property name="lib.loc" location="lib"/>
+    <pathconvert dirsep="/" pathsep=" " property="manif.cpath" 
+      refid="class.path">
+      <map from="${lib.loc}" to="lib"/>
+    </pathconvert>
+    <!-- Put some of ${build} into the ${jarfile} file -->
+    <jar jarfile="${jarfilejavolin}" basedir="${build}">
+      <include name="org/volity/javolin/" />
+      <include name="org/volity/client/" />
+      <include name="org/volity/jabber/" />
+      <manifest>
+        <attribute name="Main-Class" value="${mainclass}"/>
+        <attribute name="Class-Path" value="${manif.cpath}"/>        
+      </manifest> 
+    </jar>
+  </target>
+  
+  <target name="testbench" depends="compiletestbench"
+        description="generate the jar file" >
+    <property name="mainclass" value="org/volity/testbench/TestbenchApp"/>
     <!-- Transform classpath into space-separated list for manifest -->
     <property name="lib.loc" location="lib"/>
     <pathconvert dirsep="/" pathsep=" " property="manif.cpath" 
@@ -45,7 +80,7 @@
       <map from="${lib.loc}" to="lib"/>
     </pathconvert>
     <!-- Put everything in ${build} into the ${jarfile} file -->
-    <jar jarfile="${jarfile}" basedir="${build}">
+    <jar jarfile="${jarfiletestbench}" basedir="${build}">
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
         <attribute name="Class-Path" value="${manif.cpath}"/>        
@@ -62,18 +97,17 @@
     </javadoc>
   </target>
 
-  <target name="clean"
+  <target name="clean" depends="cleanbuild"
         description="clean up" >
-    <!-- Delete the docs, the ${build} directory tree, and the .jar file -->
-    <delete dir="${build}"/>
+    <!-- Delete the docs, the ${build} directory tree, and the .jar files -->
     <delete dir="${doc}"/>    
-    <delete file="${jarfile}"/>
   </target>
 
   <target name="cleanbuild"
-        description="clean up" >
+        description="clean up all but doc tree" >
     <!-- Delete the ${build} directory tree and .jar file -->
     <delete dir="${build}"/>
-    <delete file="${jarfile}"/>
+    <delete file="${jarfilejavolin}"/>
+    <delete file="${jarfiletestbench}"/>
   </target>
 </project>
