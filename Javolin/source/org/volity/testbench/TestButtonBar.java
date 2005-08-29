@@ -216,7 +216,7 @@ public class TestButtonBar
 
     private void buildUI(boolean firsttime) {
         if (firsttime) {
-            toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            toolbar = new JPanel(new RestrictedWidthFlowLayout(FlowLayout.LEFT));
         }
         else {
             toolbar.removeAll();
