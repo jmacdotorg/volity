@@ -7,6 +7,10 @@ import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.mxp1.MXParser;
 import org.volity.javolin.game.TableWindow;
 
+/**
+ * Represents the contents of a testbench.xml file. It also includes a list of
+ * seat IDs, if that was findable.
+ */
 public class DebugInfo
 {
     public final static int CMD_BUTTON = 1;
@@ -14,6 +18,16 @@ public class DebugInfo
     public final static int DATTYP_STRING = 1;
     public final static int DATTYP_INT    = 2;
 
+    /**
+     * Inner class which represents one command (button or field) in the file.
+     * This is a simplistic "bag of public fields" class. I could have made
+     * Button and Field subclasses, but it wouldn't have made anybody any
+     * smarter.
+     *
+     * Type is CMD_BUTTON or CMD_FIELD. Label is the command name (and the
+     * on-screen label). Code is the Javascript contents (for buttons).
+     * Datatype is the field type (for fields).
+     */
     public class Command {
         public int type;
         public String label;
@@ -79,19 +93,36 @@ public class DebugInfo
         }
     }
 
+    /**
+     * Return the list of seat IDs, as intuited from the locale files. If there
+     * were no locale files, this will be the empty list.
+     */
     public List getSeatList() {
         return seatList;
     }
 
+    /**
+     * Return the list of Commands found in testbench.xml.
+     */
     public List getCommandList() {
         return commandList;
     }
 
+    /**
+     * For parsing the XML, I found it easiest to declare an object with a
+     * bunch of tag-specific methods -- testbench(), button(), field(). And the
+     * easiest way to do *that* was to define an interface with the top-level
+     * method -- testbench() -- and then instantiate an anonymous class which
+     * defines all the methods.
+     */
     protected interface DebugTagParse {
         void testbench()
             throws XmlPullParserException, IOException, DebugFileException;
     }
 
+    /**
+     * Exception type for a malformed testbench.xml file.
+     */
     protected class DebugFileException extends Exception {
         DebugFileException(String st) {
             super(st);
@@ -115,6 +146,13 @@ public class DebugInfo
         xpp.setInput(in);
         final int tuple[] = new int[2];
         final StringBuffer buf = new StringBuffer();
+
+        /* Instantiate the anonymous class described above. Each method in this
+         * object parses one tag, beginning to end.
+         *
+         * In each case, the method should be called while the PullParser's
+         * current event is START_TAG. When the method returns, the current
+         * event will be END_TAG. */
 
         DebugTagParse tagParse = new DebugTagParse() {
                 public void testbench()

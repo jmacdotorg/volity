@@ -19,6 +19,9 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.volity.client.TranslateToken;
 
+/**
+ * This class is analogous to SVGCanvas. It handles the SVG pane in Testbench.
+ */
 public class SVGTestCanvas extends JSVGCanvas 
     implements InterpreterFactory
 {

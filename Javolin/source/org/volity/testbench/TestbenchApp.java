@@ -16,6 +16,9 @@ import org.volity.javolin.SizeAndPositionSaver;
 import org.volity.javolin.game.TableWindow;
 import org.volity.javolin.game.UIFileCache;
 
+/**
+ * The main application class of Testbench.
+ */
 public class TestbenchApp extends JFrame
                                   implements ActionListener
 {
@@ -226,6 +229,7 @@ public class TestbenchApp extends JFrame
                     }
 
                     try {
+                        st = mButtonBar.interpolateFields(st);
                         mViewport.getUI().loadString(st);
                     }
                     catch (Exception ex) {

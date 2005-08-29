@@ -10,6 +10,12 @@ import javax.swing.*;
 import org.mozilla.javascript.*;
 import org.volity.client.GameUI;
 
+/**
+ * UI component for Testbench's toolbar. This contains "Start Game" and "End
+ * Game" buttons, and a seating popup. It can also contain a bunch of
+ * game-specific controls, which are defined by reading a "testbench.xml" file
+ * from the UI directory.
+ */
 public class TestButtonBar
     implements ActionListener, SVGTestCanvas.UIListener
 {
@@ -38,6 +44,10 @@ public class TestButtonBar
         buildUI(true);
     }
 
+    /**
+     * Get the JComponent which represents the toolbar. (It happens to be a
+     * JPanel.)
+     */
     public JComponent getToolbar() {
         return toolbar;
     }
@@ -124,11 +134,18 @@ public class TestButtonBar
         }
     }
 
+    /**
+     * Reload the testbench.xml file, and update the controls in the buttonbar
+     * to match.
+     */
     public void reload() {
         mDebugInfo = new DebugInfo(uiDir);
         buildUI(false);
     }
 
+    /**
+     * Ad-hoc class to hold a couple of values. For buttonbar internal use.
+     */
     private class FieldPair {
         DebugInfo.Command cmd;
         JTextField field;
@@ -138,16 +155,34 @@ public class TestButtonBar
         }
     }
 
-    private String interpolateFields(String st) {
-        int pos;
+    /**
+     * Take a string, and substitute in field values for "$name" variables.
+     * Use "$$" for a literal "$".
+     *
+     * String fields turn into double-quoted string literals; int fields turn
+     * into int literals. Dollar signs inside string literals are *not*
+     * protected. Therefore, "hello $X" is a bad idea; it will turn into
+     * "hello "xfield"".
+     *
+     * @param st the string to convert.
+     */
+    public String interpolateFields(String st) {
         StringBuffer buf = new StringBuffer(st);
         int ix = 0;
         int jx;
 
         while (true) {
-            pos = buf.indexOf("$", ix);
-            if (pos < 0) {
+            ix = buf.indexOf("$", ix);
+            if (ix < 0) {
                 break;
+            }
+
+            if (ix+1 < buf.length()
+                && buf.charAt(ix+1) == '$') {
+                /* Accept "$$" as "$". */
+                buf.replace(ix, ix+2, "$");
+                ix += 1;
+                continue;
             }
 
             // This would be faster with a regex
@@ -171,8 +206,9 @@ public class TestButtonBar
             String val = pair.field.getText();
             switch (pair.cmd.datatype) {
             case DebugInfo.DATTYP_STRING:
-                /* We must escape quotes and backslashes, to create a valid
-                 * Javascript string literal. */
+                /* We must escape quotes and backslashes, and then put quotes
+                 * aorund the whole thing, to create a valid Javascript string
+                 * literal. */
                 Pattern pat = Pattern.compile("([\\\"\\\\])");
                 Matcher matcher = pat.matcher(val);
                 String escapedval = matcher.replaceAll("\\\\$1");
@@ -191,14 +227,29 @@ public class TestButtonBar
             buf.replace(ix, jx, val);
             ix += val.length();
         }
-        
+
         return buf.toString();
     }
 
+    /**
+     * Wrapper function to print a message string. 
+     *
+     * @param message the message.
+     */
     private void writeMessageText(String message) {
         messageHandler.print(message);
     }
 
+    /**
+     * Turn all the controls in the buttonbar on or off. 
+     *
+     * The controls are disabled when the bar is first created or reloaded;
+     * this is because the SVG file has just been loaded too, and is not yet
+     * visible. When the SVG is first drawn, setAllEnabled(true) should be
+     * called.
+     *
+     * @param val on or off?
+     */
     public void setAllEnabled(boolean val) {
         mStartGameBut.setEnabled(val);
         mEndGameBut.setEnabled(val);
@@ -214,6 +265,15 @@ public class TestButtonBar
     private final static String END_GAME_LABEL = "End Game";
     private final static String UNSEATED_ITEM = "(none)";
 
+    /**
+     * Whack together the UI. This BuildUI routine is not quite in line with
+     * the Javolin standard -- sorry. It is called both at construction time,
+     * and when the UI is reloaded. In the latter case, the toolbar already
+     * exists, but its contents must be cleaned out and rebuilt (because
+     * testbench.xml might have changed).
+     *
+     * @param firsttime building a new toolbar, or reloading it?
+     */
     private void buildUI(boolean firsttime) {
         if (firsttime) {
             toolbar = new JPanel(new RestrictedWidthFlowLayout(FlowLayout.LEFT));

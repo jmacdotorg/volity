@@ -6,6 +6,11 @@ import org.mozilla.javascript.*;
 import org.volity.client.TranslateToken;
 import org.volity.client.TokenFailure;
 
+/**
+ * This class is analogous to org.volity.client.GameUI. It represents the game
+ * interface, only for the testbench environment rather than a true Volity
+ * client.
+ */
 public class TestUI 
 {
     public interface MessageHandler {
