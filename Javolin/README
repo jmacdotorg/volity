@@ -2,6 +2,9 @@
 
 This is Javolin, a Volity client written in Java.
 
+This also includes the source code for Testbench, a debugging framework for 
+Volity UI files.
+
 See ReadMe_Build for information on building this application.
 
 Javolin is licensed under the Apache License Version 2.0. See 

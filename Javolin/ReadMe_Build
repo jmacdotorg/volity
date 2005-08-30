@@ -1,5 +1,5 @@
 This document assumes that you have obtained the Javolin build environment from
-the CVS repository at SourceForge.net, and wish to build Javolin.
+the CVS repository at SourceForge.net, and wish to build Javolin or Testbench.
 
 ------------
 Requirements
@@ -22,14 +22,16 @@ at the command line, where "command" is the desired command. The following
 commands are available:
 
   archive - Compiles Javolin and builds the Javolin.jar file. This is the
-  	default, so you can just execute "ant" by itself, without specifying a
-  	command.
+      default, so you can just execute "ant" by itself, without specifying a
+      command.
 
-  doc - Uses Javadoc to generate Javolin API documentation in a directory called
-  	"doc".
+  testbench - Compiles Testbench and builds the Testbench.jar file.
 
-  clean - Deletes everything created by the other commands: the build directory,
-  	the doc directory, and the Javolin.jar file.
+  doc - Uses Javadoc to generate Javolin API documentation in a directory 
+      called "doc".
+
+  clean - Deletes everything created by the other commands: the build 
+      directory, the doc directory, and the jar files.
 
 ---------
 Libraries
@@ -59,9 +61,9 @@ Name: Batik
 Version: 1.6
 Download: http://apache.mirrors.pair.com/xml/batik/batik-1.6.zip
 Lib file(s): batik-awt-util.jar, batik-bridge.jar, batik-css.jar, batik-dom.jar,
-	batik-ext.jar, batik-gui-util.jar, batik-gvt.jar, batik-parser.jar,
-	batik-script.jar, batik-svg-dom.jar, batik-swing.jar, batik-util.jar,
-	batik-xml.jar, xerces_2_5_0.jar, xml-apis.jar
+    batik-ext.jar, batik-gui-util.jar, batik-gvt.jar, batik-parser.jar,
+    batik-script.jar, batik-svg-dom.jar, batik-swing.jar, batik-util.jar,
+    batik-xml.jar, xerces_2_5_0.jar, xml-apis.jar
 Comments: Note that Batik 1.5.1 includes version 1.5R4.1 of Rhino (js.jar), but
-	Javolin needs 1.5R5 instead.
+    Javolin needs 1.5R5 instead.
 ---
