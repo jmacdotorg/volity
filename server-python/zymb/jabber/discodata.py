@@ -133,7 +133,7 @@ class DiscoItems:
         Return the list of items. Each member of the list will be a tuple
         (jid, name, node), where *name* and *node* may be None.
         """
-        
+
         return self.items
 
 def makediscoitems(items):

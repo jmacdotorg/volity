@@ -61,6 +61,7 @@ import logging
 import optparse
 import zymb, zymb.sched
 import zymb.jabber.client, zymb.jabber.disco, zymb.jabber.rpc
+import zymb.jabber.discodata
 
 usage = "usage: %prog [ options ]"
 
@@ -465,14 +466,24 @@ cl.addservice(disco)
 
 info = disco.addinfo()
 info.addidentity('automation', 'rpc-service', 'Jabber-RPC service')
-items = disco.additems()
-items.additem(opts.jid, 'Return "hello".', 'hello')
-items.additem(opts.jid, 'Returns the argument passed to it.', 'id')
-items.additem(opts.jid, 'Waits the requested number of seconds.', 'wait')
-items.additem(opts.jid, 'Send a Jabber message.', 'message')
-items.additem(opts.jid, 'Send a disco info query.', 'disco')
-items.additem(opts.jid, 'Send a disco items query.', 'discit')
-items.additem(opts.jid, 'Shut down this server.', 'exit')
+
+# Add disco-items information. We do this in the form of a function,
+# because each list entry includes the JID, and we don't actually know
+# the JID until we're connected. (The JID from the command line may
+# not be correct, because the Jabber resource we get may not be the
+# one we asked for.)
+def itemfunc():
+    items = zymb.jabber.discodata.DiscoItems()
+    selfjid = cl.getjid()
+    items.additem(selfjid, 'Return "hello".', 'hello')
+    items.additem(selfjid, 'Returns the argument passed to it.', 'id')
+    items.additem(selfjid, 'Waits the requested number of seconds.', 'wait')
+    items.additem(selfjid, 'Send a Jabber message.', 'message')
+    items.additem(selfjid, 'Send a disco info query.', 'disco')
+    items.additem(selfjid, 'Send a disco items query.', 'discit')
+    items.additem(selfjid, 'Shut down this server.', 'exit')
+    return items
+disco.additems(None, itemfunc)
 
 # Add a DiscoClience to our Jabber connection. This handles outgoing
 # disco queries (and their incoming results). This will be used by the

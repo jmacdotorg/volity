@@ -30,6 +30,15 @@ simple tasks.
 
 * Version history:
 
+- 1.2.4:
+Added a way to create a Jabber stream which communicates with a server
+    different from the one in the JID. (This is necessary to deal with
+    talk.google.com, which uses "name@gmail.com" JIDs.)
+The Jabber agent now understands the concept of getting a resource from
+    the server which is not the one it asked for.
+Various other fixes for bugs which were uncovered by Google's Jabber
+    implementation.
+
 - 1.2.3:
 Fixed the RPC service to disallow empty RPC replies. (I thought that was
     legal, but it isn't.) An RPC handler which returns None will now

@@ -259,8 +259,13 @@ class JabberStream(sched.Agent):
     def getjid(self):
         """    getjid() -> JID
 
-        Return the agent's JID. This will be a full JID, with a resource
-        of 'zymb' if none was provided to the constructor.
+        Return the agent's JID. This will be a full JID, with a resource.
+
+        The resource can change during authentication, because a Jabber
+        server is not guaranteed to give you the resource you asked for.
+        If you didn't provide a resource in the constructor's JID,
+        getjid().getresource() will be 'zymb' before authentication,
+        and whatever the Jabber server provides afterwards.
         """
         
         return self.jid
@@ -480,12 +485,14 @@ class JabberConnect(JabberStream):
     provides the basic methods for sending Jabber messages and handling
     incoming ones.
 
-    JabberConnect(jid, port=5222, secure=SECURE_DEFAULT) -- constructor.
+    JabberConnect(jid, port=5222, secure=SECURE_DEFAULT, host=None)
+        -- constructor.
 
     The JID may be a string or an interface.JID object. If the JID lacks
     a resource, 'JID/zymb' will be assumed. The *port* specifies the
-    TCP port on the host (which is inferred from *jid*). The *secure* value
-    specifies a level of stream security:
+    TCP port on the host. If *host* is none, it is inferred from *jid*.
+
+    The *secure* value specifies a level of stream security:
 
     SECURE_DEFAULT: Use SECURE_TLS if port 5222, SECURE_SSL if port 5223.
     SECURE_NONE: Do not use stream security.
@@ -538,10 +545,14 @@ class JabberConnect(JabberStream):
     senderror() -- generate an error reply to a message.
     """
 
-    def __init__(self, jid, port=5222, secure=SECURE_DEFAULT):
+    def __init__(self, jid, port=5222, secure=SECURE_DEFAULT, host=None):
         JabberStream.__init__(self, jid)
 
-        self.host = self.jid.getdomain()
+        self.domain = self.jid.getdomain()
+        if (host):
+            self.host = host
+        else:
+            self.host = self.domain
         self.port = int(port)
 
         if (secure == SECURE_DEFAULT):
@@ -625,7 +636,7 @@ class JabberConnect(JabberStream):
         nod.setnamespace('jabber:client')
         nod.setattr('version', '1.0')
         nod.setattr('xmlns:stream', interface.NS_JABBER_ORG_STREAMS)
-        nod.setattr('to', self.host)
+        nod.setattr('to', self.domain)
         self.xmldoc = nod
         
         initstr = "<?xml version='1.0'?>%s>" % str(nod)[:-2]
@@ -975,7 +986,7 @@ class JabberAuth(JabberConnect):
     binds a resource.)
 
     JabberAuth(jid, password, port=5222, secure=SECURE_DEFAULT,
-        register=False) -- constructor.
+        register=False, host=None) -- constructor.
 
     The JID may be a string or an interface.JID object. If the JID lacks
     a resource, 'JID/zymb' will be assumed. The *password* is used to
@@ -983,8 +994,9 @@ class JabberAuth(JabberConnect):
     a new account (with the given JID and password) before authenticating.
     (Not all Jabber servers permit autoregistration in this way.)
 
-    The *port* specifies the TCP port on the host (which is inferred
-    from *jid*). The *secure* value specifies a level of stream security:
+    The *port* specifies the TCP port on the host. If *host* is None, it
+    is inferred from *jid*. The *secure* value specifies a level of stream
+    security:
 
     SECURE_DEFAULT: Use SECURE_TLS if port 5222, SECURE_SSL if port 5223.
     SECURE_NONE: Do not use stream security.
@@ -1044,8 +1056,8 @@ class JabberAuth(JabberConnect):
     
     """
 
-    def __init__(self, jid, password, port=5222, secure=SECURE_DEFAULT, register=False):
-        JabberConnect.__init__(self, jid, port, secure)
+    def __init__(self, jid, password, port=5222, secure=SECURE_DEFAULT, register=False, host=None):
+        JabberConnect.__init__(self, jid, port, secure, host)
 
         self.password = password
         self.authenticated = False
@@ -1131,7 +1143,7 @@ class JabberAuth(JabberConnect):
         self.log.info('beginning non-sasl authentication of <%s>',
             unicode(self.jid))
 
-        msg = interface.Node('iq', attrs={'type':'get', 'to':self.host})
+        msg = interface.Node('iq', attrs={'type':'get', 'to':self.domain})
         nod = msg.setchild('query', namespace=interface.NS_AUTH)
         nod.setchilddata('username', self.jid.getnode())
         id = self.send(msg, addfrom=False)
@@ -1190,7 +1202,7 @@ class JabberAuth(JabberConnect):
             raise interface.StanzaBadRequest(
                 'nonsasl fields list lacks <digest> and <password>')
 
-        newmsg = interface.Node('iq', attrs={'type':'set', 'to':self.host})
+        newmsg = interface.Node('iq', attrs={'type':'set', 'to':self.domain})
         newnod = newmsg.setchild('query', namespace=interface.NS_AUTH)
         newnod.setchilddata('username', self.jid.getnode())
         newnod.setchilddata('resource', self.jid.getresource())
@@ -1586,16 +1598,16 @@ class JabberAuth(JabberConnect):
 
         Bind a JID resource to the authenticated stream. If no *resource*
         is provided, use the resource which was provided in the *jid* of
-        the stream constructor. (If that JID lacked a resource, use
+        the stream constructor. (If that JID lacked a resource, ask for
         'zymb'.)
 
         If this succeeds, the agent performs a 'bound' event containing the
-        resource string.
+        resource string. Which may not be the one you asked for. If it is
+        different, self.jid is updated with the new resource.
 
         (Warning: you can call bindresource() more than once. However, the
         high-level Jabber features in zymb are not multiple-resource aware.
-        They assume that there is just one resource per stream -- the one
-        provided in the original JID.)
+        They assume that there is just one resource per stream.)
         """
         
         if (not resource):
@@ -1635,7 +1647,10 @@ class JabberAuth(JabberConnect):
         jidstr = jidnod.getdata()
         jid = interface.JID(jidstr)
         res = jid.getresource()
-        ### theoretically, this could be a different resource than we asked for!
+        if (res != self.jid.getresource()):
+            # This is a different resource than we asked for!
+            self.jid.setresource(res)
+            self.log.info('new resource; JID is now <%s>', unicode(self.jid))
 
         self.perform('bound', res)
         raise interface.StanzaHandled
@@ -1652,7 +1667,7 @@ class JabberAuthResource(JabberAuth):
     your application can begin doing whatever it does.
     
     JabberAuthResource(jid, password, port=5222, secure=SECURE_DEFAULT,
-        register=False) -- constructor.
+        register=False, host=None) -- constructor.
         
     The JID may be a string or an interface.JID object. If the JID lacks
     a resource, 'JID/zymb' will be assumed. The *password* is used to
@@ -1660,8 +1675,9 @@ class JabberAuthResource(JabberAuth):
     a new account (with the given JID and password) before authenticating.
     (Not all Jabber servers permit autoregistration in this way.)
 
-    The *port* specifies the TCP port on the host (which is inferred
-    from *jid*). The *secure* value specifies a level of stream security:
+    The *port* specifies the TCP port on the host. If *host* is None, it
+    is inferred from *jid*. The *secure* value specifies a level of stream
+    security:
 
     SECURE_DEFAULT: Use SECURE_TLS if port 5222, SECURE_SSL if port 5223.
     SECURE_NONE: Do not use stream security.
@@ -1694,8 +1710,8 @@ class JabberAuthResource(JabberAuth):
     startinitialsession() -- 'authstartsession' event handler.
     """
 
-    def __init__(self, jid, password, port=5222, secure=SECURE_DEFAULT, register=False):
-        JabberAuth.__init__(self, jid, password, port, secure, register)
+    def __init__(self, jid, password, port=5222, secure=SECURE_DEFAULT, register=False, host=None):
+        JabberAuth.__init__(self, jid, password, port, secure, register, host)
         self.addhandler('authed', self.bindinitialresource)
         self.addhandler('bound', self.detectinitialbinding)
         self.addhandler('authstartsession', self.startinitialsession)
@@ -1765,11 +1781,6 @@ class JabberAuthResource(JabberAuth):
             self.stop()
             raise interface.StanzaHandled
             
-        nod = msg.getchild('session')
-        if (not nod or nod.getnamespace() != interface.NS_SESSION):
-            # Not addressed to us
-            return
-
         self.jump('authresource')
         raise interface.StanzaHandled
 
