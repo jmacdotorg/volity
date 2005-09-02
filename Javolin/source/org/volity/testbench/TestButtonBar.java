@@ -117,7 +117,8 @@ public class TestButtonBar
                 if (cmd.code != null) {
                     writeMessageText("Performing debug command \"" + cmd.label + "\".");
                     String st = interpolateFields(cmd.code);
-                    testUI.loadString(st, "Debug command \"" + cmd.label + "\"");
+                    if (testUI != null)
+                        testUI.loadString(st, "Debug command \"" + cmd.label + "\"");
                 }
             }
 

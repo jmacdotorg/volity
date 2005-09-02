@@ -37,7 +37,7 @@ public class TestbenchApp extends JFrame
     private TestButtonBar mButtonBar;
 
     private SVGTestCanvas mViewport;
-    private JTextArea mInputText;
+    private TestMessagePane mInputPane;
     private JSplitPane mLogSplitter;
     private JSplitPane mChatSplitter;
     private LogTextPanel mMessageText;
@@ -174,6 +174,9 @@ public class TestbenchApp extends JFrame
                 }
             });
 
+        mInputPane = new TestMessagePane(messageHandler, mButtonBar);
+        mViewport.addUIListener(mInputPane);
+
         buildUI();
 
         setSize(500, 600);
@@ -197,7 +200,7 @@ public class TestbenchApp extends JFrame
                 public void windowOpened(WindowEvent we)
                 {
                     // Give focus to input text area when the window is created
-                    mInputText.requestFocusInWindow();
+                    mInputPane.getComponent().requestFocusInWindow();
                 }
             });
 
@@ -216,29 +219,6 @@ public class TestbenchApp extends JFrame
                 }
             });
 
-        // Send message when user presses Enter while editing input text
-        mInputText.getInputMap().put(
-            KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0),
-            new AbstractAction()
-            {
-                public void actionPerformed(ActionEvent e)
-                {
-                    String st = mInputText.getText();
-                    mInputText.setText("");
-                    if (st.startsWith("?")) {
-                        st = st.substring(1);
-                        writeMessageText("Printing debug expression: " + st);
-                        st = "literalmessage(\"\" + (" + st + "));";   
-                    }
-                    else {
-                        writeMessageText("Performing debug command: " + st);
-                    }
-
-                    st = mButtonBar.interpolateFields(st);
-                    mViewport.getUI().loadString(st, "Debug command");
-                }
-            });
-        
         show();
     }
 
@@ -431,11 +411,7 @@ public class TestbenchApp extends JFrame
         mMessageText = new LogTextPanel();
         mChatSplitter.setTopComponent(mMessageText);
 
-        mInputText = new JTextArea();
-        mInputText.setLineWrap(true);
-        mInputText.setWrapStyleWord(true);
-        mInputText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
-        mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
+        mChatSplitter.setBottomComponent(new JScrollPane(mInputPane.getComponent()));
 
         mLogSplitter.setTopComponent(mViewport);
         mLogSplitter.setBottomComponent(mChatSplitter);
