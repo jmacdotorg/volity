@@ -2,8 +2,9 @@
     (or, Branches and Twigs and Thorns.)
     Game designed and implemented by Andrew Plotkin.
     
-Ruleset URI: <http://eblong.com/zarf/volity/ruleset/barsoon/BarsoomGo.html>
+Ruleset URI: <http://eblong.com/zarf/volity/ruleset/barsoom/BarsoomGo.html>
 Game URL:    <http://www.eblong.com/zarf/barsoom-go.html>
+Default UI:  <http://eblong.com/zarf/volity/ui/barsoom/barsoom-ui.zip>
 """
 
 from zymb import jabber
@@ -14,8 +15,8 @@ class BarsoomGo(volity.game.Game):
 
     gamename = 'Barsoomite Go'
     gamedescription = 'Barsoomite Go: or, Branches and Twigs and Thorns'
-    ruleseturi = 'http://eblong.com/zarf/volity/ruleset/barsoon/BarsoomGo.html'
-    rulesetversion = '0.1' ###
+    ruleseturi = 'http://eblong.com/zarf/volity/ruleset/barsoom/BarsoomGo.html'
+    rulesetversion = '1.0'
     implementoremail = 'erkyrath@eblong.com'
     implementorjid = 'zarf@jabber.org'
 
@@ -23,11 +24,10 @@ class BarsoomGo(volity.game.Game):
         volity.game.Game.__init__(self, ref)
 
         self.setopset(self)
-        self.validatecalls('move_root_square', afoot=False, argcount=2)
-        self.validatecalls('move_null_square', afoot=False, argcount=2)
-        ### args=[int, int]
-        self.validatecalls('move', afoot=True, seated=True)
-        ### args=[int, int, int]
+        self.validatecalls('move_root_square', afoot=False, args=[int, int])
+        self.validatecalls('move_null_square', afoot=False, args=[int, int])
+        self.validatecalls('move', afoot=True, seated=True,
+            args=[int, int, int, int])
 
         self.whiteseat = GoSeat(self, 'white')
         self.blackseat = GoSeat(self, 'black')
@@ -91,10 +91,6 @@ class BarsoomGo(volity.game.Game):
     # The following methods are RPC handlers.
                 
     def rpc_move_root_square(self, sender, xpos, ypos):
-        ###
-        xpos = int(xpos)
-        ypos = int(ypos)
-        
         if (xpos < 0 or xpos >= 8 or ypos < 0 or ypos >= 4):
             raise volity.game.FailureToken('game.out_of_bounds')
 
@@ -108,10 +104,6 @@ class BarsoomGo(volity.game.Game):
         self.unready()
 
     def rpc_move_null_square(self, sender, xpos, ypos):
-        ###
-        xpos = int(xpos)
-        ypos = int(ypos)
-        
         if (xpos < 0 or xpos >= 8 or ypos < 0 or ypos >= 4):
             raise volity.game.FailureToken('game.out_of_bounds')
 
@@ -125,12 +117,6 @@ class BarsoomGo(volity.game.Game):
         self.unready()
 
     def rpc_move(self, sender, xpos, ypos, size, dir):
-        ###
-        xpos = int(xpos)
-        ypos = int(ypos)
-        size = int(size)
-        dir = int(dir)
-        
         seat = self.getplayerseat(sender)
         if (not seat):
             # the validator should prevent this from happening
