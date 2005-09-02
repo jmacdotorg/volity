@@ -24,7 +24,8 @@ public class TestUI
         /**
          * Report a command error.
          */
-        public abstract void error(Exception e);
+        public abstract void error(Throwable e);
+        public abstract void error(Throwable e, String prefix);
     }
 
     /**
@@ -211,26 +212,34 @@ public class TestUI
 
     TranslateToken translator;
     ErrorHandler errorHandler;
+    ErrorHandler parentErrorHandler;
     MessageHandler messageHandler;
+    Object securityDomain; 
 
     String currentSeat;
     Scriptable scope, game, info, client;
     RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
 
     public TestUI(TranslateToken translator,
-        MessageHandler messageHandler) {
+        MessageHandler messageHandler,
+        ErrorHandler parentErrorHandler) {
 
         this.translator = translator;
         this.messageHandler = messageHandler;
+        this.parentErrorHandler = parentErrorHandler;
+        // This is not super-necessary, since nothing in Testbench can
+        // *raise* a TokenFailure.
         this.errorHandler = new ErrorHandler() {
-                public void error(Exception e) {
+                public void error(Throwable e) {
+                    error(e, null);
+                }
+                public void error(Throwable e, String st) {
                     if (e instanceof TokenFailure) {
                         String msg = TestUI.this.translator.translate((TokenFailure)e);
                         TestUI.this.messageHandler.print(msg);
                     }
                     else {
-                        String msg = e.toString();
-                        TestUI.this.messageHandler.print(msg);
+                        TestUI.this.parentErrorHandler.error(e, st);
                     }
                 }
             };
@@ -264,16 +273,27 @@ public class TestUI
      * @throws EvaluationException if an error occurs while evaluating
      *                             the UI script
      */
-    //### "document" does not resolve. Huh? ###
-    public void loadString(String uiScript)
-        throws IOException, JavaScriptException {
+    public void loadString(String uiScript, String scriptLabel) {
         try {
             if (scope == null) initGameObjects();
-            Context.enter().evaluateReader(scope, new StringReader(uiScript),
-                "<debug command>", 1, null);
-        } finally {
+            Context context = Context.enter();
+            context.evaluateString(scope, uiScript,
+                "<debug command>", 1, securityDomain);
+        }
+        catch (Exception ex) {
+            errorHandler.error(ex, scriptLabel + " failed");
+        }
+        finally {
             Context.exit();
         }
+    }
+
+    /**
+     * To compile and run debug commands, we need a valid security domain. That
+     * has to be nipped out of the RhinoInterpreter. (See SVGTestCanvas.)
+     */
+    public void setSecurityDomain(Object securityDomain) {
+        this.securityDomain = securityDomain;
     }
 
     /**
@@ -294,7 +314,9 @@ public class TestUI
     public ScriptableObject initGameObjects(ScriptableObject scope) {
         try {
             Context context = Context.enter();
-            if (scope == null) scope = context.initStandardObjects();
+            if (scope == null) {
+                scope = context.initStandardObjects();
+            }
             this.scope = scope;
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("info", scope, info = new Info());

@@ -28,14 +28,17 @@ public class SVGTestCanvas extends JSVGCanvas
     URL uiDocument;
     TranslateToken translator;
     TestUI.MessageHandler messageHandler;
+    TestUI.ErrorHandler errorHandler;
 
     public SVGTestCanvas(URL uiDocument,
         TranslateToken translator,
-        TestUI.MessageHandler messageHandler) {
+        TestUI.MessageHandler messageHandler,
+        TestUI.ErrorHandler errorHandler) {
         super();
 
         this.uiDocument = uiDocument;
         this.messageHandler = messageHandler;
+        this.errorHandler = errorHandler;
         this.translator = translator;
 
         setDocumentState(ALWAYS_DYNAMIC);
@@ -102,6 +105,8 @@ public class SVGTestCanvas extends JSVGCanvas
             TestUIInterpreter() {
                 super(documentURL);
                 ui = new SVGUI();
+                // Will need the security domain to execute debug scripts.
+                ui.setSecurityDomain(rhinoClassLoader);
                 ui.initGameObjects(getGlobalObject());
                 for (Iterator it = listeners.iterator(); it.hasNext(); ) {
                     ((UIListener) it.next()).newUI(ui);
@@ -124,7 +129,27 @@ public class SVGTestCanvas extends JSVGCanvas
     class SVGUI extends TestUI {
         SVGUI() {
             super(SVGTestCanvas.this.translator, 
-                SVGTestCanvas.this.messageHandler);
+                SVGTestCanvas.this.messageHandler,
+                SVGTestCanvas.this.errorHandler);
+        }
+
+        public void loadString(final String uiScript, final String scriptLabel) {
+            // Handle the request in the UpdateManager's thread, so the
+            // display will be repainted correctly.
+            getUpdateManager().getUpdateRunnableQueue().invokeLater(new Runnable() {
+                    // Make sure we use the interpreter's context rather than
+                    // one returned by Context.enter() in a new thread, because
+                    // it needs to be a special subclass of Context.
+                    public void run() {
+                        try {
+                            interpreter.enterContext();
+                            SVGUI.super.loadString(uiScript, scriptLabel);
+                        }
+                        finally {
+                            Context.exit();
+                        }
+                    }
+                });
         }
 
         public Object callUIMethod(Function method, List params)

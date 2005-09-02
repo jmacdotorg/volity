@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.regex.*;
 import javax.swing.*;
 import org.mozilla.javascript.*;
-import org.volity.client.GameUI;
 
 /**
  * UI component for Testbench's toolbar. This contains "Start Game" and "End
@@ -21,7 +20,7 @@ public class TestButtonBar
 {
     File uiDir;
     TestUI.MessageHandler messageHandler;
-    GameUI.ErrorHandler errorHandler;
+    TestUI.ErrorHandler errorHandler;
     TestUI testUI;
     DebugInfo mDebugInfo;
 
@@ -34,7 +33,7 @@ public class TestButtonBar
 
     public TestButtonBar(File uiDir, 
         TestUI.MessageHandler messageHandler,
-        GameUI.ErrorHandler errorHandler) {
+        TestUI.ErrorHandler errorHandler) {
 
         this.messageHandler = messageHandler;
         this.errorHandler = errorHandler;
@@ -86,8 +85,7 @@ public class TestButtonBar
                 }
 	    }
             catch (Exception ex) {
-                errorHandler.error(ex);
-                writeMessageText("game.START failed: " + ex.toString());
+                errorHandler.error(ex, "game.START failed");
             }
         }
         else if (ev.getSource() == mEndGameBut) {
@@ -102,8 +100,7 @@ public class TestButtonBar
                 }
 	    }
             catch (Exception ex) {
-                errorHandler.error(ex);
-                writeMessageText("game.END failed: " + ex.toString());
+                errorHandler.error(ex, "game.END failed");
             }
         }
         else {
@@ -119,14 +116,8 @@ public class TestButtonBar
                 DebugInfo.Command cmd = (DebugInfo.Command)(ls.get(ix));
                 if (cmd.code != null) {
                     writeMessageText("Performing debug command \"" + cmd.label + "\".");
-                    try {
-                        String st = interpolateFields(cmd.code);
-                        testUI.loadString(st);
-                    }
-                    catch (Exception ex) {
-                        errorHandler.error(ex);
-                        writeMessageText("Debug command \"" + cmd.label + "\" failed: " + ex.toString());
-                    }
+                    String st = interpolateFields(cmd.code);
+                    testUI.loadString(st, "Debug command \"" + cmd.label + "\"");
                 }
             }
 

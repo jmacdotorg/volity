@@ -9,7 +9,6 @@ import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.apache.batik.bridge.*;
-import org.volity.client.GameUI;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
@@ -49,7 +48,7 @@ public class TestbenchApp extends JFrame
     private SizeAndPositionSaver mSizePosSaver;
     private SimpleDateFormat mTimeStampFormat;
 
-    private Exception lastException;
+    private Throwable lastException;
 
     /**
      * The main program for the TestbenchApp class.
@@ -149,14 +148,21 @@ public class TestbenchApp extends JFrame
                     writeMessageText(msg);
                 }
             };
-        GameUI.ErrorHandler errorHandler = new GameUI.ErrorHandler() {
-                public void error(Exception ex) {
+        TestUI.ErrorHandler errorHandler = new TestUI.ErrorHandler() {
+                public void error(Throwable ex) {
+                    error(ex, null);
+                }
+                public void error(Throwable ex, String prefix) {
                     noticeException(ex);
+                    String msg = ex.toString();
+                    if (prefix != null)
+                        msg = prefix + ": " + msg;
+                    writeMessageText(msg);
                 }
             };
             
         mViewport = new SVGTestCanvas(uiMainUrl, mTranslator,
-            messageHandler);
+            messageHandler, errorHandler);
 
         mButtonBar = new TestButtonBar(uiDir, messageHandler, errorHandler);
         mViewport.addUIListener(mButtonBar);
@@ -228,14 +234,8 @@ public class TestbenchApp extends JFrame
                         writeMessageText("Performing debug command: " + st);
                     }
 
-                    try {
-                        st = mButtonBar.interpolateFields(st);
-                        mViewport.getUI().loadString(st);
-                    }
-                    catch (Exception ex) {
-                        noticeException(ex);
-                        writeMessageText("Debug command failed: " + ex.toString());
-                    }
+                    st = mButtonBar.interpolateFields(st);
+                    mViewport.getUI().loadString(st, "Debug command");
                 }
             });
         
@@ -266,7 +266,12 @@ public class TestbenchApp extends JFrame
             mViewport.reloadUI();
         }
         else if (ev.getSource() == mLastExceptionMenuItem) {
-            mViewport.getUserAgent().displayError(lastException);
+            if (lastException instanceof Exception) {
+                mViewport.getUserAgent().displayError((Exception)lastException);
+            }
+            else {
+                writeMessageText("Last exception was not an Exception: " + lastException.toString());
+            }
         }
     }
 
@@ -293,7 +298,7 @@ public class TestbenchApp extends JFrame
         mMessageText.append(message + "\n", Color.BLACK);
     }
 
-    private void noticeException(Exception ex) 
+    private void noticeException(Throwable ex) 
     {
         lastException = ex;
         mLastExceptionMenuItem.setEnabled(true);
