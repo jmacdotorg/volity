@@ -73,6 +73,7 @@ class Parlor(volent.VolEntity):
         form.addfield('volity-version', volent.volityversion)
         info.setextendedinfo(form)
 
+        # assumes resource didn't change
         items = disco.additems()
         items.additem(self.jid, node='ruleset',
             name='Ruleset URI')
@@ -137,6 +138,7 @@ class Parlor(volent.VolEntity):
         self.log.info('new table requested by %s...', unicode(sender))
 
         ### see unique-nick discussion from mailing list
+        # assumes resource didn't change
         refresource = 'ref_' + str(os.getpid()) + '_' + str(int(time.time()))
         muc = interface.JID(self.muchost)
         muc.setnode(refresource)

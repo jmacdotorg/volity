@@ -30,6 +30,10 @@ simple tasks.
 
 * Version history:
 
+- 1.2.5:
+Added a way to override the default parsing of Jabber-RPC value tags.
+    (On a global basis only -- sorry.)
+
 - 1.2.4:
 Added a way to create a Jabber stream which communicates with a server
     different from the one in the JID. (This is necessary to deal with

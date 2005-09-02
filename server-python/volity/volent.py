@@ -11,6 +11,30 @@ import zymb.jabber.presence
 
 volityversion = '1.0'
 
+def doubletoint(nod, nam):
+    """doubletoint -- internal function used as an rpcdata value parser hook.
+
+    A peculiarity of Volity is that when a numeric value comes over the
+    RPC wire from a client, it will always be a <double>, even if the
+    value is a whole number. This is because Volity clients run on ECMAScript,
+    which has no type distinction between floats and ints.
+
+    Therefore, we set up an RPC parsing function which converts floats to
+    ints. (Games will very rarely use true non-integer values, so this is
+    the normal case.) Unfortunately, the rpcdata facility to handle this is
+    global -- sorry, I got lazy -- so this conversion applies to every RPC
+    received by the process.
+    """
+    if (nam == 'double'):
+        res = jabber.rpcdata.RPCDouble.parsenode(nod)
+        ires = int(res)
+        if (ires == res):
+            return ires
+        else:
+            return res
+
+jabber.rpcdata.setvalueparserhook(doubletoint)
+
 class VolEntity(zymb.sched.Agent):
     logprefix = 'volity'
 
@@ -52,6 +76,7 @@ class VolEntity(zymb.sched.Agent):
         self.conn.addservice(rpcc)
 
     def startup(self):
+        # assumes resource didn't change
         self.log.info('Connecting as <%s>', str(self.jid))
         self.conn.start()
 

@@ -93,6 +93,7 @@ class Referee(volent.VolEntity):
 
         disco = self.conn.getservice('discoservice')
         
+        # assumes resource didn't change
         form = jabber.dataform.DataForm()
         form.addfield('server', unicode(self.parlor.jid))
         form.addfield('table', unicode(self.muc))
@@ -860,6 +861,7 @@ class Referee(volent.VolEntity):
             return
 
         if (not jidstr):
+            # assumes resource didn't change
             jidstr = self.jid
 
         self.sendall('volity.suspend_game', jidstr)
@@ -1101,6 +1103,9 @@ class Validator:
                     if (argtyp == unicode):
                         argtyp = str
                     if (argtyp == typ or (type(typ) == tuple and argtyp in typ)):
+                        pass # ok
+                    elif (argtyp == int and
+                        (float == typ or (type(typ) == tuple and float in typ))):
                         pass # ok
                     else:
                         raise rpc.RPCFault(605,

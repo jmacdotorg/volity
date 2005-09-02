@@ -65,6 +65,11 @@ game -- the base class used to develop a new game
 
 * Version history:
 
+- 1.3.1:
+Parse <double> RPC values as integers, if they have integral values.
+Contrariwise, if an RPC method's validator demands a float, silently
+    accept an integer in that place. (But not vice versa.)
+
 - 1.3:
 Permitted Seat and Player arguments in the game RPC-sending methods
     (these send the seat ID and the player JID, respectively).

@@ -12,6 +12,15 @@ import interface
 # nameregex -- regular expression matching valid XML-RPC names
 nameregex = re.compile('\\A[A-Za-z0-9_.:/]*\\Z')
 
+def defaultvalueparser(nod, name):
+    """defaultvalueparser(Node, name) -> None
+
+    Default, do-nothing value-parser hook.
+    """
+    pass
+
+valueparserhook = defaultvalueparser
+        
 def nameisvalid(st):
     """nameisvalid(st) -> bool
 
@@ -439,6 +448,36 @@ def checknodename(nod, wanted):
     if (nam != wanted):
         raise ValueError('got \'' + nam + '\', not \'' + wanted + '\'')
 
+def setvalueparserhook(parser):
+    """setvalueparserhook(parser) -> None
+
+    Set a global hook which will be used to parse incoming RPC values
+    (in both method arguments and replies).
+
+    To unset the global hook, and use the default Jabber-RPC parsing with
+    no customization, pass None as the *parser*.
+
+    If not None, the *parser* should be a function of the form:
+
+        parser(node, name) -> value
+
+    The *node* argument will be the immediate child of a <value> tag in
+    a Jabber-RPC packet. The *name* will be the node's name (e.g.,
+    'int', 'i4', 'boolean', etc -- assuming the packet is well-formed.)
+
+    The *parser* function may return any value, or None to use the default
+    Jabber-RPC parsing. It may also raise an exception to indicate a
+    badly-formed value.
+
+    Yes, this is global and there's no way to set it per RPC handler. Sorry.
+    There's also no way to indicate a parsed value of None.
+    """
+    
+    global valueparserhook
+    if (parser == None):
+        parser = defaultvalueparser
+    valueparserhook = parser
+        
 def parsevalue(valnod):
     """parsevalue(Node) -> value
 
@@ -458,6 +497,10 @@ def parsevalue(valnod):
     checknodename(valnod, 'value')
     subnod = valnod.getchildren()[0]
     valtyp = subnod.getname()
+
+    val = valueparserhook(subnod, valtyp)
+    if (val != None):
+        return val
     
     if (valtyp == RPCInt.typename or valtyp == 'i4'):
         return RPCInt.parsenode(subnod)
@@ -883,6 +926,36 @@ class TestRpcData(unittest.TestCase):
                 typ2 = unicode
             self.assertEqual(typ1, typ2)
 
+    def test_parserhook(self):
+        nod = makevalue(5)
+        val = parsevalue(nod)
+        self.assertEqual(val, 5)
+        nod = makevalue("5")
+        val = parsevalue(nod)
+        self.assertEqual(val, "5")
+
+        def parserhooktest(nod, nam):
+            if (nam in ['int', 'i4']):
+                return 1 + RPCInt.parsenode(nod)
+        
+        setvalueparserhook(parserhooktest)
     
+        nod = makevalue(5)
+        val = parsevalue(nod)
+        self.assertEqual(val, 6)
+        nod = makevalue("5")
+        val = parsevalue(nod)
+        self.assertEqual(val, "5")
+        
+        setvalueparserhook(None)
+    
+        nod = makevalue(5)
+        val = parsevalue(nod)
+        self.assertEqual(val, 5)
+        nod = makevalue("5")
+        val = parsevalue(nod)
+        self.assertEqual(val, "5")
+        
+
 if __name__ == '__main__':
     unittest.main()
