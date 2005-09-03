@@ -130,6 +130,9 @@ public class SVGCanvas extends JSVGCanvas
       // display will be repainted correctly.
       getUpdateManager().getUpdateRunnableQueue().invokeLater(new Runnable() {
 	  public void run() {
+            // We don't need to call interpreter.enterContext() here, because
+            // super.handleRPC calls around to callUIMethod, which does it.
+            // That's confusing, but it suffices.
 	    SVGUI.super.handleRPC(methodName, params, k);
 	  }
 	});

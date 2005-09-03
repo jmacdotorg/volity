@@ -4,14 +4,15 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.net.URL;
 import java.util.*;
+import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
-import org.volity.jabber.*;
 import org.volity.client.TranslateToken;
+import org.volity.jabber.*;
 
 /**
  * A game user interface.
@@ -316,6 +317,17 @@ public class GameUI implements RPCHandler, PacketFilter {
   {
     try {
       Context context = Context.enter();
+
+      /* We can't run SVG script in any old Context; it has to be a Context
+       * created by the Batik classes. (If we fail to do this, various things
+       * go wrong in the script. Notably, any attempt to refer to "document"
+       * throws a ClassCastException.) See the SVGCanvas.SVGUI methods for the
+       * code that ensures this.
+       */
+      if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
+        throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
+      }
+
       context.setWrapFactory(rpcWrapFactory);
       Object ret = method.call(context, scope, game, params.toArray());
       if (ret instanceof Undefined) {

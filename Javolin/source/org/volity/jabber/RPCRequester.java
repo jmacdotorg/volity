@@ -95,9 +95,8 @@ public class RPCRequester {
    * @param params the list of method parameters
    * @param timeout the time (in seconds) to wait for a response
    * @return the result of the remote method invocation
-   * @throws XMPPException if there was an XMPP error
+   * @throws XMPPException if there was an XMPP error, or the method timed out
    * @throws RPCException if the remote method resulted in a fault
-   *                      or timed out
    */
   public Object invokeTimeout(String methodName, List params, int timeout)
     throws XMPPException, RPCException
@@ -108,20 +107,29 @@ public class RPCRequester {
     PacketCollector collector =
       connection.createPacketCollector(new PacketFilter() {
 	  public boolean accept(Packet packet) {
-	    return packet instanceof RPCResponse &&
-	      packet.getPacketID().equals(requestID);
+            if (packet.getPacketID().equals(requestID)) {
+                if (packet instanceof RPCResponse)
+                    return true;
+                if (packet instanceof RPCRequest 
+                    && packet.getError() != null)
+                    return true;
+            }
+            return false;
 	  }
 	});
     connection.sendPacket(request);
-    RPCResponse response = (RPCResponse) collector.nextResult(1000*timeout);
+
+    Packet response = collector.nextResult(1000*timeout);
     collector.cancel();
     if (response == null)
-      throw new RPCException(1, "Timed out waiting for response.");
+      throw new XMPPException("Timed out waiting for response.");
     XMPPError error = response.getError();
     if (error != null)
       throw new XMPPException(error);
     if (response instanceof RPCFault)
       throw new RPCException((RPCFault) response);
+    if (!(response instanceof RPCResult))
+      throw new AssertionError("RPC response was of a strange class");
     return ((RPCResult) response).getValue();
   }
 }

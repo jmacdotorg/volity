@@ -22,6 +22,7 @@ import java.awt.event.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.XMPPError;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.*;
@@ -101,6 +102,8 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
      */
     private void doCreate()
     {
+        String serverID = null;
+
         // Store field values in preferences
         saveFieldValues();
 
@@ -109,7 +112,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         // Create the TableWindow
         try
         {
-            String serverID = mServerIdField.getText();
+            serverID = mServerIdField.getText();
 
             if (serverID.indexOf('/') == -1)
             {
@@ -139,12 +142,53 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
             // Destroy TableWindow object
             mTableWindow = null;
         }
+        catch (XMPPException ex) 
+        {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            String msg = "The table could not be created.";
+
+            // Any or all of these may be null.
+            String submsg = ex.getMessage();
+            XMPPError error = ex.getXMPPError();
+            Throwable subex = ex.getWrappedThrowable();
+
+            if (error != null && error.getCode() == 404) 
+            {
+                /* A common case: the JID was not found. */
+                msg = "No game parlor exists at this address.";
+                if (error.getMessage() != null)
+                    msg = msg + " (" + error.getMessage() + ")";
+                msg = msg + "\n(" + serverID + ")";
+            }
+            else {
+                msg = "The table could not be created";
+                if (submsg != null && subex == null && error == null)
+                    msg = msg + ": " + submsg;
+                else
+                    msg = msg + ".";
+                if (subex != null)
+                    msg = msg + "\n" + subex.toString();
+                if (error != null)
+                    msg = msg + "\nJabber error " + error.toString();
+            }
+
+            JOptionPane.showMessageDialog(this, 
+                msg,
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
+
+            // Destroy TableWindow object
+            mTableWindow = null;
+        }
         catch (Exception ex)
         {
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
-            JOptionPane.showMessageDialog(this, ex.toString(),
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                ex.toString(),
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
 
             // Destroy TableWindow object
             mTableWindow = null;
