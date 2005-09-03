@@ -23,16 +23,17 @@ import java.io.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
-import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
+import org.jivesoftware.smackx.packet.DiscoverInfo;
+import org.volity.client.GameServer;
+import org.volity.client.GameTable;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.*;
-import org.volity.client.GameTable;
-import org.volity.client.GameServer;
 
 /**
  * The dialog for joining an existing game table.
@@ -109,6 +110,8 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
      */
     private void doJoin()
     {
+        String tableID = null;
+
         // Store field values in preferences
         saveFieldValues();
 
@@ -117,7 +120,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         // Create the TableWindow. Note that we don't have a GameServer.
         try
         {
-            String tableID = mTableIdField.getText();
+            tableID = mTableIdField.getText();
 
             final GameTable gameTable = new GameTable(mConnection, tableID);
             final String nickname = mNicknameField.getText();
@@ -153,13 +156,50 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
             if (form != null) {
                 gameTable.removeReadyListener(listener);
                 gameTable.leave();
-                throw new IOException("No such table exists.");
+                // Use a 404 here so that it's caught below.
+                throw new XMPPException(new XMPPError(404));
             }
 
             /*
              * Now we wait for the ReadyListener to fire, which will invoke
              * doJoinCont(), below. 
              */
+        }
+        catch (XMPPException ex) 
+        {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            String msg = "The table could not be joined.";
+
+            // Any or all of these may be null.
+            String submsg = ex.getMessage();
+            XMPPError error = ex.getXMPPError();
+            Throwable subex = ex.getWrappedThrowable();
+
+            if (error != null && error.getCode() == 404) 
+            {
+                /* A common case: the JID was not found. */
+                msg = "No table exists at this address.";
+                if (error.getMessage() != null)
+                    msg = msg + " (" + error.getMessage() + ")";
+                msg = msg + "\n(" + tableID + ")";
+            }
+            else {
+                msg = "The table could not be joined";
+                if (submsg != null && subex == null && error == null)
+                    msg = msg + ": " + submsg;
+                else
+                    msg = msg + ".";
+                if (subex != null)
+                    msg = msg + "\n" + subex.toString();
+                if (error != null)
+                    msg = msg + "\nJabber error " + error.toString();
+            }
+
+            JOptionPane.showMessageDialog(this, 
+                msg,
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
         }
         catch (Exception ex)
         {
