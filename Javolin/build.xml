@@ -94,6 +94,9 @@
       windowtitle="Javolin API">
       <packageset dir="${src}"/>
       <link href="http://java.sun.com/j2se/1.4.2/docs/api/"/>
+      <link href="http://xml.apache.org/batik/javadoc/"/>
+      <link href="http://www.mozilla.org/rhino/apidocs/"/>
+      <link href="http://www.jivesoftware.org/builds/smack/docs/1.5.1/javadoc/"/>
     </javadoc>
   </target>
 
