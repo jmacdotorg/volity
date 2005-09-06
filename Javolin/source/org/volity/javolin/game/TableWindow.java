@@ -270,13 +270,13 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
             });
 
         // Register as message listener.
-        mGameTable.addMessageListener(this);
+        mGameTable.addMessageListener(this); //###
 
         // Register as participant listener.
-        mGameTable.addParticipantListener(this);
+        mGameTable.addParticipantListener(this); //###
 
         // Register as a player-status listener.
-        mGameTable.addStatusListener(this);
+        mGameTable.addStatusListener(this); //###
 
         // Join the table, if we haven't already
         try
@@ -533,7 +533,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     private void updateUserList()
     {
         mUserListText.setText("");
-        Iterator iter = mGameTable.getOccupants();
+        Iterator iter = mGameTable.getOccupants(); //###
 
         while (iter.hasNext())
         {
