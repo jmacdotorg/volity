@@ -11,7 +11,6 @@ import org.jivesoftware.smackx.muc.Occupant;
 /** A game table (a Multi-User Chat room for playing a Volity game). */
 public class GameTable extends MultiUserChat {
 
-    protected ArrayList mReadyPlayers = new ArrayList(); //###
     protected List mPlayers = new ArrayList();
     protected Map mSeatsById = new HashMap();
     protected List mSeats = new ArrayList();
@@ -173,9 +172,6 @@ public class GameTable extends MultiUserChat {
             if (occ != null) {
                 occupantMap.put(occ.getJid(), occ);
             }
-            else {
-                System.out.println("### JID " + jid + " was mysteriously absent from occupants");
-            }
         }
 
         List gonePlayers = null;
@@ -220,29 +216,23 @@ public class GameTable extends MultiUserChat {
          * Update mPlayers accordingly, and notify listeners. */
 
         if (newPlayers != null) {
-            System.out.println("### new players: " + newPlayers.size());
             for (Iterator it = newPlayers.iterator(); it.hasNext(); ) {
                 Player player = (Player)it.next();
-                System.out.println("  ### " + player.getJID() + " : " + player.getNick());
                 mPlayers.add(player);
-                //### notify
+                fireStatusListeners_playerJoined(player);
             }
         }
         if (gonePlayers != null) {
-            System.out.println("### gone players: " + gonePlayers.size());
             for (Iterator it = gonePlayers.iterator(); it.hasNext(); ) {
                 Player player = (Player)it.next();
-                System.out.println("  ### " + player.getJID() + " : " + player.getNick());
                 mPlayers.remove(player);
-                //### notify
+                fireStatusListeners_playerLeft(player);
             }
         }
         if (nickPlayers != null) {
-            System.out.println("### nick players: " + nickPlayers.size());
             for (Iterator it = nickPlayers.iterator(); it.hasNext(); ) {
                 Player player = (Player)it.next();
-                System.out.println("  ### " + player.getJID() + " : " + player.getNick());
-                //### notify
+                fireStatusListeners_playerNickChanged(player);
             }
         }
     }
@@ -259,39 +249,6 @@ public class GameTable extends MultiUserChat {
         }
 
         return null;
-    }
-
-    /**
-     * Return truth if the player is ready, falsehood otherwise.
-     */
-    public boolean isPlayerReady(String jid) {
-	boolean readiness;
-	if (mReadyPlayers.indexOf(jid) > -1) {
-	    return true;
-	} else {
-	    return false;
-	}
-    }
-
-    /**
-     * Declare that player is ready.
-     * @param jid The JID of a player.
-     */ 
-    public void playerIsReady(String jid) {
-	if (mReadyPlayers.indexOf(jid) == -1) {
-	    mReadyPlayers.add(jid);
-	}
-    }
-
-    /**
-     * Declare that player is unready.
-     * @param jid The JID of a player.
-     */ 
-    public void playerIsUnready(String jid) {
-	int index = mReadyPlayers.indexOf(jid);
-	if (index > -1) {
-	    mReadyPlayers.remove(index);
-	}
     }
 
     /** Add a player readiness change listener. */
@@ -336,6 +293,8 @@ public class GameTable extends MultiUserChat {
 	    mSeats.add(seat);
             mSeatsById.put(seatId, seat);
 	}
+
+        fireStatusListeners_seatListKnown();
     }
 
 
@@ -358,9 +317,28 @@ public class GameTable extends MultiUserChat {
         }
 
         if (changes) {
-	    System.out.println("Some seats changed requiredness status");
             fireStatusListeners_requiredSeatsChanged();
         }
+    }
+
+    /**
+     * React to a player changing seats.
+     * @param jid the player's JID.
+     * @param seatid the ID of the seat (or null if the player stood).
+     */
+    public void setPlayerSeat(String jid, String seatid) {
+        System.out.println("### Player " + jid + " is now in seat " + seatid);
+        //### notify
+    }
+
+    /**
+     * React to a player becoming ready or unready.
+     * @param jid the player's JID.
+     * @param flag is the player now ready?
+     */
+    public void setPlayerReadiness(String jid, boolean flag) {
+        System.out.println("### Player " + jid + " is ready: " + flag);
+        //### notify
     }
 
     /** Get a seat by ID. (Or null, if there is no such seat.) */
@@ -380,12 +358,40 @@ public class GameTable extends MultiUserChat {
 	return occupiedSeats;
     }
 
+    /***** One-liners to notify StatusListeners of table change. *****/
+
     private void fireStatusListeners_requiredSeatsChanged()
     {
-        Iterator iter = statusListeners.iterator();
-        while (iter.hasNext())
-        {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
             ((StatusListener)iter.next()).requiredSeatsChanged();
+        }
+    }
+ 
+    private void fireStatusListeners_seatListKnown()
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).seatListKnown();
+        }
+    }
+ 
+    private void fireStatusListeners_playerJoined(Player player)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).playerJoined(player);
+        }
+    }
+ 
+    private void fireStatusListeners_playerLeft(Player player)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).playerLeft(player);
+        }
+    }
+ 
+    private void fireStatusListeners_playerNickChanged(Player player)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).playerNickChanged(player);
         }
     }
 }

@@ -23,15 +23,16 @@ import java.io.*;
 import java.net.*;
 import java.text.*;
 import java.util.*;
-import java.util.prefs.*;
+import java.util.prefs.Preferences;
 import java.util.zip.ZipException;
 import javax.swing.*;
 import javax.swing.text.*;
 
-import org.apache.batik.bridge.*;
+import org.apache.batik.bridge.UpdateManagerAdapter;
+import org.apache.batik.bridge.UpdateManagerEvent;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.util.*;
+import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.packet.MUCUser;
 
 import org.volity.client.*;
@@ -42,7 +43,7 @@ import org.volity.javolin.chat.*;
 /**
  * A window for playing a game.
  */
-public class TableWindow extends JFrame implements PacketListener, StatusListener
+public class TableWindow extends JFrame implements PacketListener
 {
     private final static String NODENAME = "TableWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -59,15 +60,14 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     private JSplitPane mBoardSplitter;
     private LogTextPanel mMessageText;
     private JTextArea mInputText;
-    private JTextPane mUserListText;
     private SVGCanvas mGameViewport;
     private JPanel mGameViewWrapper;
+    private SeatChart mSeatChart;
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
 
     private UserColorMap mUserColorMap;
     private SimpleDateFormat mTimeStampFormat;
-    private SimpleAttributeSet mBaseUserListStyle;
 
     private SizeAndPositionSaver mSizePosSaver;
     private GameTable mGameTable;
@@ -226,9 +226,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
-        mBaseUserListStyle = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(mBaseUserListStyle, "SansSerif");
-        StyleConstants.setFontSize(mBaseUserListStyle, 12);
+        mSeatChart = new SeatChart(mGameTable, mUserColorMap);
 
         buildUI();
 
@@ -270,13 +268,7 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
             });
 
         // Register as message listener.
-        mGameTable.addMessageListener(this); //###
-
-        // Register as participant listener.
-        mGameTable.addParticipantListener(this); //###
-
-        // Register as a player-status listener.
-        mGameTable.addStatusListener(this); //###
+        mGameTable.addMessageListener(this);
 
         // Join the table, if we haven't already
         try
@@ -528,34 +520,6 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
-     * Updates the list of users in the MUC.
-     */
-    private void updateUserList()
-    {
-        mUserListText.setText("");
-        Iterator iter = mGameTable.getOccupants(); //###
-
-        while (iter.hasNext())
-        {
-            String userName = StringUtils.parseResource(iter.next().toString());
-
-            SimpleAttributeSet style = new SimpleAttributeSet(mBaseUserListStyle);
-            StyleConstants.setForeground(style,
-                mUserColorMap.getUserNameColor(userName));
-
-            Document doc = mUserListText.getDocument();
-
-            try
-            {
-                doc.insertString(doc.getLength(), userName + "\n", style);
-            }
-            catch (BadLocationException ex)
-            {
-            }
-        }
-    }
-
-    /**
      * PacketListener interface method implementation.
      *
      * @param packet  The packet received.
@@ -565,10 +529,6 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
         if (packet instanceof Message)
         {
             doMessageReceived((Message)packet);
-        }
-        else if (packet instanceof Presence)
-        {
-            updateUserList();
         }
     }
 
@@ -659,56 +619,6 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
-     * StatusListener interface method implementation.
-     *
-     * @param jid  ID of the user whose status changed.
-     */
-
-    public void playerBecameReady(String jid)
-    {
-        System.out.println("I am the table window, and a player became ready!!");
-    }
-
-    /**
-     * StatusListener interface method implementation.
-     *
-     * @param jid  ID of the user whose status changed.
-     */
-    public void playerBecameUnready(String jid)
-    {
-        System.out.println("I am the table window, and a player became unready!!");
-    }
-
-    /**
-     * StatusListener interface method implementation.
-     *
-     * @param jid  ID of the user whose status changed.
-     */
-    public void playerStood(String jid)
-    {
-        System.out.println("I am the table window, and a player stood up!!");
-    }
-
-    /**
-     * StatusListener interface method implementation.
-     *
-     * @param jid     ID of the user whose status changed.
-     * @param seatId  Seat ID indicating where the user sat.
-     */
-    public void playerSat(String jid, String seatId)
-    {
-        System.out.println("I am the table window, and a player sat down!!");
-    }
-
-    /**
-     * StatusListener interface method implementation.
-     */
-    public void requiredSeatsChanged()
-    {
-        System.out.println("I am the table window, and some seats just changed requiredness!");
-    }
-
-    /**
      * Switches the mGameViewWrapper to show either the loading message or the game view.
      *
      * @param viewStr  The selector for the view, either VIEW_LOADING or VIEW_GAME.
@@ -796,9 +706,8 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
 
         mUserListSplitter.setLeftComponent(mBoardSplitter);
 
-        mUserListText = new JTextPane();
-        mUserListText.setEditable(false);
-        mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
+        JComponent chart = mSeatChart.getChart();
+        mUserListSplitter.setRightComponent(new JScrollPane(chart));
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
     }

@@ -39,8 +39,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     this.messageHandler = messageHandler;
     RPCDispatcher dispatcher = new RPCDispatcher();
     dispatcher.setHandler("game", this);
-    VolityHandler volityHandler = new VolityHandler();
-    volityHandler.gameUI = this;
+    VolityHandler volityHandler = new VolityHandler(this);
     dispatcher.setHandler("volity", volityHandler);
     responder = new RPCResponder(connection, this, dispatcher);
     responder.start();

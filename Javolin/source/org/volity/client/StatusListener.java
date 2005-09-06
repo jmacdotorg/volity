@@ -1,15 +1,20 @@
 package org.volity.client;
 
-import org.jivesoftware.smackx.packet.MUCUser;
-
 /**
  * A listener for player status change events.
- * by Jason McIntosh <jmac@jmac.org>
+ *
+ * @author Jason McIntosh <jmac@jmac.org>
  */
 public interface StatusListener {
-    public void playerBecameReady(String jid);
-    public void playerBecameUnready(String jid);
-    public void playerStood(String jid);
-    public void playerSat(String jid, String seatId);
+    public void seatListKnown();
     public void requiredSeatsChanged();
+
+    public void playerJoined(Player player);
+    public void playerLeft(Player player);
+    public void playerNickChanged(Player player);
+
+    public void playerStood(Player player);
+    public void playerSat(Player player, Seat seat);
+    public void playerReady(Player player);
+    public void playerUnready(Player player);
 }

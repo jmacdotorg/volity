@@ -30,7 +30,7 @@ public class Seat {
 
     public void addPlayer(String jid) {
 	if (mPlayers.indexOf(jid) > -1) {
-	    // ###Throw an exception here?
+	    // already there
 	} else {
 	    mPlayers.add(jid);
 	}
@@ -41,7 +41,7 @@ public class Seat {
 	if (index > -1) {
 	    mPlayers.remove(index);
 	} else {
-	    // ###Throw an exception?
+	    // already gone
 	}
     }
 
