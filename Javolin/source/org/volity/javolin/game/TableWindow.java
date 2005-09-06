@@ -701,6 +701,14 @@ public class TableWindow extends JFrame implements PacketListener, StatusListene
     }
 
     /**
+     * StatusListener interface method implementation.
+     */
+    public void requiredSeatsChanged()
+    {
+        System.out.println("I am the table window, and some seats just changed requiredness!");
+    }
+
+    /**
      * Switches the mGameViewWrapper to show either the loading message or the game view.
      *
      * @param viewStr  The selector for the view, either VIEW_LOADING or VIEW_GAME.

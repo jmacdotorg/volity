@@ -9,14 +9,13 @@ import java.util.*;
 /** A game table (a Multi-User Chat room for playing a Volity game). */
 public class GameTable extends MultiUserChat {
 
-    public ArrayList mReadyPlayers = new ArrayList();
-    public Hashtable mSeatsById = new Hashtable();
-    public ArrayList mSeats = new ArrayList();
-    public boolean mInitialJoined = false;
-    public List statusListeners = new ArrayList();
-    public List readyListeners = new ArrayList();
-    public int mGameStatus = 0;
-    public ArrayList mRequiredSeatIds = new ArrayList();
+    public ArrayList mReadyPlayers = new ArrayList(); //###
+    public Map mSeatsById = new HashMap();
+    public List mSeats = new ArrayList();
+    protected boolean mInitialJoined = false;
+    protected List statusListeners = new ArrayList();
+    protected List readyListeners = new ArrayList();
+    public int mGameStatus = 0; //###
 
   /**
    * @param connection an authenticated connection to an XMPP server.
@@ -95,40 +94,7 @@ public class GameTable extends MultiUserChat {
     return opponents;
   }
 
-    /***** Player status-change methods & callbacks *****/
-
-    /**
-     * Return truth if the player is ready, falsehood otherwise.
-     */
-    public boolean isPlayerReady(String jid) {
-	boolean readiness;
-	if (mReadyPlayers.indexOf(jid) > -1) {
-	    return true;
-	} else {
-	    return false;
-	}
-    }
-
-    /**
-     * Declare that player is ready.
-     * @param jid The JID of a player.
-     */ 
-    public void playerIsReady(String jid) {
-	if (mReadyPlayers.indexOf(jid) == -1) {
-	    mReadyPlayers.add(jid);
-	}
-    }
-
-    /**
-     * Declare that player is unready.
-     * @param jid The JID of a player.
-     */ 
-    public void playerIsUnready(String jid) {
-	int index = mReadyPlayers.indexOf(jid);
-	if (index > -1) {
-	    mReadyPlayers.remove(index);
-	}
-    }
+    /***** Table readiness change methods *****/
 
     /**
      * Listener interface for addReadyListener / removeReadyListener. This
@@ -166,6 +132,41 @@ public class GameTable extends MultiUserChat {
         }
     }
 
+    /***** Player status-change methods & callbacks *****/
+
+    /**
+     * Return truth if the player is ready, falsehood otherwise.
+     */
+    public boolean isPlayerReady(String jid) {
+	boolean readiness;
+	if (mReadyPlayers.indexOf(jid) > -1) {
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+
+    /**
+     * Declare that player is ready.
+     * @param jid The JID of a player.
+     */ 
+    public void playerIsReady(String jid) {
+	if (mReadyPlayers.indexOf(jid) == -1) {
+	    mReadyPlayers.add(jid);
+	}
+    }
+
+    /**
+     * Declare that player is unready.
+     * @param jid The JID of a player.
+     */ 
+    public void playerIsUnready(String jid) {
+	int index = mReadyPlayers.indexOf(jid);
+	if (index > -1) {
+	    mReadyPlayers.remove(index);
+	}
+    }
+
     /** Add a player readiness change listener. */
     public void addStatusListener(StatusListener listener) {
 	statusListeners.add(listener);
@@ -176,20 +177,77 @@ public class GameTable extends MultiUserChat {
 	statusListeners.remove(listener);
     }
 
+    /***** Dealing with seats *****/
 
-    /** Return the array of required seat IDs. */
-    public ArrayList requiredSeatIds() {
-	return mRequiredSeatIds;
+    public void setSeats(List ids) {
+	System.out.println("Setting the seat list: " + ids.toString()); //###
+
+        if (!mSeats.isEmpty()) {
+            /* If we already have a list of seats, this should be an identical
+             * list. Let's check that, though. */
+
+            if (ids.size() != mSeats.size()) {
+                System.err.println("New set_seats list has different length from the original set_seats list.");
+                return;
+            }
+
+            for (Iterator it = ids.iterator(); it.hasNext(); ) {
+                String seatId = (String)it.next();
+                if (!mSeatsById.containsKey(seatId)) {
+                    System.err.println("New set_seats list does not match the original set_seats list.");
+                    return;
+                }
+            }
+
+            // All okay.
+            return;
+        }
+
+        /* Create our seats list. */
+
+	for (Iterator it = ids.iterator(); it.hasNext(); ) {
+	    String seatId = (String)it.next();
+	    Seat seat = new Seat(seatId);
+	    mSeats.add(seat);
+            mSeatsById.put(seatId, seat);
+	}
     }
 
-    /** Set the array of required seat IDs. */
-    public void setRequiredSeatIds(ArrayList requiredSeatIds) {
-	mRequiredSeatIds = requiredSeatIds;
+
+    /** Set the list of required seat IDs. */
+    public void setRequiredSeats(List ids) {
+	System.out.println("Setting the required seats: " + ids.toString()); //###
+
+        /* The cleanest way to do this is to iterate through the seats, marking
+         * each one "required" or "optional". To do this, we'll need a Set of
+         * required seats. */
+
+        Set requiredSet = new HashSet(ids);
+        boolean changes = false;
+
+        for (Iterator it = mSeats.iterator(); it.hasNext(); ) {
+            Seat seat = (Seat)it.next();
+            boolean required = requiredSet.contains(seat.id());
+            if (required != seat.required()) {
+                seat.setRequired(false);
+                changes = true;
+            }
+        }
+
+        if (changes) {
+	    System.out.println("Some seats changed requiredness status");
+            fireStatusListeners_requiredSeatsChanged();
+        }
+    }
+
+    /** Get a seat by ID. (Or null, if there is no such seat.) */
+    public Seat getSeat(String id) {
+        return (Seat)mSeatsById.get(id);
     }
 
     /** Return an array of seat objects which have players in them. */
-    public ArrayList occupiedSeats() {
-	ArrayList occupiedSeats = new ArrayList();
+    public List occupiedSeats() {
+	List occupiedSeats = new ArrayList();
 	for (Iterator it = mSeats.iterator(); it.hasNext();) {
 	    Seat seat = (Seat)it.next();
 	    if (seat.isOccupied()) {
@@ -199,21 +257,12 @@ public class GameTable extends MultiUserChat {
 	return occupiedSeats;
     }
 
-    /** 
-     * Return an array of seat objects which are worth displaying
-     * in the seat UI.
-     */
-    public ArrayList seatsToDisplay() {
-	ArrayList seatsToDisplay = new ArrayList();
-	for (Iterator it = mSeats.iterator(); it.hasNext();) {
-	    Seat seat = (Seat)it.next();
-	    if (seat.isOccupied()) {
-		seatsToDisplay.add(seat);
-	    } else if (mRequiredSeatIds.indexOf(seat.id()) > -1) {
-		seatsToDisplay.add(seat);
-	    }
-	}
-	return seatsToDisplay;
+    private void fireStatusListeners_requiredSeatsChanged()
+    {
+        Iterator iter = statusListeners.iterator();
+        while (iter.hasNext())
+        {
+            ((StatusListener)iter.next()).requiredSeatsChanged();
+        }
     }
-
 }

@@ -28,6 +28,9 @@ public class VolityHandler implements RPCHandler {
     public void handleRPC(String methodName, List params, RPCResponseHandler k) {
 	System.out.println("handleRPC called on " + methodName);
 
+        // Any argument mismatches will show up as runtime exceptions. 
+        // Should we catch those? (What would we do with them?)
+
 	// Figure out which method to call now. There are only a handful
 	// of possibilities so we'll just use an if/else chain.
 	if (methodName.equals("start_game")) {
@@ -72,11 +75,9 @@ public class VolityHandler implements RPCHandler {
 	    sitPlayer((String)params.get(0), (String)params.get(1));
 	    System.out.println((String)params.get(0) + " just sat in seat " + (String)params.get(1));
 	} else if (methodName.equals("seat_list")) {
-	    System.out.println("Got a list of seat IDs..");
-	    createSeats((ArrayList)params.get(0));
+	    gameUI.table.setSeats((List)params.get(0));
 	} else if (methodName.equals("required_seat_list")) {
-	    System.out.println("Got a list of required seat IDs..");
-	    gameUI.table.setRequiredSeatIds((ArrayList)params.get(0));
+	    gameUI.table.setRequiredSeats((List)params.get(0));
 	} else if (methodName.equals("receive_state")) {
 	    System.out.println("Receiving game state.");
 	} else if (methodName.equals("state_sent")) {
@@ -150,13 +151,4 @@ public class VolityHandler implements RPCHandler {
 	}
     }
 
-    private void createSeats(ArrayList seatIds) {
-	System.out.println("Let's create some seats.");
-	for (Iterator it = seatIds.iterator(); it.hasNext();) {
-	    String seatId = (String)it.next();
-	    System.out.println("Creating seat " + seatId);
-	    Seat seat = new Seat(seatId);
-	    gameUI.table.mSeats.add(seat);
-	}
-    }
 }

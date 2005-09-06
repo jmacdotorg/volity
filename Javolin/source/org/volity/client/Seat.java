@@ -7,20 +7,30 @@ import java.util.*;
  */
 public class Seat {
 
-    ArrayList mPlayers = new ArrayList();
+    List mPlayers = new ArrayList();
     String mId;
+    boolean mRequired;
     
     public Seat(String seatId) {
 	mId = seatId;
+        mRequired = false;
     }
 
     public String id() {
 	return mId;
     }
 
+    public boolean required() {
+        return mRequired;
+    }
+
+    public void setRequired(boolean val) {
+        mRequired = val;
+    }
+
     public void addPlayer(String jid) {
 	if (mPlayers.indexOf(jid) > -1) {
-	    // Throw an exception here?
+	    // ###Throw an exception here?
 	} else {
 	    mPlayers.add(jid);
 	}
@@ -31,11 +41,11 @@ public class Seat {
 	if (index > -1) {
 	    mPlayers.remove(index);
 	} else {
-	    // Throw an exception?
+	    // ###Throw an exception?
 	}
     }
 
-    public ArrayList players() {
+    public List players() {
 	return mPlayers;
     }
 

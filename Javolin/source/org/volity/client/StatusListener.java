@@ -11,4 +11,5 @@ public interface StatusListener {
   public void playerBecameUnready(String jid);
   public void playerStood(String jid);
   public void playerSat(String jid, String seatId);
+  public void requiredSeatsChanged();
 }
