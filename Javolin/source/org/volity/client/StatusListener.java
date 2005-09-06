@@ -7,9 +7,9 @@ import org.jivesoftware.smackx.packet.MUCUser;
  * by Jason McIntosh <jmac@jmac.org>
  */
 public interface StatusListener {
-  public void playerBecameReady(String jid);
-  public void playerBecameUnready(String jid);
-  public void playerStood(String jid);
-  public void playerSat(String jid, String seatId);
-  public void requiredSeatsChanged();
+    public void playerBecameReady(String jid);
+    public void playerBecameUnready(String jid);
+    public void playerStood(String jid);
+    public void playerSat(String jid, String seatId);
+    public void requiredSeatsChanged();
 }

@@ -24,88 +24,88 @@ public class GameTable extends MultiUserChat {
     protected Referee referee;
 
 
-  /**
-   * @param connection an authenticated connection to an XMPP server.
-   * @param room the JID of the game table.
-   */
-  public GameTable(XMPPConnection connection, String room) {
-    super(connection, room);
-    mConnection = connection;
+    /**
+     * @param connection an authenticated connection to an XMPP server.
+     * @param room the JID of the game table.
+     */
+    public GameTable(XMPPConnection connection, String room) {
+        super(connection, room);
+        mConnection = connection;
 
-    addParticipantStatusListener(new DefaultParticipantStatusListener() {
-	public void joined(String roomJID) {
-	  Occupant occupant = getOccupant(roomJID);
-          if (occupant == null)
-              return;
-	  if (isReferee(occupant)) {
-	    refereeRoomJID = roomJID;
-	    referee = new Referee(GameTable.this, occupant.getJid());
-            if (!mInitialJoined) {
-              mInitialJoined = true;
-              fireReadyListeners();
-            }
-	  }
-	}
-	public void left(String roomJID) { unjoined(roomJID); }
-	public void kicked(String roomJID) { unjoined(roomJID); }
-	public void banned(String roomJID) { unjoined(roomJID); }
-	/**
-	 * Called when an occupant is no longer in the room, either
-	 * because it left or was kicked or banned.
-	 */
-	void unjoined(String roomJID) {
-	  // FIXME: This assumes the referee's nickname doesn't
-	  // change!  But keeping track of changed nicknames is
-	  // difficult currently.  See
-	  // http://www.jivesoftware.org/issues/browse/SMACK-55.
-	  if (roomJID.equals(refereeRoomJID)) {
-	    refereeRoomJID = null;
-	    referee = null;
-	  }
-	}
-      });
+        addParticipantStatusListener(new DefaultParticipantStatusListener() {
+                public void joined(String roomJID) {
+                    Occupant occupant = getOccupant(roomJID);
+                    if (occupant == null)
+                        return;
+                    if (isReferee(occupant)) {
+                        refereeRoomJID = roomJID;
+                        referee = new Referee(GameTable.this, occupant.getJid());
+                        if (!mInitialJoined) {
+                            mInitialJoined = true;
+                            fireReadyListeners();
+                        }
+                    }
+                }
+                public void left(String roomJID) { unjoined(roomJID); }
+                public void kicked(String roomJID) { unjoined(roomJID); }
+                public void banned(String roomJID) { unjoined(roomJID); }
+                /**
+                 * Called when an occupant is no longer in the room, either
+                 * because it left or was kicked or banned.
+                 */
+                void unjoined(String roomJID) {
+                    // FIXME: This assumes the referee's nickname doesn't
+                    // change!  But keeping track of changed nicknames is
+                    // difficult currently.  See
+                    // http://www.jivesoftware.org/issues/browse/SMACK-55.
+                    if (roomJID.equals(refereeRoomJID)) {
+                        refereeRoomJID = null;
+                        referee = null;
+                    }
+                }
+            });
 
-    addParticipantListener(new PacketListener() {
-            public void processPacket(Packet packet) {
-                rescanOccupantList();
-            }
-        });
+        addParticipantListener(new PacketListener() {
+                public void processPacket(Packet packet) {
+                    rescanOccupantList();
+                }
+            });
 
-  }
-
-  public XMPPConnection getConnection() { return mConnection; }
-
-  /**
-   * The referee for this table, or null if no referee is connected.
-   */
-  public Referee getReferee() {
-    return referee;
-  }
-
-  /**
-   * Is an occupant the referee?
-   */
-  private boolean isReferee(Occupant occupant) {
-    return occupant.getAffiliation().equals("owner");
-  }
-
-  /**
-   * Get a list of opponent nicknames, i.e., occupants not including
-   * the referee or myself.
-   */
-  public List getOpponents() {
-    List opponents = new ArrayList();
-    for (Iterator it = getOccupants(); it.hasNext();) {
-      String roomJID = (String) it.next();
-      Occupant occupant = getOccupant(roomJID);
-      if (occupant != null && !isReferee(occupant)) {
-	String nickname = occupant.getNick();
-	if (!getNickname().equals(nickname))
-	  opponents.add(nickname);
-      }
     }
-    return opponents;
-  }
+
+    public XMPPConnection getConnection() { return mConnection; }
+
+    /**
+     * The referee for this table, or null if no referee is connected.
+     */
+    public Referee getReferee() {
+        return referee;
+    }
+    
+    /**
+     * Is an occupant the referee?
+     */
+    private boolean isReferee(Occupant occupant) {
+        return occupant.getAffiliation().equals("owner");
+    }
+    
+    /**
+     * Get a list of opponent nicknames, i.e., occupants not including
+     * the referee or myself.
+     */
+    public List getOpponents() {
+        List opponents = new ArrayList();
+        for (Iterator it = getOccupants(); it.hasNext();) {
+            String roomJID = (String) it.next();
+            Occupant occupant = getOccupant(roomJID);
+            if (occupant != null && !isReferee(occupant)) {
+                String nickname = occupant.getNick();
+                if (!getNickname().equals(nickname))
+                    opponents.add(nickname);
+            }
+        }
+        return opponents;
+    }
 
     /***** Table readiness change methods *****/
 
