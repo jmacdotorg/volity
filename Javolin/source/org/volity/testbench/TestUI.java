@@ -2,9 +2,10 @@ package org.volity.testbench;
 
 import java.io.*;
 import java.util.*;
+import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.mozilla.javascript.*;
-import org.volity.client.TranslateToken;
 import org.volity.client.TokenFailure;
+import org.volity.client.TranslateToken;
 
 /**
  * This class is analogous to org.volity.client.GameUI. It represents the game
@@ -42,6 +43,17 @@ public class TestUI
     {
         try {
             Context context = Context.enter();
+
+            /* We can't run SVG script in any old Context; it has to be a
+             * Context created by the Batik classes. (If we fail to do this,
+             * various things go wrong in the script. Notably, any attempt to
+             * refer to "document" throws a ClassCastException.) See the
+             * SVGCanvas.SVGUI methods for the code that ensures this.
+             */
+            if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
+                throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
+            }
+
             context.setWrapFactory(rpcWrapFactory);
             Object ret = method.call(context, scope, game, params.toArray());
             if (ret instanceof Undefined) {
@@ -277,6 +289,11 @@ public class TestUI
         try {
             if (scope == null) initGameObjects();
             Context context = Context.enter();
+
+            if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
+                throw new AssertionError("Tried to run debug ECMAScript for SVG in a non-Batik Context");
+            }
+
             context.evaluateString(scope, uiScript,
                 "<debug command>", 1, securityDomain);
         }
