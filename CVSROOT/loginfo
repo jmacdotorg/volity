@@ -24,4 +24,4 @@
 #DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
-ALL /home/groups/v/vo/volity/commit2rss.pl %{}
+ALL /home/groups/v/vo/volity/commit2rss.py %{}
