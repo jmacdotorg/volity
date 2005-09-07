@@ -78,8 +78,8 @@ public class SeatChart
         System.out.println("Player left: " + player.getJID() + " (" + player.getNick() + ")");
         updateUserList(); //###
     }
-    public void playerNickChanged(Player player) {
-        System.out.println("Player nickname changed: " + player.getJID() + " (" + player.getNick() + ")");
+    public void playerNickChanged(Player player, String oldNick) {
+        System.out.println("Player nickname changed: " + player.getJID() + " (" + player.getNick() + "), was (" + oldNick + ")");
         updateUserList(); //###
     }
 

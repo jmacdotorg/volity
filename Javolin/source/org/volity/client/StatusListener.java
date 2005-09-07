@@ -11,7 +11,7 @@ public interface StatusListener {
 
     public void playerJoined(Player player);
     public void playerLeft(Player player);
-    public void playerNickChanged(Player player);
+    public void playerNickChanged(Player player, String oldNick);
 
     public void playerStood(Player player);
     public void playerSat(Player player, Seat seat);

@@ -146,6 +146,15 @@ public class GameTable extends MultiUserChat {
 
     /***** Player status-change methods & callbacks *****/
 
+    private class PlayerNick {
+        Player player;
+        String oldNick;
+        PlayerNick(Player player, String oldNick) {
+            this.player = player;
+            this.oldNick = oldNick;
+        }
+    }
+
     /**
      * We want to maintain an accurate, ongoing list of players (represented as
      * Player objects, which contain Occupant objects). However, Smack doesn't
@@ -158,6 +167,10 @@ public class GameTable extends MultiUserChat {
      * we re-scan the MUC object's list of Occupants -- check for newcomers and
      * missing, er, oldgoers. We then adjust our own list and send (smarter)
      * notifications to our own listeners.
+     *
+     * (This code *does* detect nickname changes, but only because it can track
+     * the players' real JIDs. In an anonymous MUC, this code falls over and
+     * dies.)
      *
      * The PacketListener interface notes that all listening is done in the
      * same thread. That makes this method simpler (no worries about
@@ -183,11 +196,13 @@ public class GameTable extends MultiUserChat {
             String jid = player.getJID();
             if (occupantMap.containsKey(jid)) {
                 Occupant occ = (Occupant)occupantMap.get(jid);
-                if (!occ.getNick().equals(player.getNick())) {
+                String oldnick = player.getNick();
+                if (!occ.getNick().equals(oldnick)) {
                     player.setNick(occ.getNick());
                     if (nickPlayers == null)
                         nickPlayers = new ArrayList();
-                    nickPlayers.add(player);
+                    PlayerNick pair = new PlayerNick(player, oldnick);
+                    nickPlayers.add(pair);
                 }
                 // the player remains present (although the nick might have 
                 // changed)
@@ -231,8 +246,9 @@ public class GameTable extends MultiUserChat {
         }
         if (nickPlayers != null) {
             for (Iterator it = nickPlayers.iterator(); it.hasNext(); ) {
-                Player player = (Player)it.next();
-                fireStatusListeners_playerNickChanged(player);
+                PlayerNick pair = (PlayerNick)it.next();
+                fireStatusListeners_playerNickChanged(pair.player, 
+                    pair.oldNick);
             }
         }
     }
@@ -388,10 +404,11 @@ public class GameTable extends MultiUserChat {
         }
     }
  
-    private void fireStatusListeners_playerNickChanged(Player player)
+    private void fireStatusListeners_playerNickChanged(Player player,
+        String oldNick)
     {
         for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
-            ((StatusListener)iter.next()).playerNickChanged(player);
+            ((StatusListener)iter.next()).playerNickChanged(player, oldNick);
         }
     }
 }
