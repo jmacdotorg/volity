@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	viewBox="0 0 100 100" >
+
+<path d="M 0 0  L 100 0  L 0 100 z"
+	fill="#FFF" />
+<path d="M 100 100  L 100 0  L 0 100 z"
+	fill="#BBB" />
+<rect x="15" y="15" width="70" height="70"
+	fill="#DDD" />
+
+
+<path d="M 15 50  
+	Q 30 74  46 85  
+	Q 55 45  80 20  
+	Q 55 35  40 60  
+	Q 25 57  15 50
+	z"
+	fill="#696" stroke="#575" stroke-width="3.5" stroke-linejoin="round" />
+
+</svg>

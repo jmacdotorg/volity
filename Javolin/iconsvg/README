@@ -1,0 +1,8 @@
+Icon sources for Javolin.
+
+Not all of Javolin's icons are generated from SVG, but those that are,
+are here. This allows us to use source control.
+
+Convert to PNG files using batik-rasterizer.jar. For example:
+
+java -jar batik-rasterizer.jar ready-button.svg -a 0,0,100,100 -w 20 -h 20 -d Ready_ButIcon.png

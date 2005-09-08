@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	viewBox="0 0 100 100" >
+
+<defs>
+
+<filter id="shadow" filterUnits="userSpaceOnUse" 
+	x="0" y="0" width="100" height="100">
+
+	<feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+	<feComponentTransfer in="blur" result="whiteBlur" >
+		<feFuncR type="identity" />
+		<feFuncG type="identity" />
+		<feFuncB type="identity" />
+		<feFuncA type="linear" slope="0.5" intercept="0" />
+	</feComponentTransfer>
+	<feOffset in="whiteBlur" dx="2" dy="2" result="offsetBlur" />
+
+	<feMerge>
+		<feMergeNode in="offsetBlur"/>
+		<feMergeNode in="SourceGraphic"/>
+	</feMerge>
+</filter>
+
+</defs>
+
+<path d="M 0 0  L 100 0  L 0 100 z"
+	fill="#FFF" />
+<path d="M 100 100  L 100 0  L 0 100 z"
+	fill="#BBB" />
+<rect x="15" y="15" width="70" height="70"
+	fill="#DDD" />
+
+
+<g
+	filter="url(#shadow)" >
+
+<rect x="24" y="60" width="8" height="30"
+	fill="#641" />
+<rect x="68" y="60" width="8" height="30"
+	fill="#641"/>
+<rect x="46" y="68" width="8" height="30"
+	fill="#641"/>
+<path d="M 50 50
+	L 20 60
+	L 50 70
+	L 80 60
+	z"
+	fill="#763" />
+<path transform="translate(4,2)"
+	 d="M 20 60
+	C 6 4  64 -2  50 50
+	L 40 53.33
+	C 43 12  27 22  30 56.66
+	z"
+	fill="#641" />
+
+</g>
+
+</svg>

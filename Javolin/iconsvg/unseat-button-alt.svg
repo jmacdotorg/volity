@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	viewBox="0 0 100 100" >
+
+<path d="M 0 0  L 100 0  L 0 100 z"
+	fill="#FFF" />
+<path d="M 100 100  L 100 0  L 0 100 z"
+	fill="#BBB" />
+<rect x="15" y="15" width="70" height="70"
+	fill="#DDD" />
+
+
+<path d="M 30 50
+	C 20 -2  80 -2  70 50
+	L 60 50
+	C 63 12  37 12  40 50
+	z"
+	fill="#652" />
+<path d="M 30 50
+	L 70 50
+	L 78 65
+	L 22 65
+	z"
+	fill="#763" />
+<path d="M 30 80
+	L 42 80
+	L 40 65
+	L 30 65
+	z
+	M 70 80
+	L 58 80
+	L 60 65
+	L 70 65
+	z"
+	fill="#642" />
+<path d="M 25 65
+	L 28 90
+	L 38 90
+	L 35 65
+	z
+	M 75 65
+	L 73 90
+	L 63 90
+	L 65 65
+	z"
+	fill="#652" />
+
+</svg>
