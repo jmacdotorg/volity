@@ -194,7 +194,15 @@ public class GameUI implements RPCHandler, PacketFilter {
 	throw new RuntimeException(e.toString());
       }
     }
-    public String getSeat() { return "XXX-seat-id-here"; }
+    public String getSeat() { 
+        Player player = table.getSelfPlayer();
+        if (player == null)
+            return null;
+        Seat seat = player.getSeat();
+        if (seat == null)
+            return null;
+        return seat.getID();
+    }
     public String getNickname() { return table.getNickname(); }
     public void setNickname(String nickname) throws XMPPException {
       table.changeNickname(nickname);
