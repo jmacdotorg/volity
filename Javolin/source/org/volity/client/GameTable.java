@@ -12,6 +12,7 @@ import org.jivesoftware.smackx.muc.Occupant;
 public class GameTable extends MultiUserChat {
 
     protected List mPlayers = new ArrayList();
+    protected Player mSelfPlayer = null;
     protected Map mSeatsById = new HashMap();
     protected List mSeats = new ArrayList();
     protected boolean mInitialJoined = false;
@@ -220,10 +221,13 @@ public class GameTable extends MultiUserChat {
             String jid = (String)ent.getKey();
             Occupant occ = (Occupant)ent.getValue();
             // this is a new player
-            Player player = new Player(jid, occ.getNick(), isReferee(occ));
+            Player player = new Player(jid, occ.getNick(), 
+                jid.equals(mConnection.getUser()), isReferee(occ));
             if (newPlayers == null)
                 newPlayers = new ArrayList();
             newPlayers.add(player);
+            if (player.isSelf())
+                mSelfPlayer = player;
         }
         occupantMap.clear();
 
@@ -260,7 +264,7 @@ public class GameTable extends MultiUserChat {
     public Player getPlayerByJID(String jid) {
         for (Iterator it = mPlayers.iterator(); it.hasNext(); ) {
             Player player = (Player)it.next();
-            if (player.getJID() == jid)
+            if (player.getJID().equals(jid))
                 return player;
         }
 
@@ -325,8 +329,8 @@ public class GameTable extends MultiUserChat {
 
         for (Iterator it = mSeats.iterator(); it.hasNext(); ) {
             Seat seat = (Seat)it.next();
-            boolean required = requiredSet.contains(seat.id());
-            if (required != seat.required()) {
+            boolean required = requiredSet.contains(seat.getID());
+            if (required != seat.isRequired()) {
                 seat.setRequired(false);
                 changes = true;
             }
@@ -343,8 +347,31 @@ public class GameTable extends MultiUserChat {
      * @param seatid the ID of the seat (or null if the player stood).
      */
     public void setPlayerSeat(String jid, String seatid) {
-        System.out.println("### Player " + jid + " is now in seat " + seatid);
-        //### notify
+        Player player = getPlayerByJID(jid);
+        if (player == null)
+            return;
+
+        Seat seat;
+        if (seatid == null) {
+            seat = null;
+        }
+        else {
+            seat = getSeat(seatid);
+            if (seat == null)
+                return;
+        }
+
+        Seat oldseat = player.getSeat(); // may be null
+        if (oldseat == seat)
+            return;
+
+        if (oldseat != null)
+            oldseat.removePlayer(player);
+        if (seat != null)
+            seat.addPlayer(player);
+        player.setSeat(seat);
+
+        fireStatusListeners_playerSeatChanged(player, oldseat, seat);
     }
 
     /**
@@ -353,8 +380,14 @@ public class GameTable extends MultiUserChat {
      * @param flag is the player now ready?
      */
     public void setPlayerReadiness(String jid, boolean flag) {
-        System.out.println("### Player " + jid + " is ready: " + flag);
-        //### notify
+        Player player = getPlayerByJID(jid);
+        if (player == null)
+            return;
+        if (player.isReady() == flag)
+            return;
+
+        player.setReady(flag);
+        fireStatusListeners_playerReady(player, flag);
     }
 
     /** Get a seat by ID. (Or null, if there is no such seat.) */
@@ -372,6 +405,22 @@ public class GameTable extends MultiUserChat {
 	    }
 	}
 	return occupiedSeats;
+    }
+
+    public Player getSelfPlayer() {
+        return mSelfPlayer;
+    }
+
+    public boolean isSelfReady() {
+        if (mSelfPlayer == null)
+            return false;
+        return mSelfPlayer.isReady();
+    }
+
+    public boolean isSelfSeated() {
+        if (mSelfPlayer == null)
+            return false;
+        return (mSelfPlayer.getSeat() != null);
     }
 
     /***** One-liners to notify StatusListeners of table change. *****/
@@ -409,6 +458,23 @@ public class GameTable extends MultiUserChat {
     {
         for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
             ((StatusListener)iter.next()).playerNickChanged(player, oldNick);
+        }
+    }
+ 
+    private void fireStatusListeners_playerReady(Player player,
+        boolean flag)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).playerReady(player, flag);
+        }
+    }
+ 
+    private void fireStatusListeners_playerSeatChanged(Player player,
+        Seat oldseat, Seat newseat)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).playerSeatChanged(player, 
+                oldseat, newseat);
         }
     }
 }

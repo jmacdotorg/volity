@@ -5,7 +5,8 @@ package org.volity.client;
  *
  * @author Jason McIntosh <jmac@jmac.org>
  */
-public interface StatusListener {
+public interface StatusListener 
+{
     public void seatListKnown();
     public void requiredSeatsChanged();
 
@@ -13,8 +14,6 @@ public interface StatusListener {
     public void playerLeft(Player player);
     public void playerNickChanged(Player player, String oldNick);
 
-    public void playerStood(Player player);
-    public void playerSat(Player player, Seat seat);
-    public void playerReady(Player player);
-    public void playerUnready(Player player);
+    public void playerSeatChanged(Player player, Seat oldseat, Seat newseat);
+    public void playerReady(Player player, boolean flag);
 }

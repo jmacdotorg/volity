@@ -16,31 +16,33 @@ public class Seat {
         mRequired = false;
     }
 
-    public String id() {
+    public String getID() {
 	return mId;
     }
 
-    public boolean required() {
+    public boolean isRequired() {
         return mRequired;
     }
 
-    public void setRequired(boolean val) {
+    protected void setRequired(boolean val) {
         mRequired = val;
     }
 
-    public void addPlayer(String jid) {
-	if (mPlayers.indexOf(jid) > -1) {
+    protected void addPlayer(Player player) {
+	if (mPlayers.indexOf(player) > -1) {
 	    // already there
-	} else {
-	    mPlayers.add(jid);
+	}
+        else {
+	    mPlayers.add(player);
 	}
     }
 
-    public void removePlayer(String jid) {
-	int index = mPlayers.indexOf(jid);
+    protected void removePlayer(Player player) {
+	int index = mPlayers.indexOf(player);
 	if (index > -1) {
 	    mPlayers.remove(index);
-	} else {
+	}
+        else {
 	    // already gone
 	}
     }

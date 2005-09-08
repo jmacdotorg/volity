@@ -55,6 +55,20 @@ public class TableWindow extends JFrame implements PacketListener
 
     private static Map sLocalUiFileMap = new HashMap();
 
+    private final static String READY_LABEL = "Ready";
+    private final static String SEAT_LABEL = "Seat";
+    private final static ImageIcon READY_ICON;
+    private final static ImageIcon UNREADY_ICON;
+    private final static ImageIcon SEAT_ICON;
+    private final static ImageIcon UNSEAT_ICON;
+
+    static {
+        READY_ICON = new ImageIcon(TableWindow.class.getResource("Ready_ButIcon.png"));
+        UNREADY_ICON = new ImageIcon(TableWindow.class.getResource("Unready_ButIcon.png"));
+        SEAT_ICON = new ImageIcon(TableWindow.class.getResource("Seat_ButIcon.png"));
+        UNSEAT_ICON = new ImageIcon(TableWindow.class.getResource("Unseat_ButIcon.png"));
+    }
+
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
     private JSplitPane mBoardSplitter;
@@ -65,6 +79,9 @@ public class TableWindow extends JFrame implements PacketListener
     private SeatChart mSeatChart;
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
+
+    private JButton mReadyButton;
+    private JButton mSeatButton;
 
     private UserColorMap mUserColorMap;
     private SimpleDateFormat mTimeStampFormat;
@@ -269,6 +286,67 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Register as message listener.
         mGameTable.addMessageListener(this);
+
+        // We need a StatusListener to adjust button states when this player
+        // stands, sits, etc.
+        mGameTable.addStatusListener(new DefaultStatusListener() {
+                public void playerSeatChanged(Player player, 
+                    Seat oldseat, Seat newseat) {
+                    if (player == mGameTable.getSelfPlayer()) {
+                        boolean flag = (newseat != null);
+                        mReadyButton.setEnabled(flag);
+                        Icon icon = (flag ? SEAT_ICON : UNSEAT_ICON);
+                        mSeatButton.setIcon(icon);
+                    }
+                }
+                public void playerReady(Player player, boolean flag) {
+                    if (player == mGameTable.getSelfPlayer()) {
+                        Icon icon = (flag ? READY_ICON : UNREADY_ICON);
+                        mReadyButton.setIcon(icon);
+                    }
+                }
+            });
+
+
+        // Set up button actions.
+
+        mReadyButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        if (!mGameTable.isSelfReady()) {
+                            mGameTable.getReferee().ready();
+                        }
+                        else {
+                            mGameTable.getReferee().unready();
+                        }
+                    }
+                    catch (TokenFailure ex) {
+                        writeMessageText(mTranslator.translate(ex));
+                    }
+                    catch (Exception ex) {
+                        writeMessageText(ex.toString());
+                    }
+                }
+            });
+
+        mSeatButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        if (!mGameTable.isSelfSeated()) {
+                            mGameTable.getReferee().sit();
+                        }
+                        else {
+                            mGameTable.getReferee().stand();
+                        }
+                    }
+                    catch (TokenFailure ex) {
+                        writeMessageText(mTranslator.translate(ex));
+                    }
+                    catch (Exception ex) {
+                        writeMessageText(ex.toString());
+                    }
+                }
+            });
 
         // Join the table, if we haven't already
         try
@@ -710,5 +788,24 @@ public class TableWindow extends JFrame implements PacketListener
         mUserListSplitter.setRightComponent(new JScrollPane(chart));
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
+
+
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        cPane.add(toolbar, BorderLayout.NORTH);
+
+        /* This is probably a bastardization of the notion of component
+         * orientation. It works, though. Members of the toolbar will appear
+         * right to left, on the right end of the bar. */
+        toolbar.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+
+        mReadyButton = new JButton(READY_LABEL, UNREADY_ICON);
+        mReadyButton.setEnabled(false);
+        toolbar.add(mReadyButton);
+
+        toolbar.addSeparator();
+
+        mSeatButton = new JButton(SEAT_LABEL, UNSEAT_ICON);
+        toolbar.add(mSeatButton);
     }
 }

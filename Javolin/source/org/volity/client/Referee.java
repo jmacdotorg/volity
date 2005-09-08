@@ -61,19 +61,6 @@ public class Referee extends TokenRequester {
   }
 
   /**
-   * DEPRECATED. This method should be deleted by the release of Javolin 0.1
-   * --jmac
-   * Ask the ref to start the game, by sitting and then declaring readiness.
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if a RPC fault occurs
-   */
-  public void startGame() throws XMPPException, RPCException, TokenFailure
-  {
-    invoke("volity.sit");
-    invoke("volity.ready");
-  }
-
-  /**
    * Send a text message to the referee.
    * @throws XMPPException if an XMPP error occurs
    */
@@ -116,49 +103,79 @@ public class Referee extends TokenRequester {
 
     /**
      * Tell the ref that we're standing.
-     * Actually a convenience method to calling the argument-taking version
-     * of this method with the user's own JID.
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
     public void stand() throws XMPPException, RPCException, TokenFailure
     {
-	this.stand(mTable.getConnection().getUser());
+	this.stand(mTable.getSelfPlayer());
     }
 
     /**
      * Ask the ref to cause someone to stand up.
-     * @param jid The JID of the player to yank from their seat.
+     * @param player The player to yank from his seat.
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
-    public void stand(String jid) throws XMPPException, RPCException, TokenFailure
+    public void stand(Player player) throws XMPPException, RPCException, TokenFailure
     {
+        String jid = player.getJID();
 	invoke("volity.stand",
-	       Arrays.asList(new String[] { jid }));
+            Arrays.asList(new String[] { jid }));
     }
 
     /**
-     * Tell the ref that we want to sit in any unoccupied seat.
+     * Tell the ref that we want to sit in any seat.
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
     public void sit() throws XMPPException, RPCException, TokenFailure
     {
-        invoke("volity.sit");
+	sit(mTable.getSelfPlayer(), null);
     }
 
     /**
      * Tell the ref that we want to sit in a specific seat.
-     * It may or may not be occupied already.
-     * @param seatId the ID string of a seat to sit in.
+     * @param seat the seat to sit in (or null for "any seat")
      * @throws XMPPException if an XMPP error occurs
      * @throws RPCException if a RPC fault occurs
      */
-    public void sit(String seatId) throws XMPPException, RPCException, TokenFailure
+    public void sit(Seat seat) throws XMPPException, RPCException, TokenFailure
     {
-        invoke("volity.sit",
-	       Arrays.asList(new String[] { seatId }));
+	sit(mTable.getSelfPlayer(), seat);
+    }
+
+    /**
+     * Tell the ref that we want a player to sit in any seat.
+     * @param player the player to move
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void sit(Player player) throws XMPPException, RPCException, TokenFailure
+    {
+        sit(player, null);
+    }
+
+    /**
+     * Tell the ref that we want a player to sit in a specific seat.
+     * @param player the player to move
+     * @param seat the seat to sit in (or null for "any seat")
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void sit(Player player, Seat seat) throws XMPPException, RPCException, TokenFailure
+    {
+        String jid = player.getJID();
+
+        if (seat == null) {
+            invoke("volity.sit",
+                Arrays.asList(new String[] { jid }));
+        }
+        else {
+            String seatid = seat.getID();
+            invoke("volity.sit",
+                Arrays.asList(new String[] { jid, seatid }));
+        }
     }
      
 

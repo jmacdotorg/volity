@@ -83,17 +83,17 @@ public class SeatChart
         updateUserList(); //###
     }
 
-    public void playerStood(Player player) {
-        System.out.println("Player stood: " + player.getJID());
+    public void playerSeatChanged(Player player, Seat oldseat, Seat newseat) {
+        String oldid = "<unseated>";
+        String newid = "<unseated>";
+        if (oldseat != null)
+            oldid = oldseat.getID();
+        if (newseat != null)
+            newid = newseat.getID();
+        System.out.println("Player seat: " + player.getJID() + " from " + oldid + " to " + newid);
     }
-    public void playerSat(Player player, Seat seat) {
-        System.out.println("Player sat: " + player.getJID() + " in " + seat.id());
-    }
-    public void playerReady(Player player) {
-        System.out.println("Player ready: " + player.getJID());
-    }
-    public void playerUnready(Player player) {
-        System.out.println("Player unready: " + player.getJID());
+    public void playerReady(Player player, boolean flag) {
+        System.out.println("Player ready: " + player.getJID() + ": " + flag);
     }
 
 }

@@ -144,32 +144,6 @@ public class GameUI implements RPCHandler, PacketFilter {
 	    }
 	  }
 	});
-      scope.put("start_game", scope, new Callback() {
-          // XXX Deprecated -- seating UI will handle this.
-	  public Object run(Object[] args) {
-	    try {
-	      table.getReferee().startGame();
-	    } catch (Exception e) {
-	      errorHandler.error(e);
-              /* This will print TokenFailures in window log, and display
-               * other exceptions as dialog box */
-	    }
-	    return Undefined.instance;
-	  }
-	});
-      scope.put("add_bot", scope, new Callback() {
-          // XXX Deprecated -- seating UI will handle this.
-	  public Object run(Object[] args) {
-	    try {
-	      table.getReferee().addBot();
-	    } catch (Exception e) {
-	      errorHandler.error(e);
-              /* This will print TokenFailures in window log, and display
-               * other exceptions as dialog box */
-	    }
-	    return Undefined.instance;
-	  }
-	});
     } catch (JavaScriptException e) {
       errorHandler.error(e);
     } finally {
