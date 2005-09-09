@@ -65,6 +65,16 @@ game -- the base class used to develop a new game
 
 * Version history:
 
+- 1.3.2:
+The referee no longer sends player_unready calls when volity.* RPCs
+    cause all players to become unready. The client must know that
+    unready-all is a side effect of player_sat, start_game, etc.
+JID strings sent in failure tokens are now properly namespaced as
+    'literal'.
+Referee copes better with a player changing nickname. (Although it
+    registers as the player leaving the MUC and immediately rejoining,
+    so the client must do another send_state.)
+
 - 1.3.1:
 Parse <double> RPC values as integers, if they have integral values.
 Contrariwise, if an RPC method's validator demands a float, silently

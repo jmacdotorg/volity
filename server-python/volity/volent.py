@@ -132,6 +132,15 @@ class ClientRPCWrapperOpset(jabber.rpc.WrapperOpset):
         return ['volity.ok'] + [value]
     oktoken = staticmethod(oktoken)
 
+class Literal:
+    """###
+    """
+    def __init__(self, token):
+        if (type(token) in [str, unicode]):
+            self.token = token
+        else:
+            self.token = unicode(token)
+    
 class FailureToken(Exception):
     """###
     """
@@ -145,10 +154,12 @@ class FailureToken(Exception):
     def encode(val):
         if (type(val) in [int, long, float]):
             return 'literal.' + str(val)
+        if (isinstance(val, Literal)):
+            return 'literal.' + val.token
         if (isinstance(val, game.Seat)):
             return 'seat.' + val.id
         if (not type(val) in [str, unicode]):
-            raise TypeError('tokens must be numbers, strings, or Seats')
+            raise TypeError('tokens must be numbers, strings, Literals, or Seats')
         pos = val.find('.')
         if (pos < 0):
             return 'game.' + val

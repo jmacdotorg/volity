@@ -228,15 +228,15 @@ class Referee(volent.VolEntity):
 
     def handlemucpresence(self, typestr, resource, msg):
         if (resource == 'referee' and self.state == 'configuring'):
-            xnod = msg.getchild('x')
-            if (xnod and xnod.getnamespace() == interface.NS_MUC_USER):
+            xnod = msg.getchild('x', namespace=interface.NS_MUC_USER)
+            if (xnod):
                 statnod = xnod.getchild('status')
                 if (statnod and statnod.getattr('code') == '201'):
                     self.queueaction(self.configuremuc)
 
         if (resource != 'referee'):
-            xnod = msg.getchild('x')
-            if (xnod and xnod.getnamespace() == interface.NS_MUC_USER):
+            xnod = msg.getchild('x', namespace=interface.NS_MUC_USER)
+            if (xnod):
                 inod = xnod.getchild('item')
                 jidstr = inod.getattr('jid')
                 affil = inod.getattr('affiliation')
@@ -514,7 +514,7 @@ class Referee(volent.VolEntity):
             player.seat = None
 
             # Message-sending will run after the player object is ditched
-            self.unreadyall()
+            self.unreadyall(False)
             self.queueaction(self.reportstand, player, seat)
 
         self.players.pop(jidstr, None)
@@ -525,11 +525,13 @@ class Referee(volent.VolEntity):
 
     def playersit(self, sender, jidstr, seatid=None):
         if (not self.players.has_key(jidstr)):
-            raise game.FailureToken('volity.jid_not_present', jidstr)
+            raise game.FailureToken('volity.jid_not_present',
+                game.Literal(jidstr))
 
         player = self.players[jidstr]
         if (not player.aware):
-            raise game.FailureToken('volity.jid_not_ready', jidstr)
+            raise game.FailureToken('volity.jid_not_ready',
+                game.Literal(jidstr))
         
         if (not seatid):
         
@@ -575,14 +577,15 @@ class Referee(volent.VolEntity):
         seat.playerlist.append(player)
         player.seat = seat
 
-        self.unreadyall()
+        self.unreadyall(False)
         self.queueaction(self.reportsit, player, seat)
 
         return seat.id
 
     def playerstand(self, sender, jidstr):
         if (not self.players.has_key(jidstr)):
-            raise game.FailureToken('volity.jid_not_present', jidstr)
+            raise game.FailureToken('volity.jid_not_present',
+                game.Literal(jidstr))
                 
         player = self.players[jidstr]
 
@@ -595,7 +598,7 @@ class Referee(volent.VolEntity):
         seat.playerlist.remove(player)
         player.seat = None
         
-        self.unreadyall()
+        self.unreadyall(False)
         self.queueaction(self.reportstand, player, seat)
 
     def playerready(self, sender):
@@ -660,7 +663,7 @@ class Referee(volent.VolEntity):
 
         self.language = lang
         
-        self.unreadyall()
+        self.unreadyall(False)
         self.queueaction(self.sendall, 'volity.language',
             sender, self.language)
 
@@ -670,7 +673,7 @@ class Referee(volent.VolEntity):
 
         self.recordgames = flag
         
-        self.unreadyall()
+        self.unreadyall(False)
         self.queueaction(self.sendall, 'volity.record_games',
             sender, self.recordgames)
 
@@ -680,7 +683,7 @@ class Referee(volent.VolEntity):
 
         self.showtable = flag
         
-        self.unreadyall()
+        self.unreadyall(False)
         self.queueaction(self.sendall, 'volity.show_table',
             sender, self.showtable)
 
@@ -690,19 +693,21 @@ class Referee(volent.VolEntity):
 
         self.killgame = flag
         
-        self.unreadyall()
+        self.unreadyall(False)
         self.queueaction(self.sendall, 'volity.kill_game',
             sender, self.killgame)
 
-    def unreadyall(self):
+    def unreadyall(self, notify=True):
         ls = [ pla for pla in self.players.values() if pla.ready ]
         if (not ls):
             return
             
-        self.log.info('marking %d player(s) unready', len(ls))
+        self.log.info('marking %d player(s) unready, notify %s',
+            len(ls), notify)
         for player in ls:
             player.ready = False
-        self.queueaction(self.reportunreadylist, ls)
+        if (notify):
+            self.queueaction(self.reportunreadylist, ls)
 
     def sendfullstate(self, player):
         if (not player.live):
@@ -721,6 +726,10 @@ class Referee(volent.VolEntity):
         for pla in self.players.values():
             if (pla.seat):
                 self.game.sendplayer(player, 'volity.player_sat', pla.jidstr, pla.seat.id)
+
+        for pla in self.players.values():
+            if (pla.ready):
+                self.game.sendplayer(player, 'volity.player_ready', pla.jidstr)
 
         # Then, the game config information
         self.game.sendconfigstate(player)
@@ -810,7 +819,7 @@ class Referee(volent.VolEntity):
         # disconnects.
         
         self.game.begingame()
-        self.unreadyall()
+        self.unreadyall(False)
         self.sendall('volity.start_game')
 
         # This will check against the immutable seat listings.
@@ -828,8 +837,8 @@ class Referee(volent.VolEntity):
                     self.refstate)
                 return
 
+        self.unreadyall(False)       # Might be needed in the killgame case
         self.sendall('volity.end_game')
-        self.unreadyall()       # Might be needed in the killgame case
         self.game.endgame(cancelled)
 
         # Get rid of all non-live players
@@ -864,6 +873,7 @@ class Referee(volent.VolEntity):
             # assumes resource didn't change
             jidstr = self.jid
 
+        self.unreadyall(False)
         self.sendall('volity.suspend_game', jidstr)
         self.game.suspendgame()
 
@@ -902,7 +912,7 @@ class Referee(volent.VolEntity):
         ### add current seat.playerlists to seat accumulated totals
 
         self.game.unsuspendgame()
-        self.unreadyall()
+        self.unreadyall(False)
         self.sendall('volity.resume_game')
         
         # This will check against the immutable seat listings.
@@ -1140,7 +1150,8 @@ class WrapGameOpset(rpc.WrapperOpset):
             raise game.FailureToken('volity.referee_not_ready')
 
         if (not self.referee.players.has_key(unicode(sender))):
-            raise game.FailureToken('volity.jid_not_present', unicode(sender))
+            raise game.FailureToken('volity.jid_not_present',
+                game.Literal(sender))
 
         val = self.validators.get(None)
         if (val):
@@ -1207,7 +1218,8 @@ class RefVolityOpset(rpc.MethodOpset):
             raise game.FailureToken('volity.referee_not_ready')
 
         if (not self.referee.players.has_key(unicode(sender))):
-            raise game.FailureToken('volity.jid_not_present', unicode(sender))
+            raise game.FailureToken('volity.jid_not_present',
+                game.Literal(sender))
 
         val = self.validators.get(namehead)
         if (not val):
