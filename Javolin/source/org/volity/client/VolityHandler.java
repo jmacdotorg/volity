@@ -39,6 +39,7 @@ public class VolityHandler implements RPCHandler {
 
 	if (methodName.equals("start_game")) {
 	    // The ref is telling us that it's time to start this game.
+            table.setAllPlayersUnready();
 	    Object method = gameUI.game.get("START", gameUI.scope);
 	    try {
                 if (method != Scriptable.NOT_FOUND) {
@@ -53,6 +54,7 @@ public class VolityHandler implements RPCHandler {
 	    }		    
 	} else if (methodName.equals("end_game")) {
 	    // The ref is telling us that this game is over.
+            table.setAllPlayersUnready();
 	    Object method = gameUI.game.get("END", gameUI.scope);
 	    try {
                 if (method != Scriptable.NOT_FOUND) {
@@ -70,8 +72,10 @@ public class VolityHandler implements RPCHandler {
 	} else if (methodName.equals("player_unready")) {
 	    table.setPlayerReadiness((String)params.get(0), false);
 	} else if (methodName.equals("player_stood")) {
+            table.setAllPlayersUnready();
 	    table.setPlayerSeat((String)params.get(0), null);
 	} else if (methodName.equals("player_sat")) {
+            table.setAllPlayersUnready();
 	    table.setPlayerSeat((String)params.get(0), (String)params.get(1));
 	} else if (methodName.equals("seat_list")) {
 	    table.setSeats((List)params.get(0));
@@ -82,14 +86,22 @@ public class VolityHandler implements RPCHandler {
 	} else if (methodName.equals("state_sent")) {
 	    System.out.println("Game state received.");
 	} else if (methodName.equals("suspend_game")) {
+            table.setAllPlayersUnready();
 	    System.out.println("Game suspended.");
 	} else if (methodName.equals("resume_game")) {
+            table.setAllPlayersUnready();
 	    System.out.println("Game resumed.");
+	} else if (methodName.equals("language")) {
+            table.setAllPlayersUnready();
+	    System.out.println("Configuration set language.");
 	} else if (methodName.equals("show_table")) {
+            table.setAllPlayersUnready();
 	    System.out.println("Configuration set show_table.");
 	} else if (methodName.equals("record_games")) {
+            table.setAllPlayersUnready();
 	    System.out.println("Configuration set record_games.");
 	} else if (methodName.equals("kill_game")) {
+            table.setAllPlayersUnready();
 	    System.out.println("Configuration set kill_game.");
 	} else {
 	    k.respondFault(999, "I don't know what to do about the volity RPC request " + methodName);

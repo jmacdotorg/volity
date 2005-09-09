@@ -390,6 +390,20 @@ public class GameTable extends MultiUserChat {
         fireStatusListeners_playerReady(player, flag);
     }
 
+    /**
+     * React to all players becoming unready. (This is a side effect of many
+     * volity.* RPCs.)
+     */
+    public void setAllPlayersUnready() {
+        for (Iterator it = mPlayers.iterator(); it.hasNext(); ) {
+            Player player = (Player)it.next();
+            if (player.isReady()) {
+                player.setReady(false);
+                fireStatusListeners_playerReady(player, false);
+            }
+        }
+    }
+
     /** Get a seat by ID. (Or null, if there is no such seat.) */
     public Seat getSeat(String id) {
         return (Seat)mSeatsById.get(id);
