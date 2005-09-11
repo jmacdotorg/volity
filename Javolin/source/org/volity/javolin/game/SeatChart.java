@@ -200,6 +200,7 @@ public class SeatChart
     }
     public void playerNickChanged(Player player, String oldNick) {
         System.out.println("Player nickname changed: " + player.getJID() + " (" + player.getNick() + "), was (" + oldNick + ")");
+        mUserColorMap.changeUserName(oldNick, player.getNick());
         adjustOnePanel(player);
     }
 

@@ -102,11 +102,13 @@ public class SeatPanel extends JPanel
         if (iter != null) {
             while (iter.hasNext()) {
                 Player player = (Player)iter.next();
+
                 Font font;
                 if (mIsObserver || player.isReady()) //### or game in progress
                     font = fontName;
                 else
                     font = fontNameUnready;
+
                 Icon icon;
                 if (mIsObserver) 
                     icon = ICON_STANDING;
@@ -115,8 +117,14 @@ public class SeatPanel extends JPanel
                 else
                     icon = ICON_SEATED;
 
+                if (player.isReferee()) {
+                    mChart.mUserColorMap.setUserColor(player.getJID(), player.getNick(), Color.GRAY);
+                }
+                Color col = mChart.mUserColorMap.getUserNameColor(player.getJID(), player.getNick());
+
                 label = new JLabel(player.getNick(), icon, SwingConstants.LEFT);
                 label.setFont(font);
+                label.setForeground(col);
                 c = new GridBagConstraints();
                 c.gridx = 0;
                 c.gridy = row++;
