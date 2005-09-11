@@ -3,7 +3,7 @@ package org.volity.client;
 import java.util.*;
 
 /**
- * A seat at a table.
+ * A seat at a table. This is a dumb, do-what-you're-told class.
  */
 public class Seat {
 
@@ -47,8 +47,8 @@ public class Seat {
 	}
     }
 
-    public List players() {
-	return mPlayers;
+    public Iterator getPlayers() {
+	return mPlayers.iterator();
     }
 
     public boolean isOccupied() {

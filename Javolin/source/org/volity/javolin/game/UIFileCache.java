@@ -25,10 +25,18 @@ import java.util.zip.*;
 /**
  * Manages the on-disk cache of the Volity UI files.
  *
- * This maintains two cache directories. For each UI, UIFileCache
- * contains the UI file, exactly as downloaded. UIDirCache contains a
- * directory containing the unzipped contents of the UI file. (Or, if
- * the UI file is not a ZIP archive, simply another copy of it.)
+ * This maintains two cache directories. For each UI, UIFileCache contains the
+ * UI file, exactly as downloaded. UIDirCache contains a directory containing
+ * the unzipped contents of the UI file. (Or, if the UI file is not a ZIP
+ * archive, simply another copy of it.)
+ *
+ * XXX: This is not completely safe against midgame UI changes. If you are
+ * playing a game in one window, and you start a new game (with the same UI
+ * URL) in a different window, and the UI file has changed -- in between the
+ * two game starts -- then the first game will see the cache directory change
+ * out from under it. This will, in general, crash things. Possible solution:
+ * don't update the cache if there are any existing windows with the same UI
+ * URL.
  */
 public class UIFileCache
 {

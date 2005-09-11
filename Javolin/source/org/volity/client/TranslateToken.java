@@ -227,6 +227,26 @@ public class TranslateToken {
     }
 
     /**
+     * Translate a seat identifier. The difference between this and
+     * translate("seat."+token) is that this method returns null if no
+     * translation is available (instead of creating a human-readable "no
+     * translation available" string).
+     *
+     * @param token the ID of a seat
+     * @return a natural-language string, or null if no translation is
+     *     available.
+     */
+    public String translateSeatID(String token) {
+        if (localeDir != null) {
+            Map tab = getCurrentTableSeat();
+            if (tab.containsKey(token)) {
+                return (String)tab.get(token);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Fetch the map for "volity" tokens, in the current language.
      * This is fast if the map has already been built.
      *

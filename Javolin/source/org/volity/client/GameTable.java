@@ -8,7 +8,12 @@ import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
 
-/** A game table (a Multi-User Chat room for playing a Volity game). */
+/**
+ * A game table (a Multi-User Chat room for playing a Volity game).
+ *
+ * The GameTable acts as the client's model for the arrangement of the table --
+ * the seats, the players, who is sitting where.
+ */
 public class GameTable extends MultiUserChat {
 
     protected List mPlayers = new ArrayList();
@@ -73,7 +78,10 @@ public class GameTable extends MultiUserChat {
 
     }
 
-    public XMPPConnection getConnection() { return mConnection; }
+    /** Get the XMPP connection associated with this table. */
+    public XMPPConnection getConnection() { 
+        return mConnection; 
+    }
 
     /**
      * The referee for this table, or null if no referee is connected.
@@ -147,6 +155,7 @@ public class GameTable extends MultiUserChat {
 
     /***** Player status-change methods & callbacks *****/
 
+    /** Internal data class used to store a (Player, nickname) pair. */
     private class PlayerNick {
         Player player;
         String oldNick;
@@ -257,10 +266,12 @@ public class GameTable extends MultiUserChat {
         }
     }
 
+    /** Return an iterator of all the Player objects. */
     public Iterator getPlayers() {
         return mPlayers.iterator();
     }
 
+    /** Get the Player with a given (real) JID. */
     public Player getPlayerByJID(String jid) {
         for (Iterator it = mPlayers.iterator(); it.hasNext(); ) {
             Player player = (Player)it.next();
@@ -269,6 +280,16 @@ public class GameTable extends MultiUserChat {
         }
 
         return null;
+    }
+
+    /** Return an iterator of all the players who are not seated. */
+    public Iterator getUnseatedPlayers() {
+        return new IteratorFilter(mPlayers) {
+                public boolean matches(Object obj) {
+                    Player player = (Player)obj;
+                    return (player.getSeat() == null);
+                }
+            };
     }
 
     /** Add a player readiness change listener. */
@@ -283,6 +304,13 @@ public class GameTable extends MultiUserChat {
 
     /***** Dealing with seats *****/
 
+    /**
+     * React to discovering the referee's list of seats. Create Seat objects to
+     * model them.
+     *
+     * This is the complete seat list -- it should not change over the lifetime
+     * of the game table.
+     */
     public void setSeats(List ids) {
         if (!mSeats.isEmpty()) {
             /* If we already have a list of seats, this should be an identical
@@ -331,7 +359,7 @@ public class GameTable extends MultiUserChat {
             Seat seat = (Seat)it.next();
             boolean required = requiredSet.contains(seat.getID());
             if (required != seat.isRequired()) {
-                seat.setRequired(false);
+                seat.setRequired(required);
                 changes = true;
             }
         }
@@ -404,33 +432,39 @@ public class GameTable extends MultiUserChat {
         }
     }
 
+    /** Return an iterator of all the seat objects. */
+    public Iterator getSeats() {
+        return mSeats.iterator();
+    }
+
     /** Get a seat by ID. (Or null, if there is no such seat.) */
     public Seat getSeat(String id) {
         return (Seat)mSeatsById.get(id);
     }
 
-    /** Return an array of seat objects which have players in them. */
-    public List occupiedSeats() {
-	List occupiedSeats = new ArrayList();
-	for (Iterator it = mSeats.iterator(); it.hasNext();) {
-	    Seat seat = (Seat)it.next();
-	    if (seat.isOccupied()) {
-		occupiedSeats.add(seat);
-	    }
-	}
-	return occupiedSeats;
+    /** Return an iterator of seats which have players in them. */
+    public Iterator getOccupiedSeats() {
+        return new IteratorFilter(mSeats) {
+                public boolean matches(Object obj) {
+                    Seat seat = (Seat)obj;
+                    return (seat.isOccupied());
+                }
+            };
     }
 
+    /** Return the Player object which represents this client. */
     public Player getSelfPlayer() {
         return mSelfPlayer;
     }
 
+    /** Is this client marked ready? */
     public boolean isSelfReady() {
         if (mSelfPlayer == null)
             return false;
         return mSelfPlayer.isReady();
     }
 
+    /** Is this client seated? */
     public boolean isSelfSeated() {
         if (mSelfPlayer == null)
             return false;
@@ -491,4 +525,59 @@ public class GameTable extends MultiUserChat {
                 oldseat, newseat);
         }
     }
+
+    /***** IteratorFilter and friends *****/
+
+    /**
+     * IteratorFilter is a handy way to iterate over *some* items in a list or
+     * other iterable.
+     *
+     * You create a subclass and define the matches() predicate. The result is
+     * an Iterator that wraps an existing Iterator, and only lets the matching
+     * objects show through.
+     */
+    public abstract class IteratorFilter implements Iterator {
+        Iterator mBaseIterator;
+        Object nextObject;
+
+        public IteratorFilter(Iterator iter) {
+            mBaseIterator = iter;
+            nextObject = null;
+            nextMatching();
+        }
+
+        public IteratorFilter(List ls) {
+            mBaseIterator = ls.iterator();
+            nextObject = null;
+            nextMatching();
+        }
+
+        private void nextMatching() {
+            while (mBaseIterator.hasNext()) {
+                Object obj = mBaseIterator.next();
+                if (matches(obj)) {
+                    nextObject = obj;
+                    return;
+                }
+            }
+            nextObject = null;
+        }
+
+        protected abstract boolean matches(Object obj);
+
+        public boolean hasNext() {
+            return (nextObject != null);
+        }
+
+        public Object next() {
+            Object val = nextObject;
+            nextMatching();
+            return val;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException("IteratorFilter does not support remove");
+        }
+    }
+
 }

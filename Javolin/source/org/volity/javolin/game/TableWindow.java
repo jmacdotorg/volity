@@ -243,7 +243,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
-        mSeatChart = new SeatChart(mGameTable, mUserColorMap);
+        mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator);
 
         buildUI();
 
@@ -784,7 +784,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         mUserListSplitter.setLeftComponent(mBoardSplitter);
 
-        JComponent chart = mSeatChart.getChart();
+        JComponent chart = mSeatChart.getComponent();
         mUserListSplitter.setRightComponent(new JScrollPane(chart));
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
@@ -798,6 +798,8 @@ public class TableWindow extends JFrame implements PacketListener
          * orientation. It works, though. Members of the toolbar will appear
          * right to left, on the right end of the bar. */
         toolbar.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+
+        //### tooltips, and adjust them when state changes
 
         mReadyButton = new JButton(READY_LABEL, UNREADY_ICON);
         mReadyButton.setEnabled(false);

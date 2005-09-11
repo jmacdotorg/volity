@@ -56,26 +56,32 @@ public class Player {
         mNick = nick;
     }
 
+    /** Does this Player represent the client? */
     public boolean isSelf() {
         return mIsSelf;
     }
 
+    /** Does this Player represent the referee? */
     public boolean isReferee() {
         return mIsReferee;
     }
 
+    /** Is this player marked "ready"? */
     public boolean isReady() {
         return mIsReady;
     }
 
+    /** Set the "ready" flag. */
     protected void setReady(boolean flag) {
         mIsReady = flag;
     }
 
+    /** Return the Player's seat (or null, if unseated). */
     public Seat getSeat() {
         return mSeat;
     }
 
+    /** Set the Player's seat (null means unseated). */
     protected void setSeat(Seat seat) {
         mSeat = seat;
     }
