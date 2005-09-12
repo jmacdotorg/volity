@@ -24,6 +24,7 @@ public class SeatChart
     JPanel mPanel;
     UserColorMap mUserColorMap;
     TranslateToken mTranslator;
+    GameUI.MessageHandler mMessageHandler;
 
     Map mSeatPanels;        // maps String IDs to SeatPanel objects
     SeatPanel mUnseatPanel; // for unseated players
@@ -35,13 +36,16 @@ public class SeatChart
      * @param translator a translator object (used for seat IDs).
      */
     public SeatChart(GameTable table, UserColorMap colormap,
-        TranslateToken translator) {
+        TranslateToken translator, GameUI.MessageHandler messageHandler) {
         mTable = table;
         mUserColorMap = colormap;
         mTranslator = translator;
+        mMessageHandler = messageHandler;
         mSeatPanels = new HashMap();
 
         mPanel = new JPanel(new GridBagLayout());
+        mPanel.setOpaque(true);
+        mPanel.setBackground(Color.WHITE);
 
         mUnseatPanel = new SeatPanel(this, null, true);
         /* Conceivably the GameTable already has a list of Seats, in which case
@@ -173,6 +177,39 @@ public class SeatChart
         else {
             panel = (SeatPanel)mSeatPanels.get(seat.getID());
             panel.adjustNames(seat.getPlayers());
+        }
+    }
+
+    /**
+     * Send a sit or stand request to the referee. This is used by the
+     * drag-drop mechanism; that's why the arguments are Strings (which must be
+     * converted to Player/Seat objects).
+     *
+     * @param jid the player who is to sit/stand.
+     * @param seatid the seat to sit in (or null to stand).
+     */
+    protected void requestSeatChange(String jid, String seatid) {
+        Seat seat;
+        Player player;
+
+        player = mTable.getPlayerByJID(jid);
+        if (player == null)
+            return;
+
+        try {
+            if (seatid == null) {
+                mTable.getReferee().stand(player);
+            }
+            else {
+                seat = mTable.getSeat(seatid);
+                mTable.getReferee().sit(player, seat);
+            }
+        }
+        catch (TokenFailure ex) {
+            mMessageHandler.print(mTranslator.translate(ex));
+        }
+        catch (Exception ex) {
+            mMessageHandler.print(ex.toString());
         }
     }
 

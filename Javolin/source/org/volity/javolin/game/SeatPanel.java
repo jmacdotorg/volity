@@ -1,6 +1,9 @@
 package org.volity.javolin.game;
 
 import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
+import java.io.*;
 import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -17,6 +20,8 @@ import org.volity.client.*;
  */
 public class SeatPanel extends JPanel
 {
+    static DragSource dragSource = DragSource.getDefaultDragSource();
+
     static protected Font fontTitle = new Font("SansSerif", Font.BOLD, 10);
     static protected Font fontName = new Font("SansSerif", Font.PLAIN, 12);
     static protected Font fontNameUnready = new Font("SansSerif", Font.ITALIC, 12);
@@ -35,6 +40,10 @@ public class SeatPanel extends JPanel
     String mID;
     boolean mIsObserver;
     boolean mVisible; // friend to SeatChart
+    DropTarget mDropTarget;
+
+    Color mBorderColor, mFillColor, mDragColor;
+    Border mStandardBorder, mDragBorder;
 
     /**
      * @param chart the SeatChart which owns this panel
@@ -49,18 +58,85 @@ public class SeatPanel extends JPanel
         mIsObserver = (mID == null);
         mVisible = visible;
 
-        Border border;
+        setOpaque(true);
+        setBackground(Color.WHITE);
+
         if (mIsObserver) {
-            border = new EmptyBorder(2, 8, 2, 1);
+            mBorderColor = null;
+            mFillColor = Color.WHITE;
+            mDragColor = new Color(0.866f, 0.866f, 0.92f);
+            mStandardBorder = new EmptyBorder(2, 8, 2, 1);
+            mDragBorder = mStandardBorder;
         }
         else {
-            Border innerBorder = new RoundLineBorder(Color.GRAY, 3, 4);
-            border = new CompoundBorder(
+            mBorderColor = new Color(0.5f, 0.5f, 0.5f);
+            mFillColor = new Color(0.92f, 0.92f, 0.92f);
+            mDragColor = new Color(0.8f, 0.8f, 0.9f);
+
+            Border innerBorder;
+            innerBorder = new RoundLineBorder(mBorderColor, 3, 4, mFillColor);
+            mStandardBorder = new CompoundBorder(
+                new EmptyBorder(2, 1, 2, 1),
+                innerBorder);
+
+            innerBorder = new RoundLineBorder(mBorderColor, 3, 4, mDragColor);
+            mDragBorder = new CompoundBorder(
                 new EmptyBorder(2, 1, 2, 1),
                 innerBorder);
         }
-        setBorder(border);
+        setBorder(mStandardBorder);
         adjustNames(null);
+
+        /* And now, drag-and-drop code. The SeatPanel is a drop target; each
+         * individual name JLabel is a drag source. This would have been easier
+         * with TransferHandler, but that mechanism can't highlight source or
+         * target objects (as far as I know). */
+
+        mDropTarget = new DropTarget(this, DnDConstants.ACTION_MOVE, 
+            new DropTargetAdapter() {
+                public void dragEnter(DropTargetDragEvent dtde) {
+                    // Highlight target.
+                    if (mIsObserver) {
+                        SeatPanel.this.setBackground(mDragColor);
+                    }
+                    else {
+                        SeatPanel.this.setBorder(mDragBorder);
+                    }
+                }
+                public void dragExit(DropTargetEvent dte) {
+                    // Dehighlight target.
+                    if (mIsObserver) {
+                        SeatPanel.this.setBackground(mFillColor);
+                    }
+                    else {
+                        SeatPanel.this.setBorder(mStandardBorder);
+                    }
+                }
+                public void drop(DropTargetDropEvent ev) {
+                    // First, dehighlight target.
+                    if (mIsObserver) {
+                        SeatPanel.this.setBackground(mFillColor);
+                    }
+                    else {
+                        SeatPanel.this.setBorder(mStandardBorder);
+                    }
+                    try {
+                        Transferable transfer = ev.getTransferable();
+                        if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
+                            ev.acceptDrop(DnDConstants.ACTION_MOVE);
+                            JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
+                            mChart.requestSeatChange(obj.getJID(),
+                                SeatPanel.this.mID);
+                            ev.dropComplete(true);
+                            return;
+                        }
+                        ev.rejectDrop();
+                    }
+                    catch (Exception ex) {
+                        ev.rejectDrop();
+                    }
+                }
+            });
     }
 
     /**
@@ -135,6 +211,16 @@ public class SeatPanel extends JPanel
                 c.anchor = GridBagConstraints.WEST;
                 add(label, c);
                 count++;
+
+                if (!player.isReferee()) {
+                    /* Set up the label as a drag source. No dragging the ref,
+                     * though. */
+                    DragGestureRecognizer recognizer = 
+                        dragSource.createDefaultDragGestureRecognizer(
+                            label, 
+                            DnDConstants.ACTION_MOVE, 
+                            new DragSourceThing(label, this, player.getJID()));
+                }
             }
         }
 
@@ -158,5 +244,39 @@ public class SeatPanel extends JPanel
         }
 
         revalidate();
+    }
+
+    private class DragSourceThing 
+        implements DragGestureListener {
+        JComponent mComponent;
+        SeatPanel mSourcePanel;
+        String mJID;
+        boolean mWasOpaque;
+
+        public DragSourceThing(JComponent obj, SeatPanel source, String jid) {
+            mComponent = obj;
+            mSourcePanel = source;
+            mJID = jid;
+        }
+
+        public void dragGestureRecognized(DragGestureEvent ev) {
+            // Highlight the source label.
+            mWasOpaque = mComponent.isOpaque();
+            mComponent.setBackground(mDragColor);
+            mComponent.setOpaque(true);
+            // We don't want to accept a drag to the panel we started in.
+            mSourcePanel.mDropTarget.setActive(false);
+
+            Transferable transfer = new JIDTransfer(mJID);
+            dragSource.startDrag(ev, DragSource.DefaultMoveDrop, transfer,
+                new DragSourceAdapter() {
+                    public void dragDropEnd(DragSourceDropEvent ev) {
+                        // Unhighlight and reactivate drag target.
+                        mComponent.setOpaque(mWasOpaque);
+                        mComponent.setBackground(null);
+                        mSourcePanel.mDropTarget.setActive(true);
+                    }
+                });
+        }
     }
 }

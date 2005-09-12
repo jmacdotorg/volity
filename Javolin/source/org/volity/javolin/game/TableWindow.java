@@ -243,7 +243,14 @@ public class TableWindow extends JFrame implements PacketListener
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
-        mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator);
+        mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator,
+            new GameUI.MessageHandler()
+            {
+                public void print(String msg)
+                {
+                    writeMessageText(msg);
+                }
+            });
 
         buildUI();
 
