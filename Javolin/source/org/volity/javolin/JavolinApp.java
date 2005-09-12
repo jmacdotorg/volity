@@ -21,6 +21,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.net.*;
 import java.util.*;
+import java.util.List;
 import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -46,13 +47,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static String NODENAME = "MainAppWin";
     private final static String SHOW_OFFLINE_USERS_KEY = "ShowOfflineUsers";
 
-    private final static String MENUCMD_CONNECT = "Connect...";
-    private final static String MENUCMD_DISCONNECT = "Disconnect";
-    private final static String MENUCMD_QUIT = "Exit";
-    private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
-    private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
-    private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
-
     private final static ImageIcon CONNECTED_ICON;
     private final static ImageIcon DISCONNECTED_ICON;
     private final static ImageIcon SHOW_UNAVAIL_ICON;
@@ -68,13 +62,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private JButton mDelUserBut;
     private JButton mChatBut;
 
-    private WindowMenu mWindowMenu;
-    private JMenuItem mConnectMenuItem;
-    private JMenuItem mQuitMenuItem;
-    private JMenuItem mNewTableAtMenuItem;
-    private JMenuItem mJoinTableAtMenuItem;
-    private JMenuItem mJoinMucMenuItem;
-
     private JPopupMenu mRosterContextMenu;
     private JMenuItem mChatContextItem;
     private JMenuItem mAddUserContextItem;
@@ -85,9 +72,9 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
-    private java.util.List mMucWindows;
-    private java.util.List mTableWindows;
-    private java.util.List mChatWindows;
+    List mMucWindows;
+    List mTableWindows;
+    List mChatWindows;
     private Map mUserChatWinMap;
     private boolean mShowUnavailUsers;
 
@@ -108,17 +95,18 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     public JavolinApp()
     {
+        mMucWindows = new ArrayList();
+        mTableWindows = new ArrayList();
+        mChatWindows = new ArrayList();
+        mUserChatWinMap = new Hashtable();
+
         setTitle(APPNAME);
+        JavolinMenuBar.setApplication(this);
         buildUI();
 
         setSize(200, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
-
-        mMucWindows = new ArrayList();
-        mTableWindows = new ArrayList();
-        mChatWindows = new ArrayList();
-        mUserChatWinMap = new Hashtable();
 
         // Set roster to show/hide unavailable users based on prefs
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
@@ -187,9 +175,11 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         // Set appropriate properties when running on Mac
         if (isRunningOnMac())
         {
-            // Make .app and .pkg files non-traversable as directories in AWT file
-            // choosers
+            // Make .app and .pkg files non-traversable as directories in AWT
+            // file choosers
             System.setProperty("com.apple.macos.use-file-dialog-packages", "true");
+            // Put window menu bars at the top of the screen
+            System.setProperty("apple.laf.useScreenMenuBar", "true");
         }
 
         JavolinApp mainApp = new JavolinApp();
@@ -249,7 +239,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      * @return   true if Javolin is currently running on a Mac, false if running on
      * another platform.
      */
-    private static boolean isRunningOnMac()
+    static boolean isRunningOnMac()
     {
         return (System.getProperty("mrj.version") != null); // Apple recommended test for Mac
     }
@@ -260,7 +250,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      * @return   true if Javolin is currently connected to a Volity server, false
      * otherwise.
      */
-    private boolean isConnected()
+    boolean isConnected()
     {
         return (mConnection != null) && mConnection.isConnected();
     }
@@ -272,38 +262,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      */
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getSource() == mConnectMenuItem)
-        {
-            if (isConnected())
-            {
-                if (confirmCloseTableWindows("Disconnect"))
-                {
-
-                    doDisconnect();
-                }
-            }
-            else
-            {
-                doConnect();
-            }
-        }
-        else if (e.getSource() == mQuitMenuItem)
-        {
-            doQuit();
-        }
-        else if (e.getSource() == mNewTableAtMenuItem)
-        {
-            doNewTableAt();
-        }
-        else if (e.getSource() == mJoinTableAtMenuItem)
-        {
-            doJoinTableAt();
-        }
-        else if (e.getSource() == mJoinMucMenuItem)
-        {
-            doJoinMuc();
-        }
-        else if (e.getSource() == mShowHideUnavailBut)
+        if (e.getSource() == mShowHideUnavailBut)
         {
             doShowHideUnavailBut();
         }
@@ -322,9 +281,28 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
+     * Handle the Connect/Disconnect menu item
+     */
+    void doConnectDisconnect()
+    {
+        if (isConnected())
+        {
+            if (confirmCloseTableWindows("Disconnect"))
+            {
+
+                doDisconnect();
+            }
+        }
+        else
+        {
+            doConnect();
+        }
+    }
+
+    /**
      * Brings up a ConnectDialog to establish a connection.
      */
-    private void doConnect()
+    void doConnect()
     {
         ConnectDialog connDlg = new ConnectDialog(this);
         connDlg.show();
@@ -402,8 +380,16 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
      * application state after the connection has been closed or lost via some other
      * means.
      */
-    private void doDisconnect()
+    void doDisconnect()
     {
+        // Close all Chat windows
+        while (mChatWindows.size() > 0)
+        {
+            ChatWindow chatWin = (ChatWindow)mChatWindows.get(0);
+            chatWin.dispose();
+            mChatWindows.remove(chatWin);
+        }
+
         // Close all MUC windows
         while (mMucWindows.size() > 0)
         {
@@ -421,7 +407,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         }
 
         // Clear the Window menu
-        mWindowMenu.clear();
+        JavolinMenuBar.notifyUpdateWindowMenu();
 
         // Close connection if open
         if (mConnection != null)
@@ -440,7 +426,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     /**
      * Handler for the Quit menu item.
      */
-    private void doQuit()
+    void doQuit()
     {
         if (confirmCloseTableWindows("Exit"))
         {
@@ -452,7 +438,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     /**
      * Handler for the New Table At... menu item.
      */
-    private void doNewTableAt()
+    void doNewTableAt()
     {
         NewTableAtDialog newTableDlg = new NewTableAtDialog(this, mConnection);
         newTableDlg.show();
@@ -464,7 +450,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     /**
      * Handler for the Join Table At... menu item.
      */
-    private void doJoinTableAt()
+    void doJoinTableAt()
     {
         JoinTableAtDialog joinTableDlg = new JoinTableAtDialog(this, mConnection);
         joinTableDlg.show();
@@ -485,7 +471,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             tableWin.show();
             mTableWindows.add(tableWin);
-            mWindowMenu.add(tableWin);
+            JavolinMenuBar.notifyUpdateWindowMenu();
 
             // Remove the table window from the list and menu when it closes
             tableWin.addWindowListener(
@@ -494,7 +480,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                     public void windowClosed(WindowEvent we)
                     {
                         mTableWindows.remove(we.getWindow());
-                        mWindowMenu.remove((JFrame)we.getWindow());
+                        JavolinMenuBar.notifyUpdateWindowMenu();
                     }
                 });
         }
@@ -504,7 +490,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     /**
      * Handler for the Join Multi-user Chat... menu item.
      */
-    private void doJoinMuc()
+    void doJoinMuc()
     {
         JoinMUCDialog joinMucDlg = new JoinMUCDialog(this, mConnection);
         joinMucDlg.show();
@@ -514,7 +500,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             mucWin.show();
             mMucWindows.add(mucWin);
-            mWindowMenu.add(mucWin);
+            JavolinMenuBar.notifyUpdateWindowMenu();
 
             // Remove the MUC window from the list and menu when it closes
             mucWin.addWindowListener(
@@ -523,7 +509,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                     public void windowClosed(WindowEvent we)
                     {
                         mMucWindows.remove(we.getWindow());
-                        mWindowMenu.remove((JFrame)we.getWindow());
+                        JavolinMenuBar.notifyUpdateWindowMenu();
                     }
                 });
         }
@@ -568,7 +554,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
 
                 chatWin.show();
                 mChatWindows.add(chatWin);
-                mWindowMenu.add(chatWin);
+                JavolinMenuBar.notifyUpdateWindowMenu();
                 mUserChatWinMap.put(userId, chatWin);
 
                 // Remove the chat window from the list, menu, and map when it closes
@@ -580,7 +566,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
                             ChatWindow win = (ChatWindow)we.getWindow();
 
                             mChatWindows.remove(win);
-                            mWindowMenu.remove(win);
+                            JavolinMenuBar.notifyUpdateWindowMenu();
                             mUserChatWinMap.remove(win.getRemoteUserId());
                         }
                     });
@@ -666,21 +652,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
-     * Helper method for setUpAppMenus. Assigns a keyboard mnemonic to a menu or menu
-     * item, but only if not running on the Mac platform.
-     *
-     * @param item  The menu or menu item to assign the mnemonic to
-     * @param key   The keyboard mnemonic.
-     */
-    private void setPlatformMnemonic(JMenuItem item, int key)
-    {
-        if (!isRunningOnMac())
-        {
-            item.setMnemonic(key);
-        }
-    }
-
-    /**
      * Updates the state and appearance of all UI items that depend on program state.
      */
     private void updateUI()
@@ -701,7 +672,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         updateToolBarButtons();
 
         // Do menu items
-        updateMenuItems();
+        JavolinMenuBar.notifyUpdateItems();
     }
 
     /**
@@ -728,33 +699,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         mAddUserBut.setEnabled(isConnected());
         mDelUserBut.setEnabled(selectedUser != null);
         mChatBut.setEnabled((selectedUser != null) && selectedUser.isAvailable());
-    }
-
-    /**
-     * Updates the text or state of all dynamic menu items.
-     */
-    private void updateMenuItems()
-    {
-        int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-
-        if (isConnected())
-        {
-            mConnectMenuItem.setText(MENUCMD_DISCONNECT);
-            mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D,
-                keyMask));
-            setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_D);
-        }
-        else
-        {
-            mConnectMenuItem.setText(MENUCMD_CONNECT);
-            mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,
-                keyMask));
-            setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
-        }
-
-        mNewTableAtMenuItem.setEnabled(isConnected());
-        mJoinTableAtMenuItem.setEnabled(isConnected());
-        mJoinMucMenuItem.setEnabled(isConnected());
     }
 
     /**
@@ -919,70 +863,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         }
     }
 
-    /**
-     *  Creates and sets up the menus for the application.
-     */
-    private void setUpAppMenus()
-    {
-        // Platform independent accelerator key
-        int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-
-        // File menu
-        JMenu fileMenu = new JMenu("File");
-        setPlatformMnemonic(fileMenu, KeyEvent.VK_F);
-
-        mConnectMenuItem = new JMenuItem(MENUCMD_CONNECT);
-        mConnectMenuItem.addActionListener(this);
-        mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, keyMask));
-        setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
-        fileMenu.add(mConnectMenuItem);
-
-        fileMenu.addSeparator();
-
-        mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
-        mQuitMenuItem.addActionListener(this);
-        setPlatformMnemonic(mQuitMenuItem, KeyEvent.VK_X);
-        fileMenu.add(mQuitMenuItem);
-
-        // Chat menu
-        JMenu chatMenu = new JMenu("Chat");
-        setPlatformMnemonic(chatMenu, KeyEvent.VK_C);
-
-        mJoinMucMenuItem = new JMenuItem(MENUCMD_JOIN_MUC);
-        mJoinMucMenuItem.addActionListener(this);
-        mJoinMucMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J, keyMask));
-        setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_J);
-        chatMenu.add(mJoinMucMenuItem);
-
-        // Game menu
-        JMenu gameMenu = new JMenu("Game");
-        setPlatformMnemonic(gameMenu, KeyEvent.VK_G);
-
-        mNewTableAtMenuItem = new JMenuItem(MENUCMD_NEW_TABLE_AT);
-        mNewTableAtMenuItem.addActionListener(this);
-        mNewTableAtMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
-            keyMask));
-        setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_E);
-        gameMenu.add(mNewTableAtMenuItem);
-
-        mJoinTableAtMenuItem = new JMenuItem(MENUCMD_JOIN_TABLE_AT);
-        mJoinTableAtMenuItem.addActionListener(this);
-        mJoinTableAtMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
-            keyMask));
-        setPlatformMnemonic(mJoinTableAtMenuItem, KeyEvent.VK_T);
-        gameMenu.add(mJoinTableAtMenuItem);
-
-        // Window menu
-        mWindowMenu = new WindowMenu();
-
-        // Create menu bar
-        JMenuBar theMenuBar = new JMenuBar();
-        theMenuBar.add(fileMenu);
-        theMenuBar.add(chatMenu);
-        theMenuBar.add(gameMenu);
-        theMenuBar.add(mWindowMenu);
-        setJMenuBar(theMenuBar);
-    }
 
     /**
      * Creates the contextual menu for the roster.
@@ -1062,7 +942,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         cPane.add(panel, BorderLayout.SOUTH);
 
         // Create menu bar
-        setUpAppMenus();
+        JMenuBar theMenuBar = new JavolinMenuBar(this);
 
         // Create contextual menu for roster
         mRosterContextMenu = createRosterContextMenu();

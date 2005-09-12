@@ -816,5 +816,8 @@ public class TableWindow extends JFrame implements PacketListener
 
         mSeatButton = new JButton(SEAT_LABEL, UNSEAT_ICON);
         toolbar.add(mSeatButton);
+
+        // Necessary for all windows, for Mac support
+        JavolinMenuBar.applyPlatformMenuBar(this);
     }
 }

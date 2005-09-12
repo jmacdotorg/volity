@@ -351,5 +351,8 @@ public class MUCWindow extends JFrame implements PacketListener
         mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
+
+        // Necessary for all windows, for Mac support
+        JavolinMenuBar.applyPlatformMenuBar(this);
     }
 }

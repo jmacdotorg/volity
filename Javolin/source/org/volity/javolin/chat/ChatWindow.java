@@ -283,5 +283,8 @@ public class ChatWindow extends JFrame implements PacketListener
         mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
 
         cPane.add(mChatSplitter, BorderLayout.CENTER);
+
+        // Necessary for all windows, for Mac support
+        JavolinMenuBar.applyPlatformMenuBar(this);
     }
 }
