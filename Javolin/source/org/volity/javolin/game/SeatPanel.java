@@ -65,7 +65,13 @@ public class SeatPanel extends JPanel
             mBorderColor = null;
             mFillColor = Color.WHITE;
             mDragColor = new Color(0.866f, 0.866f, 0.92f);
-            mStandardBorder = new EmptyBorder(2, 8, 2, 1);
+            /*
+             * We want the labels in the observer panel to line up with the
+             * labels in other (outlined) panels. So the border here has seven
+             * extra pixels on the left side, to match the seven (3+4) pixel
+             * thickness of the RoundLineBorders below.
+             */
+            mStandardBorder = new EmptyBorder(3, 9, 1, 2);
             mDragBorder = mStandardBorder;
         }
         else {
@@ -76,12 +82,12 @@ public class SeatPanel extends JPanel
             Border innerBorder;
             innerBorder = new RoundLineBorder(mBorderColor, 3, 4, mFillColor);
             mStandardBorder = new CompoundBorder(
-                new EmptyBorder(2, 1, 2, 1),
+                new EmptyBorder(3, 2, 1, 2),
                 innerBorder);
 
             innerBorder = new RoundLineBorder(mBorderColor, 3, 4, mDragColor);
             mDragBorder = new CompoundBorder(
-                new EmptyBorder(2, 1, 2, 1),
+                new EmptyBorder(3, 2, 1, 2),
                 innerBorder);
         }
         setBorder(mStandardBorder);

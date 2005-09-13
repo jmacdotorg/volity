@@ -41,39 +41,36 @@ public class RoundLineBorder extends LineBorder
 
     public void paintBorder(Component c, Graphics  g,
         int x, int y, int width, int height) {
-        Color oldColor = g.getColor();
+
+        Graphics2D g2 = (Graphics2D)g;
+        RenderingHints hints = new RenderingHints(
+            RenderingHints.KEY_ANTIALIASING,
+            RenderingHints.VALUE_ANTIALIAS_ON);
+        hints.put(
+            RenderingHints.KEY_RENDERING,
+            RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHints(hints);
+
+        Color oldColor = g2.getColor();
+        Stroke oldStroke = g2.getStroke();
 
         try {
-            int rad = thickness + 2*mRadius;
+            int diameter = 2*mRadius;
 
             if (mFillColor != null) {
-                g.setColor(mFillColor);
-                g.fillRoundRect(x, y, width, height, rad, rad);
+                g2.setColor(mFillColor);
+                g2.fillRoundRect(x, y, width-1, height-1, diameter, diameter);
             }
- 
-            g.setColor(lineColor);
 
-            /* If width and height were not adjusted, the border would
-             * appear one pixel too large in both directions.
-             */
-            width -= 1;
-            height -= 1;
-
-            for (int i = 0; i < thickness; i++) {
-                g.drawRoundRect(x, y, width, height, rad, rad);
-
-                rad -= 2;
-                if (rad < 0)
-                    rad = 0;
-                x += 1;
-                y += 1;
-                width -= 2;
-                height -= 2;
-            }
+            g2.setStroke(new BasicStroke(thickness));
+            g2.setColor(lineColor);
+            g2.drawRoundRect(x+thickness/2, y+thickness/2,
+                width - thickness, height - thickness, 
+                diameter, diameter);
         }
         finally {
-            g.setColor(oldColor);
+            g2.setColor(oldColor);
+            g2.setStroke(oldStroke);
         }
-        
     }
 }
