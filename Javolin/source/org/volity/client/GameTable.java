@@ -3,6 +3,7 @@ package org.volity.client;
 import java.util.*;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
@@ -28,6 +29,9 @@ public class GameTable extends MultiUserChat {
     protected String refereeRoomJID;
     protected Referee referee;
 
+    protected List mQueuedMessages = new ArrayList();
+    protected PacketListener mInternalListener;
+    protected PacketListener mExternalListener;
 
     /**
      * @param connection an authenticated connection to an XMPP server.
@@ -76,6 +80,46 @@ public class GameTable extends MultiUserChat {
                 }
             });
 
+        /*
+         * Rather than letting the application set a MessageListener on this
+         * MUC, we gather all messages ourself -- that's mInternalListener --
+         * and queue them up. When the app is ready, it will call
+         * setQueuedMessageListener, which returns the backlog as well as
+         * subsequent messages.
+         *
+         * This scheme is simple, but it has the drawback that only one caller
+         * can be attached (via setQueuedMessageListener) at a time. If more
+         * are needed, we have modify this system.
+         *
+         * (I tried a scheme where the mInternalListener shuts down and hands
+         * off to a new MessageListener. Failed miserably due to weird Smack
+         * queuing -- messages were getting lost. Stick to this scheme.)
+         */
+        mExternalListener = null;
+        mInternalListener = new PacketListener() {
+                public void processPacket(Packet packet) {
+                    if (packet instanceof Message) {
+                        if (mExternalListener == null) {
+                            mQueuedMessages.add(packet);
+                        }
+                        else {
+                            mExternalListener.processPacket(packet);
+                        }
+                    }
+                }
+            };
+        addMessageListener(mInternalListener);
+
+    }
+
+    /** Customization: Leave the MUC */
+    public void leave() {
+        if (mInternalListener != null) {
+            removeMessageListener(mInternalListener);
+            mInternalListener = null;
+        }
+        mExternalListener = null;
+        super.leave();
     }
 
     /** Get the XMPP connection associated with this table. */
@@ -113,6 +157,35 @@ public class GameTable extends MultiUserChat {
             }
         }
         return opponents;
+    }
+
+    /**
+     * It's possible that the creator of the GameTable will ask it to join()
+     * before setting up listeners for MUC messages. If that happens, the first
+     * burst of messages could be lost.
+     *
+     * To prevent that, the GameTable itself saves those messages. When the
+     * creator is ready, it calls setQueuedMessageListener(l) instead of
+     * setting a listener directly on the MUC. All the saved messages will be
+     * passed to l immediately, and incoming messages will go to l thereafter.
+     *
+     * It is safe to call this before join(); in that case it is functionally
+     * equivalent to setting a direct listener.
+     */
+    public void setQueuedMessageListener(PacketListener listener) {
+        if (mExternalListener != null) {
+            throw new AssertionError("Cannot set two QueuedMessageListener on a Gametable");
+        }
+
+        mExternalListener = listener;
+        while (mQueuedMessages.size() > 0) {
+            Message msg = (Message)mQueuedMessages.remove(0);
+            mExternalListener.processPacket(msg);
+        }
+    }
+
+    public void clearQueuedMessageListener() {
+        mExternalListener = null;
     }
 
     /***** Table readiness change methods *****/

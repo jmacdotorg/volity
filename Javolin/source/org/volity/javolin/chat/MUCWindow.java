@@ -29,6 +29,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
 import org.jivesoftware.smackx.*;
 import org.jivesoftware.smackx.muc.*;
+import org.jivesoftware.smackx.packet.DelayInformation;
 import org.volity.javolin.*;
 
 /**
@@ -39,6 +40,9 @@ public class MUCWindow extends JFrame implements PacketListener
     private final static String NODENAME = "MUCWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
     private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
+
+    private final static Color colorCurrentTimestamp = Color.BLACK;
+    private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
 
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
@@ -282,28 +286,46 @@ public class MUCWindow extends JFrame implements PacketListener
         {
             String nick = null;
             String addr = msg.getFrom();
+            Date date = null;
 
             if (addr != null)
             {
                 nick = StringUtils.parseResource(addr);
             }
 
-            writeMessageText(nick, msg.getBody());
+            PacketExtension ext = msg.getExtension("x", "jabber:x:delay");
+            if (ext != null && ext instanceof DelayInformation) 
+            {
+                date = ((DelayInformation)ext).getStamp();
+            }
+
+            writeMessageText(nick, msg.getBody(), date);
         }
     }
 
     /**
      * Appends the given message text to the message text area.
      *
-     * @param nickname  The nickname of the user who sent the message. If null or empty,
-     * it is assumed to have come from the MultiUserChat itself.
+     * @param nickname  The nickname of the user who sent the message.
+     *                  If null or empty, it is assumed to have come from the
+     *                  client or from the MultiUserChat itself.
      * @param message   The text of the message.
+     * @param date      The timestamp of the message. If null, it is assumed
+     *                  to be current.
      */
-    private void writeMessageText(String nickname, String message)
+    private void writeMessageText(String nickname, String message, Date date)
     {
         // Append time stamp
-        Date now = new Date();
-        mMessageText.append("[" + mTimeStampFormat.format(now) + "] ", Color.BLACK);
+        Color dateColor;
+        if (date == null) {
+            date = new Date();
+            dateColor = colorCurrentTimestamp;
+        }
+        else {
+            dateColor = colorDelayedTimestamp;
+        }
+        mMessageText.append("[" + mTimeStampFormat.format(date) + "]  ",
+            dateColor);
 
         // Append received message
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
@@ -317,6 +339,20 @@ public class MUCWindow extends JFrame implements PacketListener
 
         mMessageText.append(nickText + " ", nameColor);
         mMessageText.append(message + "\n", textColor);
+    }
+
+    /**
+     * Appends the given message text to the message text area. The message is
+     * assumed to be current.
+     *
+     * @param nickname  The nickname of the user who sent the message.
+     *                  If null or empty, it is assumed to have come from the
+     *                  client or from the MultiUserChat itself.
+     * @param message   The text of the message.
+     */
+    private void writeMessageText(String nickname, String message)
+    {
+        writeMessageText(nickname, message, null);
     }
 
     /**

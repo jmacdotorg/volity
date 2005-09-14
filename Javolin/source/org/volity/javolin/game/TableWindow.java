@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.*;
 import java.text.*;
 import java.util.*;
+import java.util.List;
 import java.util.prefs.Preferences;
 import java.util.zip.ZipException;
 import javax.swing.*;
@@ -33,6 +34,7 @@ import org.apache.batik.bridge.UpdateManagerEvent;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MUCUser;
 
 import org.volity.client.*;
@@ -61,6 +63,9 @@ public class TableWindow extends JFrame implements PacketListener
     private final static ImageIcon UNREADY_ICON;
     private final static ImageIcon SEAT_ICON;
     private final static ImageIcon UNSEAT_ICON;
+
+    private final static Color colorCurrentTimestamp = Color.BLACK;
+    private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
 
     static {
         READY_ICON = new ImageIcon(TableWindow.class.getResource("Ready_ButIcon.png"));
@@ -281,6 +286,7 @@ public class TableWindow extends JFrame implements PacketListener
                 {
                     // Leave the chat room when the window is closed
                     saveWindowState();
+                    mGameTable.removeMessageListener(TableWindow.this);
                     mGameTable.leave();
                 }
 
@@ -291,8 +297,12 @@ public class TableWindow extends JFrame implements PacketListener
                 }
             });
 
-        // Register as message listener.
-        mGameTable.addMessageListener(this);
+        /* 
+         * We attach to a high-level GameTable message service here, instead of
+         * adding a listener directly to the MUC. This is because the table
+         * might already be joined, and have messages waiting.
+         */
+        mGameTable.setQueuedMessageListener(this);
 
         // We need a StatusListener to adjust button states when this player
         // stands, sits, etc.
@@ -654,13 +664,20 @@ public class TableWindow extends JFrame implements PacketListener
         {
             String nick = null;
             String addr = msg.getFrom();
+            Date date = null;
 
             if (addr != null)
             {
                 nick = StringUtils.parseResource(addr);
             }
 
-            writeMessageText(nick, msg.getBody());
+            PacketExtension ext = msg.getExtension("x", "jabber:x:delay");
+            if (ext != null && ext instanceof DelayInformation) 
+            {
+                date = ((DelayInformation)ext).getStamp();
+            }
+
+            writeMessageText(nick, msg.getBody(), date);
         }
     }
 
@@ -671,12 +688,22 @@ public class TableWindow extends JFrame implements PacketListener
      *                  If null or empty, it is assumed to have come from the
      *                  client or from the MultiUserChat itself.
      * @param message   The text of the message.
+     * @param date      The timestamp of the message. If null, it is assumed
+     *                  to be current.
      */
-    private void writeMessageText(String nickname, String message)
+    private void writeMessageText(String nickname, String message, Date date)
     {
         // Append time stamp
-        Date now = new Date();
-        mMessageText.append("[" + mTimeStampFormat.format(now) + "] ", Color.BLACK);
+        Color dateColor;
+        if (date == null) {
+            date = new Date();
+            dateColor = colorCurrentTimestamp;
+        }
+        else {
+            dateColor = colorDelayedTimestamp;
+        }
+        mMessageText.append("[" + mTimeStampFormat.format(date) + "]  ",
+            dateColor);
 
         // Append received message
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
@@ -694,7 +721,22 @@ public class TableWindow extends JFrame implements PacketListener
 
     /**
      * Appends the given message text to the message text area. The message is
-     * assumed to have come from the client or from the MultiUserChat itself.
+     * assumed to be current.
+     *
+     * @param nickname  The nickname of the user who sent the message.
+     *                  If null or empty, it is assumed to have come from the
+     *                  client or from the MultiUserChat itself.
+     * @param message   The text of the message.
+     */
+    private void writeMessageText(String nickname, String message)
+    {
+        writeMessageText(nickname, message, null);
+    }
+
+    /**
+     * Appends the given message text to the message text area. The message is
+     * assumed to be current, and to have come from the client or from the
+     * MultiUserChat itself.
      *
      * @param message  The text of the message.
      */
