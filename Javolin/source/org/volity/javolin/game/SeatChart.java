@@ -139,10 +139,12 @@ public class SeatChart
             }
         }        
 
+        // The stretchy "observer" panel. (It's stretchy so that the whole
+        // bottom part of the seating UI is a valid drag target.)
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
-        c.fill = GridBagConstraints.HORIZONTAL;
+        c.fill = GridBagConstraints.BOTH;
         c.anchor = GridBagConstraints.NORTH;
         c.weightx = 1;
         c.weighty = 1;

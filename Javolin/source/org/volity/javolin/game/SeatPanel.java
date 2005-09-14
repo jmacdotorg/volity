@@ -175,7 +175,7 @@ public class SeatPanel extends JPanel
             c.weighty = 0;
             c.ipady = 0;
             c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.WEST;
+            c.anchor = GridBagConstraints.NORTHWEST;
             add(label, c);
         }
         
@@ -214,7 +214,7 @@ public class SeatPanel extends JPanel
                 c.weighty = 0;
                 c.ipady = 1;
                 c.fill = GridBagConstraints.HORIZONTAL;
-                c.anchor = GridBagConstraints.WEST;
+                c.anchor = GridBagConstraints.NORTHWEST;
                 add(label, c);
                 count++;
 
@@ -245,7 +245,24 @@ public class SeatPanel extends JPanel
             c.weighty = 0;
             c.ipady = 1;
             c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.WEST;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            add(label, c);
+        }
+
+        if (mIsObserver) {
+            /* The observer panel, unlike the seat panels, can stretch
+             * vertically. We want the player names to stick to the top. So we
+             * put an invisible stretchy label at the bottom; this expands to
+             * fill in the slack. */
+            label = new JLabel(" ", ICON_BLANK, SwingConstants.LEFT);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 1;
+            c.ipady = 1;
+            c.fill = GridBagConstraints.BOTH;
+            c.anchor = GridBagConstraints.NORTHWEST;
             add(label, c);
         }
 
