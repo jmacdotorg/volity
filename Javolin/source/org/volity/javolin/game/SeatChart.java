@@ -217,6 +217,15 @@ public class SeatChart
 
     /***** Methods which implement StatusListener. *****/
 
+    public void stateChanged(int newstate) {
+        System.out.println("Referee in state " + newstate);
+        // redraw seat panels -- italicization may have changed
+        for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
+            Seat seat = (Seat)it.next();
+            adjustOnePanel(seat);
+        }
+    }
+
     public void seatListKnown() {
         System.out.println("Known seats changed.");
         createPanels();

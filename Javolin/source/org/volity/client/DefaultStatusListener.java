@@ -9,6 +9,8 @@ package org.volity.client;
 public class DefaultStatusListener
     implements StatusListener
 {
+    public void stateChanged(int newstate) { }
+
     public void seatListKnown() { }
     public void requiredSeatsChanged() { }
 

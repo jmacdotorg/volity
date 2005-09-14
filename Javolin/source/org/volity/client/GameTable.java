@@ -15,7 +15,18 @@ import org.jivesoftware.smackx.muc.Occupant;
  * The GameTable acts as the client's model for the arrangement of the table --
  * the seats, the players, who is sitting where.
  */
-public class GameTable extends MultiUserChat {
+public class GameTable extends MultiUserChat 
+{
+    /**
+     * Constants for referee states. UNKNOWN means we haven't contacted the
+     * referee yet. SETUP, ACTIVE, SUSPENDED track the referee. (Clients do not
+     * know about referee states "disrupted" or "abandoned"; those fall under
+     * ACTIVE.)
+     */
+    public final static int STATE_UNKNOWN   = 0;
+    public final static int STATE_SETUP     = 1;
+    public final static int STATE_ACTIVE    = 2;
+    public final static int STATE_SUSPENDED = 3;
 
     protected List mPlayers = new ArrayList();
     protected Player mSelfPlayer = null;
@@ -28,6 +39,7 @@ public class GameTable extends MultiUserChat {
     protected XMPPConnection mConnection;
     protected String refereeRoomJID;
     protected Referee referee;
+    protected int mRefereeState = STATE_UNKNOWN;
 
     protected List mQueuedMessages = new ArrayList();
     protected PacketListener mInternalListener;
@@ -375,6 +387,50 @@ public class GameTable extends MultiUserChat {
 	statusListeners.remove(listener);
     }
 
+    /***** Dealing with the referee state *****/
+
+    /**
+     * React to a change in referee state. 
+     */
+    public void setRefereeState(int newstate) {
+        if (newstate != mRefereeState) {
+            mRefereeState = newstate;
+            fireStatusListeners_stateChanged(mRefereeState);
+        }
+    }
+
+    /**
+     * React to a change in referee state (expressed as a string).
+     */
+    public void setRefereeState(String val) {
+        int newstate = STATE_UNKNOWN;
+
+        if (val.equals("setup"))
+            newstate = STATE_SETUP;
+        else if (val.equals("suspended"))
+            newstate = STATE_SUSPENDED;
+        else if (val.equals("active"))
+            newstate = STATE_ACTIVE;
+        else if (val.equals("disrupted"))
+            newstate = STATE_ACTIVE;
+        else if (val.equals("abandoned"))
+            newstate = STATE_ACTIVE;
+
+        setRefereeState(newstate);
+    }
+
+    /**
+     * Get the current known referee state.
+     *
+     *   STATE_UNKNOWN:   The referee has not yet been contacted.
+     *   STATE_SETUP:     New game configuration.
+     *   STATE_ACTIVE:    Game in progress.
+     *   STATE_SUSPENDED: Game suspended for reconfiguration.
+     */
+    public int getRefereeState() {
+        return mRefereeState;
+    }
+
     /***** Dealing with seats *****/
 
     /**
@@ -546,6 +602,13 @@ public class GameTable extends MultiUserChat {
 
     /***** One-liners to notify StatusListeners of table change. *****/
 
+    private void fireStatusListeners_stateChanged(int newstate)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).stateChanged(newstate);
+        }
+    }
+ 
     private void fireStatusListeners_requiredSeatsChanged()
     {
         for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {

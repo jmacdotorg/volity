@@ -157,6 +157,9 @@ public class SeatPanel extends JPanel
     public void adjustNames(Iterator iter) {
         removeAll();
 
+        boolean gameIsActive = 
+            (mChart.mTable.getRefereeState() == GameTable.STATE_ACTIVE);
+
         GridBagConstraints c;
         JLabel label;
         int row = 0;
@@ -186,7 +189,7 @@ public class SeatPanel extends JPanel
                 Player player = (Player)iter.next();
 
                 Font font;
-                if (mIsObserver || player.isReady()) //### or game in progress
+                if (mIsObserver || gameIsActive || player.isReady())
                     font = fontName;
                 else
                     font = fontNameUnready;

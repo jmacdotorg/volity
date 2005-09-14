@@ -34,7 +34,11 @@ import org.apache.batik.bridge.UpdateManagerEvent;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.Form;
+import org.jivesoftware.smackx.FormField;
+import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.MUCUser;
 
 import org.volity.client.*;
@@ -87,6 +91,7 @@ public class TableWindow extends JFrame implements PacketListener
 
     private JButton mReadyButton;
     private JButton mSeatButton;
+    private JLabel mRefereeStatusLabel;
 
     private UserColorMap mUserColorMap;
     private SimpleDateFormat mTimeStampFormat;
@@ -307,19 +312,31 @@ public class TableWindow extends JFrame implements PacketListener
         // We need a StatusListener to adjust button states when this player
         // stands, sits, etc.
         mGameTable.addStatusListener(new DefaultStatusListener() {
+                public void stateChanged(int state) {
+                    String str = "Game status unknown";
+                    switch (state) {
+                    case GameTable.STATE_SETUP:
+                        str = "New game setup";
+                        break;
+                    case GameTable.STATE_ACTIVE:
+                        str = "Game in progress";
+                        break;
+                    case GameTable.STATE_SUSPENDED:
+                        str = "Game suspended";
+                        break;
+                    }
+                    mRefereeStatusLabel.setText(str);
+                    adjustButtons();
+                }
                 public void playerSeatChanged(Player player, 
                     Seat oldseat, Seat newseat) {
                     if (player == mGameTable.getSelfPlayer()) {
-                        boolean flag = (newseat != null);
-                        mReadyButton.setEnabled(flag);
-                        Icon icon = (flag ? SEAT_ICON : UNSEAT_ICON);
-                        mSeatButton.setIcon(icon);
+                        adjustButtons();
                     }
                 }
                 public void playerReady(Player player, boolean flag) {
                     if (player == mGameTable.getSelfPlayer()) {
-                        Icon icon = (flag ? READY_ICON : UNREADY_ICON);
-                        mReadyButton.setIcon(icon);
+                        adjustButtons();
                     }
                 }
             });
@@ -425,15 +442,39 @@ public class TableWindow extends JFrame implements PacketListener
 
         mLoadingComponent = null;
 
+        Referee referee = mGameTable.getReferee();
+
         // Begin the flood of seating/config info.
         try
         {
-            mGameTable.getReferee().send_state();
+            referee.send_state();
         }
         catch (TokenFailure ex) {
             writeMessageText(mTranslator.translate(ex));
         }
         catch (Exception ex) {
+            writeMessageText(ex.toString());
+        }
+
+        /**
+         * When we begin receiving RPCs from the referee, we don't necessarily
+         * know what state the referee is in. (There's no status RPC for that.)
+         * So we have to do a disco query.
+         */
+        try {
+            ServiceDiscoveryManager discoMan = 
+                ServiceDiscoveryManager.getInstanceFor(referee.getConnection());
+            DiscoverInfo info = discoMan.discoverInfo(referee.getResponderJID());
+            Form form = Form.getFormFrom(info);
+            if (form != null) {
+                FormField field = form.getField("state");
+                if (field != null) {
+                    String refState = (String) field.getValues().next();
+                    mGameTable.setRefereeState(refState);
+                }
+            }
+        }
+        catch (XMPPException ex) {
             writeMessageText(ex.toString());
         }
     }
@@ -746,6 +787,56 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
+     * Get the toolbar buttons into the correct state.
+     */
+    private void adjustButtons() {
+        boolean isSeated, isReady, isGameActive;
+
+        isGameActive = 
+            (mGameTable.getRefereeState() == GameTable.STATE_ACTIVE);
+        isSeated = mGameTable.isSelfSeated();
+        isReady = mGameTable.isSelfReady();
+
+        mReadyButton.setEnabled(isSeated && !isGameActive);
+        mSeatButton.setEnabled(!isGameActive);
+
+        if (isSeated) {
+            mSeatButton.setIcon(SEAT_ICON);
+        }
+        else {
+            mSeatButton.setIcon(UNSEAT_ICON);
+        }
+
+        if (isGameActive) {
+            mSeatButton.setToolTipText("The game is in progress");
+        }
+        else {
+            if (isSeated) 
+                mSeatButton.setToolTipText("Stand up");
+            else 
+                mSeatButton.setToolTipText("Sit down");
+        }
+
+        if (isReady) 
+            mReadyButton.setIcon(READY_ICON);
+        else 
+            mReadyButton.setIcon(UNREADY_ICON);
+
+        if (isGameActive) {
+            mReadyButton.setToolTipText("The game is in progress");
+        }
+        else if (!isSeated) {
+            mReadyButton.setToolTipText("You must sit down before you can declare yourself ready");
+        }
+        else {
+            if (isReady) 
+                mReadyButton.setToolTipText("Declare yourself not ready");
+            else
+                mReadyButton.setToolTipText("Declare yourself ready to play");
+        }
+    }
+
+    /**
      * Switches the mGameViewWrapper to show either the loading message or the game view.
      *
      * @param viewStr  The selector for the view, either VIEW_LOADING or VIEW_GAME.
@@ -838,26 +929,32 @@ public class TableWindow extends JFrame implements PacketListener
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
 
+        // The toolbar.
 
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         cPane.add(toolbar, BorderLayout.NORTH);
 
-        /* This is probably a bastardization of the notion of component
-         * orientation. It works, though. Members of the toolbar will appear
-         * right to left, on the right end of the bar. */
-        toolbar.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
-
-        //### tooltips, and adjust them when state changes
-
-        mReadyButton = new JButton(READY_LABEL, UNREADY_ICON);
-        mReadyButton.setEnabled(false);
-        toolbar.add(mReadyButton);
-
         toolbar.addSeparator();
+
+        mRefereeStatusLabel = new JLabel("Connecting...");
+        mRefereeStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        toolbar.add(mRefereeStatusLabel);
+
+        // Blank stretchy component
+        JComponent label = new JLabel("");
+        toolbar.add(label);
+        label.setMaximumSize(new Dimension(32767, 10));
 
         mSeatButton = new JButton(SEAT_LABEL, UNSEAT_ICON);
         toolbar.add(mSeatButton);
+
+        toolbar.addSeparator();
+
+        mReadyButton = new JButton(READY_LABEL, UNREADY_ICON);
+        toolbar.add(mReadyButton);
+
+        adjustButtons();
 
         // Necessary for all windows, for Mac support
         JavolinMenuBar.applyPlatformMenuBar(this);

@@ -7,6 +7,8 @@ package org.volity.client;
  */
 public interface StatusListener 
 {
+    public void stateChanged(int newstate);
+
     public void seatListKnown();
     public void requiredSeatsChanged();
 

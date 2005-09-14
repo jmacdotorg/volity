@@ -39,6 +39,7 @@ public class VolityHandler implements RPCHandler {
 
 	if (methodName.equals("start_game")) {
 	    // The ref is telling us that it's time to start this game.
+            table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
 	    Object method = gameUI.game.get("START", gameUI.scope);
 	    try {
@@ -54,6 +55,7 @@ public class VolityHandler implements RPCHandler {
 	    }		    
 	} else if (methodName.equals("end_game")) {
 	    // The ref is telling us that this game is over.
+            table.setRefereeState(GameTable.STATE_SETUP);
             table.setAllPlayersUnready();
 	    Object method = gameUI.game.get("END", gameUI.scope);
 	    try {
@@ -86,9 +88,11 @@ public class VolityHandler implements RPCHandler {
 	} else if (methodName.equals("state_sent")) {
 	    System.out.println("Game state received.");
 	} else if (methodName.equals("suspend_game")) {
+            table.setRefereeState(GameTable.STATE_SUSPENDED);
             table.setAllPlayersUnready();
 	    System.out.println("Game suspended.");
 	} else if (methodName.equals("resume_game")) {
+            table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
 	    System.out.println("Game resumed.");
 	} else if (methodName.equals("language")) {
