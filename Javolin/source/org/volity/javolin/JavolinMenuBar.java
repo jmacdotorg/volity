@@ -26,6 +26,7 @@ public class JavolinMenuBar extends JMenuBar
     private static JavolinApp mainApplication = null;
     private static List menuBarList = new ArrayList();
 
+    private final static String MENUCMD_ABOUT = "About Javolin...";
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";
     private final static String MENUCMD_QUIT = "Exit";
@@ -34,6 +35,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
 
     private WindowMenu mWindowMenu;
+    private JMenuItem mAboutMenuItem;
     private JMenuItem mConnectMenuItem;
     private JMenuItem mQuitMenuItem;
     private JMenuItem mNewTableAtMenuItem;
@@ -79,18 +81,33 @@ public class JavolinMenuBar extends JMenuBar
         JMenu fileMenu = new JMenu("File");
         setPlatformMnemonic(fileMenu, KeyEvent.VK_F);
 
+        if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
+            // Only needed if there isn't a built-in About menu
+
+            mAboutMenuItem = new JMenuItem(MENUCMD_ABOUT);
+            mAboutMenuItem.addActionListener(this);
+            setPlatformMnemonic(mAboutMenuItem, KeyEvent.VK_A);
+            fileMenu.add(mAboutMenuItem);
+
+            fileMenu.addSeparator();
+        }
+
         mConnectMenuItem = new JMenuItem(MENUCMD_CONNECT);
         mConnectMenuItem.addActionListener(this);
         mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, keyMask));
         setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
         fileMenu.add(mConnectMenuItem);
 
-        fileMenu.addSeparator();
+        if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
+            // Only needed if there isn't a built-in Quit menu
 
-        mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
-        mQuitMenuItem.addActionListener(this);
-        setPlatformMnemonic(mQuitMenuItem, KeyEvent.VK_X);
-        fileMenu.add(mQuitMenuItem);
+            fileMenu.addSeparator();
+
+            mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
+            mQuitMenuItem.addActionListener(this);
+            setPlatformMnemonic(mQuitMenuItem, KeyEvent.VK_X);
+            fileMenu.add(mQuitMenuItem);
+        }
 
         // Chat menu
         JMenu chatMenu = new JMenu("Chat");
@@ -170,7 +187,7 @@ public class JavolinMenuBar extends JMenuBar
         if (mainApplication == null)
             return;
 
-        if (JavolinApp.isRunningOnMac()) {
+        if (PlatformWrapper.isRunningOnMac()) {
             /* If the menu bar isn't attached to the main window (which is to
              * say, if we're on a Mac) then we should include the main window
              * in the menu. */
@@ -204,7 +221,7 @@ public class JavolinMenuBar extends JMenuBar
      * @param key   The keyboard mnemonic.
      */
     private void setPlatformMnemonic(JMenuItem item, int key) {
-        if (!JavolinApp.isRunningOnMac()) {
+        if (!PlatformWrapper.isRunningOnMac()) {
             item.setMnemonic(key);
         }
     }
@@ -216,7 +233,15 @@ public class JavolinMenuBar extends JMenuBar
      * @param e  The ActionEvent received.
      */
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == mConnectMenuItem) {
+        if (e.getSource() == null) {
+            // We don't want surprises; some of the menu items may be null.
+            return; 
+        }
+
+        if (e.getSource() == mAboutMenuItem) {
+            mainApplication.doAbout();
+        }
+        else if (e.getSource() == mConnectMenuItem) {
             mainApplication.doConnectDisconnect();
         }
         else if (e.getSource() == mQuitMenuItem) {
@@ -248,7 +273,7 @@ public class JavolinMenuBar extends JMenuBar
      * does nothing.
      */
     static public void applyPlatformMenuBar(JFrame win) {
-        if (JavolinApp.isRunningOnMac()) {
+        if (PlatformWrapper.isRunningOnMac()) {
             new JavolinMenuBar(win);
         }
     }

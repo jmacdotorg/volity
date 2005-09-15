@@ -40,8 +40,9 @@ import org.volity.javolin.roster.*;
 /**
  * The main application class of Javolin.
  */
-public class JavolinApp extends JFrame implements ActionListener, ConnectionListener,
-    RosterPanelListener, PacketListener, InvitationListener
+public class JavolinApp extends JFrame 
+    implements ActionListener, ConnectionListener,
+               RosterPanelListener, PacketListener, InvitationListener
 {
     private final static String APPNAME = "Javolin";
     private final static String NODENAME = "MainAppWin";
@@ -53,7 +54,7 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     private final static ImageIcon HIDE_UNAVAIL_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
-    private static UIFileCache sUIFileCache = new UIFileCache(isRunningOnMac());
+    private static UIFileCache sUIFileCache = new UIFileCache(PlatformWrapper.isRunningOnMac());
 
     private static TranslateToken sTranslator = new TranslateToken(null);
 
@@ -107,6 +108,16 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         setSize(200, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
+
+        if (PlatformWrapper.applicationMenuHandlersAvailable()) {
+            PlatformWrapper.setApplicationMenuHandlers(
+                new Runnable() {
+                    public void run() { doAbout(); }
+                },
+                new Runnable() {
+                    public void run() { doQuit(); }
+                });
+        }
 
         // Set roster to show/hide unavailable users based on prefs
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
@@ -172,15 +183,8 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
         }
 
-        // Set appropriate properties when running on Mac
-        if (isRunningOnMac())
-        {
-            // Make .app and .pkg files non-traversable as directories in AWT
-            // file choosers
-            System.setProperty("com.apple.macos.use-file-dialog-packages", "true");
-            // Put window menu bars at the top of the screen
-            System.setProperty("apple.laf.useScreenMenuBar", "true");
-        }
+        // Set up system properties and the like.
+        PlatformWrapper.mainInitialize();
 
         JavolinApp mainApp = new JavolinApp();
         mainApp.start();
@@ -234,17 +238,6 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
     }
 
     /**
-     * Tells whether Javolin is running on a Mac platform.
-     *
-     * @return   true if Javolin is currently running on a Mac, false if running on
-     * another platform.
-     */
-    static boolean isRunningOnMac()
-    {
-        return (System.getProperty("mrj.version") != null); // Apple recommended test for Mac
-    }
-
-    /**
      * Tells whether Javolin is currently connected to a Volity server.
      *
      * @return   true if Javolin is currently connected to a Volity server, false
@@ -278,6 +271,15 @@ public class JavolinApp extends JFrame implements ActionListener, ConnectionList
         {
             doChatBut();
         }
+    }
+
+    /**
+     * Handle the About menu item
+     */
+    void doAbout()
+    {
+        AboutBox box = AboutBox.getSoleAboutBox();
+        box.show();        
     }
 
     /**
