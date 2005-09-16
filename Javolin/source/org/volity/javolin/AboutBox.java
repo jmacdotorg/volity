@@ -13,7 +13,7 @@ public class AboutBox extends JFrame
 {
     private final static String NODENAME = "AboutBox";
     private final static int MARGIN = 12; // Space to window edge
-    private final static int GAP = 6; // Space between controls
+    private final static int GAP = 4; // Space between controls
 
     private final static String JAVOLIN_URL = 
         "http://www.volity.org/projects/javolin/";
@@ -110,7 +110,7 @@ public class AboutBox extends JFrame
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
-        c.ipady = 6;
+        c.ipady = 8;
         cPane.add(label, c);
 
         label = new JLabel("Version: N/A", SwingConstants.RIGHT);
@@ -132,13 +132,14 @@ public class AboutBox extends JFrame
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
-        c.ipady = 4;
+        c.ipady = 8;
         cPane.add(label, c);
 
         JTextPane text = new JTextPane();
         text.setEditable(false);
         text.setFocusable(false);
-        text.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        text.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 6));
+        text.setBackground(new Color(240, 229, 207));
         Document doc = text.getDocument();
         SimpleAttributeSet style = new SimpleAttributeSet();
         StyleConstants.setFontFamily(style, "SansSerif");
