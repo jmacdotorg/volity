@@ -129,7 +129,13 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
             GameTable.ReadyListener listener = new GameTable.ReadyListener() {
                     public void ready() {
-                        doJoinCont(gameTable, nickname);
+                        // Called outside Swing thread!
+                        // Invoke into the Swing thread.
+                        SwingUtilities.invokeLater(new Runnable() {
+                                public void run() {
+                                    doJoinCont(gameTable, nickname);
+                                }
+                            });
                     }
                 };
             gameTable.addReadyListener(listener);

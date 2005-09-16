@@ -14,6 +14,17 @@ import org.jivesoftware.smackx.muc.Occupant;
  *
  * The GameTable acts as the client's model for the arrangement of the table --
  * the seats, the players, who is sitting where.
+ *
+ * Note on threading: 
+ *
+ * Everything in this class is triggered by Smack packet listeners. The
+ * PacketListener interface notes that all listening is done in the same
+ * thread. That makes this class simpler (no worries about synchonization), but
+ * it also means that if this code takes a long time, packet reception will
+ * lag.
+ *
+ * Since all the listeners to this code are UI elements, which invoke the Swing
+ * thread, I think we're okay.
  */
 public class GameTable extends MultiUserChat 
 {
@@ -55,6 +66,8 @@ public class GameTable extends MultiUserChat
 
         addParticipantStatusListener(new DefaultParticipantStatusListener() {
                 public void joined(String roomJID) {
+                    // Called outside Swing thread!
+                    // But it doesn't need to do any UI work.
                     Occupant occupant = getOccupant(roomJID);
                     if (occupant == null)
                         return;
@@ -75,6 +88,9 @@ public class GameTable extends MultiUserChat
                  * because it left or was kicked or banned.
                  */
                 void unjoined(String roomJID) {
+                    // Called outside Swing thread!
+                    // But it doesn't need to do any UI work.
+                    //
                     // FIXME: This assumes the referee's nickname doesn't
                     // change!  But keeping track of changed nicknames is
                     // difficult currently.  See
@@ -88,6 +104,7 @@ public class GameTable extends MultiUserChat
 
         addParticipantListener(new PacketListener() {
                 public void processPacket(Packet packet) {
+                    // Called outside Swing thread!
                     rescanOccupantList();
                 }
             });
@@ -110,6 +127,7 @@ public class GameTable extends MultiUserChat
         mExternalListener = null;
         mInternalListener = new PacketListener() {
                 public void processPacket(Packet packet) {
+                    // Called outside Swing thread!
                     if (packet instanceof Message) {
                         if (mExternalListener == null) {
                             mQueuedMessages.add(packet);
@@ -206,6 +224,9 @@ public class GameTable extends MultiUserChat
      * Listener interface for addReadyListener / removeReadyListener. This
      * allows a listener to be notified when the GameTable has successfully
      * joined the MUC and located the referee.
+     *
+     * Note: the listener is notified on a Smack listener thread! Do not
+     * do UI work in your invitationReceived() method.
      */
     public interface ReadyListener {
         /**
@@ -228,6 +249,8 @@ public class GameTable extends MultiUserChat
     /**
      * Notify all listeners that have registered for notification of
      * MUC-joinedness.
+     *
+     * Called outside Swing thread! Calls listeners outside Swing thread!
      */
     private void fireReadyListeners()
     {
@@ -266,11 +289,6 @@ public class GameTable extends MultiUserChat
      * (This code *does* detect nickname changes, but only because it can track
      * the players' real JIDs. In an anonymous MUC, this code falls over and
      * dies.)
-     *
-     * The PacketListener interface notes that all listening is done in the
-     * same thread. That makes this method simpler (no worries about
-     * synchonization), but it also means that if this takes a long time,
-     * packet reception will lag. I think we're okay for the moment.
      */
     protected void rescanOccupantList() {
         Map occupantMap = new HashMap(); // maps JID to Occupant
@@ -601,6 +619,11 @@ public class GameTable extends MultiUserChat
     }
 
     /***** One-liners to notify StatusListeners of table change. *****/
+
+    /*
+     * All these methods are called from Smack, and therefore call their
+     * listeners outside the Swing thread.
+     */
 
     private void fireStatusListeners_stateChanged(int newstate)
     {

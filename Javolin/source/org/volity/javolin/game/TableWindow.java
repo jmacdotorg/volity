@@ -226,25 +226,45 @@ public class TableWindow extends JFrame implements PacketListener
 
         setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
 
+        /* Several components want a callback that prints text in the message
+         * window. However, we don't know that they'll call it in the Swing
+         * thread. So, we'll make a thread-safe wrapper for
+         * writeMessageText. */
+        GameUI.MessageHandler messageHandler = new GameUI.MessageHandler() {
+                public void print(final String msg)
+                {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        writeMessageText(msg);
+                        return;
+                    }
+                    // Otherwise, invoke into the Swing thread.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                writeMessageText(msg);
+                            }
+                        });
+                }
+            };
+
         // Create the SVG object. The third argument is an anonymous
         // TokenTranslationHandler subclass which knows how to print
         // failure messages to the message pane.
         mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
-            new GameUI.MessageHandler()
-            {
-                public void print(String msg)
-                {
-                    writeMessageText(msg);
-                }
-            });
+            messageHandler);
 
         mGameViewport.addUpdateManagerListener(
             new UpdateManagerAdapter()
             {
                 public void managerStarted(UpdateManagerEvent evt)
                 {
-                    mGameViewportStarted = true;
-                    tryFinishInit();
+                    // Called outside Swing thread! (I think?)
+                    // Invoke into the Swing thread. (In case.)
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                mGameViewportStarted = true;
+                                tryFinishInit();
+                            }
+                        });
                 }
             });
 
@@ -254,13 +274,7 @@ public class TableWindow extends JFrame implements PacketListener
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
         mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator,
-            new GameUI.MessageHandler()
-            {
-                public void print(String msg)
-                {
-                    writeMessageText(msg);
-                }
-            });
+            messageHandler);
 
         buildUI();
 
@@ -313,6 +327,8 @@ public class TableWindow extends JFrame implements PacketListener
         // stands, sits, etc.
         mGameTable.addStatusListener(new DefaultStatusListener() {
                 public void stateChanged(int state) {
+                    // Called outside Swing thread!
+                    // (We can do the string picking first, that's thread-safe)
                     String str = "Game status unknown";
                     switch (state) {
                     case GameTable.STATE_SETUP:
@@ -325,19 +341,37 @@ public class TableWindow extends JFrame implements PacketListener
                         str = "Game suspended";
                         break;
                     }
-                    mRefereeStatusLabel.setText(str);
-                    adjustButtons();
+                    final String label = str;
+                    // Invoke into the Swing thread.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                mRefereeStatusLabel.setText(label);
+                                adjustButtons();
+                            }
+                        });
                 }
-                public void playerSeatChanged(Player player, 
+                public void playerSeatChanged(final Player player, 
                     Seat oldseat, Seat newseat) {
-                    if (player == mGameTable.getSelfPlayer()) {
-                        adjustButtons();
-                    }
+                    // Called outside Swing thread!
+                    // Invoke into the Swing thread.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                if (player == mGameTable.getSelfPlayer()) {
+                                    adjustButtons();
+                                }
+                            }
+                        });
                 }
-                public void playerReady(Player player, boolean flag) {
-                    if (player == mGameTable.getSelfPlayer()) {
-                        adjustButtons();
-                    }
+                public void playerReady(final Player player, boolean flag) {
+                    // Called outside Swing thread!
+                    // Invoke into the Swing thread.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                if (player == mGameTable.getSelfPlayer()) {
+                                    adjustButtons();
+                                }
+                            }
+                        });
                 }
             });
 
@@ -388,8 +422,14 @@ public class TableWindow extends JFrame implements PacketListener
             if (!mGameTable.isJoined()) {
                 mGameTable.addReadyListener(new GameTable.ReadyListener() {
                         public void ready() {
-                            mGameTableStarted = true;
-                            tryFinishInit();
+                            // Called outside Swing thread!
+                            // Invoke into the Swing thread.
+                            SwingUtilities.invokeLater(new Runnable() {
+                                    public void run() {
+                                        mGameTableStarted = true;
+                                        tryFinishInit();
+                                    }
+                                });
                         }
                     });
                 mGameTable.join(mNickname);
@@ -421,6 +461,8 @@ public class TableWindow extends JFrame implements PacketListener
      */
     private void tryFinishInit()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         if (!mGameTableStarted || !mGameViewportStarted) 
         {
             // Need both operations finished.
@@ -460,6 +502,9 @@ public class TableWindow extends JFrame implements PacketListener
          * When we begin receiving RPCs from the referee, we don't necessarily
          * know what state the referee is in. (There's no status RPC for that.)
          * So we have to do a disco query.
+         * 
+         * XXX I wish this were asynchronous. Blocking the Swing thread is bad
+         * form.
          */
         try {
             ServiceDiscoveryManager discoMan = 
@@ -658,14 +703,21 @@ public class TableWindow extends JFrame implements PacketListener
     /**
      * PacketListener interface method implementation.
      *
+     * Called outside Swing thread!
+     *
      * @param packet  The packet received.
      */
-    public void processPacket(Packet packet)
+    public void processPacket(final Packet packet)
     {
-        if (packet instanceof Message)
-        {
-            doMessageReceived((Message)packet);
-        }
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    if (packet instanceof Message)
+                    {
+                        doMessageReceived((Message)packet);
+                    }
+                }
+            });
     }
 
     /**
@@ -673,6 +725,8 @@ public class TableWindow extends JFrame implements PacketListener
      */
     private void doSendMessage()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         try
         {
             mGameTable.sendMessage(mInputText.getText());
@@ -692,6 +746,8 @@ public class TableWindow extends JFrame implements PacketListener
      */
     private void doMessageReceived(Message msg)
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         if (msg.getType() == Message.Type.ERROR)
         {
             JOptionPane.showMessageDialog(this, msg.getError().getMessage(),
@@ -734,6 +790,8 @@ public class TableWindow extends JFrame implements PacketListener
      */
     private void writeMessageText(String nickname, String message, Date date)
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         // Append time stamp
         Color dateColor;
         if (date == null) {
@@ -790,6 +848,8 @@ public class TableWindow extends JFrame implements PacketListener
      * Get the toolbar buttons into the correct state.
      */
     private void adjustButtons() {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         boolean isSeated, isReady, isGameActive;
 
         isGameActive = 
@@ -843,7 +903,10 @@ public class TableWindow extends JFrame implements PacketListener
      */
     private void switchView(String viewStr)
     {
-        ((CardLayout)mGameViewWrapper.getLayout()).show(mGameViewWrapper, viewStr);
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        CardLayout layout = ((CardLayout)mGameViewWrapper.getLayout());
+        layout.show(mGameViewWrapper, viewStr);
     }
 
     /**

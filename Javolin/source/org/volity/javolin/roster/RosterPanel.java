@@ -172,6 +172,8 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     private void repopulate()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode)(mTreeModel.getRoot());
 
         // Save selected user ID so we can reselect the node for that user after
@@ -289,20 +291,34 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 
     /**
      * RosterListener interface method implementation.
+     *
+     * Called outside Swing thread!
      */
     public void rosterModified()
     {
-        repopulate();
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    repopulate();
+                }
+            });
     }
 
     /**
      * RosterListener interface method implementation.
      *
+     * Called outside Swing thread!
+     *
      * @param XMPPAddress  The XMPP address of the user whose presence has changed.
      */
     public void presenceChanged(String XMPPAddress)
     {
-        repopulate();
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    repopulate();
+                }
+            });
     }
 
     /**

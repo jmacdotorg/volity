@@ -172,14 +172,21 @@ public class ChatWindow extends JFrame implements PacketListener
     /**
      * PacketListener interface method implementation.
      *
+     * Called outside Swing thread!
+     *
      * @param packet  The packet received.
      */
-    public void processPacket(Packet packet)
+    public void processPacket(final Packet packet)
     {
-        if (packet instanceof Message)
-        {
-            doMessageReceived((Message)packet);
-        }
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    if (packet instanceof Message)
+                    {
+                        doMessageReceived((Message)packet);
+                    }
+                }
+            });
     }
 
     /**
@@ -219,6 +226,8 @@ public class ChatWindow extends JFrame implements PacketListener
      */
     private void doMessageReceived(Message msg)
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         if (msg.getType() == Message.Type.ERROR)
         {
             JOptionPane.showMessageDialog(this, msg.getError().getMessage(),
@@ -243,6 +252,8 @@ public class ChatWindow extends JFrame implements PacketListener
      */
     private void writeMessageText(String nickname, String message)
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         // Append time stamp
         Date now = new Date();
         mMessageText.append("[" + mTimeStampFormat.format(now) + "] ", Color.BLACK);

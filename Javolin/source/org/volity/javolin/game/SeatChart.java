@@ -52,6 +52,14 @@ public class SeatChart
          * we should do createPanels now. If not, this will be a no-op. */
         createPanels();
         adjustPanelLayout();
+        /* Adjust the seats. We iterate over the SeatPanels we've got, not the
+         * Seats in the GameTable. This is to guard against new seats arriving
+         * in the middle of the operation. */
+        adjustOnePanel((Seat)null);
+        for (Iterator it = mSeatPanels.keySet().iterator(); it.hasNext(); ) {
+            String id = (String)it.next();
+            adjustOnePanel(mTable.getSeat(id));
+        }
 
         mTable.addStatusListener(this);
     }
@@ -68,12 +76,14 @@ public class SeatChart
 
     /**
      * Create the SeatPanel objects for all the seats. (Not the "unseated"
-     * panel -- that's created at constructor time.)
+     * panel -- that's created directly by the constructor.)
      *
      * The SeatChart expects this to be called exactly once; or, if called
      * again, to contain the same list as before.
      */
     protected void createPanels() {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
             Seat seat = (Seat)it.next();
             String id = seat.getID();
@@ -90,6 +100,8 @@ public class SeatChart
      * Call this after any event which might have changed panel visibility.
      */
     protected void checkPanelVisibility() {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         boolean changes = false;
 
         for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
@@ -118,6 +130,8 @@ public class SeatChart
      * relies on checkPanelVisibility having been called.
      */
     protected void adjustPanelLayout() {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         mPanel.removeAll();
 
         GridBagConstraints c;
@@ -160,6 +174,8 @@ public class SeatChart
      * @param player rebuild the panel this player is sitting (or standing) in.
      */
     protected void adjustOnePanel(Player player) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         adjustOnePanel(player.getSeat());
     }
 
@@ -171,6 +187,8 @@ public class SeatChart
      *     "unseated" panel.)
      */
     protected void adjustOnePanel(Seat seat) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         SeatPanel panel;
         if (seat == null) {
             panel = mUnseatPanel;
@@ -191,6 +209,8 @@ public class SeatChart
      * @param seatid the seat to sit in (or null to stand).
      */
     protected void requestSeatChange(String jid, String seatid) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         Seat seat;
         Player player;
 
@@ -217,56 +237,97 @@ public class SeatChart
 
     /***** Methods which implement StatusListener. *****/
 
+    /* All these methods are called from outside the Swing thread. */
+
     public void stateChanged(int newstate) {
-        System.out.println("Referee in state " + newstate);
-        // redraw seat panels -- italicization may have changed
-        for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
-            Seat seat = (Seat)it.next();
-            adjustOnePanel(seat);
-        }
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    // redraw seat panels -- italicization may have changed
+                    for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
+                        Seat seat = (Seat)it.next();
+                        adjustOnePanel(seat);
+                    }
+                }
+            });
     }
 
     public void seatListKnown() {
-        System.out.println("Known seats changed.");
-        createPanels();
-        adjustPanelLayout();
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    createPanels();
+                    adjustPanelLayout();
+                }
+            });
     }
+
     public void requiredSeatsChanged() {
-        System.out.println("Required seats changed.");
-        checkPanelVisibility();
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    checkPanelVisibility();
+                }
+            });
     }
 
-    public void playerJoined(Player player) {
-        System.out.println("Player joined: " + player.getJID() + " (" + player.getNick() + ")");
-        adjustOnePanel(player);
-        checkPanelVisibility();
-    }
-    public void playerLeft(Player player) {
-        System.out.println("Player left: " + player.getJID() + " (" + player.getNick() + ")");
-        adjustOnePanel(player);
-        checkPanelVisibility();
-    }
-    public void playerNickChanged(Player player, String oldNick) {
-        System.out.println("Player nickname changed: " + player.getJID() + " (" + player.getNick() + "), was (" + oldNick + ")");
-        mUserColorMap.changeUserName(oldNick, player.getNick());
-        adjustOnePanel(player);
+    public void playerJoined(final Player player) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    adjustOnePanel(player);
+                    checkPanelVisibility();
+                }
+            });
     }
 
-    public void playerSeatChanged(Player player, Seat oldseat, Seat newseat) {
-        String oldid = "<unseated>";
-        String newid = "<unseated>";
-        if (oldseat != null)
-            oldid = oldseat.getID();
-        if (newseat != null)
-            newid = newseat.getID();
-        System.out.println("Player seat: " + player.getJID() + " from " + oldid + " to " + newid);
-        adjustOnePanel(oldseat);
-        adjustOnePanel(newseat);
-        checkPanelVisibility();
+    public void playerLeft(final Player player) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    adjustOnePanel(player);
+                    checkPanelVisibility();
+                }
+            });
     }
-    public void playerReady(Player player, boolean flag) {
-        System.out.println("Player ready: " + player.getJID() + ": " + flag);
-        adjustOnePanel(player);
+
+    public void playerNickChanged(final Player player, final String oldNick) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    mUserColorMap.changeUserName(oldNick, player.getNick());
+                    adjustOnePanel(player);
+                }
+            });
+    }
+
+    public void playerSeatChanged(Player player, 
+        final Seat oldseat, final Seat newseat) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    adjustOnePanel(oldseat);
+                    adjustOnePanel(newseat);
+                    checkPanelVisibility();
+                }
+            });
+    }
+
+    public void playerReady(final Player player, boolean flag) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    adjustOnePanel(player);
+                }
+            });
     }
 
 }

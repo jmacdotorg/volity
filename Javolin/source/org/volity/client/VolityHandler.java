@@ -15,6 +15,9 @@ import org.volity.jabber.*;
 /**
  * A handler for volity-namespace RPC calls.
  *
+ * All of this code is called in Smack threads. All of what it does is call
+ * GameTable methods, which are safe to call in Smack threads.
+ *
  * @author Jason McIntosh <jmac@jmac.org>
  */
 public class VolityHandler implements RPCHandler {

@@ -24,7 +24,11 @@ public class InvitationManager implements PacketFilter, RPCHandler {
   RPCResponder responder;
   List listeners = new ArrayList();
 
-  /** Add a game table invitation listener. */
+  /**
+   * Add a game table invitation listener.
+   * Note: the listener is notified on a Smack listener thread! Do not
+   * do UI work in your invitationReceived() method.
+   */
   public void addInvitationListener(InvitationListener listener) {
     listeners.add(listener);
   }

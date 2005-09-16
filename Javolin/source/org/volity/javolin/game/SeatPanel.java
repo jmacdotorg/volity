@@ -155,6 +155,8 @@ public class SeatPanel extends JPanel
      * label either.
      */
     public void adjustNames(Iterator iter) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         removeAll();
 
         boolean gameIsActive = 

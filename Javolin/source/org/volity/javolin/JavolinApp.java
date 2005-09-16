@@ -186,8 +186,20 @@ public class JavolinApp extends JFrame
         // Set up system properties and the like.
         PlatformWrapper.mainInitialize();
 
-        JavolinApp mainApp = new JavolinApp();
-        mainApp.start();
+        /* Invoke into the Swing thread to create the JavolinApp.
+         *
+         * We do this because all our UI code is sprinkled with asserts that
+         * we're *in* the Swing thread. It's legal to *create* Swing components
+         * from other threads, but we are conservative and do the creation in
+         * the Swing thread. This lets us use tighter asserts.
+         */
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+                    JavolinApp mainApp = new JavolinApp();
+                    mainApp.start();
+                }
+            });
     }
 
     /**
@@ -306,6 +318,8 @@ public class JavolinApp extends JFrame
      */
     void doConnect()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         ConnectDialog connDlg = new ConnectDialog(this);
         connDlg.show();
         mConnection = connDlg.getConnection();
@@ -384,6 +398,8 @@ public class JavolinApp extends JFrame
      */
     void doDisconnect()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         // Close all Chat windows
         while (mChatWindows.size() > 0)
         {
@@ -658,6 +674,8 @@ public class JavolinApp extends JFrame
      */
     private void updateUI()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         // Update connected/disconnected icon
         if (isConnected())
         {
@@ -683,6 +701,8 @@ public class JavolinApp extends JFrame
      */
     private void updateToolBarButtons()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         // Toggle icon and tool tip text of show/hide unavailable users button
         if (mShowUnavailUsers)
         {
@@ -705,32 +725,63 @@ public class JavolinApp extends JFrame
 
     /**
      * ConnectionListener interface method implementation. Does nothing.
+     *
+     * Called outside Swing thread!
      */
     public void connectionClosed()
     {
+        // No need to invoke the Swing thread, because we don't do anything.
     }
 
     /**
      * ConnectionListener interface method implementation. Alerts the user that the
      * connection was lost.
      *
+     * Called outside Swing thread!
+     *
      * @param ex  The exception.
      */
-    public void connectionClosedOnError(Exception ex)
+    public void connectionClosedOnError(final Exception ex)
     {
-        JOptionPane.showMessageDialog(this, "Connection closed due to exception:\n" +
-            ex.toString(), getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    JOptionPane.showMessageDialog(JavolinApp.this,
+                        "Connection closed due to exception:\n" + ex.toString(),
+                        getAppName() + ": Error",
+                        JOptionPane.ERROR_MESSAGE);
 
-        doDisconnect();
+                    doDisconnect();
+                }
+            });
     }
 
     /**
      * InvitationListener interface method implementation.
      *
+     * Called outside Swing thread!
+     *
      * @param invitation  The invitation that was received.
      */
-    public void invitationReceived(Invitation invitation)
+    public void invitationReceived(final Invitation invitation)
     {
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    doInvitationReceived(invitation);
+                }
+            });
+    }
+
+    /**
+     * Handle an invitation.
+     *
+     * @param invitation  The invitation that was received.
+     */
+    private void doInvitationReceived(Invitation invitation)
+    {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         String text = invitation.getPlayerJID() + " has invited you to join a game.";
         String message = invitation.getMessage();
         if (message != null)
@@ -843,26 +894,34 @@ public class JavolinApp extends JFrame
     /**
      * PacketListener interface method implementation. Handles incoming chat messages.
      *
+     * Called outside Swing thread!
+     *
      * @param packet  The packet received.
      */
-    public void processPacket(Packet packet)
+    public void processPacket(final Packet packet)
     {
-        if (packet instanceof Message)
-        {
-            Message message = (Message)packet;
-            String remoteId = StringUtils.parseBareAddress(message.getFrom());
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    if (packet instanceof Message)
+                    {
+                        Message message = (Message)packet;
+                        String remoteId = StringUtils.parseBareAddress(
+                            message.getFrom());
 
-            // If there is not already a chat window for the current user, create one
-            // and give it the message.
-            ChatWindow chatWin = getChatWindowForUser(remoteId);
+                        // If there is not already a chat window for the
+                        // current user, create one and give it the message.
+                        ChatWindow chatWin = getChatWindowForUser(remoteId);
 
-            if (chatWin == null)
-            {
-                chatWithUser(remoteId);
-                chatWin = getChatWindowForUser(remoteId);
-                chatWin.processPacket(message);
-            }
-        }
+                        if (chatWin == null)
+                        {
+                            chatWithUser(remoteId);
+                            chatWin = getChatWindowForUser(remoteId);
+                            chatWin.processPacket(message);
+                        }
+                    }
+                }
+            });
     }
 
 
