@@ -27,7 +27,7 @@
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
-      deprecation="on" debug="on">
+      deprecation="on" debug="on" source="1.4">
       <include name="org/volity/javolin/**/*.java" />
       <include name="org/volity/client/**/*.java" />
       <include name="org/volity/jabber/**/*.java" />
@@ -44,7 +44,7 @@
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
     <javac srcdir="${src}" destdir="${build}" classpathref="class.path"
-      deprecation="on" debug="on">
+      deprecation="on" debug="on" source="1.4">
       <include name="org/volity/testbench/**/*.java" />
     </javac>
   </target>
