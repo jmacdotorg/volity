@@ -91,13 +91,18 @@
   <target name="doc"
         description="generate Javadocs" >
     <javadoc destdir="${doc}" classpathref="class.path" 
-      windowtitle="Javolin API">
+      windowtitle="Javolin API" source="1.4">
       <packageset dir="${src}"/>
       <link href="http://java.sun.com/j2se/1.4.2/docs/api/"/>
       <link href="http://xml.apache.org/batik/javadoc/"/>
       <link href="http://www.mozilla.org/rhino/apidocs/"/>
       <link href="http://www.jivesoftware.org/builds/smack/docs/1.5.1/javadoc/"/>
     </javadoc>
+  </target>
+
+  <target name="all" depends="archive, testbench, doc"
+        description="build all targets" >
+    <!-- Build everything -->
   </target>
 
   <target name="clean" depends="cleanbuild"
