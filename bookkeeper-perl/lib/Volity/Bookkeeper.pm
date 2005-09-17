@@ -127,6 +127,7 @@ sub handle_disco_info_request {
 	}
     } else {
 	$identity->name('the volity.net bookkeeper');
+	$fields{"volity-role"} = ["bookkeeper"];
     }
     
     push (@items, $identity);
