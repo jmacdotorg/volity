@@ -1552,7 +1552,7 @@ sub handle_disco_info_request {
     push (@items, $identity);
     # Now build up our list of JEP-0128 data form fields.
     my @fields;
-    foreach ('max-players', 'server', 'table', 'state', 'players', 'language', 'name') {
+    foreach ('max-players', 'parlor', 'table', 'state', 'players', 'language', 'name', 'volity-role') {
 	push (@fields, Volity::Jabber::Form::Field->new({var=>$_}));
     }
     my $game_class = $self->game_class;
@@ -1563,6 +1563,7 @@ sub handle_disco_info_request {
     $fields[4]->values(scalar($self->players));
     $fields[5]->values($self->language);
     $fields[6]->values($self->name);
+    $fields[7]->values('referee');
     $self->send_disco_info({
 	to=>$iq->attr('from'),
 	id=>$iq->attr('id'),

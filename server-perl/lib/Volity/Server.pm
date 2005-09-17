@@ -294,13 +294,17 @@ sub handle_disco_info_request {
     my @fields;
     # We must perform these two separate loops since some info is found
     # on the server object, and some on the loaded game module class.
-    foreach (qw(description ruleset ruleset_version website)) {
+    foreach (qw(description ruleset ruleset_version website volity-role)) {
 	my $field_name;
 	my $value;
 	if ($_ eq 'ruleset') {
 	    $value = $game_class->uri;
 	} else {
-	    $value = $game_class->$_;
+	    if ($_ eq 'volity-role') {
+		$value = 'parlor';
+	    } else {
+		$value = $game_class->$_;
+	    }
 	}
 	$field_name = $_;
 	$field_name =~ s/_/-/g;
