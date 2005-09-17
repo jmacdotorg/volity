@@ -65,6 +65,12 @@ game -- the base class used to develop a new game
 
 * Version history:
 
+- 1.3.3:
+The referee is no longer confused by a player whose MUC affiliation is
+    'owner'.
+Updated disco code to support the 'volity-role' field.
+Changed 'server' field in the referee disco to 'parlor'.
+
 - 1.3.2:
 The referee no longer sends player_unready calls when volity.* RPCs
     cause all players to become unready. The client must know that

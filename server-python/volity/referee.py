@@ -95,7 +95,8 @@ class Referee(volent.VolEntity):
         
         # assumes resource didn't change
         form = jabber.dataform.DataForm()
-        form.addfield('server', unicode(self.parlor.jid))
+        form.addfield('parlor', unicode(self.parlor.jid))
+        form.addfield('volity-role', 'referee')
         form.addfield('table', unicode(self.muc))
         # The following are adjusted in updatediscoinfo().
         form.addfield('state', '')
@@ -239,9 +240,10 @@ class Referee(volent.VolEntity):
             if (xnod):
                 inod = xnod.getchild('item')
                 jidstr = inod.getattr('jid')
-                affil = inod.getattr('affiliation')
-                if (jidstr and affil != 'owner'):
+                if (jidstr):
                     jid = interface.JID(jidstr)
+                    if (jid == self.jid):
+                        self.log.error('our own JID %s showed up with resource "%s"', jidstr, resource)
                     if (typestr == ''):
                         self.playerarrived(jid, resource)
                         self.activitytime = time.time()
@@ -1265,6 +1267,8 @@ class RefVolityOpset(rpc.MethodOpset):
             raise Exception('sender could not be found')
         self.referee.sendfullstate(player)
         return None
+
+    ### def rpc_invite_player
 
         
 class RefAdminOpset(rpc.MethodOpset):

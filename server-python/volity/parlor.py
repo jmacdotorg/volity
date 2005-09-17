@@ -61,6 +61,7 @@ class Parlor(volent.VolEntity):
         form = jabber.dataform.DataForm()
         form.addfield('description', gameclass.gamedescription)
         form.addfield('ruleset', gameclass.ruleseturi)
+        form.addfield('volity-role', 'parlor')
         form.addfield('ruleset-version', gameclass.rulesetversion)
         val = gameclass.websiteurl
         if (not val):
