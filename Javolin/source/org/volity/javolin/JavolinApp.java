@@ -30,6 +30,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
+import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
 
@@ -348,6 +349,15 @@ public class JavolinApp extends JFrame
             InvitationManager im = new InvitationManager(mConnection);
             im.addInvitationListener(this);
             im.start();
+        }
+
+        if (mConnection != null)
+        {
+            ServiceDiscoveryManager discoMan = 
+                ServiceDiscoveryManager.getInstanceFor(mConnection);
+            // XXX If ServiceDiscoveryManager supported returning forms
+            // to disco#info queries, we would want to return a form
+            // containing "volity-role" : "player".
         }
 
         // Update the UI

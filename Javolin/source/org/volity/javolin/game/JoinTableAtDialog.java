@@ -233,8 +233,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
             Form form = Form.getFormFrom(info);
             if (form != null) {
-                // This form field is still called "server", not "parlor".
-                FormField field = form.getField("server");
+                FormField field = form.getField("parlor");
                 if (field != null)
                     serverID = (String) field.getValues().next();
             }

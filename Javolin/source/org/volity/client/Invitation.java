@@ -35,7 +35,7 @@ public class Invitation {
    * if it was not provided in the invitation.
    */
   public String getGameServerJID() {
-    return (String) fields.get("server");
+    return (String) fields.get("parlor");
   }
 
   /**
