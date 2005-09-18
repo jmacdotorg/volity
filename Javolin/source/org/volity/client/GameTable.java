@@ -3,11 +3,15 @@ package org.volity.client;
 import java.util.*;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.packet.Message;
-import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.Form;
+import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
+import org.jivesoftware.smackx.muc.Occupant;
+import org.jivesoftware.smackx.packet.DiscoverInfo;
 
 /**
  * A game table (a Multi-User Chat room for playing a Volity game).
@@ -48,11 +52,11 @@ public class GameTable extends MultiUserChat
     protected List readyListeners = new ArrayList();
 
     protected XMPPConnection mConnection;
-    protected String refereeRoomJID;
-    protected Referee referee;
+    protected Referee mReferee;
     protected int mRefereeState = STATE_UNKNOWN;
 
     protected List mQueuedMessages = new ArrayList();
+    protected PacketListener mParticipantListener;
     protected PacketListener mInternalListener;
     protected PacketListener mExternalListener;
 
@@ -64,50 +68,13 @@ public class GameTable extends MultiUserChat
         super(connection, room);
         mConnection = connection;
 
-        addParticipantStatusListener(new DefaultParticipantStatusListener() {
-                public void joined(String roomJID) {
-                    // Called outside Swing thread!
-                    // But it doesn't need to do any UI work.
-                    Occupant occupant = getOccupant(roomJID);
-                    if (occupant == null)
-                        return;
-                    if (isReferee(occupant)) {
-                        refereeRoomJID = roomJID;
-                        referee = new Referee(GameTable.this, occupant.getJid());
-                        if (!mInitialJoined) {
-                            mInitialJoined = true;
-                            fireReadyListeners();
-                        }
-                    }
-                }
-                public void left(String roomJID) { unjoined(roomJID); }
-                public void kicked(String roomJID) { unjoined(roomJID); }
-                public void banned(String roomJID) { unjoined(roomJID); }
-                /**
-                 * Called when an occupant is no longer in the room, either
-                 * because it left or was kicked or banned.
-                 */
-                void unjoined(String roomJID) {
-                    // Called outside Swing thread!
-                    // But it doesn't need to do any UI work.
-                    //
-                    // FIXME: This assumes the referee's nickname doesn't
-                    // change!  But keeping track of changed nicknames is
-                    // difficult currently.  See
-                    // http://www.jivesoftware.org/issues/browse/SMACK-55.
-                    if (roomJID.equals(refereeRoomJID)) {
-                        refereeRoomJID = null;
-                        referee = null;
-                    }
-                }
-            });
-
-        addParticipantListener(new PacketListener() {
+        mParticipantListener = new PacketListener() {
                 public void processPacket(Packet packet) {
                     // Called outside Swing thread!
                     rescanOccupantList();
                 }
-            });
+            };
+        addParticipantListener(mParticipantListener);
 
         /*
          * Rather than letting the application set a MessageListener on this
@@ -144,6 +111,11 @@ public class GameTable extends MultiUserChat
 
     /** Customization: Leave the MUC */
     public void leave() {
+        // Turn off all our listeners.
+        if (mParticipantListener != null) {
+            removeParticipantListener(mParticipantListener);
+            mParticipantListener = null;
+        }
         if (mInternalListener != null) {
             removeMessageListener(mInternalListener);
             mInternalListener = null;
@@ -161,34 +133,9 @@ public class GameTable extends MultiUserChat
      * The referee for this table, or null if no referee is connected.
      */
     public Referee getReferee() {
-        return referee;
+        return mReferee;
     }
     
-    /**
-     * Is an occupant the referee?
-     */
-    private boolean isReferee(Occupant occupant) {
-        return occupant.getAffiliation().equals("owner");
-    }
-    
-    /**
-     * Get a list of opponent nicknames, i.e., occupants not including
-     * the referee or myself.
-     */
-    public List getOpponents() {
-        List opponents = new ArrayList();
-        for (Iterator it = getOccupants(); it.hasNext();) {
-            String roomJID = (String) it.next();
-            Occupant occupant = getOccupant(roomJID);
-            if (occupant != null && !isReferee(occupant)) {
-                String nickname = occupant.getNick();
-                if (!getNickname().equals(nickname))
-                    opponents.add(nickname);
-            }
-        }
-        return opponents;
-    }
-
     /**
      * It's possible that the creator of the GameTable will ask it to join()
      * before setting up listeners for MUC messages. If that happens, the first
@@ -250,7 +197,12 @@ public class GameTable extends MultiUserChat
      * Notify all listeners that have registered for notification of
      * MUC-joinedness.
      *
-     * Called outside Swing thread! Calls listeners outside Swing thread!
+     * May be called outside Swing thread! May call listeners outside Swing
+     * thread!
+     *
+     * (Actually, clever people will note that this is called *in* the Swing
+     * thread, thanks to the DiscoBackground class. But let's not rely on
+     * that implementation detail.)
      */
     private void fireReadyListeners()
     {
@@ -289,6 +241,8 @@ public class GameTable extends MultiUserChat
      * (This code *does* detect nickname changes, but only because it can track
      * the players' real JIDs. In an anonymous MUC, this code falls over and
      * dies.)
+     *
+     * Called outside Swing thread!
      */
     protected void rescanOccupantList() {
         Map occupantMap = new HashMap(); // maps JID to Occupant
@@ -326,6 +280,13 @@ public class GameTable extends MultiUserChat
                 if (gonePlayers == null)
                     gonePlayers = new ArrayList();
                 gonePlayers.add(player);
+                if (player.isReferee()) {
+                    // Oh dear. We've lost our referee.
+                    mReferee = null;
+                    // XXX notify somebody?
+                }
+                // XXX if player.isSelf(), then the whole MUC is gone. Should
+                // react the same way to that as to a referee lossage.
             }
         }
         for (Iterator it = occupantMap.entrySet().iterator(); it.hasNext(); ) {
@@ -334,12 +295,26 @@ public class GameTable extends MultiUserChat
             Occupant occ = (Occupant)ent.getValue();
             // this is a new player
             Player player = new Player(jid, occ.getNick(), 
-                jid.equals(mConnection.getUser()), isReferee(occ));
+                jid.equals(mConnection.getUser()));
             if (newPlayers == null)
                 newPlayers = new ArrayList();
             newPlayers.add(player);
             if (player.isSelf())
                 mSelfPlayer = player;
+
+            if (occ.getAffiliation().equals("owner")) {
+                // Fire off a test to see if this owner is the referee.
+                // It probably is, but we want to be sure.
+                DiscoBackground query = new DiscoBackground(mConnection,
+                    new DiscoBackground.Callback() {
+                        public void run(IQ result, XMPPException ex, Object rock) {
+                            if (result != null) {
+                                checkOwnerDisco((DiscoverInfo)result, (Player)rock);
+                            }
+                        }
+                    },
+                    DiscoBackground.QUERY_INFO, jid, player);
+            }
         }
         occupantMap.clear();
 
@@ -367,6 +342,36 @@ public class GameTable extends MultiUserChat
                     pair.oldNick);
             }
         }
+    }
+
+    /**
+     * This is a DiscoBackground callback, so it's running in the Swing thread.
+     */
+    private void checkOwnerDisco(DiscoverInfo info, Player player) {
+        if (player != getPlayerByJID(player.getJID())) {
+            // This player object is obsolete; forget it.
+            return;
+        }
+
+        Form form = Form.getFormFrom(info);
+        if (form != null) {
+            FormField field = form.getField("volity-role");
+            if (field != null) {
+                String role = (String) field.getValues().next();
+                if (role.equals("referee") && mReferee == null) {
+                    /* It appears we have found our referee! Or re-found it,
+                     * perhaps (if the first one disconnected) */
+                    player.setReferee(true);
+                    mReferee = new Referee(GameTable.this, player.getJID());
+                    if (!mInitialJoined) {
+                        mInitialJoined = true;
+                        fireReadyListeners();
+                    }
+                    fireStatusListeners_playerIsReferee(player);
+                }
+            }
+        }
+        
     }
 
     /** Return an iterator of all the Player objects. */
@@ -665,6 +670,13 @@ public class GameTable extends MultiUserChat
     {
         for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
             ((StatusListener)iter.next()).playerNickChanged(player, oldNick);
+        }
+    }
+ 
+    private void fireStatusListeners_playerIsReferee(Player player)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).playerIsReferee(player);
         }
     }
  

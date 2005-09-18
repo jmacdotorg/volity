@@ -24,12 +24,11 @@ public class Player {
      * @param jid the (real) JID of the MUC member
      * @param nick the nickname of the player in the MUC
      * @param isself is this you?
-     * @param isref is the MUC member the referee?
      */
-    public Player(String jid, String nick, boolean isself, boolean isref) {
+    public Player(String jid, String nick, boolean isself) {
         mIsSelf = isself;
-        mIsReferee = isref;
         mJID = jid;
+        mIsReferee = false;
         mNick = nick;
         mSeat = null;
         mIsReady = false;
@@ -64,6 +63,11 @@ public class Player {
     /** Does this Player represent the referee? */
     public boolean isReferee() {
         return mIsReferee;
+    }
+
+    /** Record whether the player is the referee. */
+    protected void setReferee(boolean val) {
+        mIsReferee = val;
     }
 
     /** Is this player marked "ready"? */

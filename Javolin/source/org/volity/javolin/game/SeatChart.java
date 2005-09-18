@@ -296,6 +296,18 @@ public class SeatChart
             });
     }
 
+    public void playerIsReferee(final Player player) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    mUserColorMap.changeUserColor(player.getJID(),
+                        player.getNick(), Color.GRAY);
+                    adjustOnePanel(player);
+                }
+            });
+    }
+
     public void playerNickChanged(final Player player, final String oldNick) {
         // Called outside Swing thread!
         // Invoke into the Swing thread.

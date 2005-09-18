@@ -213,6 +213,23 @@ public class UserColorMap
         }
     }
 
+    /** 
+     * Set up a color entry for a user. This overwrites any existing entry; you
+     * should use setUserColor if you don't have a reason to be invasive.
+     *
+     * The given color will become the user's NameColor; the TextColor will be
+     * a darker version of it.
+     *
+     * @param user  The user to set the colors for.
+     * @param nick  An alternate name for the user.
+     */
+    public void changeUserColor(String user, String nick, Color col)
+    {
+        ColorEntry ent = new ColorEntry(col);
+        mHueMap.put(user, ent);
+        mHueMap.put(nick, ent);
+    }
+
     /**
      * Gets name tag color associated with the given user. If there is no color
      * associated with this user, the next available color will be assigned to it.

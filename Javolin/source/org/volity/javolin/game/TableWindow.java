@@ -303,8 +303,11 @@ public class TableWindow extends JFrame implements PacketListener
             {
                 public void windowClosing(WindowEvent we)
                 {
-                    // Leave the chat room when the window is closed
                     saveWindowState();
+                    // Shut down the UI.
+                    if (mGameViewport != null && mGameViewport.getUI() != null)
+                        mGameViewport.getUI().stop();
+                    // Leave the chat room.
                     mGameTable.removeMessageListener(TableWindow.this);
                     mGameTable.leave();
                 }

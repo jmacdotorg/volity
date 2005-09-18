@@ -68,6 +68,14 @@ public class GameUI implements RPCHandler, PacketFilter {
   }
 
   /**
+   * Disconnect the RPC handler and cease work. 
+   * Call this when the user interface (e.g., the window) closes.
+   */
+  public void stop() {
+    responder.stop();
+  }
+
+  /**
    * Initialize game-handling objects: "game", "info", "client", and "rpc".
    * @return the initialized scope
    */
@@ -189,7 +197,6 @@ public class GameUI implements RPCHandler, PacketFilter {
       try {
 	defineProperty("nickname", Info.class, PERMANENT);
 	defineProperty("seat", Info.class, PERMANENT);
-	defineProperty("opponents", Info.class, PERMANENT);
       } catch (PropertyException e) {
 	throw new RuntimeException(e.toString());
       }
@@ -206,17 +213,6 @@ public class GameUI implements RPCHandler, PacketFilter {
     public String getNickname() { return table.getNickname(); }
     public void setNickname(String nickname) throws XMPPException {
       table.changeNickname(nickname);
-    }
-    Scriptable opponents;
-    public Object getOpponents() throws JavaScriptException {
-      List nicknames = table.getOpponents();
-      Context context = Context.getCurrentContext();
-      opponents = context.newArray(scope, nicknames.size());
-      for (Iterator it = nicknames.iterator(); it.hasNext();) {
-	String nickname = (String) it.next();
-	opponents.put(nickname, opponents, context.newObject(scope));
-      }
-      return opponents;
     }
   }
 
@@ -245,11 +241,12 @@ public class GameUI implements RPCHandler, PacketFilter {
     }
   }
 
-  // Inherited from PacketFilter.
+  // Implements PacketFilter interface.
   public boolean accept(Packet packet) {
     // Only accept packets from the referee at this table, because the
     // user might be playing at multiple tables (perhaps even in
     // multiple instances of the application).
+
     if (table == null) return false;
     Referee ref = table.getReferee();
     // If the referee is missing, we should usually assume that this
@@ -265,7 +262,7 @@ public class GameUI implements RPCHandler, PacketFilter {
       ref.getResponderJID().equals(packet.getFrom());
   }
 
-  // Inherited from RPCHandler.
+  // Implements RPCHandler interface.
   public void handleRPC(String methodName, List params, RPCResponseHandler k) {
     Object method = game.get(methodName, scope);
     if (method instanceof Function)
