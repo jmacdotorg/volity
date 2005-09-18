@@ -113,7 +113,7 @@ public class AboutBox extends JFrame
         c.ipady = 8;
         cPane.add(label, c);
 
-        label = new JLabel("Version: N/A", SwingConstants.RIGHT);
+        label = new JLabel("Version: 0.1", SwingConstants.RIGHT);
         label.setFont(new Font("SansSerif", Font.PLAIN, 9));
         c = new GridBagConstraints();
         c.gridx = 0;
