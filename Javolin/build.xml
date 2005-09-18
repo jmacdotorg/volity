@@ -158,6 +158,11 @@
       <include name="org/xml/" />
       <include name="javax/xml/parsers" />
       <include name="javax/xml/transform" />
+      <metainf dir="${build}/META-INF">
+        <include name="smack.providers" />
+        <include name="smack-config.xml" />
+        <include name="services/" />
+      </metainf>
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
         <attribute name="Class-Path" value="${manif.cpath}"/>        
