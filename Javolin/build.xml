@@ -140,11 +140,6 @@
     <unzip src="${lib.loc}/xerces_2_5_0.jar" dest="${build}"/>
     <unzip src="${lib.loc}/xml-apis.jar" dest="${build}"/>
     <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
-    <!-- Transform classpath into space-separated list for manifest -->
-    <pathconvert dirsep="/" pathsep=" " property="manif.cpath" 
-      refid="class.path">
-      <map from="${lib.loc}" to="lib"/>
-    </pathconvert>
     <!-- Put some of ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfilejavolin}" basedir="${build}">
       <include name="org/volity/javolin/" />
@@ -156,8 +151,7 @@
       <include name="org/mozilla/" />
       <include name="org/w3c/" />
       <include name="org/xml/" />
-      <include name="javax/xml/parsers" />
-      <include name="javax/xml/transform" />
+      <include name="javax/" />
       <metainf dir="${build}/META-INF">
         <include name="smack.providers" />
         <include name="smack-config.xml" />
@@ -165,7 +159,6 @@
       </metainf>
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
-        <attribute name="Class-Path" value="${manif.cpath}"/>        
       </manifest> 
     </jar>
   </target>
