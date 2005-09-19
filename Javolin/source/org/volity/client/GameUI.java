@@ -19,9 +19,10 @@ import org.volity.jabber.*;
  */
 public class GameUI implements RPCHandler, PacketFilter {
   /**
-   * (The arguments here are slightly redundant -- we could implement
-   * errorHandler in this class using translator and messageHandler. But then
-   * we'd have to catch more exceptions. Maybe we should do it anyway.)
+   * (The arguments here are slightly redundant -- we could implement the
+   * FailureToken-grabbing part of errorHandler in this class using translator
+   * and messageHandler. But then we'd have to catch more exceptions. Maybe we
+   * should do it anyway.)
    *
    * @param connection an authenticated connection to an XMPP server
    * @param translator a token translation instance
