@@ -192,7 +192,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     return ls;
   }
 
-  class Info extends ScriptableObject {
+  public class Info extends ScriptableObject {
     public String getClassName() { return "Info"; }
     {
       try {
