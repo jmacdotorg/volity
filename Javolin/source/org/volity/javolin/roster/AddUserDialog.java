@@ -87,6 +87,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
         }
         catch (XMPPException ex)
         {
+            new ErrorWrapper(ex);
             JOptionPane.showMessageDialog(this, ex.toString(),
                 JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
         }

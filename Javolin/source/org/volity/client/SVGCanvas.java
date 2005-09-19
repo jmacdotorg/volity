@@ -22,40 +22,57 @@ import org.mozilla.javascript.JavaScriptException;
 import org.volity.jabber.RPCResponseHandler;
 
 public class SVGCanvas extends JSVGCanvas 
-  implements InterpreterFactory, GameUI.ErrorHandler
+    implements InterpreterFactory
 {
-  /**
-   * @param table represents a game table (MUC)
-   * @param uiDocument the top-level SVG document
-   * @param translator service to translate tokens into a string
-   * @param messageHandler service to display a string to the user
-   */
-  public SVGCanvas(GameTable table, URL uiDocument,
-    TranslateToken translator, GameUI.MessageHandler messageHandler) {
-    this(table.getConnection(), uiDocument, translator, messageHandler);
-    this.table = table;
-  }
+    XMPPConnection connection;
+    GameTable table;
+    TranslateToken translator;
+    GameUI.MessageHandler messageHandler;
+    GameUI.ErrorHandler errorHandler;
 
-  /**
-   * @param connection Jabber connection
-   * @param uiDocument the top-level SVG document
-   * @param translator service to translate tokens into a string
-   * @param messageHandler service to display a string to the user
-   */
-  public SVGCanvas(XMPPConnection connection, URL uiDocument,
-    TranslateToken translator, GameUI.MessageHandler messageHandler) {
-    super();
-    this.connection = connection;
-    this.messageHandler = messageHandler;
-    this.translator = translator;
-    setDocumentState(ALWAYS_DYNAMIC);
-    setURI(uiDocument.toString());
-    addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
-	  public void gvtRenderingCompleted(GVTTreeRendererEvent evt) {
-	    forceRedraw();
-	  }
-    });
-  }
+    SVGUI ui;
+    RhinoInterpreter interpreter;
+
+    /**
+     * @param table represents a game table (MUC)
+     * @param uiDocument the top-level SVG document
+     * @param translator service to translate tokens into a string
+     * @param messageHandler service to display a string to the user
+     * @param errorHandler service to display an exception to the user
+     */
+    public SVGCanvas(GameTable table, URL uiDocument,
+        TranslateToken translator,
+        GameUI.MessageHandler messageHandler, 
+        GameUI.ErrorHandler errorHandler) {
+        this(table.getConnection(), uiDocument, translator,
+            messageHandler, errorHandler);
+        this.table = table;
+    }
+    
+    /**
+     * @param connection Jabber connection
+     * @param uiDocument the top-level SVG document
+     * @param translator service to translate tokens into a string
+     * @param messageHandler service to display a string to the user
+     */
+    public SVGCanvas(XMPPConnection connection, URL uiDocument,
+        TranslateToken translator,
+        GameUI.MessageHandler messageHandler,
+        GameUI.ErrorHandler errorHandler) {
+
+        super();
+        this.connection = connection;
+        this.messageHandler = messageHandler;
+        this.errorHandler = errorHandler;
+        this.translator = translator;
+        setDocumentState(ALWAYS_DYNAMIC);
+        setURI(uiDocument.toString());
+        addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
+                public void gvtRenderingCompleted(GVTTreeRendererEvent evt) {
+                    forceRedraw();
+                }
+            });
+    }
   
   /**
    * Kludge to force the component to redraw itself.
@@ -65,11 +82,6 @@ public class SVGCanvas extends JSVGCanvas
 	setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
 	revalidate();
   }  
-
-  XMPPConnection connection;
-  GameTable table;
-  TranslateToken translator;
-  GameUI.MessageHandler messageHandler;
 
   // Inherited from JSVGComponent.
   protected BridgeContext createBridgeContext() {
@@ -112,31 +124,38 @@ public class SVGCanvas extends JSVGCanvas
     return "image/svg+xml";
   } 
 
-  SVGUI ui;
-  RhinoInterpreter interpreter;
-
   public GameUI getUI() { return ui; }
 
   class SVGUI extends GameUI {
     SVGUI() {
       super(connection, SVGCanvas.this.translator, 
-        SVGCanvas.this.messageHandler, SVGCanvas.this);
+        SVGCanvas.this.messageHandler, SVGCanvas.this.errorHandler);
     }
+
     public void handleRPC(final String methodName,
-			  final List params,
-			  final RPCResponseHandler k)
+                          final List params,
+                          final RPCResponseHandler k)
     {
       // Handle the request in the UpdateManager's thread, so the
       // display will be repainted correctly.
       getUpdateManager().getUpdateRunnableQueue().invokeLater(new Runnable() {
-	  public void run() {
+          public void run() {
             // We don't need to call interpreter.enterContext() here, because
             // super.handleRPC calls around to callUIMethod, which does it.
             // That's confusing, but it suffices.
-	    SVGUI.super.handleRPC(methodName, params, k);
-	  }
-	});
+            // Since this is inside an invokeLater, we can't let exceptions
+            // escape -- they'll just slam into a Batik thread and fall on
+            // the floor (i.e., on stdout).
+            try {
+              SVGUI.super.handleRPC(methodName, params, k);
+            }
+            catch (Exception ex) {
+              errorHandler.error(ex);                
+            }
+          }
+        });
     }
+
     public Object callUIMethod(Function method, List params)
       throws JavaScriptException
     {
@@ -149,17 +168,6 @@ public class SVGCanvas extends JSVGCanvas
       } finally {
 	Context.exit();
       }
-    }
-  }
-
-  // Implements error() for GameUI.ErrorHandler.
-  public void error(Exception e) {
-    if (e instanceof TokenFailure) {
-      String msg = translator.translate((TokenFailure)e);
-      messageHandler.print(msg);
-    }
-    else {
-      userAgent.displayError(e);
     }
   }
 

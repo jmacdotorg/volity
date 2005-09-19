@@ -124,6 +124,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         }
         catch (XMPPException ex)
         {
+            new ErrorWrapper(ex);
             String message = ex.toString();
             XMPPError error = ex.getXMPPError();
 
@@ -132,11 +133,11 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                 switch (error.getCode())
                 {
                 case 502:
-                    message = "Error 502: Could not connect to host " +
+                    message = "Could not connect to Jabber host " +
                         mHostNameField.getText() + ".";
                     break;
                 case 401:
-                    message = "Error 401: Unauthorized access to host " +
+                    message = "Unable to log into Jabber host " +
                         mHostNameField.getText() +
                         ".\nMake sure your user name and password are correct.";
                     break;

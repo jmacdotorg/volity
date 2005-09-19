@@ -33,6 +33,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
+    private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
 
     private WindowMenu mWindowMenu;
     private JMenuItem mAboutMenuItem;
@@ -41,6 +42,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mNewTableAtMenuItem;
     private JMenuItem mJoinTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
+    private JMenuItem mShowLastErrorMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -97,6 +99,15 @@ public class JavolinMenuBar extends JMenuBar
         mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, keyMask));
         setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
         fileMenu.add(mConnectMenuItem);
+
+        fileMenu.addSeparator();
+
+        // This one is for debugging, and should be removed for a final
+        // release. Well, hidden, anyway.
+        mShowLastErrorMenuItem = new JMenuItem(MENUCMD_SHOW_LAST_ERROR);
+        mShowLastErrorMenuItem.addActionListener(this);
+        setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
+        fileMenu.add(mShowLastErrorMenuItem);
 
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
             // Only needed if there isn't a built-in Quit menu
@@ -255,6 +266,9 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (e.getSource() == mJoinMucMenuItem) {
             mainApplication.doJoinMuc();
+        }
+        else if (e.getSource() == mShowLastErrorMenuItem) {
+            mainApplication.doShowLastError();
         }
     }
 

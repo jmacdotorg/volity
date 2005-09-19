@@ -230,7 +230,7 @@ public class TableWindow extends JFrame implements PacketListener
          * window. However, we don't know that they'll call it in the Swing
          * thread. So, we'll make a thread-safe wrapper for
          * writeMessageText. */
-        GameUI.MessageHandler messageHandler = new GameUI.MessageHandler() {
+        final GameUI.MessageHandler messageHandler = new GameUI.MessageHandler() {
                 public void print(final String msg)
                 {
                     if (SwingUtilities.isEventDispatchThread()) {
@@ -246,11 +246,31 @@ public class TableWindow extends JFrame implements PacketListener
                 }
             };
 
-        // Create the SVG object. The third argument is an anonymous
-        // TokenTranslationHandler subclass which knows how to print
-        // failure messages to the message pane.
+        /* Some components also want a callback in which they can dump an
+         * arbitrary exception. TokenFailures simply get translated and printed
+         * (with messageHandler). Anything else is printed as an ugly exception
+         * string, but the user can hit "Show Last Error" to see the whole
+         * thing.
+         */
+        GameUI.ErrorHandler errorHandler = new GameUI.ErrorHandler() {
+                public void error(Exception ex) {
+                    if (ex instanceof TokenFailure) {
+                        // No need to display the stack trace of a token failure.
+                        String msg = mTranslator.translate((TokenFailure)ex);
+                        messageHandler.print(msg);
+                        return;
+                    }
+                    // Display a one-line version of the error, and stash the
+                    // whole thing away in ErrorWrapper for debugging
+                    // commands.
+                    new ErrorWrapper(ex);
+                    messageHandler.print(ex.toString());
+                }
+            };
+
+        // Create the SVG object.
         mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
-            messageHandler);
+            messageHandler, errorHandler);
 
         mGameViewport.addUpdateManagerListener(
             new UpdateManagerAdapter()
@@ -395,6 +415,7 @@ public class TableWindow extends JFrame implements PacketListener
                         writeMessageText(mTranslator.translate(ex));
                     }
                     catch (Exception ex) {
+                        new ErrorWrapper(ex);
                         writeMessageText(ex.toString());
                     }
                 }
@@ -414,6 +435,7 @@ public class TableWindow extends JFrame implements PacketListener
                         writeMessageText(mTranslator.translate(ex));
                     }
                     catch (Exception ex) {
+                        new ErrorWrapper(ex);
                         writeMessageText(ex.toString());
                     }
                 }
@@ -444,6 +466,7 @@ public class TableWindow extends JFrame implements PacketListener
         }
         catch (XMPPException ex)
         {
+            new ErrorWrapper(ex);
             JOptionPane.showMessageDialog(this,
                 "Cannot join table:\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
@@ -498,6 +521,7 @@ public class TableWindow extends JFrame implements PacketListener
             writeMessageText(mTranslator.translate(ex));
         }
         catch (Exception ex) {
+            new ErrorWrapper(ex);
             writeMessageText(ex.toString());
         }
 
@@ -523,6 +547,7 @@ public class TableWindow extends JFrame implements PacketListener
             }
         }
         catch (XMPPException ex) {
+            new ErrorWrapper(ex);
             writeMessageText(ex.toString());
         }
     }
@@ -737,6 +762,7 @@ public class TableWindow extends JFrame implements PacketListener
         }
         catch (XMPPException ex)
         {
+            new ErrorWrapper(ex);
             JOptionPane.showMessageDialog(this, ex.toString(),
                 JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
         }

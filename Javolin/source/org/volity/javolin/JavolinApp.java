@@ -184,6 +184,15 @@ public class JavolinApp extends JFrame
         {
         }
 
+        /*
+         * Set up something to catch all exceptions in the UI thread.
+         *
+         * This is a kludge. In Java 1.5, we should use
+         * Thread.setDefaultUncaughtExceptionHandler.
+         */
+        System.setProperty("sun.awt.exception.handler",
+            "org.volity.javolin.ErrorWrapper");
+
         // Set up system properties and the like.
         PlatformWrapper.mainInitialize();
 
@@ -602,6 +611,7 @@ public class JavolinApp extends JFrame
             }
             catch (XMPPException ex)
             {
+                new ErrorWrapper(ex);
                 JOptionPane.showMessageDialog(this, ex.toString(),
                     getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -672,6 +682,7 @@ public class JavolinApp extends JFrame
                 }
                 catch (XMPPException ex)
                 {
+                    new ErrorWrapper(ex);
                     JOptionPane.showMessageDialog(this, ex.toString(),
                         getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -805,6 +816,8 @@ public class JavolinApp extends JFrame
             JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
             options[0]);
 
+        //### finish the stuff below. Error display!
+
         if (choice == 0)
         {
             // Join the table.
@@ -818,9 +831,10 @@ public class JavolinApp extends JFrame
                     TableWindow.makeTableWindow(mConnection, server, table, mConnection.getUser());
                 handleNewTableWindow(tableWindow);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                System.out.println("Invitation: something went wrong.");
+                new ErrorWrapper(ex);
+                System.out.println("Invitation: something went wrong."); //###
             }
             // Show the resulting table window.
         }
@@ -837,6 +851,12 @@ public class JavolinApp extends JFrame
         {
             System.out.println("Got bizarre dialog choice: " + choice);
         }
+    }
+
+    public void doShowLastError() {
+        ErrorWrapper err = ErrorWrapper.getLastError();
+        JFrame box = new ErrorDialog(err, true);
+        box.show();
     }
 
     /**

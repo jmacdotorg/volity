@@ -62,6 +62,7 @@ public class PlatformWrapper
                 return true;
             }
             catch (Exception ex) {
+                new ErrorWrapper(ex);
                 return false;
             }
         }
@@ -128,6 +129,7 @@ public class PlatformWrapper
                 return true;
             }
             catch (Exception ex) {
+                new ErrorWrapper(ex);
                 return false;
             }
         }

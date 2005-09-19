@@ -144,6 +144,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         }
         catch (XMPPException ex) 
         {
+            new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
             String msg = "The table could not be created.";
@@ -183,6 +184,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         }
         catch (Exception ex)
         {
+            new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
             JOptionPane.showMessageDialog(this, 

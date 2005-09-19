@@ -2,7 +2,6 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
 import javax.swing.*;
 import javax.swing.text.*;
 
@@ -113,7 +112,7 @@ public class AboutBox extends JFrame
         c.ipady = 8;
         cPane.add(label, c);
 
-        label = new JLabel("Version: 0.1", SwingConstants.RIGHT);
+        label = new JLabel("Version 0.1", SwingConstants.RIGHT);
         label.setFont(new Font("SansSerif", Font.PLAIN, 9));
         c = new GridBagConstraints();
         c.gridx = 0;

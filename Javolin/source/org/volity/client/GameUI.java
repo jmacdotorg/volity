@@ -198,7 +198,7 @@ public class GameUI implements RPCHandler, PacketFilter {
 	defineProperty("nickname", Info.class, PERMANENT);
 	defineProperty("seat", Info.class, PERMANENT);
       } catch (PropertyException e) {
-	throw new RuntimeException(e.toString());
+	errorHandler.error(e);
       }
     }
     public String getSeat() { 

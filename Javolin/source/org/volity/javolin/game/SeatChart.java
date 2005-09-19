@@ -5,6 +5,7 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import org.volity.client.*;
+import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.chat.UserColorMap;
 
 /**
@@ -231,6 +232,7 @@ public class SeatChart
             mMessageHandler.print(mTranslator.translate(ex));
         }
         catch (Exception ex) {
+            new ErrorWrapper(ex);
             mMessageHandler.print(ex.toString());
         }
     }

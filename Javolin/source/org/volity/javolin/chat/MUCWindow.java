@@ -273,6 +273,7 @@ public class MUCWindow extends JFrame implements PacketListener
         }
         catch (XMPPException ex)
         {
+            new ErrorWrapper(ex);
             JOptionPane.showMessageDialog(this, ex.toString(),
                 JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
         }
