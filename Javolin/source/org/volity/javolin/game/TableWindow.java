@@ -61,8 +61,11 @@ public class TableWindow extends JFrame implements PacketListener
 
     private static Map sLocalUiFileMap = new HashMap();
 
+    private final static String INFO_LABEL = "Info";
+    private final static String INVITE_LABEL = "Invite";
     private final static String READY_LABEL = "Ready";
     private final static String SEAT_LABEL = "Seat";
+    private final static ImageIcon INVITE_ICON;
     private final static ImageIcon READY_ICON;
     private final static ImageIcon UNREADY_ICON;
     private final static ImageIcon SEAT_ICON;
@@ -72,6 +75,7 @@ public class TableWindow extends JFrame implements PacketListener
     private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
 
     static {
+        INVITE_ICON = new ImageIcon(TableWindow.class.getResource("Invite_ButIcon.png"));
         READY_ICON = new ImageIcon(TableWindow.class.getResource("Ready_ButIcon.png"));
         UNREADY_ICON = new ImageIcon(TableWindow.class.getResource("Unready_ButIcon.png"));
         SEAT_ICON = new ImageIcon(TableWindow.class.getResource("Seat_ButIcon.png"));
@@ -89,6 +93,8 @@ public class TableWindow extends JFrame implements PacketListener
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
 
+    private JButton mInfoButton;
+    private JButton mInviteButton;
     private JButton mReadyButton;
     private JButton mSeatButton;
     private JLabel mRefereeStatusLabel;
@@ -105,6 +111,7 @@ public class TableWindow extends JFrame implements PacketListener
     private boolean mGameViewportStarted = false;
     private boolean mGameStartFinished = false;
 
+    private InfoDialog mInfoDialog = null;
 
     /**
      * Factory method for a TableWindow. This form will create a new table.
@@ -401,6 +408,31 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Set up button actions.
 
+        //### This button is temporary -- I plan to turn it into a menu item
+        mInfoButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    if (mInfoDialog == null) {
+                        mInfoDialog = new InfoDialog(TableWindow.this, mGameTable);
+                        // When the InfoDialog closes, clear mInfoDialog
+                        mInfoDialog.addWindowListener(
+                            new WindowAdapter() {
+                                public void windowClosed(WindowEvent ev) {
+                                    mInfoDialog = null;
+                                }
+                            });
+                    }
+                    mInfoDialog.show();
+                }
+            });
+
+        mInviteButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    SendInvitationDialog box =
+                        new SendInvitationDialog(TableWindow.this, mGameTable);
+                    box.show();
+                }
+            });
+
         mReadyButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     try {
@@ -530,7 +562,7 @@ public class TableWindow extends JFrame implements PacketListener
          * know what state the referee is in. (There's no status RPC for that.)
          * So we have to do a disco query.
          * 
-         * XXX I wish this were asynchronous. Blocking the Swing thread is bad
+         * ### This ought to be asynchronous. Blocking the Swing thread is bad
          * form.
          */
         try {
@@ -1037,6 +1069,16 @@ public class TableWindow extends JFrame implements PacketListener
         JComponent label = new JLabel("");
         toolbar.add(label);
         label.setMaximumSize(new Dimension(32767, 10));
+
+        mInfoButton = new JButton(INFO_LABEL);
+        toolbar.add(mInfoButton);
+
+        toolbar.addSeparator();
+
+        mInviteButton = new JButton(INVITE_LABEL, INVITE_ICON);
+        toolbar.add(mInviteButton);
+
+        toolbar.addSeparator(new Dimension(16, 10));
 
         mSeatButton = new JButton(SEAT_LABEL, UNSEAT_ICON);
         toolbar.add(mSeatButton);

@@ -54,6 +54,7 @@ public class GameTable extends MultiUserChat
     protected XMPPConnection mConnection;
     protected Referee mReferee;
     protected int mRefereeState = STATE_UNKNOWN;
+    protected String mParlorJID = null;
 
     protected List mQueuedMessages = new ArrayList();
     protected PacketListener mParticipantListener;
@@ -134,6 +135,24 @@ public class GameTable extends MultiUserChat
      */
     public Referee getReferee() {
         return mReferee;
+    }
+
+    /**
+     * Return the JID of the table's parlor. This will not be set until the
+     * GameTable has signalled ready. Before that, this returns null.
+     */
+    public String getParlorJID() {
+        return mParlorJID;
+    }
+
+    /**
+     * Return the JID of the table's referee. This will not be set until the
+     * GameTable has signalled ready. Before that, this returns null.
+     */
+    public String getRefereeJID() {
+        if (mReferee == null)
+            return null;
+        return mReferee.getResponderJID();
     }
     
     /**
@@ -367,6 +386,12 @@ public class GameTable extends MultiUserChat
                         mInitialJoined = true;
                         fireReadyListeners();
                     }
+
+                    field = form.getField("parlor");
+                    if (field != null) {
+                        mParlorJID = (String) field.getValues().next();
+                    }
+
                     fireStatusListeners_playerIsReferee(player);
                 }
             }

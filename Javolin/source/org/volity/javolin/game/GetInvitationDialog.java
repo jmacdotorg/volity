@@ -1,26 +1,9 @@
-/*
- * JoinTableAtDialog.java
- *
- * Copyright 2004 Karl von Laudermann
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
-import java.util.prefs.*;
+import java.io.IOException;
+import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.XMPPError;
@@ -31,41 +14,36 @@ import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.volity.client.GameServer;
 import org.volity.client.GameTable;
-import org.volity.client.TokenFailure;
-import org.volity.client.TranslateToken;
+import org.volity.client.Invitation;
 import org.volity.javolin.*;
 
 /**
- * The dialog for joining an existing game table.
+ * Dialog box that appears when a game invitation is received.
  */
-public class JoinTableAtDialog extends BaseDialog implements ActionListener
+public class GetInvitationDialog extends BaseDialog
 {
-    private final static String NODENAME = "JoinTableAtDialog";
-    private final static String TABLEID_KEY = "GameTableID";
+    private final static String NODENAME = "GetInvitationDialog";
     private final static String NICKNAME_KEY = "Nickname";
-    // XXX Should the nickname pref be unified with NewTableAtDialog?
 
-    private JTextField mTableIdField;
+    XMPPConnection mConnection;
+    TableWindow mTableWindow;
+    JavolinApp mOwner;
+    private Invitation mInvite;
+
+    private JButton mAcceptButton;
+    private JButton mDeclineButton;
+    private JButton mChatButton;
     private JTextField mNicknameField;
-    private JButton mCancelButton;
-    private JButton mJoinButton;
 
-    private XMPPConnection mConnection;
-    private TableWindow mTableWindow;
+    public GetInvitationDialog(JavolinApp owner, XMPPConnection connection, 
+        Invitation inv) {
+        super(owner, "Invitation", false, NODENAME);
 
-    /**
-     * Constructor.
-     *
-     * @param owner       The Frame from which the dialog is displayed.
-     * @param connection  The current active XMPPConnection.
-     */
-    public JoinTableAtDialog(Frame owner, XMPPConnection connection)
-    {
-        super(owner, JavolinApp.getAppName() + ": Join Table At", true, NODENAME);
-
+        mInvite = inv;
+        mOwner = owner;
         mConnection = connection;
+        mTableWindow = null;
 
-        // Set up dialog
         buildUI();
         setResizable(false);
         pack();
@@ -75,34 +53,26 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
         // Restore default field values
         restoreFieldValues();
-    }
 
-    /**
-     * Gets the TableWindow that was created.
-     *
-     * @return   The TableWindow for the game table that was joined when the
-     * user pressed the Join button, or null if the user pressed Cancel.
-     */
-    public TableWindow getTableWindow()
-    {
-        return mTableWindow;
-    }
+        mDeclineButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    dispose();
+                }
+            });
 
-    /**
-     * ActionListener interface method implementation.
-     *
-     * @param e  The action event to handle.
-     */
-    public void actionPerformed(ActionEvent e)
-    {
-        if (e.getSource() == mJoinButton)
-        {
-            doJoin();
-        }
-        else if (e.getSource() == mCancelButton)
-        {
-            dispose();
-        }
+        mChatButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    mOwner.chatWithUser(mInvite.getPlayerJID());
+                    dispose();
+                }
+            });
+
+        mAcceptButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    doJoin();
+                }
+            });
+
     }
 
     /**
@@ -117,10 +87,15 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        /* Create the TableWindow. Note that we don't have a GameServer.
+        /* Create the TableWindow.
          *
-         * This code is cloned in GetInvitationDialog, so if you change
-         * anything here, make the same change there.
+         * The Invitation may or may not contain a parlor ID. Since we can't
+         * rely on it, I've written this code to not look for it at all. We
+         * always join the MUC and query for the server ID -- just as we do in
+         * JoinTableAtDialog.
+         *
+         * In fact, the code below is directly stolen from JoinTableAtDialog.
+         * If you change anything here, make the same change there.
          *
          * A more correct solution would be to have a single, asynchronous
          * entry point in TableWindow. This would accept various combinations
@@ -130,7 +105,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
          */
         try
         {
-            tableID = mTableIdField.getText();
+            tableID = mInvite.getTableJID();
 
             final GameTable gameTable = new GameTable(mConnection, tableID);
             final String nickname = mNicknameField.getText();
@@ -259,6 +234,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
             mTableWindow = TableWindow.makeTableWindow(mConnection, 
               server, gameTable, nickname);
+            mOwner.handleNewTableWindow(mTableWindow);
 
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
@@ -281,20 +257,29 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
     }
 
     /**
-     * Saves the current text of the table ID and nickname fields to the preferences
-     * storage.
+     * Gets the TableWindow that was created.
+     *
+     * @return The TableWindow for the game table that was joined, or
+     *         null if the join failed.
+     */
+    public TableWindow getTableWindow()
+    {
+        return mTableWindow;
+    }
+
+    /**
+     * Saves the current text of the fields to the preferences storage.
      */
     private void saveFieldValues()
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        prefs.put(TABLEID_KEY, mTableIdField.getText());
         prefs.put(NICKNAME_KEY, mNicknameField.getText());
     }
 
     /**
-     * Reads the default table ID and nickname values from the preferences storage and
-     * fills in the text fields.
+     * Reads the default values from the preferences storage and fills in the
+     * text fields.
      */
     private void restoreFieldValues()
     {
@@ -304,102 +289,115 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        mTableIdField.setText(prefs.get(TABLEID_KEY, ""));
         mNicknameField.setText(prefs.get(NICKNAME_KEY, defNick));
     }
 
     /**
-     * Populates the dialog with controls. This method is called once, from the
-     * constructor.
+     * Create the window UI.
      */
-    private void buildUI()
-    {
-        getContentPane().setLayout(new GridBagLayout());
+    private void buildUI() {
+        Container cPane = getContentPane();
+        cPane.setLayout(new GridBagLayout());
         GridBagConstraints c;
+        JLabel label;
+        String msg;
+        JTextField field;
 
-        int gridY = 0;
+        int row = 0;
 
-        // Add game table ID label
-        JLabel someLabel = new JLabel("Game Table ID:");
+        label = new JLabel(mInvite.getPlayerJID());
         c = new GridBagConstraints();
         c.gridx = 0;
-        c.gridy = gridY;
-        c.insets = new Insets(MARGIN, MARGIN, 0, 0);
+        c.gridy = row++;
+        c.gridwidth = GridBagConstraints.REMAINDER;
         c.anchor = GridBagConstraints.WEST;
-        getContentPane().add(someLabel, c);
+        c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+        cPane.add(label, c);
 
-        // Add game table ID field
-        mTableIdField = new JTextField(28);
-        c = new GridBagConstraints();
-        c.gridx = 1;
-        c.gridy = gridY;
-        c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        getContentPane().add(mTableIdField, c);
-        gridY++;
-
-        // Add nickname label
-        someLabel = new JLabel("Nickname:");
+        label = new JLabel("  has invited you to join a game.");
         c = new GridBagConstraints();
         c.gridx = 0;
-        c.gridy = gridY;
-        c.insets = new Insets(SPACING, MARGIN, 0, 0);
+        c.gridy = row++;
+        c.gridwidth = GridBagConstraints.REMAINDER;
         c.anchor = GridBagConstraints.WEST;
-        getContentPane().add(someLabel, c);
+        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
+        cPane.add(label, c);
 
-        // Add nickname field
-        mNicknameField = new JTextField(28);
+        String message = mInvite.getMessage();
+        if (message != null)
+            message = message.trim();
+
+        if (message != null && !message.equals("")) {
+            JTextArea textarea = new JTextArea();
+            textarea.setEditable(false);
+            textarea.setRows(4);
+            textarea.setLineWrap(true);
+            textarea.setWrapStyleWord(true);
+            textarea.setText(message);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.weightx = 1;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.WEST;
+            c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
+            JScrollPane scroller = new JScrollPane(textarea);
+            scroller.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+            cPane.add(scroller, c);
+        }
+
+        label = new JLabel("Nickname:");
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row;
+        c.anchor = GridBagConstraints.WEST;
+        c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
+        cPane.add(label, c);
+
+        mNicknameField = new JTextField(25);
         c = new GridBagConstraints();
         c.gridx = 1;
-        c.gridy = gridY;
-        c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
+        c.gridy = row++;
+        c.weightx = 1;
         c.anchor = GridBagConstraints.WEST;
-        getContentPane().add(mNicknameField, c);
-        gridY++;
+        c.insets = new Insets(GAP, SPACING, 0, MARGIN);
+        cPane.add(mNicknameField, c);
 
-        // Add panel with Cancel and Join buttons
+        // Add panel with Cancel and Create buttons
         JPanel buttonPanel = new JPanel(new GridBagLayout());
         c = new GridBagConstraints();
         c.gridx = 0;
-        c.gridy = gridY;
+        c.gridy = row++;
         c.gridwidth = GridBagConstraints.REMAINDER;
         c.insets = new Insets(GAP, MARGIN, MARGIN, MARGIN);
         c.anchor = GridBagConstraints.EAST;
-        c.weightx = 0.5;
-        getContentPane().add(buttonPanel, c);
-        gridY++;
+        c.weightx = 1;
+        cPane.add(buttonPanel, c);
 
-        // Add Cancel button
-        mCancelButton = new JButton("Cancel");
-        mCancelButton.addActionListener(this);
+        mAcceptButton = new JButton("Accept");
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = 0;
         c.insets = new Insets(0, 0, 0, 0);
         c.anchor = GridBagConstraints.EAST;
-        c.weightx = 0.5;
-        buttonPanel.add(mCancelButton, c);
+        buttonPanel.add(mAcceptButton, c);
 
-        // Add Join button
-        mJoinButton = new JButton("Join");
-        mJoinButton.addActionListener(this);
+        mChatButton = new JButton("Decline and Chat");
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = 0;
         c.insets = new Insets(0, SPACING, 0, 0);
         c.anchor = GridBagConstraints.EAST;
-        buttonPanel.add(mJoinButton, c);
-        // Make Join button default
-        getRootPane().setDefaultButton(mJoinButton);
+        buttonPanel.add(mChatButton, c);
 
-        // Make the buttons the same width
-        Dimension dim = mJoinButton.getPreferredSize();
+        mDeclineButton = new JButton("Decline");
+        c = new GridBagConstraints();
+        c.gridx = 2;
+        c.gridy = 0;
+        c.insets = new Insets(0, SPACING, 0, 0);
+        c.anchor = GridBagConstraints.EAST;
+        buttonPanel.add(mDeclineButton, c);
 
-        if (mCancelButton.getPreferredSize().width > dim.width)
-        {
-            dim = mCancelButton.getPreferredSize();
-        }
-
-        mCancelButton.setPreferredSize(dim);
-        mJoinButton.setPreferredSize(dim);
     }
 }

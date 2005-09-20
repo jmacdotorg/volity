@@ -502,25 +502,25 @@ public class JavolinApp extends JFrame
      *
      * @param tableWin  The newly created TableWindow.
      */
-    private void handleNewTableWindow(TableWindow tableWin)
+    public void handleNewTableWindow(TableWindow tableWin)
     {
-        if (tableWin != null)
-        {
-            tableWin.show();
-            mTableWindows.add(tableWin);
-            JavolinMenuBar.notifyUpdateWindowMenu();
+        if (tableWin == null)
+            return;
 
-            // Remove the table window from the list and menu when it closes
-            tableWin.addWindowListener(
-                new WindowAdapter()
+        tableWin.show();
+        mTableWindows.add(tableWin);
+        JavolinMenuBar.notifyUpdateWindowMenu();
+        
+        // Remove the table window from the list and menu when it closes
+        tableWin.addWindowListener(
+            new WindowAdapter()
+            {
+                public void windowClosed(WindowEvent we)
                 {
-                    public void windowClosed(WindowEvent we)
-                    {
-                        mTableWindows.remove(we.getWindow());
-                        JavolinMenuBar.notifyUpdateWindowMenu();
-                    }
-                });
-        }
+                    mTableWindows.remove(we.getWindow());
+                    JavolinMenuBar.notifyUpdateWindowMenu();
+                }
+            });
     }
 
 
@@ -574,7 +574,7 @@ public class JavolinApp extends JFrame
      *
      * @param userId  The Jabber ID of the user to chat with.
      */
-    private void chatWithUser(String userId)
+    public void chatWithUser(String userId)
     {
         ChatWindow chatWin = getChatWindowForUser(userId);
 
@@ -803,54 +803,20 @@ public class JavolinApp extends JFrame
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-        String text = invitation.getPlayerJID() + " has invited you to join a game.";
-        String message = invitation.getMessage();
-        if (message != null)
-        {
-            text = text + "\n\"" + message + "\"";
+        // Make sure the required fields are present.
+        if (invitation.getPlayerJID() == null 
+            || invitation.getTableJID() == null 
+            || invitation.getRefereeJID() == null) {
+            JOptionPane.showMessageDialog(this, 
+                "Incomplete invitation received.",
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        //      JOptionPane.showMessageDialog(this, text);
-        Object[] options = {"Accept", "Decline", "Decline and chat"};
-        int choice = JOptionPane.showOptionDialog(this, text, "Invitation",
-            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
-            options[0]);
-
-        //### finish the stuff below. Error display!
-
-        if (choice == 0)
-        {
-            // Join the table.
-            String tableJID = invitation.getTableJID();
-            String serverJID = invitation.getGameServerJID();
-            GameServer server = new GameServer(mConnection, serverJID);
-            GameTable table = new GameTable(mConnection, tableJID);
-            try
-            {
-                TableWindow tableWindow =
-                    TableWindow.makeTableWindow(mConnection, server, table, mConnection.getUser());
-                handleNewTableWindow(tableWindow);
-            }
-            catch (Exception ex)
-            {
-                new ErrorWrapper(ex);
-                System.out.println("Invitation: something went wrong."); //###
-            }
-            // Show the resulting table window.
-        }
-        else if (choice == 1)
-        {
-            System.out.println("Declining an invite.");
-        }
-        else if (choice == 2)
-        {
-            System.out.println("Declining and invite and opening a chat.");
-            chatWithUser(invitation.getPlayerJID());
-        }
-        else
-        {
-            System.out.println("Got bizarre dialog choice: " + choice);
-        }
+        GetInvitationDialog box = new GetInvitationDialog(this,
+            mConnection, invitation);
+        box.show();
     }
 
     public void doShowLastError() {

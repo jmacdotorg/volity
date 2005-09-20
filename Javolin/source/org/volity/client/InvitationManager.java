@@ -48,13 +48,13 @@ public class InvitationManager implements PacketFilter, RPCHandler {
     responder.stop();
   }
 
-  // Inherited from PacketFilter
+  // Implements PacketFilter interface.
   public boolean accept(Packet packet) {
     return "volity.receive_invitation".
       equals(((RPCRequest) packet).getMethodName());
   }
 
-  // Inherited from RPCHandler
+  // Implements PacketFilter interface.
   public void handleRPC(String methodName, List params,
 			RPCResponseHandler responseHandler)
   {

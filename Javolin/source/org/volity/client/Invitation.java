@@ -31,10 +31,10 @@ public class Invitation {
   }
 
   /**
-   * The JID of the game server that created the game table, or null
+   * The JID of the game parlor that created the game table, or null
    * if it was not provided in the invitation.
    */
-  public String getGameServerJID() {
+  public String getParlorJID() {
     return (String) fields.get("parlor");
   }
 
