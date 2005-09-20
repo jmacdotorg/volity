@@ -2,7 +2,8 @@ package Volity;
 
 our $VERSION = '0.4.1';
 
-use warnings; use strict;
+use warnings;
+use strict;
 no warnings qw(deprecated);
 
 use base qw(Class::Accessor Class::Fields);
@@ -12,75 +13,78 @@ use Log::Log4perl qw(:nowarn);
 use Carp;
 
 sub new {
-  my($proto, $fields) = @_;
-  my($class) = ref $proto || $proto;
+    my ( $proto, $fields ) = @_;
+    my ($class) = ref $proto || $proto;
 
-  if (defined($fields)) {
-    croak("Second argument to constructor must be a hash reference!") unless ref($fields) eq 'HASH';
-  } else {
-    $fields = {};
-  }
-
-  my $self = fields::new($class);
-  $self->create_accessors;
-  while (my ($key, $val) = each %$fields) {
-      eval {$self->$key($val);};
-    if ($@) {
-      Carp::confess "Couldn't set the $key key of $self: $@";
+    if ( defined($fields) ) {
+        croak("Second argument to constructor must be a hash reference!")
+            unless ref($fields) eq 'HASH';
     }
-  }
-  $self->initialize;
-  return $self;
+    else {
+        $fields = {};
+    }
+
+    my $self = fields::new($class);
+    $self->create_accessors;
+    while ( my ( $key, $val ) = each %$fields ) {
+        eval { $self->$key($val); };
+        if ($@) {
+            Carp::confess "Couldn't set the $key key of $self: $@";
+        }
+    }
+    $self->initialize;
+    return $self;
 }
 
 sub initialize {
-  return $_[0];
+    return $_[0];
 }
 
 sub create_accessors {
-    my $self = shift;
-    my $class = ref($self)? ref($self): $self;
+    my $self   = shift;
+    my $class  = ref($self) ? ref($self) : $self;
     my @fields = $class->show_fields('Public');
-    @fields = grep(not($self->can($_)), @fields);
+    @fields = grep( not( $self->can($_) ), @fields );
     $class->mk_accessors(@fields);
 }
-
 
 # get: this overrides C::A's get() to act smarter about returning internal
 # arrayrefs as lists of a lists is what we want.
 sub get {
-  my $self = shift;
-  my ($field) = @_;
-  if (wantarray) {
-    if (defined($self->{$field}) and ref($self->{$field}) eq 'ARRAY') {
-      return @{$self->SUPER::get(@_)};
-    } elsif (not(defined($self->{$field}))) {
-      return ();
-    } else {
-      return ($self->SUPER::get(@_));
+    my $self = shift;
+    my ($field) = @_;
+    if (wantarray) {
+        if ( defined( $self->{$field} ) and ref( $self->{$field} ) eq 'ARRAY' )
+        {
+            return @{ $self->SUPER::get(@_) };
+        }
+        elsif ( not( defined( $self->{$field} ) ) ) {
+            return ();
+        }
+        else {
+            return ( $self->SUPER::get(@_) );
+        }
     }
-  }
-  return $self->SUPER::get(@_);
+    return $self->SUPER::get(@_);
 }
 
 # logger: Returns the Log::Log4perl logger object,
 # creating it first if necessary.
 sub logger {
-  my $self = shift;
-  unless ($self->{logger}) {
-    $self->{logger} = Log::Log4perl::get_logger(ref($self));
-  }
-  return $self->{logger};
+    my $self = shift;
+    unless ( $self->{logger} ) {
+        $self->{logger} = Log::Log4perl::get_logger( ref($self) );
+    }
+    return $self->{logger};
 }
 
 # expire: Log a fatal error message, and then die with that same message.
 sub expire {
-  my $self = shift;
-  my ($last_words) = @_;
-  $self->logger->fatal($last_words);
-  Carp::confess($last_words);
+    my $self = shift;
+    my ($last_words) = @_;
+    $self->logger->fatal($last_words);
+    Carp::confess($last_words);
 }
-
 
 =pod
 
@@ -206,6 +210,5 @@ Jabber ID: jmac@volity.net
 Copyright (c) 2003-2004 by Jason McIntosh.
 
 =cut
-
 
 1;
