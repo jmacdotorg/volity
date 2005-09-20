@@ -9,6 +9,7 @@
   <property name="src" location="source"/>
   <property name="build" location="build"/>
   <property name="doc" location="doc"/>
+  <property name="lib.loc" location="lib"/>
   <!-- define class path -->
   <path id="class.path">
     <fileset dir="lib">
@@ -53,16 +54,12 @@
         description="generate the jar file" >
     <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
     <!-- Transform classpath into space-separated list for manifest -->
-    <property name="lib.loc" location="lib"/>
     <pathconvert dirsep="/" pathsep=" " property="manif.cpath" 
       refid="class.path">
       <map from="${lib.loc}" to="lib"/>
     </pathconvert>
     <!-- Put some of ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfilejavolin}" basedir="${build}">
-      <include name="org/volity/javolin/" />
-      <include name="org/volity/client/" />
-      <include name="org/volity/jabber/" />
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
         <attribute name="Class-Path" value="${manif.cpath}"/>        
@@ -74,7 +71,6 @@
         description="generate the jar file" >
     <property name="mainclass" value="org/volity/testbench/TestbenchApp"/>
     <!-- Transform classpath into space-separated list for manifest -->
-    <property name="lib.loc" location="lib"/>
     <pathconvert dirsep="/" pathsep=" " property="manif.cpath" 
       refid="class.path">
       <map from="${lib.loc}" to="lib"/>
@@ -120,7 +116,6 @@
   </target>
 
   <target name="libarchive" description="generate the jar file, including third-party libs" depends="compile">
-    <property name="lib.loc" location="lib"/>
     <unzip src="${lib.loc}/smack.jar" dest="${build}"/>
     <unzip src="${lib.loc}/smackx.jar" dest="${build}"/>
     <unzip src="${lib.loc}/js.jar" dest="${build}"/>
@@ -142,20 +137,10 @@
     <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
     <!-- Put some of ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfilejavolin}" basedir="${build}">
-      <include name="org/volity/javolin/" />
-      <include name="org/volity/client/" />
-      <include name="org/volity/jabber/" />
-      <include name="org/jivesoftware/" />
-      <include name="org/xmlpull/" />
-      <include name="org/apache/" />
-      <include name="org/mozilla/" />
-      <include name="org/w3c/" />
-      <include name="org/xml/" />
+      <include name="org/" />
       <include name="javax/" />
       <metainf dir="${build}/META-INF">
-        <include name="smack.providers" />
-        <include name="smack-config.xml" />
-        <include name="services/" />
+        <exclude name="MANIFEST.MF" />
       </metainf>
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
