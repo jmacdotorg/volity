@@ -1,42 +1,50 @@
 package Tie::ExecHash;
 use Tie::Hash;
+use strict;
+use warnings;
 use base 'Tie::ExtraHash';
 
 sub STORE {
     my @callers = caller;
-    if ( ref $_[2] eq 'ARRAY'   and
-         @{$_[2]} == 2          and
-         ref $_[2][0] eq 'CODE' and
-         ref $_[2][1] eq 'CODE') {
-        $_[0][1]{'set'}{$_[1]} = $_[2][0];
-        $_[0][1]{'get'}{$_[1]} = $_[2][1];
-        $_[0]->SUPER::STORE($_[1],'');
-    } elsif ( exists $_[0][1]{'set'}{$_[1]} ) {
-        return &{ $_[0][1]{'set'}{$_[1]} }( $_[2] );
-    } else {
-	shift->SUPER::STORE(@_);
+    if (    ref $_[2] eq 'ARRAY'
+        and @{ $_[2] } == 2
+        and ref $_[2][0] eq 'CODE'
+        and ref $_[2][1] eq 'CODE' )
+    {
+        $_[0][1]{'set'}{ $_[1] } = $_[2][0];
+        $_[0][1]{'get'}{ $_[1] } = $_[2][1];
+        $_[0]->SUPER::STORE( $_[1], q{} );
+    }
+    elsif ( exists $_[0][1]{'set'}{ $_[1] } ) {
+        return &{ $_[0][1]{'set'}{ $_[1] } }( $_[2] );
+    }
+    else {
+        shift->SUPER::STORE(@_);
     }
 }
 
 sub FETCH {
-    if ( exists $_[0][1]{'get'}{$_[1]} ) {
-        return &{ $_[0][1]{'get'}{$_[1]} }();
-    } else {
-	shift->SUPER::FETCH(@_);
+    if ( exists $_[0][1]{'get'}{ $_[1] } ) {
+        return &{ $_[0][1]{'get'}{ $_[1] } }();
+    }
+    else {
+        shift->SUPER::FETCH(@_);
     }
 }
 
 sub DELETE {
-    if ( exists $_[0][1]{'set'}{$_[1]} ) {
-        $_[0]->SUPER::DELETE($_[1]);
-        return &{ $_[0][1]{'set'}{$_[1]} }();
-    } else {
-	shift->SUPER::DELETE(@_);
+    if ( exists $_[0][1]{'set'}{ $_[1] } ) {
+        $_[0]->SUPER::DELETE( $_[1] );
+        return &{ $_[0][1]{'set'}{ $_[1] } }();
+    }
+    else {
+        shift->SUPER::DELETE(@_);
     }
 }
 
 1;
 __END__
+
 =pod
 
 =head1 NAME
@@ -65,12 +73,13 @@ print "$baz\n"; # a suffusion of yellow
 
 =head1 DESCRIPTION
 
-What this does is allow you to have some hash values act like they are
-tied scalars without actually having to go through the trouble of making
-them really be tied scalars.
+What this does is allow you to have some hash values act like they are tied
+scalars without actually having to go through the trouble of making them
+really be tied scalars.
 
 By default the tied hash works exactly like a normal hash.  Its behavior
 changes when you use a value of an array with exactly two code blocks in it. 
 When you do this it uses the first as the get routine and the second as the
-set routine.  Any future gets or sets to this key will be mediated via
-these subroutines.
+set routine.  Any future gets or sets to this key will be mediated via these
+subroutines.
+
