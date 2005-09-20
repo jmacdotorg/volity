@@ -60,6 +60,9 @@
     </pathconvert>
     <!-- Put some of ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfilejavolin}" basedir="${build}">
+      <include name="org/volity/javolin/" />
+      <include name="org/volity/client/" />
+      <include name="org/volity/jabber/" />
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
         <attribute name="Class-Path" value="${manif.cpath}"/>        
@@ -137,7 +140,15 @@
     <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
     <!-- Put some of ${build} into the ${jarfile} file -->
     <jar jarfile="${jarfilejavolin}" basedir="${build}">
-      <include name="org/" />
+      <include name="org/volity/javolin/" />
+      <include name="org/volity/client/" />
+      <include name="org/volity/jabber/" />
+      <include name="org/jivesoftware/" />
+      <include name="org/xmlpull/" />
+      <include name="org/apache/" />
+      <include name="org/mozilla/" />
+      <include name="org/w3c/" />
+      <include name="org/xml/" />
       <include name="javax/" />
       <metainf dir="${build}/META-INF">
         <exclude name="MANIFEST.MF" />
