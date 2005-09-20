@@ -54,7 +54,7 @@ public class ErrorWrapper
         mError = ex;
         mDate = new Date();
 
-        System.out.println("Uncaught exception: " + ex.toString());
+        System.out.println("Detected exception: " + ex.toString());
         lastError = this;
     }
 
