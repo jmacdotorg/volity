@@ -5,18 +5,18 @@ package Volity::Bot;
 
 use warnings;
 use strict;
-use base qw(Volity::Jabber Class::Data::Inheritable);
+use base qw( Volity::Jabber Class::Data::Inheritable );
 use fields
-    qw(muc_jid referee_jid name_modifier nickname am_seated am_ready seat);
+    qw( muc_jid referee_jid name_modifier nickname am_seated am_ready seat );
 
 # Why separate referee and referee_jid fields?
-# Because the 'referee' field is to hold a Volity::Referee object, if one
-# is available (i.e. this is being used as a Retainer-bot).
+# Because the 'referee' field is to hold a Volity::Referee object, if one is
+# available (i.e. this is being used as a Retainer-bot).
 # 'referee_jid' is set when the ref is detected by its presence packets.
-use Carp qw(croak);
+use Carp qw( croak );
 use POE;
 
-foreach (qw(name description user host password)) {
+foreach (qw( name description user host password )) {
     __PACKAGE__->mk_classdata($_);
 }
 
@@ -26,7 +26,7 @@ sub new {
     my $invocant = shift;
     my $class    = ref($invocant) || $invocant;
     my ($config) = @_;
-    foreach (qw(user host password resource)) {
+    foreach (qw( user host password resource )) {
         if ( defined( $$config{$_} ) ) {
             next;
         }
@@ -38,7 +38,7 @@ sub new {
         }
     }
     my $self = $class->SUPER::new($config);
-    $self->name_modifier('');
+    $self->name_modifier(q{});
     return $self;
 }
 
@@ -94,7 +94,7 @@ sub jabber_presence {
         ( $node->get_tag('x') )
         and (
             ($x) =
-            grep( $_->attr('xmlns') eq "http://jabber.org/protocol/muc#user",
+            grep( { $_->attr('xmlns') eq "http://jabber.org/protocol/muc#user" }
                 $node->get_tag('x') )
         )
         )
