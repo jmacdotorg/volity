@@ -49,7 +49,7 @@ all. Records are automatically created by Volity::Referee objects when
 a game wraps up, and incoming records are automatically parsed by the
 bookkeeper.
 
-The following doucmentation is really here for completeness' sake, but
+The following documentation is really here for completeness' sake, but
 those wishing to modify the Frivolity referee or bookkeeper behavior
 might find it interesting.
 

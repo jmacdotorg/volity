@@ -27,7 +27,7 @@ Volity::Player - Volity players, from a referee's perspective.
 An object of this class represents a Volity player present at a
 table. The referee creates one of these objects for every player who
 comes to that ref's table. The player might not actually I<play> the
-game (i.e. sit in a seat), but is nontheless recognized by the referee
+game (i.e. sit in a seat), but is nonetheless recognized by the referee
 as a potential game player and table presence.
 
 In certain circumstances a ref may choose to keep an object for a

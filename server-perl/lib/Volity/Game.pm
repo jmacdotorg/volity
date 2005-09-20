@@ -58,7 +58,7 @@ Create your own Perl package for your game, and have it inherit from
 C<Volity::Game>. You can then have it do whatever you like, calling the
 C<end_game> method when you're all done.
 
-OK, that's a bit of a simiplifaction. Fortunately, I've written a
+OK, that's a bit of a simplification. Fortunately, I've written a
 developer's guide that should teach and show you everything you need to know
 about writing Volity games in Perl. You can always find the latest edition
 here:
@@ -125,7 +125,7 @@ Otherwise, returns falsehood.
 =head2 Class Accessor methods
 
 These methods are used to set some general configuration information about
-the game, rather than specific information about any particualr instance
+the game, rather than specific information about any particular instance
 thereof.
 
 =over
@@ -242,7 +242,7 @@ This method is useful to call at the end of a turn.
 =item register_config_variables (@variables)
 
 Registers the given instance variables (which should be declared in your
-subclass's C<use fields> pragma) as holding game configuation information.
+subclass's C<use fields> pragma) as holding game configuration information.
 This will allow your game to accept RPC calls of the form
 "game.$variable_name([args])" even when there is no game active. (The
 referee normally kicks back such requests with an RPC fault.)
@@ -474,7 +474,7 @@ Called by the referee every time a player signals readiness. Returns 1 if
 the current configuration settings are OK to start a new game. Returns 0 if
 the config settings are currently wedged in an unplayable state.
 
-In the latter case, the referee will not allow the player to delcare
+In the latter case, the referee will not allow the player to declare
 readiness.
 
 By default, it just returns 1 without checking anything.

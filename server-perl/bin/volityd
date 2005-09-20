@@ -111,7 +111,7 @@ volityd -- A simple Volity game server
 
 volityd -u rps -p foo -h volity.net -r testing \
         -b bookkeeper@volity.net/volity -K F763E15E \
-        -G /usr/bin/gpg -P "Big secret passphase, whee" \
+        -G /usr/bin/gpg -P "Big secret passphrase, whee" \
         -g Volity::Game::RPS -B Volity::Bot::RPS \
         -l /home/jmac/volity/volity_logger.conf
 
@@ -198,7 +198,7 @@ through various Log4perl invocations already spread throughout the
 Volity modules, set at appropriate priority levels, ranging from
 'DEBUG' to 'INFO' to 'FATAL'.
 
-B<Default>: None, and no logging occurs. Showstopping events will
+B<Default>: None, and no logging occurs. Show stopping events will
 still trigger descriptive output to STDERR.
 
 =item m
@@ -224,7 +224,7 @@ B<Default>: 'volity'
 
 =item v
 
-The version number of the Volity platform protcol that this server supports.
+The version number of the Volity platform protocol that this server supports.
 
 Unless you're doing something highly unusual with the Volity Perl
 libraries, you're probably best sticking with the default value on

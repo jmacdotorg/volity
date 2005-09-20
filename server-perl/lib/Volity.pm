@@ -178,7 +178,7 @@ the classes listed in L<"DESCRIPTION">.
 
 =item logger
 
-Returns the object's attached Log::Log4perl object, whcih is automatically
+Returns the object's attached Log::Log4perl object, which is automatically
 created and initialized as needed. This lets Volity subclasses easily add
 prioritized log and debug output to their code. See L<Log::Log4perl> for
 documentation on this object's use.

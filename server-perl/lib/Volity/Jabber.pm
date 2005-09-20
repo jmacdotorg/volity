@@ -90,7 +90,7 @@ like this behavior, you can just overload the new() method. Otherwise,
 you don't need to define new() at all.
 
 If you want to initialize your object, override the C<initialize>
-method. howevere, you B<must> call C<SUPER::initilialize>, otherwise
+method. however, you B<must> call C<SUPER::initilialize>, otherwise
 the connection won't open.
 
 =head2 Localization
@@ -191,8 +191,8 @@ The resource identifier to use when connecting to the Jabber server. (This is th
 
 =item default_language
 
-The two-letter lanauge code that the object will attach to all
-outgoing Jabber stanzas to identify their default lanaguge. Defaults
+The two-letter language code that the object will attach to all
+outgoing Jabber stanzas to identify their default language. Defaults
 to C<en>. (See L<"Localization"> more more information about how this
 module handles different langauges.)
 
@@ -519,7 +519,7 @@ sub jabber_message {
 
 =pod
 
-The following related methods handle specefic applicationes of the
+The following related methods handle specific applications of the
 <<iq>> element. As with C<jabber_iq>, the single argument in every
 case is a POE::Filter::XML::Node object representing the triggering
 XMPP <<iq>> element.
@@ -566,7 +566,7 @@ Called upon receipt of an RPC response. The argument is a hashref containing the
 
 =item handle_rpc_request({id=>$id, method=>$method, args=>[@args], from=>$from, rpc_object=>$obj})
 
-Called upon receipt of an RPC request. The argument is a hashref containing the request's ID attribute, method, argument list (as an arrayref), and orginating JID, as well as an RPC::XML object representing the request.
+Called upon receipt of an RPC request. The argument is a hashref containing the request's ID attribute, method, argument list (as an arrayref), and originating JID, as well as an RPC::XML object representing the request.
 
 =item handle_rpc_fault({id=>$id, rpc_object=>$obj, from=>$from, fault_code=>$code, fault_string=>$string})
 
@@ -749,7 +749,7 @@ The name of the remote method to call.
 =item args
 
 The method's arguments, as a list reference. If there's only one
-argument, and it's not itself an array reference, you can optinally
+argument, and it's not itself an array reference, you can optionally
 pass it in by itself. If there are no arguments, you can pass C<undef>
 or just skip this key.
 
@@ -764,7 +764,7 @@ This is the response handler.  It's executed when we get an answer back.  If
 it isn't passed then the default handler is used (which does nothing unless
 overridden).  It can either be a CODE ref or the name of a premade response
 handler.  CODE refs are passed only the response.  Premade response handler
-are not provided here but may be availble in subclasses.  The method name of
+are not provided here but may be available in subclasses.  The method name of
 the handler is in the form "rpc_response_$handler".  So if $handler was
 "start_game" then the method containing the response handler would be
 "rpc_response_start_game".  Premade response handlers are called as methods
@@ -1553,7 +1553,7 @@ sub basic_jid {
 =head1 SUPPLEMENTARY PACKAGES
 
 This module also include a handful of supplementary packages which
-define some helper objects. You'll usually use them in conjuction with
+define some helper objects. You'll usually use them in conjunction with
 the methods described above.
 
 =cut
@@ -1846,7 +1846,7 @@ POE::XML::Node, it may be inserted directly into disco responses you
 are building, just as <<item>> elements in disco responses you receive
 may be re-blessed into this class.
 
-It contains the following simple accessor methods, whose ultimate fucntion is described in JEP-0030:
+It contains the following simple accessor methods, whose ultimate function is described in JEP-0030:
 
 =over
 
@@ -1917,7 +1917,7 @@ __PACKAGE__->mk_accessors(qw(var));
 
 =head2 Volity::Jabber::Form
 
-B<Caution: incomplete implemntation.>
+B<Caution: incomplete implementation.>
 
 A class for Jabber data forms, as defined by JEP-0004. An object of
 this class is useful to stick under the C<content> key of of the
@@ -2080,7 +2080,7 @@ Clears this field's list of values.
 
 If a list of arguments is provided, it becomes the options for this
 form field. Each argument should be an anonymous hash, with a
-C<values> key set to an anonymouos list of the values this option
+C<values> key set to an anonymous list of the values this option
 allows, and an optional C<label> key.
 
 Returns a list of this field's current options, using the anonymous

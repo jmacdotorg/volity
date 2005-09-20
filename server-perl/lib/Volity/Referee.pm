@@ -80,7 +80,7 @@ distinction). You are welcome to snoop around in the code to see what
 the other, internal methods do, but you probably wouldn't need to call
 them during a game.
 
-It's worth noting that this module suclasses from Volity::Jabber, and
+It's worth noting that this module subclasses from Volity::Jabber, and
 therefore enjoys all the methods that it defines, as well as the ones
 listed here.
 
