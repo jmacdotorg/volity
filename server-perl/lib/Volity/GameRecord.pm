@@ -59,13 +59,13 @@ use warnings;
 use strict;
 
 use URI;
-use Carp qw(croak carp);
+use Carp qw( croak carp );
 use Date::Parse;
 use Date::Format;
 
-use base qw(Volity);
-use fields
-    qw(id signature winners start_time end_time game_uri_object game_name server finished);
+use base qw( Volity );
+use fields qw( id signature winners start_time end_time game_uri_object
+    game_name server finished );
 
 # Set up package variables for GPG config.
 our ( $gpg_bin, $gpg_secretkey, $gpg_passphrase );
@@ -78,24 +78,26 @@ our ( $gpg_bin, $gpg_secretkey, $gpg_passphrase );
 
 =head2 Class methods (constructors)
 
+=over
+
 =item new_from_hashref($hashref)
 
-Creates a new object based on the given hash reference, typically one
-that has been freshly translated from an RPC E<lt>structE<gt>
-argument. 
+Creates a new object based on the given hash reference, typically one that
+has been freshly translated from an RPC E<lt>structE<gt> argument.
 
-For the opposite functionality, see C<render_into_hashref> under L<"Object Methods">.
+For the opposite functionality, see C<render_into_hashref> under L<"Object
+Methods">.
 
 =back
 
 =head2 Object accessors
 
-All these are simple accessors which return the named object
-attribute. If an argument is passed in, then the attribute's value is
-first set to that argument.
+All these are simple accessors which return the named object attribute. If
+an argument is passed in, then the attribute's value is first set to that
+argument.
 
-In the case of lists, either an array or an array reference is
-returned, depending upon context.
+In the case of lists, either an array or an array reference is returned,
+depending upon context.
 
 This module inherits from Class::Accessor, so all the tips and tricks
 detailed in L<Class::Accessor> apply here as well.
@@ -176,7 +178,10 @@ sub game_uri {
 
 =item confirm_record_owner
 
-I<Bookkeeper only.> Confirms that the existing, DB-stored copy of this record assets the same server relationship as this record, and then re-verifies its signature (as per C<verify()>. Returns truth if everything looks OK, and falsehood otherwise.
+I<Bookkeeper only.> Confirms that the existing, DB-stored copy of this
+record assets the same server relationship as this record, and then
+re-verifies its signature (as per C<verify()>. Returns truth if everything
+looks OK, and falsehood otherwise.
 
 =end unimplemented
 
@@ -197,6 +202,8 @@ sub confirm_record_owner {
     return $self->verify_signature;
 }
 
+=over
+
 =item sign
 
 I<Referee only.>Generates a signature for this record, and attaches it.
@@ -204,6 +211,8 @@ I<Referee only.>Generates a signature for this record, and attaches it.
 The signature is based on a specific subset of the record's
 information, which both sender and receiver agree upon. Refer to the
 Volity protocol documentation for more information on this procedure.
+
+=back
 
 =cut
 
@@ -267,10 +276,14 @@ sub sign {
     return $signature;
 }
 
+=over
+
 =item verify
 
 Verifies that the record is signed, and that said signature is
 valid. Returns truth if everything looks OK, and falsehood otherwise.
+
+=back
 
 =cut
 
@@ -341,9 +354,13 @@ sub check_gpg_attributes {
     return 1;
 }
 
+=over
+
 =item unsign
 
 Removes the signature from the record, if it has one.
+
+=back
 
 =cut
 
@@ -425,6 +442,8 @@ sub massage_time {
 # RPC param prep
 #########################
 
+=over
+
 =item render_as_hashref
 
 Returns an unblessed hash reference describing the game record. It
@@ -432,13 +451,17 @@ just so happens that this hash reference is in the very same format
 that the Volity C<record_game> RPC request requires as its
 E<lt>sructE<gt> argument. Fancy that!
 
+=back
+
 =cut
 
 sub render_as_hashref {
     my $self    = shift;
     my $hashref = {};
     foreach (
-        qw(id winners start_time end_time game_uri server signature finished))
+        qw( id winners start_time end_time game_uri server signature
+        finished )
+        )
     {
         $$hashref{$_} = $self->$_ if defined( $self->$_ );
     }
@@ -455,8 +478,6 @@ sub new_from_hashref {
 
     return $class->new($hashref);
 }
-
-=back
 
 =head1 AUTHOR
 
