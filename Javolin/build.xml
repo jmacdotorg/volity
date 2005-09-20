@@ -159,4 +159,23 @@
     </jar>
   </target>
 
+  <target name="libarchive2" depends="compile"
+        description="generate the jar file, including third-party libs">
+    <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
+    <jar jarfile="${jarfilejavolin}">
+      <!-- Put some of ${build} into the ${jarfile} file -->
+      <fileset dir="${build}">
+        <include name="org/volity/javolin/" />
+        <include name="org/volity/client/" />
+        <include name="org/volity/jabber/" />
+      </fileset>
+      <!-- Merge all of the lib .jars into the ${jarfile} file -->
+      <zipgroupfileset dir="${lib.loc}" includes="*.jar"/>
+      <!-- Add the main class to the manifest -->
+      <manifest>
+        <attribute name="Main-Class" value="${mainclass}"/>
+      </manifest> 
+    </jar>
+  </target>
+
 </project>
