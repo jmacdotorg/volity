@@ -162,19 +162,24 @@ An array of strings representing the IDs of role-differentiated seats that playe
 
 =cut
 
-use warnings; no warnings qw(deprecated);
+use warnings;
+no warnings qw(deprecated);
 use strict;
 
 use base qw(Volity Class::Data::Inheritable);
 
-use fields qw(winners quitters current_seat current_seat_index referee config_variables is_afoot is_suspended is_finished config_variable_setters);
+use fields
+    qw(winners quitters current_seat current_seat_index referee config_variables is_afoot is_suspended is_finished config_variable_setters);
 
 # Define some class accessors.
-foreach (qw(uri name description ruleset_version website max_allowed_seats min_allowed_seats seat_class seat_ids required_seat_ids)) {
-  __PACKAGE__->mk_classdata($_);
+foreach (
+    qw(uri name description ruleset_version website max_allowed_seats min_allowed_seats seat_class seat_ids required_seat_ids)
+    )
+{
+    __PACKAGE__->mk_classdata($_);
 }
 foreach (qw(seat_ids required_seat_ids)) {
-  __PACKAGE__->$_([]);
+    __PACKAGE__->$_( [] );
 }
 
 use Scalar::Util qw(weaken);
@@ -182,25 +187,30 @@ use Scalar::Util qw(weaken);
 use Carp qw(carp croak);
 
 sub initialize {
-  my $self = shift;
-  $self->current_seat_index(0);
-#  $self->current_player(($self->players)[0]);
-  weaken($self->{referee});
-  $self->config_variables({});
-  $self->config_variable_setters({});
-  $self->winners([]);
-  $self->is_finished(0);
+    my $self = shift;
+    $self->current_seat_index(0);
+
+    #  $self->current_player(($self->players)[0]);
+    weaken( $self->{referee} );
+    $self->config_variables(        {} );
+    $self->config_variable_setters( {} );
+    $self->winners( [] );
+    $self->is_finished(0);
 }
 
 sub AUTOLOAD {
-  my $self = shift;
-  our $AUTOLOAD;
-  my ($method) = $AUTOLOAD =~ /^.*::(.*)$/;
-  if ($self->can('referee') && $self->referee && $self->referee->can($method)) {
-    return $self->referee->$method(@_);
-  } else {
-    Carp::confess ("Unknown method $method");
-  }
+    my $self = shift;
+    our $AUTOLOAD;
+    my ($method) = $AUTOLOAD =~ /^.*::(.*)$/;
+    if (   $self->can('referee')
+        && $self->referee
+        && $self->referee->can($method) )
+    {
+        return $self->referee->$method(@_);
+    }
+    else {
+        Carp::confess("Unknown method $method");
+    }
 }
 
 =head2 Other methods
@@ -235,15 +245,16 @@ C<initialize()> method definition.
 =cut
 
 sub rotate_current_seat {
-  my $self = shift;
-  my $index = $self->current_seat_index;
-  if ($index + 1< ($self->referee->seats)) {
-    $index++;
-  } else {
-    $index = 0;
-  }
-  $self->current_seat_index($index);
-  $self->current_seat(($self->referee->seats)[$index]);
+    my $self  = shift;
+    my $index = $self->current_seat_index;
+    if ( $index + 1 < ( $self->referee->seats ) ) {
+        $index++;
+    }
+    else {
+        $index = 0;
+    }
+    $self->current_seat_index($index);
+    $self->current_seat( ( $self->referee->seats )[$index] );
 }
 
 =item call_ui_function_on_everyone
@@ -271,29 +282,29 @@ See the C<call_ui_function> method of L<Volity::Player> for arguments and return
 
 # See the POD section above for what this group of methods does...
 sub call_ui_function_on_everyone {
-  my $self = shift;
-  map($_->call_ui_function(@_), $self->referee->players);
+    my $self = shift;
+    map( $_->call_ui_function(@_), $self->referee->players );
 }
 
 sub call_ui_function_on_observers {
-  my $self = shift;
-  my @observers = grep(not(defined($_->seat)), $self->referee->players);
-  map($_->call_ui_function(@_), @observers);
+    my $self = shift;
+    my @observers = grep( not( defined( $_->seat ) ), $self->referee->players );
+    map( $_->call_ui_function(@_), @observers );
 }
 
 sub call_ui_function_on_seats {
-  my $self = shift;
-  map($_->call_ui_function(@_), $self->referee->seats);
+    my $self = shift;
+    map( $_->call_ui_function(@_), $self->referee->seats );
 }
 
 # register_config_variables: Turn the given strings into class variables,
 # and also add them to the internal list of configuration vars.
 # We need to remember these for proper URI construction.
 sub register_config_variables {
-    my $self = shift;
+    my $self  = shift;
     my $class = ref($self);
     foreach (@_) {
-	$self->config_variables->{$_} = 1;
+        $self->config_variables->{$_} = 1;
     }
 
 }
@@ -301,15 +312,15 @@ sub register_config_variables {
 # full_uri: Returns the base uri plus a query string based on current
 # game config settings.
 sub full_uri {
-    my $self = shift;
-    my $class = ref($self);
+    my $self     = shift;
+    my $class    = ref($self);
     my $base_uri = $class->uri;
     my @query_string_parts;
-    for my $config_variable_name (@{$class->config_variables}) {
-	push (@query_string_parts, "$config_variable_name=".
-	      $class->$config_variable_name)
+    for my $config_variable_name ( @{ $class->config_variables } ) {
+        push( @query_string_parts,
+            "$config_variable_name=" . $class->$config_variable_name );
     }
-    my $full_uri = "$base_uri?" . join('&', @query_string_parts);
+    my $full_uri = "$base_uri?" . join( '&', @query_string_parts );
     return $full_uri;
 }
 
@@ -327,12 +338,14 @@ sub is_config_variable {
 sub tell_seat_about_config {
     my $self = shift;
     my ($seat) = @_;
-    while (my ($config_variable_name, $setter) = each(%{$self->config_variable_setters})) {
-	unless ($setter) {
-	    $setter = $self->referee->table_creator;
-	}
-	my $value = $self->$config_variable_name;
-	$seat->call_ui_function($config_variable_name, $setter->nick, $value);
+    while ( my ( $config_variable_name, $setter ) =
+        each( %{ $self->config_variable_setters } ) )
+    {
+        unless ($setter) {
+            $setter = $self->referee->table_creator;
+        }
+        my $value = $self->$config_variable_name;
+        $seat->call_ui_function( $config_variable_name, $setter->nick, $value );
     }
 }
 
@@ -340,16 +353,22 @@ sub tell_seat_about_config {
 # play and not suspended.
 sub is_active {
     my $self = shift;
-    return $self->is_afoot && not($self->is_suspended);
+    return $self->is_afoot && not( $self->is_suspended );
 }
 
 # is_disrupted: Return 1 if at least one seat is lacking control. 0 otherwise.
 sub is_disrupted {
     my $self = shift;
-    if (grep(not($_->is_under_control), grep(not($_->is_eliminated), $self->seats)) && not($self->is_abandoned)) {
-	return 1;
-    } else {
-	return 0;
+    if (
+        grep( not( $_->is_under_control ),
+            grep( not( $_->is_eliminated ), $self->seats ) )
+        && not( $self->is_abandoned )
+        )
+    {
+        return 1;
+    }
+    else {
+        return 0;
     }
 }
 
@@ -357,21 +376,26 @@ sub is_disrupted {
 # seats.
 sub is_abandoned {
     my $self = shift;
-    if (grep($_->is_under_control, grep(not($_->is_eliminated),$self->seats))) {
-	return 0;
-    } else {
-	return 1;
+    if (
+        grep( $_->is_under_control,
+            grep( not( $_->is_eliminated ), $self->seats ) )
+        )
+    {
+        return 0;
+    }
+    else {
+        return 1;
     }
 }
-
 
 # send_full_state_to_player: Blast the given player (not seat) with full
 # game state. By default it's a no-op. Subclasses should override this.
 sub send_full_state_to_player {
-    my $self = shift;
-    my ($player) = @_;
+    my $self       = shift;
+    my ($player)   = @_;
     my $player_jid = $player->jid;
-    $self->logger->warn("Base class recover_state called for $player_jid. Nothing to do.");
+    $self->logger->warn(
+        "Base class recover_state called for $player_jid. Nothing to do.");
 }
 
 ###################
@@ -393,13 +417,12 @@ L<"Callback methods">.
 # end: called when the game has come to a close, one way or another.
 # Does very little right now.
 sub end {
-  my $self = shift;
-  my ($args) = @_;
-  $self->is_afoot(0);
-  $self->is_finished(1);
-  $self->referee->end_game;
+    my $self = shift;
+    my ($args) = @_;
+    $self->is_afoot(0);
+    $self->is_finished(1);
+    $self->referee->end_game;
 }
-
 
 ############
 # Callbacks
@@ -467,12 +490,11 @@ sub has_acceptable_config {
     return 1;
 }
 
-sub handle_normal_message { }
+sub handle_normal_message    { }
 sub handle_groupchat_message { }
-sub handle_chat_message { }
-sub handle_headline_message { }
-sub handle_error_message { }
-
+sub handle_chat_message      { }
+sub handle_headline_message  { }
+sub handle_error_message     { }
 
 =head1 AUTHOR
 
@@ -483,7 +505,6 @@ Jason McIntosh <jmac@jmac.org>
 Copyright (c) 2003 by Jason McIntosh.
 
 =cut
-
 
 1;
 
