@@ -22,6 +22,12 @@ use Carp;
 # This is a superclass for Volity objects, giving them super-duper Jabber
 # powers. Poe::Component::Jabber powers, actually.
 
+# Annoyingly "perldoc" doesn't support =encoding even though it's documented
+# in perlpod.  It does make you wonder _who_ supports it of perldoc
+# doesn't...
+
+=encoding utf8
+
 =begin TODO
 
 The roster should be easier to use, by way of more methods. Make
@@ -112,13 +118,13 @@ their corresponding localized text as values. For example:
 
  { 
    'en' => "This is some localized text.",
-   'es' => "ste es un poco de texto localizado.",
-   'fr' => "C'est un certain texte localis.",
+   'es' => "Éste es un poco de texto localizado.",
+   'fr' => "C'est un certain texte localisé.",
+   'ru' => "Это будет некоторый локализованный текст.",
  }
 
-(Since Jabber uses UTF-8, there's no need to limit this to Latin-based
-character sets, but translate.google.com doesn't help me provide such
-examples here. ;) )
+Do make sure that you "use utf8" and enter UTF-8 only text if you're using
+anything other then ASCII.  Remember, Latin-1 is NOT compatible with UTF-8.
 
 If you aren't concerned at all with localization, you can simply
 ignore all these methods and techniques, and nothing will break. So,
