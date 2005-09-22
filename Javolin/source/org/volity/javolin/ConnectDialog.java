@@ -42,7 +42,9 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         " wish to use, you may fill it in and press Connect.";
     private final static String HELP_TEXT_REGISTER = 
         "If you wish to log into an existing Jabber account," +
-        " turn off this option.";
+        " turn off this option.\n\nYou may register with any" +
+        " Jabber host that offers open registration. You are" +
+        " welcome to use volity.net.";
 
     private JTextField mHostNameField;
     private JTextField mUserNameField;
