@@ -10,6 +10,7 @@ my $build = Module::Build->new
    license=>'lgpl',
    requires=> {
 	       'Volity'=>'0.3.5',
+	       'Games::Cards'=>0,
 	     },
   );
 $build->create_build_script;
