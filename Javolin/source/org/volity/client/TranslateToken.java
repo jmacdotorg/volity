@@ -458,6 +458,7 @@ public class TranslateToken {
         "referee_not_ready", "The referee is not yet ready to service requests.",
         "game_in_progress", "The game is in progress.",
         "game_not_in_progress", "The game has not yet started.",
+        "jid_present", "The player \\1 has already joined the table.",
         "jid_not_present", "The player \\1 has not joined the table.",
         "jid_not_ready", "The player \\1 is not yet ready to take part in the game.",
         "not_seated", "You are not seated.",
