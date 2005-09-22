@@ -1,11 +1,12 @@
 package org.volity.client;
 
 import java.util.Arrays;
+import java.util.List;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.volity.jabber.RPCException;
-import org.volity.client.TokenRequester;
 import org.volity.client.TokenFailure;
+import org.volity.client.TokenRequester;
+import org.volity.jabber.RPCException;
 
 /** A Jabber-RPC connection to a Volity game referee. */
 public class Referee extends TokenRequester {
@@ -21,21 +22,6 @@ public class Referee extends TokenRequester {
     mTable = table;
   }  
 
-
-  /**
-   * Ask the referee to invite a player to this game.
-   * @param jid the JID of the player to invite
-   * @param message a text message to include with the invitation
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if a RPC fault occurs
-   */
-  public void invitePlayer(String jid, String message)
-    throws XMPPException, RPCException, TokenFailure
-  {
-    invoke("volity.invite_player",
-           Arrays.asList(new String[] { jid, message }));
-  }
-
   /**
    * Ask the referee to invite a player to this game.
    * @param jid the JID of the player to invite
@@ -45,8 +31,29 @@ public class Referee extends TokenRequester {
   public void invitePlayer(String jid)
     throws XMPPException, RPCException, TokenFailure
   {
-    invoke("volity.invite_player",
-           Arrays.asList(new String[] { jid }));
+    invitePlayer(jid, null);
+  }
+
+  /**
+   * Ask the referee to invite a player to this game.
+   * @param jid the JID of the player to invite
+   * @param message a text message to include with the invitation
+   *        (If null or empty, no message is sent.)
+   * @throws XMPPException if an XMPP error occurs
+   * @throws RPCException if a RPC fault occurs
+   */
+  public void invitePlayer(String jid, String message)
+    throws XMPPException, RPCException, TokenFailure
+  {
+    List args;
+    if (message == null || message.equals(""))
+      args = Arrays.asList(new String[] { jid });
+    else
+      args = Arrays.asList(new String[] { jid, message });
+
+    // Allow a longer timeout than usual, since the message has to be
+    // relayed through the referee.
+    invokeTimeout("volity.invite_player", args, 90);
   }
 
   /**

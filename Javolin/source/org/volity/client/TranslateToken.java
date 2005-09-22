@@ -462,6 +462,7 @@ public class TranslateToken {
         "jid_not_ready", "The player \\1 is not yet ready to take part in the game.",
         "not_seated", "You are not seated.",
         "are_seated", "You are seated.",
-        "not_your_turn", "It's not your turn."
+        "not_your_turn", "It's not your turn.",
+        "relay_failed", "Your message could not be delivered to \\1."
     };
 }
