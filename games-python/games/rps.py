@@ -13,9 +13,7 @@ class RPS(volity.game.Game):
     gamename = 'Zarf\'s RPS'
     gamedescription = 'An unofficial Volity.net RPS implementation, by Andrew Plotkin.'
     ruleseturi = 'http://volity.org/games/rps' ### doesn't actually follow the ruleset at this address, because the ruleset is out of date.
-    rulesetversion = '1.0'
-    implementoremail = 'erkyrath@eblong.com'
-    implementorjid = 'zarf@jabber.org'
+    rulesetversion = '1.5'
 
     def __init__(self, ref):
         volity.game.Game.__init__(self, ref)

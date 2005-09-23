@@ -17,8 +17,6 @@ class BarsoomGo(volity.game.Game):
     gamedescription = 'Barsoomite Go: or, Branches and Twigs and Thorns'
     ruleseturi = 'http://eblong.com/zarf/volity/ruleset/barsoom/BarsoomGo.html'
     rulesetversion = '1.0'
-    implementoremail = 'erkyrath@eblong.com'
-    implementorjid = 'zarf@jabber.org'
 
     def __init__(self, ref):
         volity.game.Game.__init__(self, ref)
