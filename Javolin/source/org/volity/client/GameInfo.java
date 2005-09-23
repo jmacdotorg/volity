@@ -36,7 +36,8 @@ public class GameInfo
         for (iter = info.getIdentities(); iter.hasNext(); ) {
             DiscoverInfo.Identity ident = (DiscoverInfo.Identity)iter.next();
             if (ident.getCategory().equals("volity") 
-                && ident.getType().equals("parlor")) {
+                //###workaround && ident.getType().equals("parlor")
+                ) {
                 mGameName = ident.getName();
             }
         }

@@ -60,6 +60,7 @@ public class TableWindow extends JFrame implements PacketListener
     private final static String VIEW_LOADING = "LoadingMessage";
 
     private static Map sLocalUiFileMap = new HashMap();
+    private static Map sGameNameNumberMap = new HashMap();
 
     private final static String INFO_LABEL = "Info";
     private final static String INVITE_LABEL = "Invite";
@@ -82,6 +83,9 @@ public class TableWindow extends JFrame implements PacketListener
         UNSEAT_ICON = new ImageIcon(TableWindow.class.getResource("Unseat_ButIcon.png"));
     }
 
+    private String mGameName;
+    private int mGameNameNumber;
+
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
     private JSplitPane mBoardSplitter;
@@ -103,6 +107,7 @@ public class TableWindow extends JFrame implements PacketListener
     private SimpleDateFormat mTimeStampFormat;
 
     private SizeAndPositionSaver mSizePosSaver;
+    private GameServer mServer;
     private GameTable mGameTable;
     private String mNickname;
     private TranslateToken mTranslator;
@@ -191,6 +196,7 @@ public class TableWindow extends JFrame implements PacketListener
         File uiDir) throws XMPPException, RPCException, IOException, TokenFailure,
         MalformedURLException
     {
+        mServer = server;
         mGameTable = table;
         mNickname = nickname;
 
@@ -228,10 +234,18 @@ public class TableWindow extends JFrame implements PacketListener
 
         if (mGameTable == null)
         {
-            mGameTable = server.newTable();
+            mGameTable = mServer.newTable();
         }
 
-        setTitle(JavolinApp.getAppName() + ": " + mGameTable.getRoom());
+        /* Store the basic game name (as determined by the parlor info), and
+         * the uniquifying number which we may add onto the end in the window
+         * titlebar. */
+        mGameName = mServer.getGameInfo().getGameName();
+        if (mGameName == null)
+            mGameName = "Game";
+        mGameNameNumber = getGameNameNumber(mGameName);
+
+        setTitle(JavolinApp.getAppName() + ": " + getWindowName());
 
         /* Several components want a callback that prints text in the message
          * window. However, we don't know that they'll call it in the Swing
@@ -331,6 +345,7 @@ public class TableWindow extends JFrame implements PacketListener
                 public void windowClosing(WindowEvent we)
                 {
                     saveWindowState();
+                    releaseGameNameNumber(mGameName, mGameNameNumber);
                     // Shut down the UI.
                     if (mGameViewport != null && mGameViewport.getUI() != null)
                         mGameViewport.getUI().stop();
@@ -582,6 +597,64 @@ public class TableWindow extends JFrame implements PacketListener
             new ErrorWrapper(ex);
             writeMessageText(ex.toString());
         }
+    }
+
+    /**
+     * Return the general name for the game. This is taken from the server
+     * disco info. (If we didn't get a name that way, it's just "Game".)
+     */
+    public String getGameName()
+    {
+        return mGameName;
+    }
+
+    /**
+     * Return the window's name for the game. This is the server's game name,
+     * possibly with a uniquifying number stuck on the end. (So "Chess", 
+     * "Chess (2)", "Chess (3)"...)
+     */
+    public String getWindowName() 
+    {
+        String res = mGameName;
+        if (mGameNameNumber > 1)
+            res = res + " (" + mGameNameNumber + ")";
+        return res;
+    }
+
+    private static int getGameNameNumber(String name) 
+    {
+        SortedSet set = (SortedSet)sGameNameNumberMap.get(name);
+
+        if (set == null) {
+            set = new TreeSet();
+            sGameNameNumberMap.put(name, set);
+            set.add(new Integer(1));
+            return 1;
+        }
+
+        int num = 1;
+        for (Iterator iter = set.iterator(); iter.hasNext(); ) {
+            Integer nextItem = (Integer)iter.next();
+            int next = nextItem.intValue();
+            if (next != num)
+                break;
+            num++;
+        }
+
+        set.add(new Integer(num));
+        return num;
+    }
+
+    private static void releaseGameNameNumber(String name, int num)
+    {
+        Integer item = new Integer(num);
+        SortedSet set = (SortedSet)sGameNameNumberMap.get(name);
+
+        if (set == null) {
+            return;
+        }
+
+        set.remove(item);
     }
 
     /**

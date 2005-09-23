@@ -56,8 +56,7 @@ public class InfoDialog extends BaseDialog
 
         int row = 0;
 
-        // ### Improve window label, please
-        label = new JLabel(mOwner.getTitle());
+        label = new JLabel(mOwner.getWindowName());
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
