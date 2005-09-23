@@ -65,6 +65,17 @@ game -- the base class used to develop a new game
 
 * Version history:
 
+- 1.4.0
+Rearranged the volityd.py script to accept a config file and environment
+    variables, as well as command-line options.
+Added a config-file module.
+Removed implementorjid and implementoremail from the game API. These are
+    now defined by volityd.py configuration, since they represent the
+    person running the parlor, not the game implementor.
+Added the invite_player RPC.
+Set the parlor and referee to include JEP-0115 capabilities tags in their
+    presence info.
+
 - 1.3.3:
 The referee is no longer confused by a player whose MUC affiliation is
     'owner'.
@@ -127,5 +138,5 @@ Initial release. Missing many features, but I call it 1.0 anyway.
 """
 
 __all__ = [ 
-    'volent', 'parlor', 'referee', 'game'
+    'volent', 'parlor', 'referee', 'game', 'config'
 ]

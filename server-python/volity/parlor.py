@@ -12,11 +12,13 @@ REFEREE_STARTUP_TIMEOUT = 120
 
 class Parlor(volent.VolEntity):
     logprefix = 'volity.parlor'
+    volityrole = 'parlor'
 
-    def __init__(self, opts):
-        volent.VolEntity.__init__(self, opts.jid, opts.password, opts.jidresource)
+    def __init__(self, config):
+        volent.VolEntity.__init__(self, config.get('jid'),
+            config.get('password'), config.get('jid-resource'))
 
-        ls = opts.gameclass.split('.')
+        ls = config.get('game').split('.')
         if (len(ls) < 2):
             raise ValueError('gameclass must be of the form module.gameclass')
         classname = ls[-1]
@@ -36,8 +38,8 @@ class Parlor(volent.VolEntity):
             raise TypeError('gameclass does not define class.ruleseturi')
             
         self.adminjid = None
-        if (opts.adminjid):
-            self.adminjid = interface.JID(opts.adminjid)
+        if (config.get('admin')):
+            self.adminjid = interface.JID(config.get('admin'))
 
         self.gamename = gameclass.gamename
         self.log.warning('Game parlor running: %s', self.gamename)
@@ -47,7 +49,8 @@ class Parlor(volent.VolEntity):
         self.conn.adddispatcher(self.handlemessage, name='message')
 
         self.referees = {}
-        self.muchost = interface.JID(opts.muchost)
+        self.muchost = interface.JID(config.get('muchost',
+            'conference.volity.net'))
         self.online = True
         self.startuptime = time.time()
         self.activitytime = None
@@ -61,16 +64,16 @@ class Parlor(volent.VolEntity):
         form = jabber.dataform.DataForm()
         form.addfield('description', gameclass.gamedescription)
         form.addfield('ruleset', gameclass.ruleseturi)
-        form.addfield('volity-role', 'parlor')
+        form.addfield('volity-role', self.volityrole)
         form.addfield('ruleset-version', gameclass.rulesetversion)
         val = gameclass.websiteurl
         if (not val):
             val = gameclass.ruleseturi
         form.addfield('website', val)
-        if (gameclass.implementoremail):
-            form.addfield('contact-email', gameclass.implementoremail)
-        if (gameclass.implementorjid):
-            form.addfield('contact-jid', gameclass.implementorjid)
+        if (config.get('contact-email')):
+            form.addfield('contact-email', config.get('contact-email'))
+        if (config.get('contact-jid')):
+            form.addfield('contact-jid', config.get('contact-jid'))
         form.addfield('volity-version', volent.volityversion)
         info.setextendedinfo(form)
 
@@ -83,7 +86,7 @@ class Parlor(volent.VolEntity):
 
         items = disco.additems('ruleset')
         items.additem(
-            'bookkeeper@volity.com', ### from opts.bookkeeper
+            config.get('bookkeeper', 'bookkeeper@volity.net'),
             node=gameclass.ruleseturi,
             name='Ruleset information (%s)' % gameclass.ruleseturi)
 
@@ -95,9 +98,15 @@ class Parlor(volent.VolEntity):
         dic['volity'] = ParlorVolityOpset(self)
         dic['admin'] = ParlorAdminOpset(self)
 
-        if (opts.keepalive or opts.keepaliveinterval):
-            if (opts.keepaliveinterval):
-                serv = jabber.keepalive.KeepAliveService(opts.keepaliveinterval)
+        keepaliveflag = False
+        if (config.get('keepalive')):
+            keepaliveflag = True
+        keepaliveinterval = None
+        if (config.get('keepalive-interval')):
+            keepaliveinterval = int(config.get('keepalive-interval'))
+        if (keepaliveflag or keepaliveinterval):
+            if (keepaliveinterval):
+                serv = jabber.keepalive.KeepAliveService(keepaliveinterval)
             else:
                 serv = jabber.keepalive.KeepAliveService()
             self.conn.addservice(serv)

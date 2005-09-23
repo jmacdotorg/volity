@@ -30,6 +30,11 @@ simple tasks.
 
 * Version history:
 
+- 1.2.6:
+Added a hook API to PresenceService, so that an application can customize
+    presence stanzas as they're generated.
+Added the Entity Capabilities (JEP-0115) URI to interface.py.
+
 - 1.2.5:
 Added a way to override the default parsing of Jabber-RPC value tags.
     (On a global basis only -- sorry.)

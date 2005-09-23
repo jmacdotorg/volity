@@ -10,6 +10,7 @@ import zymb.jabber.rpcdata
 import zymb.jabber.presence
 
 volityversion = '1.0'
+VOLITY_CAPS_URI = 'http://volity.org/protocol/caps'
 
 def doubletoint(nod, nam):
     """doubletoint -- internal function used as an rpcdata value parser hook.
@@ -37,6 +38,7 @@ jabber.rpcdata.setvalueparserhook(doubletoint)
 
 class VolEntity(zymb.sched.Agent):
     logprefix = 'volity'
+    volityrole = 'UNDEFINED'
 
     def __init__(self, jidstr, password, jidresource=None):
         zymb.sched.Agent.__init__(self)
@@ -59,7 +61,9 @@ class VolEntity(zymb.sched.Agent):
         self.conn.addhandler('authresource', self.authed)
         self.conn.addhandler('end', self.stop)
 
-        self.conn.addservice(jabber.presence.PresenceService())
+        pres = jabber.presence.PresenceService();
+        pres.addhook(self.cappresencehook)
+        self.conn.addservice(pres)
 
         disco = jabber.disco.DiscoService()
         self.conn.addservice(disco)
@@ -92,6 +96,14 @@ class VolEntity(zymb.sched.Agent):
 
     def rpcnotfound(self, msg, callname, callargs):
         raise jabber.rpcdata.RPCFault(603, 'RPC method ' + callname)
+
+    def cappresencehook(self, msg):
+        typestr = msg.getattr('type', '')
+        if (typestr != 'unavailable'):
+            msg.setchild('c', namespace=jabber.interface.NS_CAPS, attrs={
+                'node': VOLITY_CAPS_URI,
+                'ver': volityversion,
+                'ext': self.volityrole })
 
 class ClientRPCWrapperOpset(jabber.rpc.WrapperOpset):
     """###

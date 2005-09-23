@@ -77,6 +77,8 @@ NS_DELAY = 'jabber:x:delay'
 # JEP-0095: Stream Initiation
 NS_SI = 'http://jabber.org/protocol/si'
 
+# JEP-0115: Entity Capabilities
+NS_CAPS = 'http://jabber.org/protocol/caps'
 
 class JID:
     """JID: A class representing a Jabber ID.

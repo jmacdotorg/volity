@@ -15,11 +15,13 @@ STATE_ABANDONED = intern('abandoned')
 STATE_SUSPENDED = intern('suspended')
 
 CLIENT_DEFAULT_RPC_TIMEOUT = 5 ###
+CLIENT_INVITATION_RPC_TIMEOUT = 30
 DEAD_CONFIG_TIMEOUT = 90
 ABANDONED_TIMEOUT = 3*60
 
 class Referee(volent.VolEntity):
     logprefix = 'volity.referee'
+    volityrole = 'referee'
 
     maxmucusers = 60
 
@@ -96,7 +98,7 @@ class Referee(volent.VolEntity):
         # assumes resource didn't change
         form = jabber.dataform.DataForm()
         form.addfield('parlor', unicode(self.parlor.jid))
-        form.addfield('volity-role', 'referee')
+        form.addfield('volity-role', self.volityrole)
         form.addfield('table', unicode(self.muc))
         # The following are adjusted in updatediscoinfo().
         form.addfield('state', '')
@@ -282,6 +284,9 @@ class Referee(volent.VolEntity):
         msg = interface.Node('presence',
             attrs={ 'to':unicode(self.mucnick) })
         msg.setchild('x', namespace=interface.NS_MUC)
+        # We're not using the Zymb PresenceService, so we add the capabilities
+        # tag manually.
+        self.cappresencehook(msg)
 
         self.conn.send(msg, addid=False)
         self.jump('configuring')
@@ -656,6 +661,51 @@ class Referee(volent.VolEntity):
     def playersuspend(self, sender=None):
         self.queueaction(self.suspendgame, sender)
 
+    def playerinvite(self, sender, jidstr, msg=None):
+        if (self.players.has_key(jidstr)):
+            raise game.FailureToken('volity.jid_present',
+                game.Literal(jidstr))
+
+        defer = sched.Deferred(self.playerinvitecont)
+
+        argmap = {
+            'player' : unicode(sender),
+            'table' : unicode(self.muc),
+            'referee' : unicode(self.jid),
+            'parlor' : unicode(self.parlor.jid),
+            'ruleset' : self.parlor.gameclass.ruleseturi,
+            'name' : self.parlor.gamename,
+        }
+        if (msg):
+            argmap['message'] = msg
+        
+        self.rpccli.send((self.gotinvitereply, defer, jidstr),
+            jidstr, 'volity.receive_invitation', argmap,
+            timeout=CLIENT_INVITATION_RPC_TIMEOUT)
+        raise defer
+
+    def gotinvitereply(self, tup, defer, jidstr):
+        try:
+            res = sched.Deferred.extract(tup)
+            # If no exception, then the call succeeded.
+            ac = self.queueaction(defer, jidstr, 'ok')
+            defer.addaction(ac)
+        except sched.TimeoutException, ex:
+            ac = self.queueaction(defer, jidstr, 'timeout')
+            defer.addaction(ac)
+        except jabber.interface.StanzaError, ex:
+            ac = self.queueaction(defer, jidstr, 'ex', ex)
+            defer.addaction(ac)
+        except Exception, ex:
+            ex = jabber.interface.StanzaInternalServerError(str(ex))
+            ac = self.queueaction(defer, jidstr, 'ex', ex)
+            defer.addaction(ac)
+
+    def playerinvitecont(self, jidstr, res, ex=None):
+        if (res == 'ok'):
+            return
+        raise game.FailureToken('volity.relay_failed', game.Literal(jidstr))
+            
     def configsetlanguage(self, sender, lang):
         if (len(lang) != 2):
             raise rpc.RPCFault(606, 'language must be a two-character string')
@@ -919,7 +969,7 @@ class Referee(volent.VolEntity):
         
         # This will check against the immutable seat listings.
         self.queueaction(self.checktimersetting)
-        
+
     def announce(self, data):
         msg = interface.Node('message',
             attrs={ 'to':unicode(self.muc), 'type':'groupchat' })
@@ -1214,6 +1264,7 @@ class RefVolityOpset(rpc.MethodOpset):
         self.validators['kill_game'] = Validator(state=STATE_SUSPENDED,
             args=bool)
         self.validators['send_state'] = Validator(argcount=0)
+        self.validators['invite_player'] = Validator(args=[str, (str, None)])
 
     def precondition(self, sender, namehead, nametail, *callargs):
         if (self.referee.state != 'running'):
@@ -1268,7 +1319,8 @@ class RefVolityOpset(rpc.MethodOpset):
         self.referee.sendfullstate(player)
         return None
 
-    ### def rpc_invite_player
+    def rpc_invite_player(self, sender, *args):
+        return self.referee.playerinvite(sender, *args)
 
         
 class RefAdminOpset(rpc.MethodOpset):

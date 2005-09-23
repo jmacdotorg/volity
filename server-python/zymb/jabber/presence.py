@@ -17,6 +17,8 @@ class PresenceService(service.Service):
     Public methods:
 
     set(avail=True) -- set your availability.
+    addhook(hook) -- add a hook to modify outgoing presence stanzas.
+    removehook(hook) -- remove a hook to modify outgoing presence stanzas.
     """
 
     label = 'presenceservice'
@@ -25,6 +27,7 @@ class PresenceService(service.Service):
     def __init__(self):
         service.Service.__init__(self)
         self.available = False
+        self.hooklist = []
 
     def attach(self, agent):
         """attach() -- internal method to attach this Service to a
@@ -56,11 +59,55 @@ class PresenceService(service.Service):
         if (avail):
             self.log.debug('announcing available')
             msg = interface.Node('presence')
-            self.agent.send(msg, addid=False, addfrom=False)
+            try:
+                for hook in self.hooklist:
+                    res = hook(msg)
+                    if (res != None):
+                        msg = res
+                self.agent.send(msg, addid=False, addfrom=False)
+            except interface.StanzaHandled:
+                pass
         else:
             self.log.debug('announcing unavailable')
             msg = interface.Node('presence', attrs={'type':'unavailable'})
-            self.agent.send(msg, addid=False)
+            try:
+                for hook in self.hooklist:
+                    res = hook(msg)
+                    if (res != None):
+                        msg = res
+                self.agent.send(msg, addid=False)
+            except interface.StanzaHandled:
+                pass
         
         self.available = avail
+
+    def addhook(self, hook):
+        """addhook(hook) -> None
+        
+        Add a hook to modify outgoing presence stanzas. The hook is called
+        for every presence stanza which is sent out; it has the opportunity
+        to modify the stanza or send it itself.
     
+        The hook is a function which accepts one argument, a Node. The
+        function may either:
+    
+            - do nothing and return None;
+            - modify the Node and return None;
+            - create a new Node and return it;
+            - raise interface.StanzaHandled to indicate that it has taken
+                responsibility for sending presence.
+    
+        Multiple hooks are executed in the order that they were added.
+        """
+    
+        self.hooklist.append(hook)
+
+    def removehook(self, hook):
+        """removehook(hook) -> None
+
+        Remove a hook function which was added with addhook(). If no hook
+        matches, this does nothing.
+        """
+        
+        if (hook in self.hooklist):
+            self.hooklist.remove(hook)

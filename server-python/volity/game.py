@@ -12,8 +12,6 @@ class Game:
     ruleseturi = None
     rulesetversion = '1.0'
     websiteurl = None
-    implementoremail = None
-    implementorjid = None
 
     defaultlanguage = None
     defaultrecordgames = None
