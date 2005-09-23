@@ -278,7 +278,7 @@ sub handle_disco_info_request {
     # Build the list of disco items to return.
     my @items;
     my $identity = Volity::Jabber::Disco::Identity->new({category=>'volity',
-							 type=>'game-server',
+							 type=>'parlor',
 						     });
     my $game_class = $self->game_class;
     my $node = $query->attr('node');
