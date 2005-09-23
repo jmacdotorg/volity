@@ -30,6 +30,11 @@ public class Invitation {
     return (String) fields.get("referee");
   }
 
+  /** The game's name. */
+  public String getGameName() {
+    return (String) fields.get("name");
+  }
+
   /**
    * The JID of the game parlor that created the game table, or null
    * if it was not provided in the invitation.

@@ -305,16 +305,27 @@ public class GetInvitationDialog extends BaseDialog
 
         int row = 0;
 
-        label = new JLabel(mInvite.getPlayerJID());
+        field = new JTextField(mInvite.getPlayerJID());
+        field.setEditable(false);
+        field.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
         c.gridwidth = GridBagConstraints.REMAINDER;
         c.anchor = GridBagConstraints.WEST;
         c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
-        cPane.add(label, c);
+        cPane.add(field, c);
 
-        label = new JLabel("  has invited you to join a game.");
+        String gamename = mInvite.getGameName();
+        if (gamename != null)
+            gamename = gamename.trim();
+
+        msg = "  has invited you to join a game";
+        if (gamename != null && !gamename.equals(""))
+            msg = msg + " of";
+        else
+            msg = msg + ".";
+        label = new JLabel(msg);
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
@@ -322,6 +333,19 @@ public class GetInvitationDialog extends BaseDialog
         c.anchor = GridBagConstraints.WEST;
         c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
         cPane.add(label, c);
+
+        if (gamename != null && !gamename.equals("")) {
+            field = new JTextField(gamename);
+            field.setEditable(false);
+            field.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.anchor = GridBagConstraints.WEST;
+            c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
+            cPane.add(field, c);
+        }
 
         String message = mInvite.getMessage();
         if (message != null)
@@ -355,7 +379,7 @@ public class GetInvitationDialog extends BaseDialog
         c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
         cPane.add(label, c);
 
-        mNicknameField = new JTextField(25);
+        mNicknameField = new JTextField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = row++;

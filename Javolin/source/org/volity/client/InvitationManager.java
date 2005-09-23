@@ -58,7 +58,16 @@ public class InvitationManager implements PacketFilter, RPCHandler {
   public void handleRPC(String methodName, List params,
 			RPCResponseHandler responseHandler)
   {
-    Invitation invitation = new Invitation((Map) params.get(0));
+    if (params.size() != 1) {
+      responseHandler.respondFault(604, "missing argument in invitation");
+      return;
+    }
+    Object map = params.get(0);
+    if (!(map instanceof Map)) {
+      responseHandler.respondFault(605, "invitation argument is not struct");
+      return;
+    }
+    Invitation invitation = new Invitation((Map)map);
     responseHandler.respondValue(Boolean.TRUE);
     for (Iterator it = listeners.iterator(); it.hasNext(); )
       ((InvitationListener) it.next()).invitationReceived(invitation);
