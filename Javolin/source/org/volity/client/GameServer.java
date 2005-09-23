@@ -1,127 +1,77 @@
 package org.volity.client;
 
-import java.util.Iterator;
 import java.net.URI;
+import java.util.Iterator;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
-import org.volity.jabber.RPCException;
-import org.volity.client.TokenRequester;
 import org.volity.client.TokenFailure;
-
-// WORKAROUND -- REMOVE THESE WHEN SMACK SUPPORTS JEP-0128
-import org.jivesoftware.smack.util.PacketParserUtils;
-import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.provider.IQProvider;
-import org.jivesoftware.smack.provider.ProviderManager;
-import org.xmlpull.v1.XmlPullParser;
+import org.volity.client.TokenRequester;
+import org.volity.jabber.RPCException;
 
 /** A Jabber-RPC connection to a Volity game server. */
-public class GameServer extends TokenRequester {
-  /**
-   * @param connection an authenticated connection to an XMPP server
-   * @param JID the JID of the game server
-   * @throws IllegalStateException if the connection has not been authenticated
-   */
-  public GameServer(XMPPConnection connection, String JID) {
-    super(connection, JID);
-  }
+public class GameServer extends TokenRequester 
+{
+    protected GameInfo mGameInfo = null;
 
-  /**
-   * Ask what ruleset the game server implements.
-   * @throws XMPPException if an XMPP error occurs or the game server
-   *                       doesn't reply properly.
-   */
-  public URI getRuleset() throws XMPPException {
-    ServiceDiscoveryManager discoMan = 
-      ServiceDiscoveryManager.getInstanceFor(getConnection());
-    DiscoverInfo info = discoMan.discoverInfo(getResponderJID());
-    Form form = Form.getFormFrom(info);
-    if (form != null) {
-      FormField field = form.getField("ruleset");
-      if (field != null)
-	return URI.create((String) field.getValues().next());
+    /**
+     * @param connection an authenticated connection to an XMPP server
+     * @param JID the JID of the game server
+     * @throws IllegalStateException if the connection has not been 
+     *         authenticated
+     */
+    public GameServer(XMPPConnection connection, String JID) {
+        super(connection, JID);
     }
-    // FIXME: should be a Volity exception, with a better message
-    throw new XMPPException("No ruleset field found in disco form.");
-  }
 
-  /**
-   * Create a new instance (table) of the game (a Multi-User Chat room).
-   * @return the new MUC, which should immediately be joined
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if an RPC fault occurs
-   */
-  public GameTable newTable() 
-      throws XMPPException, RPCException, TokenFailure {
-    Object res = invokeTimeout("volity.new_table", 120);
-    /* We allow an extra-long timeout for the new_table call, because
-     * the server may have to do a lot of work. (I've seen it take over
-     * a minute, if the server is on a different Jabber server from
-     * the conference host.) */
-    return new GameTable(getConnection(), (String) res);
-  }
+    /**
+     * Returns the block of information which is found in the parlor's disco
+     * info. The information is cached, so repeated queries are fast.
+     */
+    public GameInfo getGameInfo() {
+        if (mGameInfo != null)
+            return mGameInfo;
 
-  // WORKAROUND -- REMOVE EVERYTHING BELOW WHEN SMACK SUPPORTS JEP-0128
+        ServiceDiscoveryManager discoMan =
+            ServiceDiscoveryManager.getInstanceFor(getConnection());
 
-  static {
-    ProviderManager.
-      addIQProvider("query",
-		    "http://jabber.org/protocol/disco#info",
-		    new DiscoverInfoProvider());
-  }
+        try {
+            DiscoverInfo info = discoMan.discoverInfo(getResponderJID());
+            mGameInfo = new GameInfo(info);
+        }
+        catch (XMPPException ex) {
+            // can't disco? I guess all the info fields are null.
+            mGameInfo = new GameInfo();
+        }
 
-  private static class DiscoverInfoProvider implements IQProvider {
-    public IQ parseIQ(XmlPullParser parser) throws Exception {
-      DiscoverInfo discoverInfo = new DiscoverInfo();
-      boolean done = false;
-      DiscoverInfo.Feature feature = null;
-      DiscoverInfo.Identity identity = null;
-      String category = "";
-      String name = "";
-      String type = "";
-      String variable = "";
-      discoverInfo.setNode(parser.getAttributeValue("", "node"));
-      while (!done) {
-	int eventType = parser.next();
-	if (eventType == XmlPullParser.START_TAG) {
-	  if (parser.getName().equals("identity")) {
-	    // Initialize the variables from the parsed XML
-	    category = parser.getAttributeValue("", "category");
-	    name = parser.getAttributeValue("", "name");
-	    type = parser.getAttributeValue("", "type");
-	  } else if (parser.getName().equals("feature")) {
-	    // Initialize the variables from the parsed XML
-	    variable = parser.getAttributeValue("", "var");
-	  } else {
-	    // Otherwise, it must be a packet extension.
-	    discoverInfo.
-	      addExtension(PacketParserUtils.
-			   parsePacketExtension(parser.getName(),
-						parser.getNamespace(),
-						parser));
-	  }
-	} else if (eventType == XmlPullParser.END_TAG) {
-	  if (parser.getName().equals("identity")) {
-	    // Create a new identity and add it to the discovered info.
-	    identity = new DiscoverInfo.Identity(category, name);
-	    identity.setType(type);
-	    discoverInfo.addIdentity(identity);
-	  }
-	  if (parser.getName().equals("feature")) {
-	    // Create a new feature and add it to the discovered info.
-	    discoverInfo.addFeature(variable);
-	  }
-	  if (parser.getName().equals("query")) {
-	    done = true;
-	  }
-	}
-      }
-
-      return discoverInfo;
+        return mGameInfo;
     }
-  }
+
+    /**
+     * Ask what ruleset the game server implements.
+     * @return the ruleset URI, or null if it could not be found.
+     */
+    public URI getRuleset() {
+        return getGameInfo().getRulesetURI();
+    }
+
+    /**
+     * Create a new instance (table) of the game (a Multi-User Chat room).
+     * @return the new MUC, which should immediately be joined
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if an RPC fault occurs
+     */
+    public GameTable newTable() 
+        throws XMPPException, RPCException, TokenFailure {
+        Object res = invokeTimeout("volity.new_table", 120);
+        /* We allow an extra-long timeout for the new_table call, because
+         * the server may have to do a lot of work. (I've seen it take over
+         * a minute, if the server is on a different Jabber server from
+         * the conference host.) */
+        return new GameTable(getConnection(), (String) res);
+    }
+
 }
