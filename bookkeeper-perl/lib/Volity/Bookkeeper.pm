@@ -24,7 +24,6 @@ use strict;
 use base qw(Volity::Jabber);
 
 our $VERSION = '0.4';
-use DBIx::Abstract;
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
