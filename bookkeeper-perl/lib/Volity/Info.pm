@@ -24,19 +24,15 @@ use strict;
 use base qw(Class::DBI);
 
 # These use statements laod all the table-classes at once.
-use Volity::Info::Language;
 use Volity::Info::Player;
 use Volity::Info::Server;
 use Volity::Info::Ruleset;
 use Volity::Info::File;
 use Volity::Info::Feature;
 use Volity::Info::FileFeature;
-# use Volity::Info::FileLanguage;
 use Volity::Info::Game;
 use Volity::Info::Seat;
 use Volity::Info::PlayerSeat;
 use Volity::Info::GameSeat;
-# use Volity::Info::GamePlayer;
-# use Volity::Info::GameQuitter;
 
 1;
