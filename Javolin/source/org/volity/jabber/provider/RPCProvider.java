@@ -211,7 +211,7 @@ public class RPCProvider implements IQProvider {
     return list;
   }
 
-  private XmlPullParserException error(XmlPullParser parser, String msg) {
+  protected XmlPullParserException error(XmlPullParser parser, String msg) {
     return new XmlPullParserException(msg, parser, null);
   }
 }
