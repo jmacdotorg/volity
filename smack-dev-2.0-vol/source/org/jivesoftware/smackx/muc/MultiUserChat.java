@@ -44,32 +44,32 @@ import org.jivesoftware.smackx.packet.*;
  */
 public class MultiUserChat {
 
-    private final static String discoNamespace = "http://jabber.org/protocol/muc";
-    private final static String discoNode = "http://jabber.org/protocol/muc#rooms";
+    protected final static String discoNamespace = "http://jabber.org/protocol/muc";
+    protected final static String discoNode = "http://jabber.org/protocol/muc#rooms";
 
-    private static Map joinedRooms = new WeakHashMap();
+    protected static Map joinedRooms = new WeakHashMap();
 
-    private XMPPConnection connection;
-    private String room;
-    private String subject;
-    private String nickname = null;
-    private boolean joined = false;
-    private Map occupantsMap = new HashMap();
+    protected XMPPConnection connection;
+    protected String room;
+    protected String subject;
+    protected String nickname = null;
+    protected boolean joined = false;
+    protected Map occupantsMap = new HashMap();
 
-    private List invitationRejectionListeners = new ArrayList();
-    private List subjectUpdatedListeners = new ArrayList();
-    private List userStatusListeners = new ArrayList();
-    private List participantStatusListeners = new ArrayList();
+    protected List invitationRejectionListeners = new ArrayList();
+    protected List subjectUpdatedListeners = new ArrayList();
+    protected List userStatusListeners = new ArrayList();
+    protected List participantStatusListeners = new ArrayList();
 
-    private PacketFilter presenceFilter;
-    private PacketListener presenceListener;
-    private PacketFilter subjectFilter;
-    private PacketListener subjectListener;
-    private PacketFilter messageFilter;
-    private PacketFilter declinesFilter;
-    private PacketListener declinesListener;
-    private PacketCollector messageCollector;
-    private List connectionListeners = new ArrayList();
+    protected PacketFilter presenceFilter;
+    protected PacketListener presenceListener;
+    protected PacketFilter subjectFilter;
+    protected PacketListener subjectListener;
+    protected PacketFilter messageFilter;
+    protected PacketFilter declinesFilter;
+    protected PacketListener declinesListener;
+    protected PacketCollector messageCollector;
+    protected List connectionListeners = new ArrayList();
 
     static {
         XMPPConnection.addConnectionListener(new ConnectionEstablishedListener() {
@@ -144,7 +144,7 @@ public class MultiUserChat {
      * @param connection the connection used to join the rooms.
      * @return an Iterator on the rooms where the user has joined using a given connection.
      */
-    private static Iterator getJoinedRooms(XMPPConnection connection) {
+    protected static Iterator getJoinedRooms(XMPPConnection connection) {
         ArrayList rooms = (ArrayList)joinedRooms.get(connection);
         if (rooms != null) {
             return rooms.iterator();
@@ -767,7 +767,7 @@ public class MultiUserChat {
     /**
      * Fires invitation rejection listeners.
      */
-    private void fireInvitationRejectionListeners(String invitee, String reason) {
+    protected void fireInvitationRejectionListeners(String invitee, String reason) {
         InvitationRejectionListener[] listeners = null;
         synchronized (invitationRejectionListeners) {
             listeners = new InvitationRejectionListener[invitationRejectionListeners.size()];
@@ -807,7 +807,7 @@ public class MultiUserChat {
     /**
      * Fires subject updated listeners.
      */
-    private void fireSubjectUpdatedListeners(String subject, String from) {
+    protected void fireSubjectUpdatedListeners(String subject, String from) {
         SubjectUpdatedListener[] listeners = null;
         synchronized (subjectUpdatedListeners) {
             listeners = new SubjectUpdatedListener[subjectUpdatedListeners.size()];
@@ -1265,7 +1265,7 @@ public class MultiUserChat {
         changeAffiliationByOwner(jid, "member");
     }
 
-    private void changeAffiliationByOwner(String jid, String affiliation) throws XMPPException {
+    protected void changeAffiliationByOwner(String jid, String affiliation) throws XMPPException {
         MUCOwner iq = new MUCOwner();
         iq.setTo(room);
         iq.setType(IQ.Type.SET);
@@ -1292,7 +1292,7 @@ public class MultiUserChat {
         }
     }
 
-    private void changeAffiliationByOwner(Collection jids, String affiliation)
+    protected void changeAffiliationByOwner(Collection jids, String affiliation)
             throws XMPPException {
         MUCOwner iq = new MUCOwner();
         iq.setTo(room);
@@ -1322,7 +1322,7 @@ public class MultiUserChat {
         }
     }
 
-    private void changeAffiliationByAdmin(String jid, String affiliation, String reason)
+    protected void changeAffiliationByAdmin(String jid, String affiliation, String reason)
             throws XMPPException {
         MUCAdmin iq = new MUCAdmin();
         iq.setTo(room);
@@ -1351,7 +1351,7 @@ public class MultiUserChat {
         }
     }
 
-    private void changeAffiliationByAdmin(Collection jids, String affiliation)
+    protected void changeAffiliationByAdmin(Collection jids, String affiliation)
             throws XMPPException {
         MUCAdmin iq = new MUCAdmin();
         iq.setTo(room);
@@ -1381,7 +1381,7 @@ public class MultiUserChat {
         }
     }
 
-    private void changeRole(String nickname, String role, String reason) throws XMPPException {
+    protected void changeRole(String nickname, String role, String reason) throws XMPPException {
         MUCAdmin iq = new MUCAdmin();
         iq.setTo(room);
         iq.setType(IQ.Type.SET);
@@ -1409,7 +1409,7 @@ public class MultiUserChat {
         }
     }
 
-    private void changeRole(Collection nicknames, String role) throws XMPPException {
+    protected void changeRole(Collection nicknames, String role) throws XMPPException {
         MUCAdmin iq = new MUCAdmin();
         iq.setTo(room);
         iq.setType(IQ.Type.SET);
@@ -1579,7 +1579,7 @@ public class MultiUserChat {
      * @throws XMPPException if an error occured while performing the request to the server or you
      *         don't have enough privileges to get this information.
      */
-    private Collection getAffiliatesByOwner(String affiliation) throws XMPPException {
+    protected Collection getAffiliatesByOwner(String affiliation) throws XMPPException {
         MUCOwner iq = new MUCOwner();
         iq.setTo(room);
         iq.setType(IQ.Type.GET);
@@ -1620,7 +1620,7 @@ public class MultiUserChat {
      * @throws XMPPException if an error occured while performing the request to the server or you
      *         don't have enough privileges to get this information.
      */
-    private Collection getAffiliatesByAdmin(String affiliation) throws XMPPException {
+    protected Collection getAffiliatesByAdmin(String affiliation) throws XMPPException {
         MUCAdmin iq = new MUCAdmin();
         iq.setTo(room);
         iq.setType(IQ.Type.GET);
@@ -1682,7 +1682,7 @@ public class MultiUserChat {
      * @throws XMPPException if an error occured while performing the request to the server or you
      *         don't have enough privileges to get this information.
      */
-    private Collection getOccupants(String role) throws XMPPException {
+    protected Collection getOccupants(String role) throws XMPPException {
         MUCAdmin iq = new MUCAdmin();
         iq.setTo(room);
         iq.setType(IQ.Type.GET);
@@ -1866,7 +1866,7 @@ public class MultiUserChat {
     /**
      * Notification message that the user has joined the room. 
      */
-    private synchronized void userHasJoined() {
+    protected synchronized void userHasJoined() {
         // Update the list of joined rooms through this connection
         ArrayList rooms = (ArrayList)joinedRooms.get(connection);
         if (rooms == null) {
@@ -1879,7 +1879,7 @@ public class MultiUserChat {
     /**
      * Notification message that the user has left the room. 
      */
-    private synchronized void userHasLeft() {
+    protected synchronized void userHasLeft() {
         // Update the list of joined rooms through this connection
         ArrayList rooms = (ArrayList)joinedRooms.get(connection);
         if (rooms == null) {
@@ -1894,7 +1894,7 @@ public class MultiUserChat {
      * @param packet the packet that may include the MUCUser extension.
      * @return the MUCUser found in the packet.
      */
-    private MUCUser getMUCUserExtension(Packet packet) {
+    protected MUCUser getMUCUserExtension(Packet packet) {
         if (packet != null) {
             // Get the MUC User extension
             return (MUCUser) packet.getExtension("x", "http://jabber.org/protocol/muc#user");
@@ -1928,7 +1928,7 @@ public class MultiUserChat {
         }
     }
 
-    private void fireUserStatusListeners(String methodName, Object[] params) {
+    protected void fireUserStatusListeners(String methodName, Object[] params) {
         UserStatusListener[] listeners = null;
         synchronized (userStatusListeners) {
             listeners = new UserStatusListener[userStatusListeners.size()];
@@ -1980,7 +1980,7 @@ public class MultiUserChat {
         }
     }
 
-    private void fireParticipantStatusListeners(String methodName, String param) {
+    protected void fireParticipantStatusListeners(String methodName, String param) {
         ParticipantStatusListener[] listeners = null;
         synchronized (participantStatusListeners) {
             listeners = new ParticipantStatusListener[participantStatusListeners.size()];
@@ -2004,7 +2004,7 @@ public class MultiUserChat {
         }
     }
     
-    private void init() {
+    protected void init() {
         // Create a collector for incoming messages.
         messageFilter =
             new AndFilter(
@@ -2161,7 +2161,7 @@ public class MultiUserChat {
      * @param from the occupant whose role in the room has changed
      * (e.g. room@conference.jabber.org/nick).
      */
-    private void checkRoleModifications(
+    protected void checkRoleModifications(
         String oldRole,
         String newRole,
         boolean isUserModification,
@@ -2263,7 +2263,7 @@ public class MultiUserChat {
      * @param from the occupant whose role in the room has changed
      * (e.g. room@conference.jabber.org/nick).
      */
-    private void checkAffiliationModifications(
+    protected void checkAffiliationModifications(
         String oldAffiliation,
         String newAffiliation,
         boolean isUserModification,
@@ -2336,7 +2336,7 @@ public class MultiUserChat {
      * @param mucUser
      * @param from
      */
-    private void checkPresenceCode(
+    protected void checkPresenceCode(
         String code,
         boolean isUserModification,
         MUCUser mucUser,
@@ -2423,15 +2423,15 @@ public class MultiUserChat {
      * 
      * @author Gaston Dombiak
      */
-    private static class InvitationsMonitor implements ConnectionListener {
+    protected static class InvitationsMonitor implements ConnectionListener {
         // We use a WeakHashMap so that the GC can collect the monitor when the
         // connection is no longer referenced by any object.
-        private static Map monitors = new WeakHashMap();
+        protected static Map monitors = new WeakHashMap();
 
-        private List invitationsListeners = new ArrayList();
-        private XMPPConnection connection;
-        private PacketFilter invitationFilter;
-        private PacketListener invitationPacketListener;
+        protected List invitationsListeners = new ArrayList();
+        protected XMPPConnection connection;
+        protected PacketFilter invitationFilter;
+        protected PacketListener invitationPacketListener;
 
         /**
          * Returns a new or existing InvitationsMonitor for a given connection.
@@ -2458,7 +2458,7 @@ public class MultiUserChat {
          * 
          * @param connection the connection to monitor for possible room invitations
          */
-        private InvitationsMonitor(XMPPConnection connection) {
+        protected InvitationsMonitor(XMPPConnection connection) {
             this.connection = connection;
         }
 
@@ -2510,7 +2510,7 @@ public class MultiUserChat {
         /**
          * Fires invitation listeners.
          */
-        private void fireInvitationListeners(String room, String inviter, String reason, String password,
+        protected void fireInvitationListeners(String room, String inviter, String reason, String password,
                                              Message message) {
             InvitationListener[] listeners = null;
             synchronized (invitationsListeners) {
@@ -2536,7 +2536,7 @@ public class MultiUserChat {
          * listeners will be fired. When the connection gets closed the monitor will remove
          * his listeners on the connection.       
          */
-        private void init() {
+        protected void init() {
             // Listens for all messages that include a MUCUser extension and fire the invitation 
             // listeners if the message includes an invitation.
             invitationFilter =
@@ -2563,7 +2563,7 @@ public class MultiUserChat {
         /**
          * Cancels all the listeners that this InvitationsMonitor has added to the connection.
          */
-        private void cancel() {
+        protected void cancel() {
             connection.removePacketListener(invitationPacketListener);
             connection.removeConnectionListener(this);
         }

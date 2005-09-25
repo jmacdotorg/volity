@@ -35,46 +35,46 @@ public class RoomInfo {
     /**
      * JID of the room. The node of the JID is commonly used as the ID of the room or name.
      */
-    private String room;
+    protected String room;
     /**
      * Description of the room.
      */
-    private String description = "";
+    protected String description = "";
     /**
      * Last known subject of the room.
      */
-    private String subject = "";
+    protected String subject = "";
     /**
      * Current number of occupants in the room.
      */
-    private int occupantsCount = -1;
+    protected int occupantsCount = -1;
     /**
      * A room is considered members-only if an invitation is required in order to enter the room.
      * Any user that is not a member of the room won't be able to join the room unless the user
      * decides to register with the room (thus becoming a member).
      */
-    private boolean membersOnly;
+    protected boolean membersOnly;
     /**
      * Moderated rooms enable only participants to speak. Users that join the room and aren't
      * participants can't speak (they are just visitors).
      */
-    private boolean moderated;
+    protected boolean moderated;
     /**
      * Every presence packet can include the JID of every occupant unless the owner deactives this
      * configuration.
      */
-    private boolean nonanonymous;
+    protected boolean nonanonymous;
     /**
      * Indicates if users must supply a password to join the room.
      */
-    private boolean passwordProtected;
+    protected boolean passwordProtected;
     /**
      * Persistent rooms are saved to the database to make sure that rooms configurations can be
      * restored in case the server goes down.
      */
-    private boolean persistent;
+    protected boolean persistent;
 
-    RoomInfo(DiscoverInfo info) {
+    protected RoomInfo(DiscoverInfo info) {
         super();
         this.room = info.getFrom();
         // Get the information based on the discovered features

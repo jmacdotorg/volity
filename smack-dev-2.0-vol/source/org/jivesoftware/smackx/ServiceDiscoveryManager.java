@@ -40,14 +40,14 @@ import org.jivesoftware.smackx.packet.*;
  */
 public class ServiceDiscoveryManager {
 
-    private static String identityName = "Smack";
-    private static String identityType = "pc";
+    protected static String identityName = "Smack";
+    protected static String identityType = "pc";
 
-    private static Map instances = new Hashtable();
+    protected static Map instances = new Hashtable();
 
-    private XMPPConnection connection;
-    private List features = new ArrayList();
-    private Map nodeInformationProviders = new Hashtable();
+    protected XMPPConnection connection;
+    protected List features = new ArrayList();
+    protected Map nodeInformationProviders = new Hashtable();
 
     // Create a new ServiceDiscoveryManager on every established connection
     static {
@@ -130,7 +130,7 @@ public class ServiceDiscoveryManager {
      * Initializes the packet listeners of the connection that will answer to any
      * service discovery request. 
      */
-    private void init() {
+    protected void init() {
         // Register the new instance and associate it with the connection 
         instances.put(connection, this);
         // Add a listener to the connection that removes the registered instance when
@@ -223,7 +223,7 @@ public class ServiceDiscoveryManager {
      * @return the NodeInformationProvider responsible for providing information related 
      * to a given node.
      */
-    private NodeInformationProvider getNodeInformationProvider(String node) {
+    protected NodeInformationProvider getNodeInformationProvider(String node) {
         if (node == null) {
             return null;
         }

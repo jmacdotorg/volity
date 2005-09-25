@@ -47,7 +47,7 @@ public class Form {
     public static final String TYPE_CANCEL = "cancel";
     public static final String TYPE_RESULT = "result";
     
-    private DataForm dataForm;
+    protected DataForm dataForm;
     
     /**
      * Returns a new ReportedData if the packet is used for gathering data and includes an 
@@ -74,7 +74,7 @@ public class Form {
      * 
      * @param dataForm the data form used for gathering data. 
      */
-    private Form(DataForm dataForm) {
+    protected Form(DataForm dataForm) {
         this.dataForm = dataForm;
     }
     
@@ -269,7 +269,7 @@ public class Form {
      * actual value.
      * @throws IllegalStateException if the form is not of type "submit".
      */
-    private void setAnswer(FormField field, Object value) {
+    protected void setAnswer(FormField field, Object value) {
         if (!isSubmitType()) {
             throw new IllegalStateException("Cannot set an answer if the form is not of type " +
             "\"submit\"");
@@ -480,7 +480,7 @@ public class Form {
      * 
      * @return if the form is a form to fill out.
      */
-    private boolean isFormType() {
+    protected boolean isFormType() {
         return TYPE_FORM.equals(dataForm.getType());
     }
     
@@ -489,7 +489,7 @@ public class Form {
      * 
      * @return if the form is a form to submit.
      */
-    private boolean isSubmitType() {
+    protected boolean isSubmitType() {
         return TYPE_SUBMIT.equals(dataForm.getType());
     }
 

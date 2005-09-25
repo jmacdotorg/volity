@@ -33,13 +33,13 @@ import org.jivesoftware.smack.util.StringUtils;
  */
 public class Occupant {
     // Fields that must have a value
-    private String affiliation;
-    private String role;
+    protected String affiliation;
+    protected String role;
     // Fields that may have a value
-    private String jid;
-    private String nick;
+    protected String jid;
+    protected String nick;
 
-    Occupant(MUCAdmin.Item item) {
+    protected Occupant(MUCAdmin.Item item) {
         super();
         this.jid = item.getJid();
         this.affiliation = item.getAffiliation();
@@ -47,7 +47,7 @@ public class Occupant {
         this.nick = item.getNick();
     }
 
-    Occupant(Presence presence) {
+    protected Occupant(Presence presence) {
         super();
         MUCUser mucUser = (MUCUser) presence.getExtension("x",
                 "http://jabber.org/protocol/muc#user");
