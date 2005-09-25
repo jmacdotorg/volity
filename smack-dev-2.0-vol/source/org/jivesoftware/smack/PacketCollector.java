@@ -45,12 +45,12 @@ public class PacketCollector {
      * reached, older packets will be automatically dropped from the queue as
      * new packets are added.
      */
-    private static final int MAX_PACKETS = 65536;
+    protected static final int MAX_PACKETS = 65536;
 
-    private PacketFilter packetFilter;
-    private LinkedList resultQueue;
-    private PacketReader packetReader;
-    private boolean cancelled = false;
+    protected PacketFilter packetFilter;
+    protected LinkedList resultQueue;
+    protected PacketReader packetReader;
+    protected boolean cancelled = false;
 
     /**
      * Creates a new packet collector. If the packet filter is <tt>null</tt>, then

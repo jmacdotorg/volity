@@ -41,18 +41,18 @@ import java.util.*;
  */
 class PacketReader {
 
-    private Thread readerThread;
-    private Thread listenerThread;
+    protected Thread readerThread;
+    protected Thread listenerThread;
 
-    private XMPPConnection connection;
-    private XmlPullParser parser;
-    private boolean done = false;
+    protected XMPPConnection connection;
+    protected XmlPullParser parser;
+    protected boolean done = false;
     protected List collectors = new ArrayList();
-    private List listeners = new ArrayList();
+    protected List listeners = new ArrayList();
     protected List connectionListeners = new ArrayList();
 
-    private String connectionID = null;
-    private Object connectionIDLock = new Object();
+    protected String connectionID = null;
+    protected Object connectionIDLock = new Object();
 
     protected PacketReader(XMPPConnection connection) {
         this.connection = connection;
@@ -201,7 +201,7 @@ class PacketReader {
      *
      * @param e the exception that causes the connection close event.
      */
-    void notifyConnectionError(Exception e) {
+    protected void notifyConnectionError(Exception e) {
         done = true;
         connection.close();
         // Print the stack trace to help catch the problem
@@ -223,14 +223,14 @@ class PacketReader {
      * when the plain connection has been secured or when a new opening stream element is going
      * to be sent by the server.
      */
-    private void resetParser() throws XmlPullParserException {
+    protected void resetParser() throws XmlPullParserException {
         parser.setInput(connection.reader);
     }
 
     /**
      * Process listeners.
      */
-    private void processListeners() {
+    protected void processListeners() {
         while (!done) {
             synchronized (listeners) {
                 if (listeners.size() > 0) {
@@ -266,7 +266,7 @@ class PacketReader {
     /**
      * Parse top-level packets in order to process them further.
      */
-    private void parsePackets() {
+    protected void parsePackets() {
         try {
             int eventType = parser.getEventType();
             do {
@@ -366,7 +366,7 @@ class PacketReader {
      * 3) TLS negotiation was successful
      *
      */
-    private void releaseConnectionIDLock() {
+    protected void releaseConnectionIDLock() {
         synchronized(connectionIDLock) {
             connectionIDLock.notifyAll();
         }
@@ -379,7 +379,7 @@ class PacketReader {
      *
      * @param packet the packet to process.
      */
-    private void processPacket(Packet packet) {
+    protected void processPacket(Packet packet) {
         if (packet == null) {
             return;
         }
@@ -409,7 +409,7 @@ class PacketReader {
         }
     }
 
-    private void parseFeatures(XmlPullParser parser) throws Exception {
+    protected void parseFeatures(XmlPullParser parser) throws Exception {
         boolean startTLSReceived = false;
         boolean done = false;
         while (!done) {
@@ -455,7 +455,7 @@ class PacketReader {
      * @return a collection of Stings with the mechanisms included in the mechanisms stanza.
      * @throws Exception if an exception occurs while parsing the stanza.
      */
-    private Collection parseMechanisms(XmlPullParser parser) throws Exception {
+    protected Collection parseMechanisms(XmlPullParser parser) throws Exception {
         List mechanisms = new ArrayList();
         boolean done = false;
         while (!done) {
@@ -483,7 +483,7 @@ class PacketReader {
      * @return an IQ object.
      * @throws Exception if an exception occurs while parsing the packet.
      */
-    private IQ parseIQ(XmlPullParser parser) throws Exception {
+    protected IQ parseIQ(XmlPullParser parser) throws Exception {
         IQ iqPacket = null;
 
         String id = parser.getAttributeValue("", "id");
@@ -571,7 +571,7 @@ class PacketReader {
         return iqPacket;
     }
 
-    private Authentication parseAuthentication(XmlPullParser parser) throws Exception {
+    protected Authentication parseAuthentication(XmlPullParser parser) throws Exception {
         Authentication authentication = new Authentication();
         boolean done = false;
         while (!done) {
@@ -599,7 +599,7 @@ class PacketReader {
         return authentication;
     }
 
-    private RosterPacket parseRoster(XmlPullParser parser) throws Exception {
+    protected RosterPacket parseRoster(XmlPullParser parser) throws Exception {
         RosterPacket roster = new RosterPacket();
         boolean done = false;
         RosterPacket.Item item = null;
@@ -636,7 +636,7 @@ class PacketReader {
         return roster;
     }
 
-     private Registration parseRegistration(XmlPullParser parser) throws Exception {
+     protected Registration parseRegistration(XmlPullParser parser) throws Exception {
         Registration registration = new Registration();
         Map fields = null;
         boolean done = false;
@@ -685,10 +685,10 @@ class PacketReader {
     /**
      * A wrapper class to associate a packet collector with a listener.
      */
-    private static class ListenerWrapper {
+    protected static class ListenerWrapper {
 
-        private PacketListener packetListener;
-        private PacketCollector packetCollector;
+        protected PacketListener packetListener;
+        protected PacketCollector packetCollector;
 
         public ListenerWrapper(PacketReader packetReader, PacketListener packetListener,
                 PacketFilter packetFilter)

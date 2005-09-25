@@ -40,7 +40,7 @@ interface UserAuthentication {
      * @return the full JID provided by the server while binding a resource for the connection.
      * @throws XMPPException if an error occures while authenticating.
      */
-    String authenticate(String username, String password, String resource) throws
+    public String authenticate(String username, String password, String resource) throws
             XMPPException;
 
     /**
@@ -51,5 +51,5 @@ interface UserAuthentication {
      * @return the full JID provided by the server while binding a resource for the connection.
      * @throws XMPPException if an error occures while authenticating.
      */
-    String authenticateAnonymously() throws XMPPException;
+    public String authenticateAnonymously() throws XMPPException;
 }

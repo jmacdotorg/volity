@@ -36,8 +36,8 @@ import java.io.PrintWriter;
  */
 public class XMPPException extends Exception {
 
-    private XMPPError error = null;
-    private Throwable wrappedThrowable = null;
+    protected XMPPError error = null;
+    protected Throwable wrappedThrowable = null;
 
     /**
      * Creates a new XMPPException.

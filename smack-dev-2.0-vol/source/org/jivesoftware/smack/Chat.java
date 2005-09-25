@@ -43,13 +43,13 @@ public class Chat {
     /**
      * A prefix helps to make sure that ID's are unique across mutliple instances.
      */
-    private static String prefix = StringUtils.randomString(5);
+    protected static String prefix = StringUtils.randomString(5);
 
     /**
      * Keeps track of the current increment, which is appended to the prefix to
      * forum a unique ID.
      */
-    private static long id = 0;
+    protected static long id = 0;
 
     /**
      * Returns the next unique id. Each id made up of a short alphanumeric
@@ -57,16 +57,16 @@ public class Chat {
      *
      * @return the next id.
      */
-    private static synchronized String nextID() {
+    protected static synchronized String nextID() {
         return prefix + Long.toString(id++);
     }
 
-    private XMPPConnection connection;
-    private String threadID;
-    private String participant;
-    private PacketFilter messageFilter;
-    private PacketCollector messageCollector;
-    private Set listeners = new HashSet();
+    protected XMPPConnection connection;
+    protected String threadID;
+    protected String participant;
+    protected PacketFilter messageFilter;
+    protected PacketCollector messageCollector;
+    protected Set listeners = new HashSet();
 
     /**
      * Creates a new chat with the specified user.
@@ -234,7 +234,7 @@ public class Chat {
      *
      * @param message the message.
      */
-    void deliver(Message message) {
+    protected void deliver(Message message) {
         // Because the collector and listeners are expecting a thread ID with
         // a specific value, set the thread ID on the message even though it
         // probably never had one.

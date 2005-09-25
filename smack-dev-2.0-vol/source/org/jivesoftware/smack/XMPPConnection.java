@@ -75,7 +75,7 @@ public class XMPPConnection {
      */
     public static boolean DEBUG_ENABLED = false;
 
-    private static List connectionEstablishedListeners = new ArrayList();
+    protected static List connectionEstablishedListeners = new ArrayList();
 
     static {
         // Use try block since we may not have permission to get a system
@@ -89,40 +89,40 @@ public class XMPPConnection {
         // Ensure the SmackConfiguration class is loaded by calling a method in it.
         SmackConfiguration.getVersion();
     }
-    private SmackDebugger debugger = null;
+    protected SmackDebugger debugger = null;
 
     /**
      * IP address or host name of the server. This information is only used when
      * creating new socket connections to the server. If this information is not
      * configured then it will be assumed that the host name matches the service name.
      */
-    String host;
-    int port;
-    Socket socket;
+    protected String host;
+    protected int port;
+    protected Socket socket;
 
     /**
      * Hostname of the XMPP server. Usually servers use the same service name as the name
      * of the server. However, there are some servers like google where host would be
      * talk.google.com and the serviceName would be gmail.com.
      */
-    String serviceName;
+    protected String serviceName;
 
-    String connectionID;
-    private String user = null;
-    private boolean connected = false;
-    private boolean authenticated = false;
-    private boolean anonymous = false;
-    private boolean usingTLS = false;
+    protected String connectionID;
+    protected String user = null;
+    protected boolean connected = false;
+    protected boolean authenticated = false;
+    protected boolean anonymous = false;
+    protected boolean usingTLS = false;
 
-    PacketWriter packetWriter;
-    PacketReader packetReader;
+    protected PacketWriter packetWriter;
+    protected PacketReader packetReader;
 
-    Roster roster = null;
-    private AccountManager accountManager = null;
-    private SASLAuthentication saslAuthentication = new SASLAuthentication(this);
+    protected Roster roster = null;
+    protected AccountManager accountManager = null;
+    protected SASLAuthentication saslAuthentication = new SASLAuthentication(this);
 
-    Writer writer;
-    Reader reader;
+    protected Writer writer;
+    protected Reader reader;
 
     /**
      * A map between JIDs and the most recently created Chat object with that JID.
@@ -130,7 +130,7 @@ public class XMPPConnection {
      * does not interfere with garbage collection. The map of chats must be stored
      * with each connection.
      */
-    Map chats = new HashMap();
+    protected Map chats = new HashMap();
 
     /**
      * Creates a new connection to the specified XMPP server. A DNS SRV lookup will be
@@ -797,7 +797,7 @@ public class XMPPConnection {
      *
      * @throws XMPPException if establishing a connection to the server fails.
      */
-    private void init() throws XMPPException {
+    protected void init() throws XMPPException {
         // Set the reader and writer instance variables
         initReaderAndWriter();
 
@@ -883,7 +883,7 @@ public class XMPPConnection {
         }
     }
 
-    private void initReaderAndWriter() throws XMPPException {
+    protected void initReaderAndWriter() throws XMPPException {
         try {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
             writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"));
@@ -957,7 +957,7 @@ public class XMPPConnection {
     /**
      * Fires listeners on connection established events.
      */
-    private static void connectionEstablished(XMPPConnection connection) {
+    protected static void connectionEstablished(XMPPConnection connection) {
         ConnectionEstablishedListener[] listeners = null;
         synchronized (connectionEstablishedListeners) {
             listeners = new ConnectionEstablishedListener[connectionEstablishedListeners.size()];
@@ -997,7 +997,7 @@ public class XMPPConnection {
      * Notification message saying that the server supports TLS so confirm the server that we
      * want to secure the connection.
      */
-    void startTLSReceived() {
+    protected void startTLSReceived() {
         try {
             writer.write("<starttls xmlns=\"urn:ietf:params:xml:ns:xmpp-tls\"/>");
             writer.flush();
@@ -1012,7 +1012,7 @@ public class XMPPConnection {
      * existing plain connection and perform a handshake. This method won't return until the
      * connection has finished the handshake or an error occured while securing the connection.
      */
-    void proceedTLSReceived() throws Exception {
+    protected void proceedTLSReceived() throws Exception {
         SSLContext context = SSLContext.getInstance("TLS");
         // Accept any certificate presented by the server
         context.init(null, // KeyManager not required

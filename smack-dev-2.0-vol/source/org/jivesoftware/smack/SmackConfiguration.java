@@ -44,12 +44,12 @@ import org.xmlpull.mxp1.MXParser;
  */
 public final class SmackConfiguration {
 
-    private static final String SMACK_VERSION = "2.0.0";
+    protected static final String SMACK_VERSION = "2.0.0-Volity";
 
-    private static int packetReplyTimeout = 5000;
-    private static int keepAliveInterval = 30000;
+    protected static int packetReplyTimeout = 5000;
+    protected static int keepAliveInterval = 30000;
 
-    private SmackConfiguration() {
+    protected SmackConfiguration() {
     }
 
     /**
@@ -169,7 +169,7 @@ public final class SmackConfiguration {
         keepAliveInterval = interval;
     }
 
-    private static void parseClassToLoad(XmlPullParser parser) throws Exception {
+    protected static void parseClassToLoad(XmlPullParser parser) throws Exception {
         String className = parser.nextText();
         // Attempt to load the class so that the class can get initialized
         try {
@@ -181,7 +181,7 @@ public final class SmackConfiguration {
         }
     }
 
-    private static int parseIntProperty(XmlPullParser parser, int defaultValue)
+    protected static int parseIntProperty(XmlPullParser parser, int defaultValue)
             throws Exception
     {
         try {
@@ -198,7 +198,7 @@ public final class SmackConfiguration {
      *
      * @return an array of ClassLoader instances.
      */
-    private static ClassLoader[] getClassLoaders() {
+    protected static ClassLoader[] getClassLoaders() {
         ClassLoader[] classLoaders = new ClassLoader[2];
         classLoaders[0] = new SmackConfiguration().getClass().getClassLoader();
         classLoaders[1] = Thread.currentThread().getContextClassLoader();

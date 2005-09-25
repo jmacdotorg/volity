@@ -35,8 +35,8 @@ import java.util.*;
  */
 public class AccountManager {
 
-    private XMPPConnection connection;
-    private Registration info = null;
+    protected XMPPConnection connection;
+    protected Registration info = null;
 
     /**
      * Creates a new AccountManager instance.
@@ -275,7 +275,7 @@ public class AccountManager {
      *
      * @throws XMPPException if an error occurs.
      */
-    private synchronized void getRegistrationInfo() throws XMPPException {
+    protected synchronized void getRegistrationInfo() throws XMPPException {
         Registration reg = new Registration();
         reg.setTo(connection.getServiceName());
         PacketFilter filter = new AndFilter(new PacketIDFilter(reg.getPacketID()),

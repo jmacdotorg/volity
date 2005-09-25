@@ -42,7 +42,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public class SSLXMPPConnection extends XMPPConnection {
 
-    private static SocketFactory socketFactory = new DummySSLSocketFactory();
+    protected static SocketFactory socketFactory = new DummySSLSocketFactory();
 
     /**
      * Creates a new SSL connection to the specified host on the default
@@ -100,9 +100,9 @@ public class SSLXMPPConnection extends XMPPConnection {
      * An SSL socket factory that will let any certifacte past, even if it's expired or
      * not singed by a root CA.
      */
-    private static class DummySSLSocketFactory extends SSLSocketFactory {
+    protected static class DummySSLSocketFactory extends SSLSocketFactory {
 
-        private SSLSocketFactory factory;
+        protected SSLSocketFactory factory;
 
         public DummySSLSocketFactory() {
 

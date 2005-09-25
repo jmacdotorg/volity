@@ -35,9 +35,9 @@ import java.util.*;
  */
 public class RosterGroup {
 
-    private String name;
-    private XMPPConnection connection;
-    private List entries;
+    protected String name;
+    protected XMPPConnection connection;
+    protected List entries;
 
     /**
      * Creates a new roster group instance.
@@ -45,7 +45,7 @@ public class RosterGroup {
      * @param name the name of the group.
      * @param connection the connection the group belongs to.
      */
-    RosterGroup(String name, XMPPConnection connection) {
+    protected RosterGroup(String name, XMPPConnection connection) {
         this.name = name;
         this.connection = connection;
         entries = new ArrayList();
@@ -244,7 +244,7 @@ public class RosterGroup {
         }
     }
 
-    void addEntryLocal(RosterEntry entry) {
+    protected void addEntryLocal(RosterEntry entry) {
         // Only add the entry if it isn't already in the list.
         synchronized (entries) {
             entries.remove(entry);
@@ -252,7 +252,7 @@ public class RosterGroup {
         }
     }
 
-    void removeEntryLocal(RosterEntry entry) {
+    protected void removeEntryLocal(RosterEntry entry) {
          // Only remove the entry if it's in the entry list.
         synchronized (entries) {
             if (entries.contains(entry)) {

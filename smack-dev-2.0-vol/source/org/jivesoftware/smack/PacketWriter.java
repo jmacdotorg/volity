@@ -33,16 +33,16 @@ import org.jivesoftware.smack.packet.Packet;
  */
 class PacketWriter {
 
-    private Thread writerThread;
-    private Writer writer;
-    private XMPPConnection connection;
-    private LinkedList queue;
-    private boolean done = false;
+    protected Thread writerThread;
+    protected Writer writer;
+    protected XMPPConnection connection;
+    protected LinkedList queue;
+    protected boolean done = false;
     
-    private List listeners = new ArrayList();
-    private boolean listenersDeleted = false;
-    private Thread listenerThread;
-    private LinkedList sentPackets = new LinkedList();
+    protected List listeners = new ArrayList();
+    protected boolean listenersDeleted = false;
+    protected Thread listenerThread;
+    protected LinkedList sentPackets = new LinkedList();
 
     /**
      * Creates a new packet writer with the specified connection.
@@ -154,7 +154,7 @@ class PacketWriter {
         listenerThread.start();
     }
 
-    void setWriter(Writer writer) {
+    protected void setWriter(Writer writer) {
         this.writer = writer;
     }
 
@@ -171,7 +171,7 @@ class PacketWriter {
      *
      * @return the next packet for writing.
      */
-    private Packet nextPacket() {
+    protected Packet nextPacket() {
         synchronized(queue) {
             while (!done && queue.size() == 0) {
                 try {
@@ -188,7 +188,7 @@ class PacketWriter {
         }
     }
 
-    private void writePackets() {
+    protected void writePackets() {
         try {
             // Open the stream.
             openStream();
@@ -226,7 +226,7 @@ class PacketWriter {
     /**
      * Process listeners.
      */
-    private void processListeners() {
+    protected void processListeners() {
         while (!done) {
             Packet sentPacket;
             // Wait until a new packet has been sent
@@ -277,7 +277,7 @@ class PacketWriter {
      *
      * @throws IOException If an error occurs while sending the stanza to the server.
      */
-    void openStream() throws IOException {
+    protected void openStream() throws IOException {
         StringBuffer stream = new StringBuffer();
         stream.append("<stream:stream");
         stream.append(" to=\"").append(connection.serviceName).append("\"");
@@ -297,10 +297,10 @@ class PacketWriter {
     /**
      * A wrapper class to associate a packet filter with a listener.
      */
-    private static class ListenerWrapper {
+    protected static class ListenerWrapper {
 
-        private PacketListener packetListener;
-        private PacketFilter packetFilter;
+        protected PacketListener packetListener;
+        protected PacketFilter packetFilter;
 
         public ListenerWrapper(PacketListener packetListener,
                                PacketFilter packetFilter)
@@ -333,9 +333,9 @@ class PacketWriter {
      * A TimerTask that keeps connections to the server alive by sending a space
      * character on an interval.
      */
-    private class KeepAliveTask implements Runnable {
+    protected class KeepAliveTask implements Runnable {
 
-        private int delay;
+        protected int delay;
 
         public KeepAliveTask(int delay) {
             this.delay = delay;

@@ -59,23 +59,23 @@ import java.util.*;
  */
 public class SASLAuthentication implements UserAuthentication {
 
-    private static Map implementedMechanisms = new HashMap();
-    private static List mechanismsPreferences = new ArrayList();
+    protected static Map implementedMechanisms = new HashMap();
+    protected static List mechanismsPreferences = new ArrayList();
 
-    private XMPPConnection connection;
-    private Collection serverMechanisms = new ArrayList();
-    private SASLMechanism currentMechanism = null;
+    protected XMPPConnection connection;
+    protected Collection serverMechanisms = new ArrayList();
+    protected SASLMechanism currentMechanism = null;
     /**
      * Boolean indicating if SASL negotiation has finished and was successful.
      */
-    private boolean saslNegotiated = false;
+    protected boolean saslNegotiated = false;
     /**
      * Boolean indication if SASL authentication has failed. When failed the server may end
      * the connection.
      */
-    private boolean saslFailed = false;
-    private boolean resourceBinded = false;
-    private boolean sessionSupported = false;
+    protected boolean saslFailed = false;
+    protected boolean resourceBinded = false;
+    protected boolean sessionSupported = false;
 
     static {
         // Register SASL mechanisms supported by Smack
@@ -123,7 +123,7 @@ public class SASLAuthentication implements UserAuthentication {
         return answer;
     }
 
-    SASLAuthentication(XMPPConnection connection) {
+    protected SASLAuthentication(XMPPConnection connection) {
         super();
         this.connection = connection;
     }
@@ -273,7 +273,7 @@ public class SASLAuthentication implements UserAuthentication {
         }
     }
 
-    private String bindResourceAndEstablishSession(String resource) throws IOException,
+    protected String bindResourceAndEstablishSession(String resource) throws IOException,
             XMPPException {
         // We now need to bind a resource for the connection
         // Open a new stream and wait for the response
@@ -335,7 +335,7 @@ public class SASLAuthentication implements UserAuthentication {
      * @param mechanisms collection of strings with the available SASL mechanism reported
      *                   by the server.
      */
-    void setAvailableSASLMethods(Collection mechanisms) {
+    protected void setAvailableSASLMethods(Collection mechanisms) {
         this.serverMechanisms = mechanisms;
     }
 
@@ -357,7 +357,7 @@ public class SASLAuthentication implements UserAuthentication {
      * @param challenge a base64 encoded string representing the challenge.
      * @throws IOException If a network error occures while authenticating.
      */
-    void challengeReceived(String challenge) throws IOException {
+    protected void challengeReceived(String challenge) throws IOException {
         currentMechanism.challengeReceived(challenge);
     }
 
@@ -365,7 +365,7 @@ public class SASLAuthentication implements UserAuthentication {
      * Notification message saying that SASL authentication was successful. The next step
      * would be to bind the resource.
      */
-    void authenticated() {
+    protected void authenticated() {
         synchronized (this) {
             saslNegotiated = true;
             // Wake up the thread that is waiting in the #authenticate method
@@ -377,7 +377,7 @@ public class SASLAuthentication implements UserAuthentication {
      * Notification message saying that SASL authentication has failed. The server may have
      * closed the connection depending on the number of possible retries.
      */
-    void authenticationFailed() {
+    protected void authenticationFailed() {
         synchronized (this) {
             saslFailed = true;
             // Wake up the thread that is waiting in the #authenticate method
@@ -389,7 +389,7 @@ public class SASLAuthentication implements UserAuthentication {
      * Notification message saying that the server requires the client to bind a
      * resource to the stream.
      */
-    void bindingRequired() {
+    protected void bindingRequired() {
         synchronized (this) {
             resourceBinded = true;
             // Wake up the thread that is waiting in the #authenticate method
@@ -407,7 +407,7 @@ public class SASLAuthentication implements UserAuthentication {
      * sessions the client needs to send a Session packet after successfully binding a resource
      * for the session.
      */
-    void sessionsSupported() {
+    protected void sessionsSupported() {
         sessionSupported = true;
     }
 }

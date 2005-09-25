@@ -33,10 +33,10 @@ import java.util.*;
  */
 public class RosterEntry {
 
-    private String user;
-    private String name;
-    private RosterPacket.ItemType type;
-    private XMPPConnection connection;
+    protected String user;
+    protected String name;
+    protected RosterPacket.ItemType type;
+    protected XMPPConnection connection;
 
     /**
      * Creates a new roster entry.
@@ -46,7 +46,7 @@ public class RosterEntry {
      * @param type the subscription type.
      * @param connection a connection to the XMPP server.
      */
-    RosterEntry(String user, String name, RosterPacket.ItemType type, XMPPConnection connection) {
+    protected RosterEntry(String user, String name, RosterPacket.ItemType type, XMPPConnection connection) {
         this.user = user;
         this.name = name;
         this.type = type;
@@ -94,7 +94,7 @@ public class RosterEntry {
      * @param name the nickname for the entry.
      * @param type the subscription type.
      */
-    void updateState(String name, RosterPacket.ItemType type) {
+    protected void updateState(String name, RosterPacket.ItemType type) {
         this.name = name;
         this.type = type;
     }
@@ -160,7 +160,7 @@ public class RosterEntry {
         }
     }
 
-    static RosterPacket.Item toRosterItem(RosterEntry entry) {
+    static protected RosterPacket.Item toRosterItem(RosterEntry entry) {
         RosterPacket.Item item = new RosterPacket.Item(entry.getUser(), entry.getName());
         item.setItemType(entry.getType());
         // Set the correct group names for the item.

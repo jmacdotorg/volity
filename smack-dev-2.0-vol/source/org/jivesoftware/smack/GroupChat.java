@@ -37,16 +37,16 @@ import java.util.*;
  */
 public class GroupChat {
 
-    private XMPPConnection connection;
-    private String room;
-    private String nickname = null;
-    private boolean joined = false;
-    private List participants = new ArrayList();
-    private List connectionListeners = new ArrayList();
+    protected XMPPConnection connection;
+    protected String room;
+    protected String nickname = null;
+    protected boolean joined = false;
+    protected List participants = new ArrayList();
+    protected List connectionListeners = new ArrayList();
 
-    private PacketFilter presenceFilter;
-    private PacketFilter messageFilter;
-    private PacketCollector messageCollector;
+    protected PacketFilter presenceFilter;
+    protected PacketFilter messageFilter;
+    protected PacketCollector messageCollector;
 
     /**
      * Creates a new group chat with the specified connection and room name. Note: no

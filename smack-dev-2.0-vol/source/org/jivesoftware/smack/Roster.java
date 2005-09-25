@@ -64,19 +64,19 @@ public class Roster {
      * The default subscription processing mode to use when a Roster is created. By default 
      * all subscription requests are automatically accepted. 
      */
-    private static int defaultSubscriptionMode = SUBSCRIPTION_ACCEPT_ALL;
+    protected static int defaultSubscriptionMode = SUBSCRIPTION_ACCEPT_ALL;
 
-    private XMPPConnection connection;
-    private Map groups;
-    private List entries;
-    private List unfiledEntries;
-    private List rosterListeners;
-    private Map presenceMap;
+    protected XMPPConnection connection;
+    protected Map groups;
+    protected List entries;
+    protected List unfiledEntries;
+    protected List rosterListeners;
+    protected Map presenceMap;
     // The roster is marked as initialized when at least a single roster packet
     // has been recieved and processed.
-    boolean rosterInitialized = false;
+    protected boolean rosterInitialized = false;
 
-    private int subscriptionMode = getDefaultSubscriptionMode();
+    protected int subscriptionMode = getDefaultSubscriptionMode();
 
     /**
      * Returns the default subscription processing mode to use when a new Roster is created. The 
@@ -107,7 +107,7 @@ public class Roster {
      *
      * @param connection an XMPP connection.
      */
-    Roster(final XMPPConnection connection) {
+    protected Roster(final XMPPConnection connection) {
         this.connection = connection;
         groups = new Hashtable();
         unfiledEntries = new ArrayList();
@@ -539,7 +539,7 @@ public class Roster {
      * @param user the fully qualified xmpp ID, e.g. jdoe@example.com/Work.
      * @return the key to use in the presenceMap for the fully qualified xmpp ID.
      */
-    private String getPresenceMapKey(String user) {
+    protected String getPresenceMapKey(String user) {
         String key = user;
         if (!contains(user)) {
             key = StringUtils.parseBareAddress(user);
@@ -550,7 +550,7 @@ public class Roster {
     /**
      * Fires roster changed event to roster listeners.
      */
-    private void fireRosterChangedEvent() {
+    protected void fireRosterChangedEvent() {
         RosterListener [] listeners = null;
         synchronized (rosterListeners) {
             listeners = new RosterListener[rosterListeners.size()];
@@ -564,7 +564,7 @@ public class Roster {
     /**
      * Fires roster presence changed event to roster listeners.
      */
-    private void fireRosterPresenceEvent(String user) {
+    protected void fireRosterPresenceEvent(String user) {
         RosterListener [] listeners = null;
         synchronized (rosterListeners) {
             listeners = new RosterListener[rosterListeners.size()];
@@ -578,7 +578,7 @@ public class Roster {
     /**
      * Listens for all presence packets and processes them.
      */
-    private class PresencePacketListener implements PacketListener {
+    protected class PresencePacketListener implements PacketListener {
         public void processPacket(Packet packet) {
             Presence presence = (Presence)packet;
             String from = presence.getFrom();
@@ -652,7 +652,7 @@ public class Roster {
     /**
      * Listens for all roster packets and processes them.
      */
-    private class RosterPacketListener implements PacketListener {
+    protected class RosterPacketListener implements PacketListener {
 
         public void processPacket(Packet packet) {
             RosterPacket rosterPacket = (RosterPacket)packet;
