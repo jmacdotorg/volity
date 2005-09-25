@@ -42,7 +42,12 @@ development stream, and the general principles adopted.
 Changelog:
 
 (I'm not using release numbers, because "Smack 2.0.0.V.7" will make
-your eyes bleed. I will apply tags as major changes go in.)
+your eyes bleed. I will apply tags as major changes go in. Tags are
+listed below, most-recent-first.)
+
+* protected
+    Changed "private" fields and methods to "protected". This covers most
+of smack, and the disco/MUC features of smackx.
 
 * original
     Identical with the 2005-09-25 nightly build.
