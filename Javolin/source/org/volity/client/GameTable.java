@@ -10,7 +10,6 @@ import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
-import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 
 /**

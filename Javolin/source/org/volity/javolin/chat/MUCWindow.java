@@ -28,7 +28,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
 import org.jivesoftware.smackx.*;
-import org.jivesoftware.smackx.muc.*;
+import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.volity.javolin.*;
 
