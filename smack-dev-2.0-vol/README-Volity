@@ -1,0 +1,48 @@
+Smack 2.0.0 (Volity)
+
+This is a modification of the Smack XMPP library, version 2.0. It did
+not branch off exactly from the Smack 2.0.0 release; it began slightly
+later, with the Smack trunk as of 2005-09-25, and therefore has some
+bug fixes that Smack 2.0.0 lacks.
+
+The latest version of Smack 2.0.0 (Volity) can be found at Volity's
+Sourceforge repository:
+
+    http://sourceforge.net/cvs/?group_id=91751
+
+The original Smack library is available from:
+
+    http://www.jivesoftware.org/smack/
+
+This version of Smack, like the original, is licensed under the Apache
+License, Version 2.0. You may not use this file except in compliance
+with the License. You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+------------------------
+
+The intent of these modifications are to make Smack more extensible
+and customizable. There are two basic kinds of changes:
+
+* Change the "private" fields of library standard classes to
+"protected", so that these classes can be usefully extended.
+* Turn hardwired class instantiations into factory functions, so that
+a user can make use of extended classes in place of library-standard
+ones.
+
+I am not (currently) trying to make these kinds of changes across the
+whole of Smack. The Volity project has specific needs, and I'm working
+on those. However, I think these kinds of changes are valuable for
+Smack developers. I hope they are incorporated into the main
+development stream, and the general principles adopted.
+
+------------------------
+
+Changelog:
+
+(I'm not using release numbers, because "Smack 2.0.0.V.7" will make
+your eyes bleed. I will apply tags as major changes go in.)
+
+* original
+    Identical with the 2005-09-25 nightly build.
