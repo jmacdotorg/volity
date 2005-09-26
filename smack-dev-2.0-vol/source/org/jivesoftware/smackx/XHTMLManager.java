@@ -38,7 +38,9 @@ public class XHTMLManager {
     private final static String namespace = "http://jabber.org/protocol/xhtml-im";
 
     // Enable the XHTML support on every established connection
-    // The ServiceDiscoveryManager class should have been already initialized
+    // The ServiceDiscoveryManager class should have been already initialized.
+    // Otherwise, you will get painful null-pointer exceptions which will
+    // take you hours to track down.
     static {
         XMPPConnection.addConnectionListener(new ConnectionEstablishedListener() {
             public void connectionEstablished(XMPPConnection connection) {

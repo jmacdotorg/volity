@@ -45,6 +45,12 @@ Changelog:
 your eyes bleed. I will apply tags as major changes go in. Tags are
 listed below, most-recent-first.)
 
+* disco
+    Added service discovery extension forms (JEP-0128) to 
+ServiceDiscoveryManager.
+    Added a ServiceDiscoveryFactory API to ServiceDiscoveryManager, in case
+you want your connections to use a subclass of SDM.
+
 * packethack
     XMPPConnection's creation of its packetReader and packetWriter have
 been broken out into a separate, protected method called

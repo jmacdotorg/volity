@@ -42,7 +42,9 @@ public class ServiceDiscoveryManager {
 
     protected static String identityName = "Smack";
     protected static String identityType = "pc";
+    protected static Form identityExtForm = null;
 
+    protected static ServiceDiscoveryFactory factory;
     protected static Map instances = new Hashtable();
 
     protected XMPPConnection connection;
@@ -51,11 +53,54 @@ public class ServiceDiscoveryManager {
 
     // Create a new ServiceDiscoveryManager on every established connection
     static {
+        factory = new DefaultServiceDiscoveryFactory();
+
         XMPPConnection.addConnectionListener(new ConnectionEstablishedListener() {
             public void connectionEstablished(XMPPConnection connection) {
-                new ServiceDiscoveryManager(connection);
+                if (factory != null) {
+                    factory.create(connection);
+                }
             }
         });
+    }
+
+    /**
+     * Set a factory to create ServiceDiscoveryManagers for all future
+     * XMPPConnections.
+     *
+     * It is legal to set this to null. This indicates that you do not want to
+     * automatically create SDMs for your connections.
+     *
+     * (This option -- setting the ServiceDiscoveryFactory to null -- is
+     * provided only for cases where you plan to *manually* create a
+     * ServiceDiscoveryManager instance for each XMPPConnection. If you leave a
+     * connection with no SDM at all, various parts of Smack will not work
+     * correctly.)
+     *
+     * For cases where you want a connection to not respond to service-
+     * discovery requests, see the QuietServiceDiscoveryManager class.
+     *
+     * NOTE: If you call this -- or any smackx static method -- before
+     * instantiating your first XMPPConnection, you may run into a class
+     * loading race condition. This manifests as a NullPointerException in
+     * XHTMLManager. To avoid this, call
+     *     SmackConfiguration.getVersion()
+     * before your first call to setServiceDiscoveryFactory().
+     *
+     * @param newFactory a new factory object. (May be null, but see above.)
+     */
+    public static void setServiceDiscoveryFactory(ServiceDiscoveryFactory newFactory) {
+        factory = newFactory;
+    }
+
+    /**
+     * Get the current ServiceDiscoveryFactory. The default factory
+     * simply instantiates ServiceDiscoveryManager.
+     *
+     * @return the current ServiceDiscoveryFactory
+     */
+    public static ServiceDiscoveryFactory getServiceDiscoveryFactory() {
+        return factory;
     }
 
     /**
@@ -127,8 +172,27 @@ public class ServiceDiscoveryManager {
     }
 
     /**
-     * Initializes the packet listeners of the connection that will answer to any
-     * service discovery request. 
+     * Get the extension form (JEP-0128) which will be returned with the client
+     * identity. If this is null, no form will be returned.
+     *
+     * @return a form of type "result". May be null.
+     */
+    public static Form getIdentityExtension() {
+        return identityExtForm;
+    }
+
+    /**
+     * Set an extension form (JEP-0128) which will be returned with the client
+     * identity. If this is null, no form will be returned.
+     * 
+     * @param a form of type "result". May be null.
+     */
+    public static void setIdentityExtension(Form form) {
+        identityExtForm = form;
+    }
+
+    /**
+     * Add the instance to the static table, and set up the various listeners.
      */
     protected void init() {
         // Register the new instance and associate it with the connection 
@@ -147,6 +211,17 @@ public class ServiceDiscoveryManager {
             }
         });
 
+        initPacketListener();
+    }
+
+    /**
+     * Initializes the packet listeners of the connection that will answer to
+     * any service discovery request.
+     *
+     * This is broken out into a separate method so that subclasses can
+     * override it.
+     */
+    protected void initPacketListener() {
         // Listen for disco#items requests and answer with an empty result        
         PacketFilter packetFilter = new PacketTypeFilter(DiscoverItems.class);
         PacketListener packetListener = new PacketListener() {
@@ -198,6 +273,10 @@ public class ServiceDiscoveryManager {
                             for (Iterator it = getFeatures(); it.hasNext();) {
                                 response.addFeature((String) it.next());
                             }
+                        }
+                        // Add the form, if any
+                        if (identityExtForm != null) {
+                            response.addExtension(identityExtForm.getDataFormToSend());
                         }
                     }
                     else {
