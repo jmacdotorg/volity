@@ -31,7 +31,7 @@ import org.jivesoftware.smack.packet.IQ;
  *
  * @author Gaston Dombiak
  */
-class NonSASLAuthentication implements UserAuthentication {
+public class NonSASLAuthentication implements UserAuthentication {
 
     protected XMPPConnection connection;
 

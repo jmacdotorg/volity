@@ -45,6 +45,14 @@ Changelog:
 your eyes bleed. I will apply tags as major changes go in. Tags are
 listed below, most-recent-first.)
 
+* packethack
+    XMPPConnection's creation of its packetReader and packetWriter have
+been broken out into a separate, protected method called
+initPacketReaderAndWriter. (Analogous to initReaderAndWriter.)
+This allows a subclass to create different ones. This is an extreme way
+of making the XMPPConnection do what you want, but it's available if
+you need it.
+
 * presence
     All presence packets are now drawn from a factory API inside 
 XMPPConnection. The user can set a new factory, or subclass XMPPConnection

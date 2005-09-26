@@ -31,7 +31,7 @@ import org.jivesoftware.smack.packet.Packet;
  *
  * @author Matt Tucker
  */
-class PacketWriter {
+public class PacketWriter {
 
     protected Thread writerThread;
     protected Writer writer;
@@ -49,7 +49,7 @@ class PacketWriter {
      *
      * @param connection the connection.
      */
-    protected PacketWriter(XMPPConnection connection) {
+    public PacketWriter(XMPPConnection connection) {
         this.connection = connection;
         this.writer = connection.writer;
         this.queue = new LinkedList();

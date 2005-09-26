@@ -39,7 +39,7 @@ import java.util.*;
  * @see PacketListener
  * @author Matt Tucker
  */
-class PacketReader {
+public class PacketReader {
 
     protected Thread readerThread;
     protected Thread listenerThread;
@@ -54,7 +54,7 @@ class PacketReader {
     protected String connectionID = null;
     protected Object connectionIDLock = new Object();
 
-    protected PacketReader(XMPPConnection connection) {
+    public PacketReader(XMPPConnection connection) {
         this.connection = connection;
 
         readerThread = new Thread() {

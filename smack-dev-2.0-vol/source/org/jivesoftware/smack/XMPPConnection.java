@@ -851,8 +851,8 @@ public class XMPPConnection {
 
         try
         {
-            packetWriter = new PacketWriter(this);
-            packetReader = new PacketReader(this);
+            // Set the packetReader and packetWriter instance variables
+            initPacketReaderAndWriter();
 
             // If debugging is enabled, we should start the thread that will listen for
             // all packets and then log them.
@@ -927,7 +927,7 @@ public class XMPPConnection {
             authenticated = false;
             connected = false;
 
-            throw ex;           // Everything stoppped. Now throw the exception.
+            throw ex;           // Everything stopped. Now throw the exception.
         }
     }
 
@@ -1000,6 +1000,11 @@ public class XMPPConnection {
                 writer = debugger.newConnectionWriter(writer);
             }
         }
+    }
+
+    protected void initPacketReaderAndWriter() throws XMPPException {
+        packetWriter = new PacketWriter(this);
+        packetReader = new PacketReader(this);
     }
 
     /**
