@@ -279,7 +279,7 @@ public class MultiUserChat {
         }
         // We create a room by sending a presence packet to room@service/nick
         // and signal support for MUC. The owner will be automatically logged into the room.
-        Presence joinPresence = new Presence(Presence.Type.AVAILABLE);
+        Presence joinPresence = connection.createPresence(Presence.Type.AVAILABLE);
         joinPresence.setTo(room + "/" + nickname);
         // Indicate the the client supports MUC          
         joinPresence.addExtension(new MUCInitialPresence());
@@ -405,7 +405,7 @@ public class MultiUserChat {
         }
         // We join a room by sending a presence packet where the "to"
         // field is in the form "roomName@service/nickname"
-        Presence joinPresence = new Presence(Presence.Type.AVAILABLE);
+        Presence joinPresence = connection.createPresence(Presence.Type.AVAILABLE);
         joinPresence.setTo(room + "/" + nickname);
 
         // Indicate the the client supports MUC          
@@ -462,7 +462,7 @@ public class MultiUserChat {
         }
         // We leave a room by sending a presence packet where the "to"
         // field is in the form "roomName@service/nickname"
-        Presence leavePresence = new Presence(Presence.Type.UNAVAILABLE);
+        Presence leavePresence = connection.createPresence(Presence.Type.UNAVAILABLE);
         leavePresence.setTo(room + "/" + nickname);
         connection.sendPacket(leavePresence);
         // Reset occupant information.
@@ -895,7 +895,7 @@ public class MultiUserChat {
         // We change the nickname by sending a presence packet where the "to"
         // field is in the form "roomName@service/nickname"
         // We don't have to signal the MUC support again
-        Presence joinPresence = new Presence(Presence.Type.AVAILABLE);
+        Presence joinPresence = connection.createPresence(Presence.Type.AVAILABLE);
         joinPresence.setTo(room + "/" + nickname);
 
         // Wait for a presence packet back from the server.
@@ -941,7 +941,7 @@ public class MultiUserChat {
         }
         // We change the availability status by sending a presence packet to the room with the
         // new presence status and mode
-        Presence joinPresence = new Presence(Presence.Type.AVAILABLE);
+        Presence joinPresence = connection.createPresence(Presence.Type.AVAILABLE);
         joinPresence.setStatus(status);
         joinPresence.setMode(mode);
         joinPresence.setTo(room + "/" + nickname);

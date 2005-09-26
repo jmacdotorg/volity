@@ -250,7 +250,7 @@ public class Roster {
         }
 
         // Create a presence subscription packet and send.
-        Presence presencePacket = new Presence(Presence.Type.SUBSCRIBE);
+        Presence presencePacket = connection.createPresence(Presence.Type.SUBSCRIBE);
         presencePacket.setTo(user);
         connection.sendPacket(presencePacket);
     }
@@ -634,13 +634,13 @@ public class Roster {
             else if (presence.getType() == Presence.Type.SUBSCRIBE) {
                 if (subscriptionMode == SUBSCRIPTION_ACCEPT_ALL) {
                     // Accept all subscription requests.
-                    Presence response = new Presence(Presence.Type.SUBSCRIBED);
+                    Presence response = connection.createPresence(Presence.Type.SUBSCRIBED);
                     response.setTo(presence.getFrom());
                     connection.sendPacket(response);
                 }
                 else if (subscriptionMode == SUBSCRIPTION_REJECT_ALL) {
                     // Reject all subscription requests.
-                    Presence response = new Presence(Presence.Type.UNSUBSCRIBED);
+                    Presence response = connection.createPresence(Presence.Type.UNSUBSCRIBED);
                     response.setTo(presence.getFrom());
                     connection.sendPacket(response);
                 }

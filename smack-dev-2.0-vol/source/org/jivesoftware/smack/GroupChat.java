@@ -146,7 +146,7 @@ public class GroupChat {
         }
         // We join a room by sending a presence packet where the "to"
         // field is in the form "roomName@service/nickname"
-        Presence joinPresence = new Presence(Presence.Type.AVAILABLE);
+        Presence joinPresence = connection.createPresence(Presence.Type.AVAILABLE);
         joinPresence.setTo(room + "/" + nickname);
         // Wait for a presence packet back from the server.
         PacketFilter responseFilter = new AndFilter(
@@ -188,7 +188,7 @@ public class GroupChat {
         }
         // We leave a room by sending a presence packet where the "to"
         // field is in the form "roomName@service/nickname"
-        Presence leavePresence = new Presence(Presence.Type.UNAVAILABLE);
+        Presence leavePresence = connection.createPresence(Presence.Type.UNAVAILABLE);
         leavePresence.setTo(room + "/" + nickname);
         connection.sendPacket(leavePresence);
         // Reset participant information.

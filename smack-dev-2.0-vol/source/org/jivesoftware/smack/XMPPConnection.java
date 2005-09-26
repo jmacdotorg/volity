@@ -23,9 +23,11 @@ package org.jivesoftware.smack;
 import org.jivesoftware.smack.debugger.SmackDebugger;
 import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.filter.PacketTypeFilter;
+import org.jivesoftware.smack.packet.DefaultPresenceFactory;
 import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.PresenceFactory;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smack.util.DNSUtil;
@@ -123,6 +125,8 @@ public class XMPPConnection {
 
     protected Writer writer;
     protected Reader reader;
+
+    protected PresenceFactory presenceFactory = new DefaultPresenceFactory();
 
     /**
      * A map between JIDs and the most recently created Chat object with that JID.
@@ -436,7 +440,7 @@ public class XMPPConnection {
 
         // Set presence to online.
         if (sendPresence) {
-            packetWriter.sendPacket(new Presence(Presence.Type.AVAILABLE));
+            packetWriter.sendPacket(createPresence(Presence.Type.AVAILABLE));
         }
 
         // Indicate that we're now authenticated.
@@ -488,7 +492,7 @@ public class XMPPConnection {
         roster = null;
 
         // Set presence to online.
-        packetWriter.sendPacket(new Presence(Presence.Type.AVAILABLE));
+        packetWriter.sendPacket(createPresence(Presence.Type.AVAILABLE));
 
         // Indicate that we're now authenticated.
         authenticated = true;
@@ -501,6 +505,31 @@ public class XMPPConnection {
         if (DEBUG_ENABLED && debugger != null) {
             debugger.userHasLogged(user);
         }
+    }
+
+    /**
+     * Create a presence packet via the factory. This is short for
+     * getPresenceFactory.create(type).
+     *
+     * @param type the type.
+     * @return a Presence object suitable for sending.
+     */
+    public Presence createPresence(Presence.Type type) {
+        return presenceFactory.create(type);
+    }
+
+    /**
+     * Create a presence packet via the factory. This is short for
+     * getPresenceFactory.create(type, status, priority, node).
+     *
+     * @param type the type.
+     * @param status a text message describing the presence update.
+     * @param priority the priority of this presence update.
+     * @param mode the mode type for this presence update.
+     * @return a Presence object suitable for sending.
+     */
+    public Presence createPresence(Presence.Type type, String status, int priority, Presence.Mode mode) {
+        return presenceFactory.create(type, status, priority, mode);
     }
 
     /**
@@ -632,7 +661,7 @@ public class XMPPConnection {
      */
     public void close() {
         // Set presence to offline.
-        packetWriter.sendPacket(new Presence(Presence.Type.UNAVAILABLE));
+        packetWriter.sendPacket(createPresence(Presence.Type.UNAVAILABLE));
         packetReader.shutdown();
         packetWriter.shutdown();
         // Wait 150 ms for processes to clean-up, then shutdown.
@@ -767,6 +796,25 @@ public class XMPPConnection {
     }
 
     /**
+     * Set the connection's PresenceFactory. All presence packets sent out on
+     * the connection will come from this source.
+     *
+     * @param factory a PresenceFactory.
+     */
+    public void setPresenceFactory(PresenceFactory factory) {
+        presenceFactory = factory;
+    }
+
+    /**
+     * Get the connection's PresenceFactory.
+     *
+     * @return the current PresenceFactory.
+     */
+    public PresenceFactory getPresenceFactory() {
+        return presenceFactory;
+    }
+
+    /**
      * Adds a connection established listener that will be notified when a new connection
      * is established.
      *
@@ -879,7 +927,7 @@ public class XMPPConnection {
             authenticated = false;
             connected = false;
 
-            throw ex;		// Everything stoppped. Now throw the exception.
+            throw ex;           // Everything stoppped. Now throw the exception.
         }
     }
 
