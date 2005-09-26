@@ -416,7 +416,7 @@ sub handle_game_rpc_request {
 	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
       } else {
 	  # The game has a specific, non-fault response to send back.
-	  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, @response);
+	  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
       }
   } else {
     # The game silently approved the request,
@@ -480,6 +480,7 @@ sub jabber_presence {
     # JID is always in an item tag, since the MUC is either non-anonymous
     # or semi-anonymous, so the moderator (that's me) will have access to
     # their full JIDs.
+    return unless $x->get_tag('item');
     $new_person_jid = $x->get_tag('item')->attr('jid');
     my $kernel = $self->kernel;
     if (not(defined($new_person_jid)) or $new_person_jid eq $self->jid) {
@@ -671,6 +672,8 @@ sub clear_empty_seats {
 sub look_up_player_with_jid {
   my $self = shift;
   my ($jid) = @_;
+# Commented out the logger lines here because this method is often in a
+# while() loop, and therefore spams the log. -jmac
 #  $self->logger->debug("Fetching player object for JID $jid.");
   my $muc_jid = $self->muc_jid;
   if (my ($nickname) = $jid =~ m|^$muc_jid/(.*)$|) {
