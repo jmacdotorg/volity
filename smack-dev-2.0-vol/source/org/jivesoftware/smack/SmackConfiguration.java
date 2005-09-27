@@ -44,7 +44,7 @@ import org.xmlpull.mxp1.MXParser;
  */
 public final class SmackConfiguration {
 
-    protected static final String SMACK_VERSION = "2.0.0-Volity";
+    protected static final String SMACK_VERSION = "2.0.0-volity";
 
     protected static int packetReplyTimeout = 5000;
     protected static int keepAliveInterval = 30000;

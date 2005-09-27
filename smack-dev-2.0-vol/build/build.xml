@@ -36,7 +36,7 @@
     <property name="version.major" value="2" />
     <property name="version.minor" value="0" />
     <property name="version.revision" value="0" />
-    <property name="version.name" value="${version.major}.${version.minor}.${version.revision}" />
+    <property name="version.name" value="${version.major}.${version.minor}.${version.revision}-volity" />
 
     <!-- Test props - override these defaults in the properties file or in command line -->
     <property name="test.host" value="localhost" />

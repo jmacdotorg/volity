@@ -185,7 +185,7 @@ public class ServiceDiscoveryManager {
      * Set an extension form (JEP-0128) which will be returned with the client
      * identity. If this is null, no form will be returned.
      * 
-     * @param a form of type "result". May be null.
+     * @param form a form of type "result". May be null.
      */
     public static void setIdentityExtension(Form form) {
         identityExtForm = form;
