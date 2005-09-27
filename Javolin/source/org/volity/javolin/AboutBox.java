@@ -19,8 +19,8 @@ public class AboutBox extends JFrame
 
     private final static String JAVOLIN_ABOUT_TEXT = 
         "Copyright 2004-2005 by the Volity project contributors:\n"   +
-        "Jason McIntosh, Doug Orleans, Andrew Plotkin,\n"        +
-        "Karl von Laudermann. Licensed under the Apache License,\n"        +
+        "Jason McIntosh, Doug Orleans, Andrew Plotkin, Karl\n"        +
+        "von Laudermann. Licensed under the Apache License,\n"        +
         "Version 2.0. See Javolin web site for details.\n\n"          +
         "Javolin is built with the Batik SVG toolkit (apache.org),\n" +
         "the Rhino JavaScript engine (mozilla.org), and the\n"        +
@@ -104,7 +104,7 @@ public class AboutBox extends JFrame
         c.gridy = row++;
         cPane.add(logo, c);
 
-        label = new JLabel("Javolin: a Volity game browser");
+        label = new JLabel(JavolinApp.getAppName() + ": a Volity game browser");
         label.setFont(new Font("SansSerif", Font.BOLD, 14));
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -112,7 +112,8 @@ public class AboutBox extends JFrame
         c.ipady = 8;
         cPane.add(label, c);
 
-        label = new JLabel("Version: 0.1.2", SwingConstants.RIGHT);
+        label = new JLabel("Version " + JavolinApp.getAppVersion(), 
+            SwingConstants.RIGHT);
         label.setFont(new Font("SansSerif", Font.PLAIN, 9));
         c = new GridBagConstraints();
         c.gridx = 0;

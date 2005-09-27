@@ -46,6 +46,8 @@ public class JavolinApp extends JFrame
                RosterPanelListener, PacketListener, InvitationListener
 {
     private final static String APPNAME = "Javolin";
+    private final static String APPVERSION = "0.1.2";
+
     private final static String NODENAME = "MainAppWin";
     private final static String SHOW_OFFLINE_USERS_KEY = "ShowOfflineUsers";
 
@@ -165,6 +167,7 @@ public class JavolinApp extends JFrame
      */
     private void start()
     {
+        // Bring up the initial "connect" dialog box.
         doConnect();
     }
 
@@ -221,6 +224,14 @@ public class JavolinApp extends JFrame
     public static String getAppName()
     {
         return APPNAME;
+    }
+
+    /**
+     * Get the version of the application, suitable for display to the user.
+     */
+    public static String getAppVersion()
+    {
+        return APPVERSION;
     }
 
     /**
@@ -358,15 +369,6 @@ public class JavolinApp extends JFrame
             InvitationManager im = new InvitationManager(mConnection);
             im.addInvitationListener(this);
             im.start();
-        }
-
-        if (mConnection != null)
-        {
-            ServiceDiscoveryManager discoMan = 
-                ServiceDiscoveryManager.getInstanceFor(mConnection);
-            // XXX If ServiceDiscoveryManager supported returning forms
-            // to disco#info queries, we would want to return a form
-            // containing "volity-role" : "player".
         }
 
         // Update the UI
