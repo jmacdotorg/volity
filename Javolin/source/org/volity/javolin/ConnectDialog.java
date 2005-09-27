@@ -164,6 +164,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         try
         {
             mConnection = new XMPPConnection(mHostNameField.getText());
+            mConnection.setPresenceFactory(new CapPresenceFactory());
 
             mConnection.login(mUserNameField.getText(),
                 new String(mPasswordField.getPassword()), "Javolin");
@@ -251,6 +252,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         try {
             mConnection = new XMPPConnection(mHostNameField.getText());
+            mConnection.setPresenceFactory(new CapPresenceFactory());
             AccountManager manager = mConnection.getAccountManager();
 
             if (!manager.supportsAccountCreation()) {

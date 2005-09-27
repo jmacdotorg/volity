@@ -25,10 +25,16 @@ commands are available:
       default, so you can just execute "ant" by itself, without specifying a
       command.
 
+  libarchive - Compiles and builds Javolin.jar, containing all the third
+      party libraries needed for it to run. Use this version to create a
+      Javolin for public release.
+
   testbench - Compiles Testbench and builds the Testbench.jar file.
 
   doc - Uses Javadoc to generate Javolin API documentation in a directory 
       called "doc".
+
+  all - builds archive, testbench, doc.
 
   clean - Deletes everything created by the other commands: the build 
       directory, the doc directory, and the jar files.
@@ -36,9 +42,10 @@ commands are available:
 ---------
 Libraries
 ---------
+
 Javolin relies on third party libraries. If you don't have these libraries, you
-cannot build or run Javolin. These libraries are not checked in to the CVS
-repository, so you must download them and place them into the lib directory
+cannot build or run Javolin. Most of these libraries are not checked in to the
+CVS repository, so you must download them and place them into the lib directory
 yourself. The following is a list of the libraries currently used, along with
 URLs pointing to the download location of the version currently being developed
 against. The Lib file(s) item tells you what file or files must be copied into
@@ -47,9 +54,9 @@ list up-to-date when new library dependencies are added to Javolin, as well as
 when we move to a new version of a library that we are already using.)
 
 ---
-Name: Smack
-Version: 1.5.1
-Download: http://www.jivesoftware.org/builds/smack/smack-1.5.1.zip
+Name: Smack (modified version in Volity CVS)
+Version: 2.0.0-v-1
+Download: https://sourceforge.net/project/showfiles.php?group_id=91751 (the smack-volity package)
 Lib file(s): smack.jar, smackx.jar
 ---
 Name: Rhino

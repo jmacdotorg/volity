@@ -52,13 +52,10 @@ public class ChatWindow extends JFrame implements PacketListener
     private String mRemoteNick;
 
     /*
-     * Static initializer
+     * We no longer need to call setFilteredOnThreadID. The current version of
+     * Smack handles unthreaded messages automatically. See
+     * http://www.jivesoftware.org/community/thread.jspa?messageID=104051
      */
-    static
-    {
-        // Set this before any Chat object is ever created
-        Chat.setFilteredOnThreadID(false);
-    }
 
     /**
      * Constructor.

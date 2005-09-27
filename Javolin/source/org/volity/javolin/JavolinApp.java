@@ -30,6 +30,8 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
+import org.jivesoftware.smackx.Form;
+import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
@@ -167,6 +169,21 @@ public class JavolinApp extends JFrame
      */
     private void start()
     {
+        /* 
+         * Set up the static information in ServiceDiscoveryManager. This will
+         * be returned to disco queries. To work around a weird Smack
+         * class-loading race, we ping the SmackConfiguration class first.
+         */
+        String ref = SmackConfiguration.getVersion();
+
+        ServiceDiscoveryManager.setIdentityName(APPNAME);
+        ServiceDiscoveryManager.setIdentityType("player");
+        Form discoForm = new Form("result");
+        FormField fld = new FormField("volity-role");
+        fld.addValue("player");
+        discoForm.addField(fld);
+        ServiceDiscoveryManager.setIdentityExtension(discoForm);
+
         // Bring up the initial "connect" dialog box.
         doConnect();
     }
