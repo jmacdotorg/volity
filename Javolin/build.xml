@@ -118,48 +118,7 @@
     <delete file="${jarfiletestbench}"/>
   </target>
 
-  <target name="libarchive" description="generate the jar file, including third-party libs" depends="compile">
-    <unzip src="${lib.loc}/smack.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/smackx.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/js.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-awt-util.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-bridge.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-css.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-dom.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-ext.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-gui-util.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-gvt.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-parser.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-script.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-svg-dom.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-swing.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-util.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/batik-xml.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/xerces_2_5_0.jar" dest="${build}"/>
-    <unzip src="${lib.loc}/xml-apis.jar" dest="${build}"/>
-    <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
-    <!-- Put some of ${build} into the ${jarfile} file -->
-    <jar jarfile="${jarfilejavolin}" basedir="${build}">
-      <include name="org/volity/javolin/" />
-      <include name="org/volity/client/" />
-      <include name="org/volity/jabber/" />
-      <include name="org/jivesoftware/" />
-      <include name="org/xmlpull/" />
-      <include name="org/apache/" />
-      <include name="org/mozilla/" />
-      <include name="org/w3c/" />
-      <include name="org/xml/" />
-      <include name="javax/" />
-      <metainf dir="${build}/META-INF">
-        <exclude name="MANIFEST.MF" />
-      </metainf>
-      <manifest>
-        <attribute name="Main-Class" value="${mainclass}"/>
-      </manifest> 
-    </jar>
-  </target>
-
-  <target name="libarchive2" depends="compile"
+  <target name="libarchive" depends="compile"
         description="generate the jar file, including third-party libs">
     <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
     <jar jarfile="${jarfilejavolin}">
