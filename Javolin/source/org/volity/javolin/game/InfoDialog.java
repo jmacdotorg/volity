@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.prefs.Preferences;
 import javax.swing.*;
+import org.volity.client.GameInfo;
 import org.volity.client.GameTable;
 import org.volity.javolin.BaseDialog;
 
@@ -13,14 +14,17 @@ public class InfoDialog extends BaseDialog
 
     private TableWindow mOwner;
     private GameTable mGameTable;
+    private GameInfo mGameInfo;
 
     private JButton mButton;
 
-    public InfoDialog(TableWindow owner, GameTable gameTable) {
+    public InfoDialog(TableWindow owner, GameTable gameTable,
+        GameInfo gameInfo) {
         super(owner, "Game Information", false, NODENAME);
 
         mOwner = owner;
         mGameTable = gameTable;
+        mGameInfo = gameInfo;
 
         buildUI();
         setResizable(false);
@@ -42,6 +46,8 @@ public class InfoDialog extends BaseDialog
                     dispose();
                 }
             });
+
+        //### focus on OK
     }
     /**
      * Create the window UI.
@@ -55,6 +61,8 @@ public class InfoDialog extends BaseDialog
         JTextField field;
 
         int row = 0;
+
+        //### top spacings are inconsistent
 
         label = new JLabel(mOwner.getWindowName());
         c = new GridBagConstraints();
@@ -115,7 +123,7 @@ public class InfoDialog extends BaseDialog
         c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
         cPane.add(label, c);
 
-        msg = mGameTable.getParlorJID();
+        msg = mGameInfo.getParlorJID();
         field = new JTextField(msg);
         field.setEditable(false);
         field.setFont(new Font("SansSerif", Font.PLAIN, 12));

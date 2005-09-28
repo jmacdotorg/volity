@@ -20,10 +20,17 @@ package org.volity.javolin.roster;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.tree.*;
-import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.Roster;
+import org.jivesoftware.smack.RosterEntry;
+import org.jivesoftware.smack.RosterListener;
+import org.jivesoftware.smack.packet.PacketExtension;
+import org.jivesoftware.smack.packet.Presence;
+import org.volity.client.CapPacketExtension;
+import org.volity.javolin.CapPresenceFactory;
 
 /**
  * JPanel subclass which contains the roster list and related controls.
@@ -32,7 +39,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 {
     private JTree mTree;
     private DefaultTreeModel mTreeModel;
-    private java.util.List mRosterPanelListeners;
+    private List mRosterPanelListeners;
     private boolean mShowUnavailUsers;
     private Roster mRoster;
 
@@ -192,7 +199,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         // Populate the tree if the roster is not null
         if (mRoster != null)
         {
-            java.util.List unavailUsers = new Vector();
+            List unavailUsers = new Vector();
             Iterator usersIter = mRoster.getEntries();
 
             MutableTreeNode newNode = null;
@@ -200,8 +207,13 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             while (usersIter.hasNext())
             {
                 RosterEntry entry = (RosterEntry)usersIter.next();
-                RosterTreeItem item =
-                    new RosterTreeItem(entry, mRoster.getPresence(entry.getUser()));
+                Presence packet = mRoster.getPresence(entry.getUser());
+
+                // Is this user logged on via a Volity player client?
+                List ls = listVolityClientResources(entry.getUser());
+                boolean flag = (ls != null && !ls.isEmpty());
+
+                RosterTreeItem item = new RosterTreeItem(entry, packet, flag);
 
                 newNode = new DefaultMutableTreeNode(item);
 
@@ -329,6 +341,41 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     public void valueChanged(TreeSelectionEvent e)
     {
         fireRosterPanelSelection(new RosterPanelEvent(this, getSelectedRosterItem()));
+    }
+
+    /**
+     * Return a list of the resources of the given user which are Volity
+     * clients. (A list of full JID strings.) If the user is present but not
+     * with a Volity client, this returns an empty list. If the user is
+     * offline, or not on your roster, this returns null.
+     *
+     * @return the list, or null.
+     */
+    public List listVolityClientResources(String user)
+    {
+        Iterator iter = mRoster.getPresences(user);
+        if (iter == null)
+            return null;
+
+        List ls = new ArrayList();
+        while (iter.hasNext())
+        {
+            Presence packet = (Presence)iter.next();
+            PacketExtension ext = packet.getExtension(CapPacketExtension.NAME,
+                CapPacketExtension.NAMESPACE);
+            if (ext != null && ext instanceof CapPacketExtension) 
+            {
+                CapPacketExtension extp = (CapPacketExtension)ext;
+                if (extp.getNode().equals(CapPresenceFactory.VOLITY_NODE_URI)
+                    && extp.hasExtString("player")) 
+                {
+                    // Whew. It's a Volity client.
+                    ls.add(packet.getFrom());
+                }
+            }
+        }
+
+        return ls;
     }
 
     /**

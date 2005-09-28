@@ -29,6 +29,7 @@ public class RosterTreeItem
     private String mNickname;
     private Presence.Type mPresType = Presence.Type.UNAVAILABLE;
     private Presence.Mode mPresMode = Presence.Mode.AVAILABLE;
+    private boolean mVolityClient = false;
     private String mMessage;
 
     /**
@@ -37,7 +38,7 @@ public class RosterTreeItem
      * @param entry     A RosterEntry for the user.
      * @param presence  The user's presence descriptor. Can be null.
      */
-    public RosterTreeItem(RosterEntry entry, Presence presence)
+    public RosterTreeItem(RosterEntry entry, Presence presence, boolean isVolityClient)
     {
         mID = entry.getUser();
 
@@ -46,6 +47,8 @@ public class RosterTreeItem
         {
             mNickname = "";
         }
+
+        mVolityClient = isVolityClient;
 
         if (presence != null)
         {
@@ -117,5 +120,16 @@ public class RosterTreeItem
     {
         return (mPresMode != Presence.Mode.AVAILABLE) &&
             (mPresMode != Presence.Mode.CHAT);
+    }
+
+    /**
+     * Tells whether the user is logged on via a Volity client. (On at least
+     * one resource.)
+     *
+     * @return  True if the user is logged on via a Volity client.
+     */
+    public boolean isVolityClient()
+    {
+        return mVolityClient;
     }
 }

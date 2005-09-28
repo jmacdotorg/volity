@@ -427,7 +427,8 @@ public class TableWindow extends JFrame implements PacketListener
         mInfoButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
                     if (mInfoDialog == null) {
-                        mInfoDialog = new InfoDialog(TableWindow.this, mGameTable);
+                        mInfoDialog = new InfoDialog(TableWindow.this,
+                            mGameTable, mServer.getGameInfo());
                         // When the InfoDialog closes, clear mInfoDialog
                         mInfoDialog.addWindowListener(
                             new WindowAdapter() {

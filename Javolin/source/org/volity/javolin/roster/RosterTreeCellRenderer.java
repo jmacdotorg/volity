@@ -27,17 +27,23 @@ import javax.swing.tree.*;
 public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
 {
     private final static ImageIcon AVAILABLE_ICON;
+    private final static ImageIcon VOL_AVAILABLE_ICON;
     private final static ImageIcon UNAVAILABLE_ICON;
     private final static ImageIcon BUSY_ICON;
+    private final static ImageIcon VOL_BUSY_ICON;
 
     static
     {
         AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Avail_TreeIcon.png"));
+        VOL_AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
+            "VolAvail_TreeIcon.png"));
         UNAVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Unavail_TreeIcon.png"));
         BUSY_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Busy_TreeIcon.png"));
+        VOL_BUSY_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
+            "VolBusy_TreeIcon.png"));
     }
 
     /**
@@ -68,13 +74,27 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
             // Set the user icon
             if (userItem.isAvailable())
             {
-                if (userItem.isBusy())
+                if (userItem.isVolityClient())
                 {
-                    setIcon(BUSY_ICON);
+                    if (userItem.isBusy())
+                    {
+                        setIcon(VOL_BUSY_ICON);
+                    }
+                    else
+                    {
+                        setIcon(VOL_AVAILABLE_ICON);
+                    }
                 }
-                else
+                else 
                 {
-                    setIcon(AVAILABLE_ICON);
+                    if (userItem.isBusy())
+                    {
+                        setIcon(BUSY_ICON);
+                    }
+                    else
+                    {
+                        setIcon(AVAILABLE_ICON);
+                    }
                 }
             }
             else

@@ -13,6 +13,7 @@ import org.jivesoftware.smackx.packet.DiscoverInfo;
  */
 public class GameInfo
 {
+    private String mParlorJID;
     private String mGameName;
     private String mVolityVersion;
     private URI mRulesetURI;
@@ -22,21 +23,30 @@ public class GameInfo
     private String mParlorContactJID;
 
     /**
-     * Constructs an empty GameInfo -- all fields are null.
+     * Constructs an empty GameInfo -- all fields are null, except for the
+     * parlor JID itself.
+     *
+     * @param jid the JID of the parlor that was queried for this info
      */
-    public GameInfo() {
+    public GameInfo(String jid) {
+        mParlorJID = jid;
     }
 
     /**
      * Constructs a GameInfo that parses a disco-info structure.
+     *
+     * @param jid the JID of the parlor that was queried for this info
+     * @param info the disco reply
      */
-    public GameInfo(DiscoverInfo info) {
+    public GameInfo(String jid, DiscoverInfo info) {
+        mParlorJID = jid;
+
         Iterator iter;
 
         for (iter = info.getIdentities(); iter.hasNext(); ) {
             DiscoverInfo.Identity ident = (DiscoverInfo.Identity)iter.next();
             if (ident.getCategory().equals("volity") 
-                //###workaround && ident.getType().equals("parlor")
+                //###workaround### && ident.getType().equals("parlor")
                 ) {
                 mGameName = ident.getName();
             }
@@ -103,6 +113,10 @@ public class GameInfo
             mParlorContactEmail = null;
         if (mParlorContactJID != null && mParlorContactJID.length() == 0)
             mParlorContactJID = null;
+    }
+
+    public String getParlorJID() {
+        return mParlorJID;
     }
 
     /** The (non-internationalized) game name. */

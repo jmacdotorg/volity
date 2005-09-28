@@ -1,6 +1,7 @@
 package org.volity.client;
 
 import java.util.*;
+import javax.swing.SwingUtilities;
 import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
@@ -53,7 +54,6 @@ public class GameTable extends MultiUserChat
     protected XMPPConnection mConnection;
     protected Referee mReferee;
     protected int mRefereeState = STATE_UNKNOWN;
-    protected String mParlorJID = null;
 
     protected List mQueuedMessages = new ArrayList();
     protected PacketListener mParticipantListener;
@@ -134,14 +134,6 @@ public class GameTable extends MultiUserChat
      */
     public Referee getReferee() {
         return mReferee;
-    }
-
-    /**
-     * Return the JID of the table's parlor. This will not be set until the
-     * GameTable has signalled ready. Before that, this returns null.
-     */
-    public String getParlorJID() {
-        return mParlorJID;
     }
 
     /**
@@ -234,12 +226,24 @@ public class GameTable extends MultiUserChat
     /***** Player status-change methods & callbacks *****/
 
     /** Internal data class used to store a (Player, nickname) pair. */
-    private class PlayerNick {
+    protected class PlayerNick {
         Player player;
         String oldNick;
         PlayerNick(Player player, String oldNick) {
             this.player = player;
             this.oldNick = oldNick;
+        }
+    }
+
+    /**
+     * Internal data class which stores an (Occupant, Presence) pair.
+     */
+    protected class OccupantPresence {
+        Occupant occupant;
+        Presence presence;
+        OccupantPresence(Occupant occ, Presence pres) {
+            occupant = occ;
+            presence = pres;
         }
     }
 
@@ -263,12 +267,13 @@ public class GameTable extends MultiUserChat
      * Called outside Swing thread!
      */
     protected void rescanOccupantList() {
-        Map occupantMap = new HashMap(); // maps JID to Occupant
+        Map occupantMap = new HashMap(); // maps JID to (Occupant, Presence)
         for (Iterator it = getOccupants(); it.hasNext(); ) {
             String jid = (String)it.next();
             Occupant occ = getOccupant(jid);
+            Presence pres = getOccupantPresence(jid);
             if (occ != null) {
-                occupantMap.put(occ.getJid(), occ);
+                occupantMap.put(occ.getJid(), new OccupantPresence(occ, pres));
             }
         }
 
@@ -280,7 +285,8 @@ public class GameTable extends MultiUserChat
             Player player = (Player)it.next();
             String jid = player.getJID();
             if (occupantMap.containsKey(jid)) {
-                Occupant occ = (Occupant)occupantMap.get(jid);
+                OccupantPresence opair = (OccupantPresence)occupantMap.get(jid);
+                Occupant occ = opair.occupant;
                 String oldnick = player.getNick();
                 if (!occ.getNick().equals(oldnick)) {
                     player.setNick(occ.getNick());
@@ -310,7 +316,8 @@ public class GameTable extends MultiUserChat
         for (Iterator it = occupantMap.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry ent = (Map.Entry)it.next();
             String jid = (String)ent.getKey();
-            Occupant occ = (Occupant)ent.getValue();
+            OccupantPresence opair = (OccupantPresence)ent.getValue();
+            Occupant occ = opair.occupant;
             // this is a new player
             Player player = new Player(jid, occ.getNick(), 
                 jid.equals(mConnection.getUser()));
@@ -320,9 +327,34 @@ public class GameTable extends MultiUserChat
             if (player.isSelf())
                 mSelfPlayer = player;
 
-            if (occ.getAffiliation().equals("owner")) {
-                // Fire off a test to see if this owner is the referee.
-                // It probably is, but we want to be sure.
+            boolean knownRef = false;
+
+            PacketExtension ext = opair.presence.getExtension(
+                CapPacketExtension.NAME,
+                CapPacketExtension.NAMESPACE);
+            if (ext != null && ext instanceof CapPacketExtension) {
+                CapPacketExtension extp = (CapPacketExtension)ext;
+                if (extp.getNode().equals("http://volity.org/protocol/caps")
+                    && extp.hasExtString("referee")) {
+                    knownRef = true;
+                    player.setReferee(true);
+                    // Invoke into the Swing thread.
+                    final Player refPlayer = player;
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                foundReferee(refPlayer);
+                            }
+                        });
+                }
+            }
+            
+            if ((!knownRef) && occ.getAffiliation().equals("owner")) {
+                /*
+                 * We couldn't tell from the presence packet whether this was
+                 * the ref. But it's an owner, and the owner is usually the
+                 * ref. So, fire off a test. It probably is, but we want to be
+                 * sure.
+                 */
                 DiscoBackground query = new DiscoBackground(mConnection,
                     new DiscoBackground.Callback() {
                         public void run(IQ result, XMPPException ex, Object rock) {
@@ -377,25 +409,33 @@ public class GameTable extends MultiUserChat
             if (field != null) {
                 String role = (String) field.getValues().next();
                 if (role.equals("referee") && mReferee == null) {
-                    /* It appears we have found our referee! Or re-found it,
-                     * perhaps (if the first one disconnected) */
                     player.setReferee(true);
-                    mReferee = new Referee(GameTable.this, player.getJID());
-                    if (!mInitialJoined) {
-                        mInitialJoined = true;
-                        fireReadyListeners();
-                    }
-
-                    field = form.getField("parlor");
-                    if (field != null) {
-                        mParlorJID = (String) field.getValues().next();
-                    }
-
-                    fireStatusListeners_playerIsReferee(player);
+                    foundReferee(player);
                 }
             }
         }
         
+    }
+
+    /**
+     * By one means or another, we have decided that the given Player is the
+     * referee.
+     */
+    private void foundReferee(Player player) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        if (mReferee != null)
+            return;
+
+        /* It appears we have found our referee! Or re-found it, perhaps (if
+         * the first one disconnected) */
+        mReferee = new Referee(this, player.getJID());
+        if (!mInitialJoined) {
+            mInitialJoined = true;
+            fireReadyListeners();
+        }
+
+        fireStatusListeners_playerIsReferee(player);
     }
 
     /** Return an iterator of all the Player objects. */

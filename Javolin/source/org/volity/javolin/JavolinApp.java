@@ -29,6 +29,7 @@ import javax.swing.border.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.*;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
@@ -183,6 +184,13 @@ public class JavolinApp extends JFrame
         fld.addValue("player");
         discoForm.addField(fld);
         ServiceDiscoveryManager.setIdentityExtension(discoForm);
+
+        /* 
+         * Set up a packet extension provider for capability (JEP-0115) tags.
+         */
+        ProviderManager.addExtensionProvider(
+            CapPacketExtension.NAME, CapPacketExtension.NAMESPACE,
+            new CapExtensionProvider());
 
         // Bring up the initial "connect" dialog box.
         doConnect();

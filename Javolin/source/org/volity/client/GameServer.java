@@ -35,16 +35,17 @@ public class GameServer extends TokenRequester
         if (mGameInfo != null)
             return mGameInfo;
 
+        String parlorJID = getResponderJID();
         ServiceDiscoveryManager discoMan =
             ServiceDiscoveryManager.getInstanceFor(getConnection());
 
         try {
-            DiscoverInfo info = discoMan.discoverInfo(getResponderJID());
-            mGameInfo = new GameInfo(info);
+            DiscoverInfo info = discoMan.discoverInfo(parlorJID);
+            mGameInfo = new GameInfo(parlorJID, info);
         }
         catch (XMPPException ex) {
             // can't disco? I guess all the info fields are null.
-            mGameInfo = new GameInfo();
+            mGameInfo = new GameInfo(parlorJID);
         }
 
         return mGameInfo;
