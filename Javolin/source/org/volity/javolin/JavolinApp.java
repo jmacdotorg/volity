@@ -107,7 +107,7 @@ public class JavolinApp extends JFrame
         mChatWindows = new ArrayList();
         mUserChatWinMap = new Hashtable();
 
-        setTitle(APPNAME);
+        setTitle(APPNAME + " Roster");
         JavolinMenuBar.setApplication(this);
         buildUI();
 
