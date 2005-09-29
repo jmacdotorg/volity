@@ -39,6 +39,14 @@ public class InfoDialog extends BaseDialog
                 }
             });
 
+        addWindowListener(
+            new WindowAdapter() {
+                public void windowOpened(WindowEvent ev) {
+                    // Ensure that Enter triggers the "Ok" button.
+                    mButton.requestFocusInWindow();
+                }
+            });
+
         // If the table window closes, this should close.
         mOwner.addWindowListener(
             new WindowAdapter() {
@@ -46,95 +54,83 @@ public class InfoDialog extends BaseDialog
                     dispose();
                 }
             });
-
-        //### focus on OK
     }
+
+    private interface AddLine {
+        void add(int row, String key, String value);
+    }
+
     /**
      * Create the window UI.
      */
     private void buildUI() {
-        Container cPane = getContentPane();
+        final Container cPane = getContentPane();
         cPane.setLayout(new GridBagLayout());
         GridBagConstraints c;
-        JLabel label;
         String msg;
-        JTextField field;
 
         int row = 0;
 
-        //### top spacings are inconsistent
-
-        label = new JLabel(mOwner.getWindowName());
+        JLabel labelName = new JLabel(mOwner.getWindowName());
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
         c.gridwidth = GridBagConstraints.REMAINDER;
         c.anchor = GridBagConstraints.WEST;
         c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
-        cPane.add(label, c);
+        cPane.add(labelName, c);
 
-        label = new JLabel("Table ID:");
-        c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = row;
-        c.anchor = GridBagConstraints.SOUTHWEST;
-        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
-        cPane.add(label, c);
+        AddLine adder = new AddLine() {
+                public void add(int row, String key, String value) {
+                    JLabel label;
+                    JTextField field;
+                    GridBagConstraints c;
 
-        msg = mGameTable.getRoom();
-        field = new JTextField(msg);
-        field.setEditable(false);
-        field.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        field.setBorder(BorderFactory.createEmptyBorder(3, 4, 1, 4));
-        c = new GridBagConstraints();
-        c.gridx = 1;
-        c.gridy = row++;
-        c.weightx = 1;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        cPane.add(field, c);
+                    boolean isBlank = (value == null);
+                    if (isBlank)
+                        value = "not available";
 
-        label = new JLabel("Referee ID:");
-        c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = row;
-        c.anchor = GridBagConstraints.SOUTHWEST;
-        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
-        cPane.add(label, c);
+                    label = new JLabel(key);
+                    c = new GridBagConstraints();
+                    c.gridx = 0;
+                    c.gridy = row;
+                    c.anchor = GridBagConstraints.SOUTHWEST;
+                    c.insets = new Insets(SPACING, MARGIN, 0, 0);
+                    cPane.add(label, c);
 
-        msg = mGameTable.getRefereeJID();
-        field = new JTextField(msg);
-        field.setEditable(false);
-        field.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        field.setBorder(BorderFactory.createEmptyBorder(3, 4, 1, 4));
-        c = new GridBagConstraints();
-        c.gridx = 1;
-        c.gridy = row++;
-        c.weightx = 1;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        cPane.add(field, c);
+                    field = new JTextField(value);
+                    field.setEditable(false);
+                    if (!isBlank)
+                        field.setFont(new Font("SansSerif", Font.PLAIN, 12));
+                    else
+                        field.setFont(new Font("SansSerif", Font.ITALIC, 12));
+                    field.setBorder(BorderFactory.createEmptyBorder(3, 4, 1, 4));
+                    c = new GridBagConstraints();
+                    c.gridx = 1;
+                    c.gridy = row++;
+                    c.weightx = 1;
+                    c.anchor = GridBagConstraints.WEST;
+                    c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
+                    cPane.add(field, c);
+                }
+            };
 
-        label = new JLabel("Parlor ID:");
-        c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = row;
-        c.anchor = GridBagConstraints.SOUTHWEST;
-        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
-        cPane.add(label, c);
-
-        msg = mGameInfo.getParlorJID();
-        field = new JTextField(msg);
-        field.setEditable(false);
-        field.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        field.setBorder(BorderFactory.createEmptyBorder(3, 4, 1, 4));
-        c = new GridBagConstraints();
-        c.gridx = 1;
-        c.gridy = row++;
-        c.weightx = 1;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        cPane.add(field, c);
+        adder.add(row++, "Table ID:", mGameTable.getRoom());
+        adder.add(row++, "Referee ID:", mGameTable.getRefereeJID());
+        adder.add(row++, "Parlor ID:", mGameInfo.getParlorJID());
+        msg = null;
+        if (mGameInfo.getGameWebsiteURL() != null)
+            msg = mGameInfo.getGameWebsiteURL().toString();
+        adder.add(row++, "Game site:", msg);
+        msg = null;
+        if (mGameInfo.getRulesetURI() != null)
+            msg = mGameInfo.getRulesetURI().toString();
+        adder.add(row++, "Ruleset:", msg);
+        adder.add(row++, "Ruleset version:", mGameInfo.getRulesetVersion());
+        msg = mOwner.getUIUrl().toString();
+        adder.add(row++, "UI loaded:", msg);
+        adder.add(row++, "Admin Email:", mGameInfo.getParlorContactEmail());
+        adder.add(row++, "Admin JID:", mGameInfo.getParlorContactJID());
 
         mButton = new JButton("Ok");
         c = new GridBagConstraints();
@@ -143,5 +139,6 @@ public class InfoDialog extends BaseDialog
         c.insets = new Insets(GAP, MARGIN, MARGIN, MARGIN);
         c.anchor = GridBagConstraints.EAST;
         cPane.add(mButton, c);
+        getRootPane().setDefaultButton(mButton);
     }    
 }

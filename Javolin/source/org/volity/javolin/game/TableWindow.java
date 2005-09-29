@@ -108,6 +108,7 @@ public class TableWindow extends JFrame implements PacketListener
     private GameServer mServer;
     private GameTable mGameTable;
     private String mNickname;
+    private URL mUIUrl;
     private TranslateToken mTranslator;
 
     private boolean mGameTableStarted = false;
@@ -171,7 +172,7 @@ public class TableWindow extends JFrame implements PacketListener
         }
 
         File dir = JavolinApp.getUIFileCache().getUIDir(uiUrl);
-        retVal = new TableWindow(server, table, nickname, dir);
+        retVal = new TableWindow(server, table, nickname, dir, uiUrl);
 
         return retVal;
     }
@@ -184,6 +185,7 @@ public class TableWindow extends JFrame implements PacketListener
      *        a new table will be created.
      * @param nickname                   The nickname to use to join the table.
      * @param uiDir                      The UI directory.
+     * @param uiUrl                      The (original, remote) UI URL.
      * @exception XMPPException          If the table could not be joined.
      * @exception RPCException           If a new table could not be created.
      * @exception TokenFailure           If a new_table RPC failed.
@@ -191,12 +193,14 @@ public class TableWindow extends JFrame implements PacketListener
      * @exception MalformedURLException  If an invalid UI file URL was used.
      */
     protected TableWindow(GameServer server, GameTable table, String nickname,
-        File uiDir) throws XMPPException, RPCException, IOException, TokenFailure,
+        File uiDir, URL uiUrl) 
+        throws XMPPException, RPCException, IOException, TokenFailure,
         MalformedURLException
     {
         mServer = server;
         mGameTable = table;
         mNickname = nickname;
+        mUIUrl = uiUrl;    // We save this only for the sake of the info dialog
 
         // We must now locate the "main" files in the UI directory. First, find
         // the directory which actually contains the significant files.
@@ -576,6 +580,15 @@ public class TableWindow extends JFrame implements PacketListener
             new ErrorWrapper(ex);
             writeMessageText(ex.toString());
         }
+    }
+
+    /**
+     * Return the URL that the window's UI was loaded from. (This points at the
+     * original server, not the cache directory.)
+     */
+    public URL getUIUrl() 
+    {
+        return mUIUrl;
     }
 
     /**
