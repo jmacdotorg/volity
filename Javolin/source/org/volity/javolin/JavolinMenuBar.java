@@ -6,19 +6,24 @@ import java.util.*;
 import java.util.List;
 import javax.swing.*;
 
+import org.volity.javolin.game.TableWindow;
+
 /**
- * On a Mac, we desire menus to go in the system menu bar, not in a window menu
- * bar. We've set a Java property which will cause this.
+ * This class is a factory for Javolin menu bars. (They're mostly identical.)
+ * Every nonmodal window needs to call applyPlatformMenuBar().
  *
- * However, it's trickier than that, because of the way Swing works: every Java
- * window must have a menu bar set. Otherwise, the system menu bar will go
- * blank sometimes. Which is bad.
+ * The applyPlatformMenuBar() entry point is polymorphic on the window type; it
+ * generates a menu bar with the appropriate customizations. (For example, a
+ * table window has more items enabled in the "game" menu.)
+ * 
+ * When appropriate, applyPlatformMenuBar() also checks to see if we're on a
+ * Mac. On Macs, *every* window needs a menu bar. (This is because of the way
+ * Swing handles the Mac "menus at the top of the screen" rule.) So for windows
+ * like "About", which normally wouldn't need menu bars, applyPlatformMenuBar()
+ * checks and generates one if-and-only-if we're on a Mac.
  *
- * Therefore, this class, which is a factory for Javolin menu bars. (They're
- * all identical.) Every non-main window needs to call applyPlatformMenuBar();
- * this checks to see if we're on a Mac, and (if so) creates a menu bar
- * instance. When JavolinApp changes state, it notifies this class, which
- * updates all the menu bar instances in parallel.
+ * When JavolinApp changes state, it notifies this class, which updates all the
+ * menu bar instances in parallel.
  */
 public class JavolinMenuBar extends JMenuBar
     implements ActionListener
@@ -32,8 +37,12 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_QUIT = "Exit";
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
+    private final static String MENUCMD_GAME_INFO = "Game Info...";
+    private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
+
+    private TableWindow mTableWindow = null;
 
     private WindowMenu mWindowMenu;
     private JMenuItem mAboutMenuItem;
@@ -43,16 +52,24 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mJoinTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
     private JMenuItem mShowLastErrorMenuItem;
+    private JMenuItem mGameInfoMenuItem;
+    private JMenuItem mInvitePlayerMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
      *
-     * JavolinApp invokes this directly; all non-main windows should go through
-     * applyPlatformMenuBar().
+     * Do not call this directly. Instead, call applyPlatformMenuBar(win).
      */
-    public JavolinMenuBar(JFrame win) {
+    protected JavolinMenuBar(JFrame win) {
         if (mainApplication == null)
             throw new AssertionError("No JavolinApp has been set yet.");
+
+        /* Certain windows have extra items. Our flag for whether we're
+         * attached to, say, a TableWindow is whether mTableWindow is non-null.
+         * (Easier to read than a constant stream of instanceof tests!)
+         */
+        if (win instanceof TableWindow)
+            mTableWindow = (TableWindow)win;
 
         // Add to the notification list.
         menuBarList.add(this);
@@ -148,6 +165,22 @@ public class JavolinMenuBar extends JMenuBar
         setPlatformMnemonic(mJoinTableAtMenuItem, KeyEvent.VK_T);
         gameMenu.add(mJoinTableAtMenuItem);
 
+        gameMenu.addSeparator();
+        
+        mGameInfoMenuItem = new JMenuItem(MENUCMD_GAME_INFO);
+        mGameInfoMenuItem.addActionListener(this);
+        setPlatformMnemonic(mGameInfoMenuItem, KeyEvent.VK_I);
+        if (mTableWindow == null) 
+            mGameInfoMenuItem.setEnabled(false);
+        gameMenu.add(mGameInfoMenuItem);
+
+        mInvitePlayerMenuItem = new JMenuItem(MENUCMD_INVITE_PLAYER);
+        mInvitePlayerMenuItem.addActionListener(this);
+        setPlatformMnemonic(mInvitePlayerMenuItem, KeyEvent.VK_P);
+        if (mTableWindow == null) 
+            mInvitePlayerMenuItem.setEnabled(false);
+        gameMenu.add(mInvitePlayerMenuItem);
+
         // Window menu
         mWindowMenu = new WindowMenu();
 
@@ -198,12 +231,8 @@ public class JavolinMenuBar extends JMenuBar
         if (mainApplication == null)
             return;
 
-        if (PlatformWrapper.isRunningOnMac()) {
-            /* If the menu bar isn't attached to the main window (which is to
-             * say, if we're on a Mac) then we should include the main window
-             * in the menu. */
-            mWindowMenu.add(mainApplication);
-        }
+        /* Include the main (roster) window in the menu. */
+        mWindowMenu.add(mainApplication);
 
         // All the game table windows.
         for (it = mainApplication.mTableWindows.iterator(); it.hasNext(); ) {
@@ -264,6 +293,14 @@ public class JavolinMenuBar extends JMenuBar
         else if (e.getSource() == mJoinTableAtMenuItem) {
             mainApplication.doJoinTableAt();
         }
+        else if (e.getSource() == mGameInfoMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doInfoDialog();
+        }
+        else if (e.getSource() == mInvitePlayerMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doInvitePlayer();
+        }
         else if (e.getSource() == mJoinMucMenuItem) {
             mainApplication.doJoinMuc();
         }
@@ -282,9 +319,23 @@ public class JavolinMenuBar extends JMenuBar
     }
 
     /**
-     * All non-main windows must call this. On the Mac, this creates a clone of
-     * the app menu bar, and applies it to the window. On other platforms, this
-     * does nothing.
+     * The main (roster) window calls this.
+     */
+    static public void applyPlatformMenuBar(JavolinApp win) {
+        new JavolinMenuBar(win);
+    }
+
+    /**
+     * All table windows call this.
+     */
+    static public void applyPlatformMenuBar(TableWindow win) {
+        new JavolinMenuBar(win);
+    }
+
+    /**
+     * All generic windows call this. On the Mac, this creates a clone of the
+     * app menu bar, and applies it to the window. On other platforms, generic
+     * windows don't get menu bars, so this does nothing.
      */
     static public void applyPlatformMenuBar(JFrame win) {
         if (PlatformWrapper.isRunningOnMac()) {

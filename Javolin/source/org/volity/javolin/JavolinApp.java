@@ -1026,7 +1026,7 @@ public class JavolinApp extends JFrame
         cPane.add(panel, BorderLayout.SOUTH);
 
         // Create menu bar
-        JMenuBar theMenuBar = new JavolinMenuBar(this);
+        JavolinMenuBar.applyPlatformMenuBar(this);
 
         // Create contextual menu for roster
         mRosterContextMenu = createRosterContextMenu();

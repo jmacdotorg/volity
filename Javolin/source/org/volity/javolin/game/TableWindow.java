@@ -62,7 +62,6 @@ public class TableWindow extends JFrame implements PacketListener
     private static Map sLocalUiFileMap = new HashMap();
     private static Map sGameNameNumberMap = new HashMap();
 
-    private final static String INFO_LABEL = "Info";
     private final static String INVITE_LABEL = "Invite";
     private final static String READY_LABEL = "Ready";
     private final static String SEAT_LABEL = "Seat";
@@ -97,7 +96,6 @@ public class TableWindow extends JFrame implements PacketListener
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
 
-    private JButton mInfoButton;
     private JButton mInviteButton;
     private JButton mReadyButton;
     private JButton mSeatButton;
@@ -423,29 +421,9 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Set up button actions.
 
-        //### This button is temporary -- I plan to turn it into a menu item
-        mInfoButton.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent ev) {
-                    if (mInfoDialog == null) {
-                        mInfoDialog = new InfoDialog(TableWindow.this,
-                            mGameTable, mServer.getGameInfo());
-                        // When the InfoDialog closes, clear mInfoDialog
-                        mInfoDialog.addWindowListener(
-                            new WindowAdapter() {
-                                public void windowClosed(WindowEvent ev) {
-                                    mInfoDialog = null;
-                                }
-                            });
-                    }
-                    mInfoDialog.show();
-                }
-            });
-
         mInviteButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    SendInvitationDialog box =
-                        new SendInvitationDialog(TableWindow.this, mGameTable);
-                    box.show();
+                    doInvitePlayer();
                 }
             });
 
@@ -980,6 +958,36 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
+     * Bring up the game's info dialog box.
+     */
+    public void doInfoDialog() {
+        if (mInfoDialog == null) {
+            mInfoDialog = new InfoDialog(this, mGameTable,
+                mServer.getGameInfo());
+
+            // When the InfoDialog closes, clear mInfoDialog
+            mInfoDialog.addWindowListener(
+                new WindowAdapter() {
+                    public void windowClosed(WindowEvent ev) {
+                        mInfoDialog = null;
+                    }
+                });
+        }
+
+        mInfoDialog.show();
+    }
+
+    /**
+     * Bring up an invite dialog. There can be multiple of these at a time,
+     * even for the same game.
+     */
+    public void doInvitePlayer() {
+        SendInvitationDialog box =
+            new SendInvitationDialog(TableWindow.this, mGameTable);
+        box.show();
+    }
+
+    /**
      * Get the toolbar buttons into the correct state.
      */
     private void adjustButtons() {
@@ -1144,11 +1152,6 @@ public class TableWindow extends JFrame implements PacketListener
         toolbar.add(label);
         label.setMaximumSize(new Dimension(32767, 10));
 
-        mInfoButton = new JButton(INFO_LABEL);
-        toolbar.add(mInfoButton);
-
-        toolbar.addSeparator();
-
         mInviteButton = new JButton(INVITE_LABEL, INVITE_ICON);
         toolbar.add(mInviteButton);
 
@@ -1164,7 +1167,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         adjustButtons();
 
-        // Necessary for all windows, for Mac support
+        // Add the window menu bar
         JavolinMenuBar.applyPlatformMenuBar(this);
     }
 }

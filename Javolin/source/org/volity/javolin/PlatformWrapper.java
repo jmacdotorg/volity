@@ -212,7 +212,7 @@ public class PlatformWrapper
      */
     public static boolean isRunningOnMac() {
         // Apple recommended test for Mac
-        return (System.getProperty("mrj.version") != null); 
+        return (System.getProperty("mrj.version") != null);
     }
 
 
