@@ -214,12 +214,10 @@ sub start_game {
 sub end_game {
   my $self = shift;
 
-  my $finished_boolean = RPC::XML::boolean->new($self->referee->game->is_finished);
   $self->referee->send_rpc_request({
       id=>'end_game',
       methodname=>'volity.end_game',
       to=>$self->jid,
-      args=>[$finished_boolean],
   });
 }
 
@@ -393,8 +391,8 @@ volity RPCs.
 # the seat lists, and seat occupants.
 sub update {
     my $self = shift;
-    $self->required_seat_list;
     $self->seat_list;
+    $self->required_seat_list;
     $self->seat_occupants;
     $self->receive_game_state;   
 }
