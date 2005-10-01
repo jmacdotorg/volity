@@ -3,14 +3,13 @@ package Volity;
 use warnings;
 use strict;
 no warnings qw( deprecated );
+our $VERSION = '0.5.1';
 
 use base qw( Class::Accessor Class::Fields );
 use fields qw( logger );
 
 use Log::Log4perl qw( :nowarn );
 use Carp;
-
-our $VERSION = '0.4.1';
 
 sub new {
     my ( $proto, $fields ) = @_;
@@ -53,12 +52,11 @@ sub create_accessors {
 sub get {
     my $self = shift;
     my ($field) = @_;
-    if (wantarray) {
-        if ( defined( $self->{$field} ) and ref( $self->{$field} ) eq 'ARRAY' )
-        {
-            return @{ $self->SUPER::get(@_) };
-        }
-        elsif ( not( defined( $self->{$field} ) ) ) {
+    if ( defined( $self->{$field} ) and ref( $self->{$field} ) eq 'ARRAY' ) {
+	return @{ $self->SUPER::get(@_) };
+    }
+    elsif (wantarray) {
+        if ( not( defined( $self->{$field} ) ) ) {
             return ();
         }
         else {
