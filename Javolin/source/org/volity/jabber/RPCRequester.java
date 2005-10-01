@@ -21,8 +21,8 @@ public class RPCRequester {
   static {
     // Register the provider so that response packets get parsed correctly.
     ProviderManager.addIQProvider(RPC.elementName,
-				  RPC.namespace,
-				  new RPCProvider());
+                                  RPC.namespace,
+                                  new RPCProvider());
   }
 
   /**
@@ -106,8 +106,9 @@ public class RPCRequester {
     final String requestID = request.getPacketID(); // auto-generated
     PacketCollector collector =
       connection.createPacketCollector(new PacketFilter() {
-	  public boolean accept(Packet packet) {
-            if (packet.getPacketID().equals(requestID)) {
+          public boolean accept(Packet packet) {
+            String id = packet.getPacketID();
+            if (id != null && id.equals(requestID)) {
                 if (packet instanceof RPCResponse)
                     return true;
                 if (packet instanceof RPCRequest 
@@ -115,8 +116,8 @@ public class RPCRequester {
                     return true;
             }
             return false;
-	  }
-	});
+          }
+        });
     connection.sendPacket(request);
 
     Packet response = collector.nextResult(1000*timeout);

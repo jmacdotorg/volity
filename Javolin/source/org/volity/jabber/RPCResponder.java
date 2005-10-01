@@ -25,8 +25,8 @@ public class RPCResponder implements PacketListener {
    * @param handler a handler for RPC requests
    */
   public RPCResponder(XMPPConnection connection,
-		      PacketFilter filter,
-		      RPCHandler handler) {
+                      PacketFilter filter,
+                      RPCHandler handler) {
     this.connection = connection;
     this.filter = filter;
     this.handler = handler;
@@ -71,17 +71,19 @@ public class RPCResponder implements PacketListener {
     final RPCRequest req = (RPCRequest) packet;
     // Look, ma, continuation-passing style!
     RPCResponseHandler k = new RPCResponseHandler() {
-	public void respondValue(Object value) {
-	  respond(new RPCResult(value));
-	}
-	public void respondFault(int faultCode, String faultString) {
-	  respond(new RPCFault(faultCode, faultString));
-	}
-	void respond(RPCResponse resp) {
-	  resp.setTo(req.getFrom());
-	  resp.setPacketID(req.getPacketID());
-	  connection.sendPacket(resp);
-	}
+        public void respondValue(Object value) {
+          respond(new RPCResult(value));
+        }
+        public void respondFault(int faultCode, String faultString) {
+          respond(new RPCFault(faultCode, faultString));
+        }
+        void respond(RPCResponse resp) {
+          resp.setTo(req.getFrom());
+          String id = req.getPacketID();
+          if (id != null)
+            resp.setPacketID(id);
+          connection.sendPacket(resp);
+        }
       };
     handler.handleRPC(req.getMethodName(), req.getParams(), k);
   }
