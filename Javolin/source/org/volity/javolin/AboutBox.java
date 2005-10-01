@@ -44,7 +44,8 @@ public class AboutBox extends JFrame
 
 
     protected JButton mButton;
-    protected JLabel mUrlLabel;
+    protected JTextPane mText;
+    protected JTextField mUrlLabel;
     protected SizeAndPositionSaver mSizePosSaver;
 
     public AboutBox() {
@@ -77,6 +78,14 @@ public class AboutBox extends JFrame
                 }
             });
 
+        mText.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0),
+            new AbstractAction() {
+                public void actionPerformed(ActionEvent ev) {
+                    // Hitting Enter, even if the text box has focus
+                    dispose();
+                }
+            });
+        
         if (PlatformWrapper.launchURLAvailable()) {
             mUrlLabel.addMouseListener(new MouseAdapter() {
                     public void mouseClicked(MouseEvent ev) {
@@ -121,26 +130,28 @@ public class AboutBox extends JFrame
         c.ipady = 2;
         cPane.add(label, c);
 
-        label = new JLabel(JAVOLIN_URL);
-        mUrlLabel = label;
-        label.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        mUrlLabel = new JTextField(JAVOLIN_URL);
+        mUrlLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         if (PlatformWrapper.launchURLAvailable()) {
             // Color the URL blue only if you can click on it.
-            label.setForeground(new Color(0f, 0f, 0.8f));
-            label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            mUrlLabel.setForeground(new Color(0f, 0f, 0.8f));
+            // Setting the cursor doesn't work on JTextField, I'm afraid
+            //mUrlLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         }
+        mUrlLabel.setEditable(false);
+        mUrlLabel.setOpaque(false);
+        mUrlLabel.setBorder(BorderFactory.createEmptyBorder(0,8,0,8));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
         c.ipady = 8;
-        cPane.add(label, c);
+        cPane.add(mUrlLabel, c);
 
-        JTextPane text = new JTextPane();
-        text.setEditable(false);
-        text.setFocusable(false);
-        text.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 6));
-        text.setBackground(new Color(240, 229, 207));
-        Document doc = text.getDocument();
+        mText = new JTextPane();
+        mText.setEditable(false);
+        mText.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 6));
+        mText.setBackground(new Color(240, 229, 207));
+        Document doc = mText.getDocument();
         SimpleAttributeSet style = new SimpleAttributeSet();
         StyleConstants.setFontFamily(style, "SansSerif");
         StyleConstants.setFontSize(style, 12);
@@ -153,7 +164,7 @@ public class AboutBox extends JFrame
         c.gridx = 0;
         c.gridy = row++;
         c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
-        cPane.add(text, c);
+        cPane.add(mText, c);
 
         mButton = new JButton("Ok");
         c = new GridBagConstraints();
