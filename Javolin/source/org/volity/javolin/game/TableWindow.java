@@ -427,7 +427,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         mInviteButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    doInvitePlayer();
+                    doInviteDialog();
                 }
             });
 
@@ -994,10 +994,36 @@ public class TableWindow extends JFrame implements PacketListener
      * Bring up an invite dialog. There can be multiple of these at a time,
      * even for the same game.
      */
-    public void doInvitePlayer() {
+    public void doInviteDialog() {
         SendInvitationDialog box =
             new SendInvitationDialog(TableWindow.this, mGameTable);
         box.show();
+    }
+
+    /**
+     * Given a list of full JIDs, send an invitation to each of them, in
+     * parallel. This does *not* give user feedback on failures. It is intended
+     * for use on a collection of users (or a collection of resources of the
+     * same user), where the player doesn't want to be bothered with a string
+     * of failure dialogs. 
+     *
+     * @param jids a list of full JID strings.
+     * @param msg a message to include in the invites, or null.
+     */
+    public void sendQuietInvites(List jids, final String msg) {
+        for (Iterator iter = jids.iterator(); iter.hasNext(); ) {
+            final String jid = (String)iter.next();
+            SwingWorker worker = new SwingWorker() {
+                    public Object construct() {
+                        try {
+                            mGameTable.getReferee().invitePlayer(jid, msg);
+                        }
+                        catch (Exception ex) { };
+                        return jid;
+                    }
+                };
+            worker.start();
+        }
     }
 
     /**

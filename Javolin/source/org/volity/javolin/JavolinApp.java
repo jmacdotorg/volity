@@ -62,6 +62,7 @@ public class JavolinApp extends JFrame
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache(PlatformWrapper.isRunningOnMac());
 
+    private static JavolinApp soleJavolinApp = null;
     private static TranslateToken sTranslator = new TranslateToken(null);
 
     private JButton mShowHideUnavailBut;
@@ -102,13 +103,16 @@ public class JavolinApp extends JFrame
      */
     public JavolinApp()
     {
+        if (soleJavolinApp != null)
+            throw new AssertionError("Cannot handle more than one JavolinApp.");
+        soleJavolinApp = this;
+
         mMucWindows = new ArrayList();
         mTableWindows = new ArrayList();
         mChatWindows = new ArrayList();
         mUserChatWinMap = new Hashtable();
 
         setTitle(APPNAME + " Roster");
-        JavolinMenuBar.setApplication(this);
         buildUI();
 
         setSize(200, 400);
@@ -238,6 +242,14 @@ public class JavolinApp extends JFrame
                     mainApp.start();
                 }
             });
+    }
+
+    /**
+     * Return the one and only JavolinApp object.
+     */
+    public static JavolinApp getSoleJavolinApp()
+    {
+        return soleJavolinApp;
     }
 
     /**
@@ -802,6 +814,14 @@ public class JavolinApp extends JFrame
                     doDisconnect();
                 }
             });
+    }
+
+    /**
+     * Return the RosterPanel. (Which is useful for the invitation mechanism.)
+     */
+    public RosterPanel getRosterPanel() 
+    {
+        return mRosterPanel;
     }
 
     /**

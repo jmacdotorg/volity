@@ -28,7 +28,6 @@ import org.volity.javolin.game.TableWindow;
 public class JavolinMenuBar extends JMenuBar
     implements ActionListener
 {
-    private static JavolinApp mainApplication = null;
     private static List menuBarList = new ArrayList();
 
     private final static String MENUCMD_ABOUT = "About Javolin...";
@@ -42,6 +41,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
 
+    private JavolinApp mApplication = null;
     private TableWindow mTableWindow = null;
 
     private WindowMenu mWindowMenu;
@@ -61,7 +61,8 @@ public class JavolinMenuBar extends JMenuBar
      * Do not call this directly. Instead, call applyPlatformMenuBar(win).
      */
     protected JavolinMenuBar(JFrame win) {
-        if (mainApplication == null)
+        mApplication = JavolinApp.getSoleJavolinApp();
+        if (mApplication == null)
             throw new AssertionError("No JavolinApp has been set yet.");
 
         /* Certain windows have extra items. Our flag for whether we're
@@ -199,7 +200,7 @@ public class JavolinMenuBar extends JMenuBar
      * -- that's handled in updateWindowMenu.)
      */
     private void updateMenuItems() {
-        boolean isConnected = mainApplication.isConnected();
+        boolean isConnected = mApplication.isConnected();
         int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
         if (isConnected) {
@@ -221,33 +222,30 @@ public class JavolinMenuBar extends JMenuBar
     }
 
     /**
-     * Update the contents of the Windo menu.
+     * Update the contents of the Window menu.
      */
     private void updateWindowMenu() {
         Iterator it;
 
         mWindowMenu.clear();
 
-        if (mainApplication == null)
-            return;
-
         /* Include the main (roster) window in the menu. */
-        mWindowMenu.add(mainApplication);
+        mWindowMenu.add(mApplication);
 
         // All the game table windows.
-        for (it = mainApplication.mTableWindows.iterator(); it.hasNext(); ) {
+        for (it = mApplication.mTableWindows.iterator(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
             mWindowMenu.add(win);
         }
 
         // All the MUC windows.
-        for (it = mainApplication.mMucWindows.iterator(); it.hasNext(); ) {
+        for (it = mApplication.mMucWindows.iterator(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
             mWindowMenu.add(win);
         }
 
         // All the one-to-one chat windows.
-        for (it = mainApplication.mChatWindows.iterator(); it.hasNext(); ) {
+        for (it = mApplication.mChatWindows.iterator(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
             mWindowMenu.add(win);
         }
@@ -268,7 +266,7 @@ public class JavolinMenuBar extends JMenuBar
 
     /**
      * ActionListener interface method implementation.
-     * All the actual work is done by mainApplication.
+     * All the actual work is done by mApplication.
      *
      * @param e  The ActionEvent received.
      */
@@ -279,19 +277,19 @@ public class JavolinMenuBar extends JMenuBar
         }
 
         if (e.getSource() == mAboutMenuItem) {
-            mainApplication.doAbout();
+            mApplication.doAbout();
         }
         else if (e.getSource() == mConnectMenuItem) {
-            mainApplication.doConnectDisconnect();
+            mApplication.doConnectDisconnect();
         }
         else if (e.getSource() == mQuitMenuItem) {
-            mainApplication.doQuit();
+            mApplication.doQuit();
         }
         else if (e.getSource() == mNewTableAtMenuItem) {
-            mainApplication.doNewTableAt();
+            mApplication.doNewTableAt();
         }
         else if (e.getSource() == mJoinTableAtMenuItem) {
-            mainApplication.doJoinTableAt();
+            mApplication.doJoinTableAt();
         }
         else if (e.getSource() == mGameInfoMenuItem) {
             if (mTableWindow != null)
@@ -299,23 +297,14 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (e.getSource() == mInvitePlayerMenuItem) {
             if (mTableWindow != null)
-                mTableWindow.doInvitePlayer();
+                mTableWindow.doInviteDialog();
         }
         else if (e.getSource() == mJoinMucMenuItem) {
-            mainApplication.doJoinMuc();
+            mApplication.doJoinMuc();
         }
         else if (e.getSource() == mShowLastErrorMenuItem) {
-            mainApplication.doShowLastError();
+            mApplication.doShowLastError();
         }
-    }
-
-    /**
-     * JavolinApp uses this to register itself as *the* application object. 
-     */
-    static void setApplication(JavolinApp app) {
-        if (mainApplication != null)
-            throw new AssertionError("Cannot handle more than one JavolinApp.");
-        mainApplication = app;
     }
 
     /**

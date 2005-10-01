@@ -25,6 +25,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
+import org.volity.jabber.JIDUtils;
 import org.volity.javolin.*;
 
 /**
@@ -113,10 +114,10 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         try
         {
             serverID = mServerIdField.getText();
-
-            if (serverID.indexOf('/') == -1)
+            
+            if (!JIDUtils.hasResource(serverID))
             {
-                serverID = serverID + "/volity";
+                serverID = JIDUtils.setResource(serverID, "volity");
             }
 
             mTableWindow = TableWindow.makeTableWindow(mConnection, serverID,

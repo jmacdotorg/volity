@@ -27,8 +27,10 @@ import javax.swing.tree.*;
 import org.jivesoftware.smack.Roster;
 import org.jivesoftware.smack.RosterEntry;
 import org.jivesoftware.smack.RosterListener;
+import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.CapPacketExtension;
 import org.volity.javolin.CapPresenceFactory;
 
@@ -341,6 +343,33 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     public void valueChanged(TreeSelectionEvent e)
     {
         fireRosterPanelSelection(new RosterPanelEvent(this, getSelectedRosterItem()));
+    }
+
+    /**
+     * Return whether the given user is on the client's roster.
+     */
+    public boolean isUserOnRoster(String user)
+    {
+        if (mRoster.getEntry(user) != null)
+            return true;
+        else
+            return false;
+    }
+
+    /**
+     * Add a user to the roster. If nickname is null, the nickname is parsed
+     * from the JID name.
+     */
+    public void addUserToRoster(String user, String nickname)
+        throws XMPPException
+    {
+        if (nickname == null) {
+            nickname = StringUtils.parseName(user);
+            if (nickname.equals(""))
+                nickname = user;
+        }
+
+        mRoster.createEntry(user, nickname, null);
     }
 
     /**
