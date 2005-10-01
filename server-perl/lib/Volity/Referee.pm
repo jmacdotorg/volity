@@ -516,6 +516,10 @@ sub jabber_presence {
       if (defined($node->attr('type')) && ($node->attr('type') eq 'unavailable')) {
 	# Someone's left.
 	my $player = $self->look_up_player_with_jid($new_person_jid);
+	unless ($player) {
+	    # Uh... never mind, then.
+	    return;
+	}
 	$self->logger->debug("Looks like $nick just left the table.");
 	if ($self->game->is_active) {
 	    # They bolted from an active game!
@@ -1189,8 +1193,12 @@ sub handle_ready_player_request {
 	  my @empty_required_seats;
 	  for my $required_seat_id (@{$self->game->required_seat_ids}) {
 	      my $seat = $self->look_up_seat_with_id($required_seat_id);
-	      my @p = @{$seat->players};
-	      if (@{$seat->players} == 0) {
+	      unless ($seat) {
+		  $self->logger->warn("Bad news. Required seat with ID $required_seat_id doesn't seem to exist (in handle_ready_player_request).");
+		  return;
+	      }
+	      my @p = $seat->players;
+	      if ($seat->players == 0) {
 		  push (@empty_required_seats, $seat);
 	      }
 	  }
@@ -1288,21 +1296,28 @@ sub handle_sit_request {
 	}
 
 	# Try to get the ID of an available, empty seat.
-	# First we look for empty seats among the known ones.
+	# First we look for empty seats among the required ones.
+	# Then we look among all known seats.
 	# If there aren't any, _AND_ we haven't hit our player maximum yet,
 	# call a class method on the game to get a new seat name.
-
-	my $empty_seat;
-	for my $seat ($self->seats) {
+	my $empty_seat_id;
+	my %tried_seats;
+	for my $seat_id (@{$self->game_class->required_seat_ids},
+			 @{$self->game_class->seat_ids}) {
+	    my $seat = $self->look_up_seat_with_id($seat_id);
+	    next if exists($tried_seats{$seat_id});
 	    my @players = $seat->players;
-	    unless (@players) {
-		$empty_seat = $seat;
-		next;
+	    if (@players) {
+		$tried_seats{$seat_id} = 1;
+	    } 
+	    else {
+		$empty_seat_id = $seat_id;
+		last;
 	    }
 	}
 
-	if ($empty_seat) {
-	    $seat_id = $empty_seat->id;
+	if ($empty_seat_id) {
+	    $seat_id = $empty_seat_id;
 	}
 	unless ($seat_id) {
 	    # We can't sit this player down. Signify this by returning
