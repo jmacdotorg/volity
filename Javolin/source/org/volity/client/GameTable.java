@@ -382,6 +382,13 @@ public class GameTable extends MultiUserChat
             for (Iterator it = gonePlayers.iterator(); it.hasNext(); ) {
                 Player player = (Player)it.next();
                 mPlayers.remove(player);
+                Seat seat = player.getSeat();
+                if (seat != null) {
+                    /* Remove the player from the seat, but leave player.seat
+                     * set. This makes the redraw happen correctly, and it
+                     * shouldn't hurt anything. */
+                    seat.removePlayer(player);
+                }
                 fireStatusListeners_playerLeft(player);
             }
         }
