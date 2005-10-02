@@ -137,4 +137,23 @@
     </jar>
   </target>
 
+  <target name="libtestbench" depends="compiletestbench"
+        description="generate a jar file for Testbench, including third-party libs">
+    <property name="mainclass" value="org/volity/testbench/TestbenchApp"/>
+    <jar jarfile="${jarfiletestbench}">
+      <!-- Put some of ${build} into the ${jarfile} file -->
+      <fileset dir="${build}">
+        <include name="org/volity/testbench/" />
+        <include name="org/volity/javolin/" />
+        <include name="org/volity/client/" />
+      </fileset>
+      <!-- Merge all of the lib .jars into the ${jarfile} file -->
+      <zipgroupfileset dir="${lib.loc}" includes="*.jar"/>
+      <!-- Add the main class to the manifest -->
+      <manifest>
+        <attribute name="Main-Class" value="${mainclass}"/>
+      </manifest> 
+    </jar>
+  </target>
+
 </project>
