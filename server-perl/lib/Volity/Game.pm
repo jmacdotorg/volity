@@ -120,6 +120,22 @@ this returns 1. Otherwise, returns 0.
 Convenience method: If the game is afoot and not suspended, returns truth.
 Otherwise, returns falsehood.
 
+=item turn_order ($seat_id_1, $seat_id_2, ...)
+
+This is an accessor to an internal list of seat IDs representing the
+game's turn order. Sets the list if called with arguments, and returns
+it in any case. If set, has the side effect of setting the value of
+the C<current_seat> instance variable to the seat whose ID is first on
+the list.
+
+However, if any of the provided seat IDs aren't those of known seats,
+you'll get a fatal error here.
+
+This is mainly useful if you plan on using the C<rotate_current_seat>
+method (see L<"Other object methods">), which is itself just a
+convenience method for the common case of having a fixed,
+round-the-table turn order, which not every game has.
+
 =back
 
 =head2 Class Accessor methods
@@ -156,7 +172,7 @@ its own compatibility with a game server.
 =item seat_ids 
 
 An array of strings representing the IDs of I<all> the seats that this game
-implementation supports. In order words, if it support
+implementation supports. 
 
 =item required_seat_ids
 
@@ -174,9 +190,9 @@ use strict;
 use base qw( Volity Class::Data::Inheritable );
 
 use fields
-    qw( winners quitters current_seat current_seat_index referee
+    qw( winners quitters turn_order turn_queue referee current_seat
     config_variables is_afoot is_suspended is_finished
-    config_variable_setters );
+    config_variable_setters has_initialized );
 
 # Define some class accessors.
 foreach (
@@ -196,14 +212,16 @@ use Carp qw( carp croak );
 
 sub initialize {
     my $self = shift;
-    $self->current_seat_index(0);
 
     #  $self->current_player(($self->players)[0]);
     weaken( $self->{referee} );
     $self->config_variables(        {} );
     $self->config_variable_setters( {} );
     $self->winners( [] );
+    $self->{turn_order} = [] unless defined($self->{turn_order});
+    $self->{turn_queue} = [] unless defined($self->{turn_queue});
     $self->is_finished(0);
+    $self->has_initialized(1);
 }
 
 sub AUTOLOAD {
@@ -221,7 +239,28 @@ sub AUTOLOAD {
     }
 }
 
-=head2 Other methods
+sub turn_order {
+    my $self = shift;
+    my $class = ref($self);
+    my @known_seat_ids = @{$class->seat_ids};
+    my @seat_ids = @_;
+    if (@seat_ids) {
+	# Perform a sanity check.
+	for my $seat_id (@seat_ids) {
+	    unless (grep($_ eq $seat_id, @known_seat_ids)) {
+		$self->expire("You want to set the turn order to (@seat_ids), but I know of no seat with ID $seat_id.");
+	    }
+	}
+	# Set the current seat.
+	$self->current_seat($self->look_up_seat_with_id($seat_ids[0]));
+	# Set this variable's value.
+	$self->{turn_order} = \@seat_ids;
+	$self->{turn_queue} = \@seat_ids;
+    }
+    return @{$self->{turn_order}};
+}
+
+=head2 Other object methods
 
 =over
 
@@ -229,15 +268,36 @@ sub AUTOLOAD {
 
 Called with no arguments, returns the seat whose turn is up.
 
-Called with a Volity::Seat object as an argument, sets that seat as the
-current seat.
+Called with a Volity::Seat object as an argument, sets that seat as
+the current seat, and then returns it.
+
+If you are making use of the C<turn_order> list, setting a new current
+seat does not affect the list, but it just advance the turn-order
+pointer to this seat's position on it, I<if the seat is a member of
+the list>. Subsequently calling C<rotate_current_seat()> will advance
+the pointer to (and return) the seat that is after the given one on
+the turn order list.
+
+If the given seat doesn't exist in the turn order list (as is the case
+when the list is not defined), then the list remains unaffected.
 
 =item rotate_current_seat
 
-Convenience method that simply sets the next seat in the seats list as the
-current seat.
+Convenience method that simply sets the next seat in the turn order
+list, skipping over any eliminated seats. Returns that seat object.
 
-This method is useful to call at the end of a turn.
+If said list is empty, the current seat remains the same, and a
+warning is logged. If the list is not empty but the current seat is
+not a member of the list, then the pointer advances to the next player
+based on the last current player who I<was> a member (or the first
+member if there weren't any) and you'll also get a warning because
+that's kind of weird, don't you think?
+
+This method is useful to call at the end of a turn, at least in games
+where the turn order is stable enough for the C<turn_order> method to
+be useful as well. Game modules can always advance the turn manually
+by calling the C<current_player> accessor with arguments. (And some
+games don't have turns at all...)
 
 =item register_config_variables (@variables)
 
@@ -256,15 +316,32 @@ method definition.
 
 sub rotate_current_seat {
     my $self  = shift;
-    my $index = $self->current_seat_index;
-    if ( $index + 1 < ( $self->referee->seats ) ) {
-        $index++;
+    my $current_seat = $self->current_seat;
+
+    # Get the seats represented by the turn order list
+    my @seats = map($self->referee->look_up_seat_with_id($_), $self->turn_queue);
+
+    # Check for weirdness.
+    if ($current_seat && not(grep($_ eq $current_seat, @seats))) {
+	my $turn_order_string = join(', ', $self->turn_order);
+	my $current_seat_id = $current_seat->id;
+	$self->logger->warn("rotate_current_seat() called when the current seat ($current_seat_id) isn't in the turn order (consisting of: $turn_order_string)");
+    }
+
+    # Give the seat list a rotation, then filter out eliminated seats
+    push(@seats, shift(@seats));
+    @seats = grep(not($_->is_eliminated), @seats);
+    
+    if (@seats) {
+	$self->current_seat($seats[0]);
+	# Also give the turn-queue a spin before returning the seat.
+	push(@{$self->{turn_queue}}, shift(@{$self->{turn_queue}}));
+	return $seats[0];
     }
     else {
-        $index = 0;
+	$self->logger->warn("rotate_current_seat() called when there's no non-eliminated seats with IDs on the turn list. No seat returned.");
+	return;
     }
-    $self->current_seat_index($index);
-    $self->current_seat( ( $self->referee->seats )[$index] );
 }
 
 =over
