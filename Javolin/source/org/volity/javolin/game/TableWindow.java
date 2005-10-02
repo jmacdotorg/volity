@@ -347,13 +347,7 @@ public class TableWindow extends JFrame implements PacketListener
                 public void windowClosing(WindowEvent we)
                 {
                     saveWindowState();
-                    releaseGameNameNumber(mGameName, mGameNameNumber);
-                    // Shut down the UI.
-                    if (mGameViewport != null && mGameViewport.getUI() != null)
-                        mGameViewport.getUI().stop();
-                    // Leave the chat room.
-                    mGameTable.removeMessageListener(TableWindow.this);
-                    mGameTable.leave();
+                    leave();
                 }
 
                 public void windowOpened(WindowEvent we)
@@ -497,11 +491,25 @@ public class TableWindow extends JFrame implements PacketListener
         catch (XMPPException ex)
         {
             new ErrorWrapper(ex);
+            String msg;
+            XMPPError error = ex.getXMPPError();
+
+            if (error != null && error.getCode() == 409) {
+                /* A common case: your nickname conflicts. */
+                msg = "The nickname \"" + mNickname + "\" is already in\n"
+                    +"use at this table. Please choose another.";
+            }
+            else {
+                msg = "Cannot join table:\n" + ex.toString();
+            }
             JOptionPane.showMessageDialog(this,
-                "Cannot join table:\n" + ex.toString(),
+                msg,
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
-            //XXX We should really kill the table window in this case.
+
+            //### We should really kill the table window in this case. We
+            //### *definitely* shouldn't be allowing the constructor to
+            //### complete normally!
         }
     }
 
@@ -579,6 +587,29 @@ public class TableWindow extends JFrame implements PacketListener
         catch (XMPPException ex) {
             new ErrorWrapper(ex);
             writeMessageText(ex.toString());
+        }
+    }
+
+    /**
+     * Clean up everything we tried to create. This is called when the window
+     * closes, or if there's a creation error and it never gets opened.
+     */
+    public void leave() 
+    {
+        if (mGameName != null) {
+            releaseGameNameNumber(mGameName, mGameNameNumber);
+            mGameName = null;
+        }
+
+        // Shut down the UI.
+        if (mGameViewport != null && mGameViewport.getUI() != null)
+            mGameViewport.getUI().stop();
+
+        // Leave the chat room.
+        if (mGameTable != null) {
+            mGameTable.removeMessageListener(TableWindow.this);
+            mGameTable.leave();
+            mGameTable = null;
         }
     }
 

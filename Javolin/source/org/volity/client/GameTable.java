@@ -195,12 +195,16 @@ public class GameTable extends MultiUserChat
 
     /** Add a table-joined listener. */
     public void addReadyListener(ReadyListener listener) {
-	readyListeners.add(listener);
+        synchronized (readyListeners) {
+            readyListeners.add(listener);
+        }
     }
     
     /** Remove a table-joined listener. */
     public void removeReadyListener(ReadyListener listener) {
-	readyListeners.remove(listener);
+        synchronized (readyListeners) {
+            readyListeners.remove(listener);
+        }
     }
 
     /**
@@ -216,7 +220,11 @@ public class GameTable extends MultiUserChat
      */
     private void fireReadyListeners()
     {
-        Iterator iter = readyListeners.iterator();
+        Iterator iter;
+        synchronized (readyListeners) {
+            // Clone listener list for unsynched use
+            iter = new ArrayList(readyListeners).iterator();
+        }
         while (iter.hasNext())
         {
             ((ReadyListener)iter.next()).ready();

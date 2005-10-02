@@ -111,6 +111,19 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
     private void doJoin()
     {
         String tableID = null;
+        GameTable gameTable = null;
+        GameTable.ReadyListener listener = null;
+        String nickname = null;
+
+        if (mTableIdField.getText().equals("")) {
+            mTableIdField.requestFocusInWindow();
+            return;
+        }
+
+        if (mNicknameField.getText().equals("")) {
+            mNicknameField.requestFocusInWindow();
+            return;
+        }
 
         // Store field values in preferences
         saveFieldValues();
@@ -132,18 +145,22 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         {
             tableID = mTableIdField.getText();
 
-            final GameTable gameTable = new GameTable(mConnection, tableID);
-            final String nickname = mNicknameField.getText();
+            gameTable = new GameTable(mConnection, tableID);
+            nickname = mNicknameField.getText();
+            // Copies for inner class
+            final GameTable innerGameTable = gameTable;
+            final String innerNickname = nickname;
 
             /* To get the GameServer, we need to join the MUC early. */
 
-            GameTable.ReadyListener listener = new GameTable.ReadyListener() {
+            listener = new GameTable.ReadyListener() {
                     public void ready() {
                         // Called outside Swing thread!
+                        innerGameTable.removeReadyListener(this);
                         // Invoke into the Swing thread.
                         SwingUtilities.invokeLater(new Runnable() {
                                 public void run() {
-                                    doJoinCont(gameTable, nickname);
+                                    doJoinCont(innerGameTable, innerNickname);
                                 }
                             });
                     }
@@ -170,8 +187,6 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
             }
 
             if (form != null) {
-                gameTable.removeReadyListener(listener);
-                gameTable.leave();
                 // Use a 404 here so that it's caught below.
                 throw new XMPPException(new XMPPError(404));
             }
@@ -185,6 +200,12 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         {
             new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            if (gameTable != null) {
+                if (listener != null)
+                    gameTable.removeReadyListener(listener);
+                gameTable.leave();
+            }
 
             String msg = "The table could not be joined.";
 
@@ -200,6 +221,12 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
                 msg = msg + "\n(" + tableID + ")";
+            }
+            else if (error != null && error.getCode() == 409) 
+            {
+                /* A common case: your nickname conflicts. */
+                msg = "The nickname \"" + nickname + "\" is already in\n"
+                    +"use at this table. Please choose another.";
             }
             else {
                 msg = "The table could not be joined";
@@ -222,6 +249,12 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         {
             new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            if (gameTable != null) {
+                if (listener != null)
+                    gameTable.removeReadyListener(listener);
+                gameTable.leave();
+            }
 
             JOptionPane.showMessageDialog(this, 
                 "Cannot join table:\n" + ex.toString(),
@@ -275,8 +308,10 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
                 JOptionPane.ERROR_MESSAGE);
 
             // Destroy TableWindow object
-            mTableWindow = null;
-            gameTable.leave();
+            if (mTableWindow != null) {
+                mTableWindow.leave();
+                mTableWindow = null;
+            }
         }
     }
 

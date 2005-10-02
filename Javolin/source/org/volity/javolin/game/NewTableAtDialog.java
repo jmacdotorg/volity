@@ -105,8 +105,20 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
     {
         String serverID = null;
 
+        if (mServerIdField.getText().equals("")) {
+            mServerIdField.requestFocusInWindow();
+            return;
+        }
+
+        if (mNicknameField.getText().equals("")) {
+            mNicknameField.requestFocusInWindow();
+            return;
+        }
+
         // Store field values in preferences
         saveFieldValues();
+
+        String nickname = mNicknameField.getText();
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
@@ -121,7 +133,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
             }
 
             mTableWindow = TableWindow.makeTableWindow(mConnection, serverID,
-                mNicknameField.getText());
+                nickname);
 
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
@@ -131,22 +143,30 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         {
             // We don't have a log window, so shove the failure message
             // up in a MessageDialog.
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             String msg = JavolinApp.getTranslator().translate(ex);
 
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            // Destroy TableWindow object
+            if (mTableWindow != null) {
+                mTableWindow.leave();
+                mTableWindow = null;
+            }
 
             JOptionPane.showMessageDialog(this,
                 "Cannot create table:\n" + msg,
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
-
-            // Destroy TableWindow object
-            mTableWindow = null;
         }
         catch (XMPPException ex) 
         {
             new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            // Destroy TableWindow object
+            if (mTableWindow != null) {
+                mTableWindow.leave();
+                mTableWindow = null;
+            }
 
             String msg = "The table could not be created.";
 
@@ -162,6 +182,12 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
                 msg = msg + "\n(" + serverID + ")";
+            }
+            else if (error != null && error.getCode() == 409) 
+            {
+                /* A common case: your nickname conflicts. */
+                msg = "The nickname \"" + nickname + "\" is already in\n"
+                    +"use at this table. Please choose another.";
             }
             else {
                 msg = "The table could not be created";
@@ -179,22 +205,22 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
                 msg,
                 JavolinApp.getAppName() + ": Error", 
                 JOptionPane.ERROR_MESSAGE);
-
-            // Destroy TableWindow object
-            mTableWindow = null;
         }
         catch (Exception ex)
         {
             new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
+            // Destroy TableWindow object
+            if (mTableWindow != null) {
+                mTableWindow.leave();
+                mTableWindow = null;
+            }
+
             JOptionPane.showMessageDialog(this, 
                 "Cannot create table:\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
-
-            // Destroy TableWindow object
-            mTableWindow = null;
         }
     }
 
