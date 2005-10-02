@@ -372,7 +372,7 @@ sub handle_game_rpc_request {
     return;
   }
 
-  # We prepend an 'rpc_' to the method's name for ssecurity reasons.
+  # We prepend an 'rpc_' to the method's name for security reasons.
   my $method = "rpc_$$rpc_info{method}";
 
   unless ($self->game->can($method)) {
@@ -991,6 +991,9 @@ sub create_game {
     my $game_class = $self->game_class;
     my $game = $self->game($game_class->new({referee=>$self}));
     $self->logger->debug("Created a game!!\n");
+    unless ($game->has_initialized) {
+	$self->expire("Created a new game object, but it failed to initialize. Perhaps the $game_class class overrode the initialize() method but neglected to call SUPER::initialize ?");
+    }
     return $game;
 }
 
