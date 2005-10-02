@@ -6,12 +6,13 @@ import java.io.IOException;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
+import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
-import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
+import org.volity.client.DiscoBackground;
 import org.volity.client.GameServer;
 import org.volity.client.GameTable;
 import org.volity.client.Invitation;
@@ -87,7 +88,92 @@ public class GetInvitationDialog extends BaseDialog
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        /* Create the TableWindow.
+        /**
+         * Here begins a sequence of actions. Some of them are asynchronous. In
+         * fact, as many of them as possible are asynchronous, because we'd
+         * rather not block the Swing thread.
+         * 
+         * The rule is, if you're going to exit the sequence, you must set the
+         * cursor back to DEFAULT. If the table window is successfully created,
+         * you should also call dispose() to close the dialog box.
+         */
+
+        JoinRock rock = new JoinRock(mInvite, mNicknameField.getText());
+
+        // Stage 1: check to see if the MUC exists.
+
+        new DiscoBackground(mConnection, 
+            new DiscoBackground.Callback() {
+                public void run(IQ result, XMPPException err, Object rock) {
+                    doJoinCont0(result, err, (JoinRock)rock);
+                }
+            },
+            DiscoBackground.QUERY_INFO, rock.tableID, rock);
+    }
+
+    private void doJoinCont0(IQ result, XMPPException err, 
+        final JoinRock rock) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        if (err != null) {
+            // Disco query failed.
+            XMPPException ex = err;
+            new ErrorWrapper(ex);
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            String msg = "The table could not be contacted.";
+
+            // Any or all of these may be null.
+            String submsg = ex.getMessage();
+            XMPPError error = ex.getXMPPError();
+            Throwable subex = ex.getWrappedThrowable();
+
+            if (error != null 
+                && (error.getCode() == 404 || error.getCode() == 400)) {
+                /* A common case: the JID was not found. */
+                msg = "No table exists at this address.";
+                if (error.getMessage() != null)
+                    msg = msg + " (" + error.getMessage() + ")";
+                msg = msg + "\n(" + rock.tableID + ")";
+            }
+            else {
+                msg = "The table could not be contacted";
+                if (submsg != null && subex == null && error == null)
+                    msg = msg + ": " + submsg;
+                else
+                    msg = msg + ".";
+                if (subex != null)
+                    msg = msg + "\n" + subex.toString();
+                if (error != null)
+                    msg = msg + "\nJabber error " + error.toString();
+            }
+
+            JOptionPane.showMessageDialog(this, 
+                msg,
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        assert (result != null && result instanceof DiscoverInfo);
+
+        DiscoverInfo info = (DiscoverInfo)result;
+        if (!info.containsFeature("http://jabber.org/protocol/muc")) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            String msg = "This address (" + rock.tableID + ")\n"
+                +"does not refer to a Volity game table.";
+
+            JOptionPane.showMessageDialog(this, 
+                msg,
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        /* Disco success. Next step: Create a GameTable, and join the MUC.
+         *
+         * Note that we don't have a GameServer.
          *
          * The Invitation may or may not contain a parlor ID. Since we can't
          * rely on it, I've written this code to not look for it at all. We
@@ -103,63 +189,48 @@ public class GetInvitationDialog extends BaseDialog
          * *not* blocking the calling thread -- and then call back to the
          * caller to indicate the success or failure of the operation.
          */
+        GameTable gameTable = null;
+        GameTable.ReadyListener listener = null;
+
         try
         {
-            tableID = mInvite.getTableJID();
-
-            final GameTable gameTable = new GameTable(mConnection, tableID);
-            final String nickname = mNicknameField.getText();
+            gameTable = new GameTable(mConnection, rock.tableID);
+            rock.table = gameTable;
 
             /* To get the GameServer, we need to join the MUC early. */
 
-            GameTable.ReadyListener listener = new GameTable.ReadyListener() {
+            listener = new GameTable.ReadyListener() {
                     public void ready() {
                         // Called outside Swing thread!
+                        // Remove the listener, now that it's triggered
+                        rock.table.removeReadyListener(this);
                         // Invoke into the Swing thread.
                         SwingUtilities.invokeLater(new Runnable() {
                                 public void run() {
-                                    doJoinCont(gameTable, nickname);
+                                    doJoinCont1(rock);
                                 }
                             });
                     }
                 };
             gameTable.addReadyListener(listener);
 
-            gameTable.join(nickname);
-
-            /**
-             * One possible error case: the user typed the name of a
-             * nonexistent MUC on a real MUC host. If that's happened, we just
-             * accidentally created a new MUC! To check for this, we call
-             * getConfigurationForm -- if that *succeeds*, then we're in the
-             * bad case and have to abort.
-             */
-
-            Form form = null;
-            try {
-                form = gameTable.getConfigurationForm();
-            }
-            catch (Exception ex)
-            {
-                // do nothing -- form stays null
-            }
-
-            if (form != null) {
-                gameTable.removeReadyListener(listener);
-                gameTable.leave();
-                // Use a 404 here so that it's caught below.
-                throw new XMPPException(new XMPPError(404));
-            }
+            gameTable.join(rock.nickname);
 
             /*
              * Now we wait for the ReadyListener to fire, which will invoke
-             * doJoinCont(), below. 
+             * doJoinCont1(), below. 
              */
         }
         catch (XMPPException ex) 
         {
             new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            if (gameTable != null) {
+                if (listener != null)
+                    gameTable.removeReadyListener(listener);
+                gameTable.leave();
+            }
 
             String msg = "The table could not be joined.";
 
@@ -174,7 +245,13 @@ public class GetInvitationDialog extends BaseDialog
                 msg = "No table exists at this address.";
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
-                msg = msg + "\n(" + tableID + ")";
+                msg = msg + "\n(" + rock.tableID + ")";
+            }
+            else if (error != null && error.getCode() == 409) 
+            {
+                /* A common case: your nickname conflicts. */
+                msg = "The nickname \"" + rock.nickname + "\" is already in\n"
+                    +"use at this table. Please choose another.";
             }
             else {
                 msg = "The table could not be joined";
@@ -198,6 +275,12 @@ public class GetInvitationDialog extends BaseDialog
             new ErrorWrapper(ex);
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
+            if (gameTable != null) {
+                if (listener != null)
+                    gameTable.removeReadyListener(listener);
+                gameTable.leave();
+            }
+
             JOptionPane.showMessageDialog(this, 
                 "Cannot join table:\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error", 
@@ -205,19 +288,47 @@ public class GetInvitationDialog extends BaseDialog
         }
     }
 
-    /**
-     * More handling of the Join button, after the MUC join succeeds.
-     */
-    private void doJoinCont(GameTable gameTable, String nickname)
+    private void doJoinCont1(JoinRock rock)
     {
-        try {
-            String refJID = gameTable.getRefereeJID();
-            String serverID = null;
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-            //### This should be async, so it doesn't bog the Smack thread
-            ServiceDiscoveryManager discoMan = 
-                ServiceDiscoveryManager.getInstanceFor(mConnection);
-            DiscoverInfo info = discoMan.discoverInfo(refJID);
+        // Next step: disco the referee.
+
+        String refJID = rock.table.getRefereeJID();
+
+        new DiscoBackground(mConnection, 
+            new DiscoBackground.Callback() {
+                public void run(IQ result, XMPPException err, Object rock) {
+                    doJoinCont2(result, err, (JoinRock)rock);
+                }
+            },
+            DiscoBackground.QUERY_INFO, refJID, rock);
+    }
+
+    private void doJoinCont2(IQ result, XMPPException err, 
+        final JoinRock rock) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        if (err != null) {
+            // Disco query failed.
+            XMPPException ex = err;
+            new ErrorWrapper(ex);
+            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            rock.table.leave();
+
+            JOptionPane.showMessageDialog(this,
+                "Cannot contact referee:\n" + ex.toString(),
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        assert (result != null && result instanceof DiscoverInfo);
+
+        try {
+            DiscoverInfo info = (DiscoverInfo)result;
+            String serverID = null;
 
             Form form = Form.getFormFrom(info);
             if (form != null) {
@@ -232,12 +343,16 @@ public class GetInvitationDialog extends BaseDialog
 
             GameServer server = new GameServer(mConnection, serverID);
 
+            //### makeTableWindow could be asynchronous. Actually, it could
+            //### include a lot of the gunk that's happened in this
+            //### asynchronous sequence.
             mTableWindow = TableWindow.makeTableWindow(mConnection, 
-              server, gameTable, nickname);
+              server, rock.table, rock.nickname);
             mOwner.handleNewTableWindow(mTableWindow);
 
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
+            // Success!
             dispose();
         }
         catch (Exception ex)
@@ -251,8 +366,13 @@ public class GetInvitationDialog extends BaseDialog
                 JOptionPane.ERROR_MESSAGE);
 
             // Destroy TableWindow object
-            mTableWindow = null;
-            gameTable.leave();
+            if (mTableWindow != null) {
+                mTableWindow.leave();
+                mTableWindow = null;
+            }
+            else {
+                rock.table.leave();
+            }
         }
     }
 
@@ -401,7 +521,7 @@ public class GetInvitationDialog extends BaseDialog
 
         mAcceptButton = new JButton("Accept");
         c = new GridBagConstraints();
-        c.gridx = 0;
+        c.gridx = 2;
         c.gridy = 0;
         c.insets = new Insets(0, 0, 0, 0);
         c.anchor = GridBagConstraints.EAST;
@@ -417,11 +537,28 @@ public class GetInvitationDialog extends BaseDialog
 
         mDeclineButton = new JButton("Decline");
         c = new GridBagConstraints();
-        c.gridx = 2;
+        c.gridx = 0;
         c.gridy = 0;
         c.insets = new Insets(0, SPACING, 0, 0);
         c.anchor = GridBagConstraints.EAST;
         buttonPanel.add(mDeclineButton, c);
 
+    }
+
+    /**
+     * Simple data class, used to store information over the course of the join
+     * operation.
+     */
+    protected class JoinRock {
+        Invitation invite;
+        String tableID;
+        String nickname;
+        GameTable table;
+        protected JoinRock(Invitation inv, String nick) {
+            invite = inv;
+            tableID = invite.getTableJID();
+            nickname = nick;
+            table = null;
+        }
     }
 }
