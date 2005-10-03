@@ -945,9 +945,8 @@ sub end_game {
 				      });
   $record->game_uri($self->game_class->uri);
   $record->end_time(scalar(localtime));
-  foreach my $player_list (qw(winners)) {
-    my @slots = $self->game->$player_list;
-    if (@slots and defined($slots[0])) {
+  my @slots = $self->game->winners->slots;
+  if (@slots and defined($slots[0])) {
       my @player_jids;
       for my $slot (@slots) {
 	  my @slot_jids;
@@ -958,8 +957,7 @@ sub end_game {
 	  push (@player_jids, \@slot_jids);
       }
       # This is hacky... swerving around the accessor like this. OH WELL.
-      $record->{$player_list} = \@player_jids;
-    }
+      $record->{winners} = \@player_jids;
   }
 
 
