@@ -48,7 +48,7 @@ sub set_hand {
     }
 
     # Has everyone registered a hand?
-    if (grep(defined($_), map($_->hand, $self->seats)) == @{$self->seats}) {
+    if (grep(defined($_), map($_->hand, $self->seats)) == $self->seats) {
 	# Yes! Time for BATTLE!
 	# Sort the seats into winning order.
 	my @seats = sort( {
@@ -99,7 +99,7 @@ sub set_hand {
 			# It's a complete tie!!
 			# So, only one slot in the winners array,
 			# containing both seats.
-			$self->winners([[@seats]]);
+			$self->winners->add_seat_to_slot(\@seats, 1);
 		    } else {
 			# We seem to be in sudden-death mode. Another game!
 		    }
@@ -107,12 +107,20 @@ sub set_hand {
 		    # There were some ties, but one player clearly
 		    # stomped the other.
 		    # Winners array has two slots, in winning order.
-		    $self->winners([map([$_], sort {$a->hands_won <=> $b->hands_won} @seats)]);
+		    @winners = sort {$a->hands_won <=> $b->hands_won} @seats;
+		    my $slot_number = 1;
+		    foreach (@winners) {
+			$self->winners->add_seat_to_slot($_, $slot_number++);
+		    }
 		}
 	    } else {
 		# There is one clear winner.
 		# Winners array has two slots, in winning order.
-		$self->winners([map([$_], sort {$a->hands_won <=> $b->hands_won} @seats)]);
+		@winners = sort {$a->hands_won <=> $b->hands_won} @seats;
+		my $slot_number = 1;
+		foreach (@winners) {
+		    $self->winners->add_seat_to_slot($_, $slot_number++);
+		}
 	    }
 	} else {
 	    # Reset the seats' hands.
@@ -122,7 +130,7 @@ sub set_hand {
 
     # If the above boondoggle ended up setting the winners array, we know
     # that the game is done.
-    $self->end if @{$self->winners};
+    $self->end if $self->winners->slots;
 
     # At any rate, return undef, so the calling seat gets a generic
     # success response message.
