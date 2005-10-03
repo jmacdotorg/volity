@@ -207,6 +207,7 @@ foreach (qw( seat_ids required_seat_ids )) {
 }
 
 use Scalar::Util qw( weaken );
+use Volity::WinnersList;
 
 use Carp qw( carp croak );
 
@@ -217,7 +218,7 @@ sub initialize {
     weaken( $self->{referee} );
     $self->config_variables(        {} );
     $self->config_variable_setters( {} );
-    $self->winners( [] );
+    $self->winners( Volity::WinnersList->new );
     $self->{turn_order} = [] unless defined($self->{turn_order});
     $self->{turn_queue} = [] unless defined($self->{turn_queue});
     $self->is_finished(0);
@@ -310,6 +311,14 @@ referee normally kicks back such requests with an RPC fault.)
 Normally you'll only call this method once, as part of your C<initialize()>
 method definition.
 
+=item winners
+
+Returns this game's Volity::WinnersList object. If you want your game
+do generate proper game records for storage with the Volity
+bookkeeper, then you must use this object to specify the seats'
+winning order I<before> you call the game object's C<end> method. See
+L<Volity::WinnersList> for the list object's API.
+
 =back
 
 =cut
@@ -329,8 +338,9 @@ sub rotate_current_seat {
     }
 
     # Give the seat list a rotation, then filter out eliminated seats
+    # as well as seats without any registered players.
     push(@seats, shift(@seats));
-    @seats = grep(not($_->is_eliminated), @seats);
+    @seats = grep(not($_->is_eliminated) && $_->registered_player_jids, @seats);
     
     if (@seats) {
 	$self->current_seat($seats[0]);
