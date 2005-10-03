@@ -1665,10 +1665,10 @@ sub handle_disco_info {
         }
         $self->{uis_to_check} -= 1;
         unless ($self->uis_to_check) {
-            if (@{$self->available_uis} > 1) {
+            if ($self->available_uis > 1) {
                 $self->show_ui_menu;
-            } elsif (@{$self->available_uis}) {
-                my $ui = $self->available_uis->[0];
+            } elsif ($self->available_uis) {
+                my $ui = ($self->available_uis)[0];
                 $self->print_message("Fetching game UI file from $$ui{url}...");
                 $self->fetch_ui_file($$ui{url});
             } else {
@@ -1690,7 +1690,7 @@ sub handle_disco_info {
 	    $table_info{$_} = $$fields{$_}->[0];
 	}
 #	$self->table_menu->{keys(%{$self->table_menu}) + 1} = \%table_info;
-	push (@{$self->table_menu}, \%table_info);
+	push (@{$self->{table_menu}}, \%table_info);
     } elsif ($id =~ /^server-info-request-(.*)$/) {
 	my $server_jid = $1;
 	my ($server_info) = $self->salient_servers->{$server_jid};
@@ -1837,7 +1837,7 @@ sub tables_for_servers {
     $self->responding_referees({});
 
     # And return the table menu because it's nice to return things.
-    return @{$self->table_menu};
+    return $self->table_menu;
 }
 
 sub servers_for_ruleset {
