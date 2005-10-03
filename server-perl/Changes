@@ -1,11 +1,24 @@
-0.5
+0.5.1	
 
-	- Lots of new protocol support in both the server modules and
-	Friv, including readiness, table configuration, and enough service
-	discovery response to support the game finder.
+	- Various bugfixes throughout the modules.
+
+	- Made the attemped-sexy accessors for array-based instance
+	variables in the Volity base class a little sexier.
+
+	- Added Volity::WinnersList, which makes the creation of
+	end-of-game winners lists (for inclusion in game records) easier.
 	
-	- Bugfix: The "smart" array hander in Volity.pm's get()
-	  accessor method was actually kind of dumb. It's less so now.
+0.5.0
+
+	- MAJOR changes all over the place, reflecting development with
+	  the core Volity protocol between fall 2004 and summer 2005. This
+	  includes implementatoin of several new concepts, including
+	  readiness, table configuration, the game and UI finders, and
+	  seats. See the Volity Wiki (http://volity.org/wiki) for more
+	  information about any of these.
+	
+	- Bugfix: The "smart" array hander in Volity.pm's get() accessor
+	  method was actually kind of dumb. It's less so now.
 
 0.4.1
 
