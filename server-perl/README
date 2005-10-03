@@ -5,15 +5,14 @@ platform for Internet-based game play. It is released under the LGPL
 open-source license. (See the accompanying LICENSE file.)
 
 This release offers some embedded POD documentation. However, you can
-find a more complete reference on the Web, here:
+find a more complete reference on the Web here:
 
 http://www.volity.org/docs/devguide_perl/
 
-This release will probably be of little use to anyone but the core
-Volity development team, and the handful of friends who have elected
-to try programming the platform's first few "third-party" game
-modules. Their feedback is sure to make future releases more mature,
-and of wider reach.
+Unfortuately, as the webpage says, it's rather outdated. Fortunately,
+this release is (I hope!) the final bugfix release before I publish
+the next version of the dev guide. I hope to have that done before
+November 2005.
 
 For more information about Volity:
 Volity Developers' Site:
@@ -22,10 +21,6 @@ http://www.volity.org
 Volity at SourceForge:
 http://volity.sf.net
 
-If, after learning a bit about Volity, you'd like to try your hand at
-being a pioneering game developer during these the platform's early
-days, do drop me a line: jmac@jmac.org.
-
 --- PREREQUISITES ---
 
 Frivolity requires several Perl modules to work; the Build script
@@ -33,7 +28,9 @@ checks for their presence on your system. All are available from CPAN.
 
 --- INSTALLATION ---
 
-This package uses the Module::Build installation style.
+This package uses the Module::Build installation style. (I'm not sure
+if it will continue to do so in future releases; it's kind of annoying
+and I'm not really getting much mileage out of it. But for now...)
 
 It will, by default, install several Perl modules into your
 site-perl location under the Volity namespace, and place a server
