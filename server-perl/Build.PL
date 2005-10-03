@@ -16,6 +16,7 @@ my $build = Module::Build->new
 	       'Class::Fields'=>undef,
 	       'Class::Data::Inheritable'=>undef,
 	       'Time::HiRes'=>undef,
+	       'Tie::Exechash'=>undef,
 	       'JavaScript::SpiderMonkey'=>undef,
 	       'Data::JavaScript::Anon'=>undef,
 	       'Date::Parse'=>undef,
