@@ -464,6 +464,7 @@ public class TranslateToken {
         "not_seated", "You are not seated.",
         "are_seated", "You are seated.",
         "not_your_turn", "It's not your turn.",
-        "relay_failed", "Your message could not be delivered to \\1."
+        "relay_failed", "Your message could not be delivered to \\1.",
+        "no_bots_provided", "This game parlor does not provide bots."
     };
 }

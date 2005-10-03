@@ -38,6 +38,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
     private final static String MENUCMD_GAME_INFO = "Game Info...";
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
+    private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
 
@@ -54,6 +55,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mShowLastErrorMenuItem;
     private JMenuItem mGameInfoMenuItem;
     private JMenuItem mInvitePlayerMenuItem;
+    private JMenuItem mInviteBotMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -182,6 +184,13 @@ public class JavolinMenuBar extends JMenuBar
             mInvitePlayerMenuItem.setEnabled(false);
         gameMenu.add(mInvitePlayerMenuItem);
 
+        mInviteBotMenuItem = new JMenuItem(MENUCMD_INVITE_BOT);
+        mInviteBotMenuItem.addActionListener(this);
+        setPlatformMnemonic(mInviteBotMenuItem, KeyEvent.VK_B);
+        if (mTableWindow == null) 
+            mInviteBotMenuItem.setEnabled(false);
+        gameMenu.add(mInviteBotMenuItem);
+
         // Window menu
         mWindowMenu = new WindowMenu();
 
@@ -298,6 +307,10 @@ public class JavolinMenuBar extends JMenuBar
         else if (e.getSource() == mInvitePlayerMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doInviteDialog();
+        }
+        else if (e.getSource() == mInviteBotMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doInviteBot();
         }
         else if (e.getSource() == mJoinMucMenuItem) {
             mApplication.doJoinMuc();

@@ -1032,6 +1032,22 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
+     * Send a request for a retainer bot.
+     */
+    public void doInviteBot() {
+        try {
+            mGameTable.getReferee().addBot();
+        }
+        catch (TokenFailure ex) {
+            writeMessageText(mTranslator.translate(ex));
+        }
+        catch (Exception ex) {
+            new ErrorWrapper(ex);
+            writeMessageText(ex.toString());
+        }
+    }
+
+    /**
      * Given a list of full JIDs, send an invitation to each of them, in
      * parallel. This does *not* give user feedback on failures. It is intended
      * for use on a collection of users (or a collection of resources of the
