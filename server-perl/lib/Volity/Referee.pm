@@ -921,7 +921,7 @@ sub create_bot {
   $self->logger->info("New bot (" . $bot->jid . ") created by referee (" . $self->jid . ").");
   $self->{bot_jids}->{$bot->jid} = 1;
 
-  push (@{$self->active_bots}, $bot);
+  push (@{$self->{active_bots}}, $bot);
 
   return $bot;
 }
@@ -959,7 +959,6 @@ sub end_game {
       # This is hacky... swerving around the accessor like this. OH WELL.
       $record->{winners} = \@player_jids;
   }
-
 
   # Give it the ol' John Hancock, if possible.
   if (defined($Volity::GameRecord::gpg_bin) and defined($Volity::GameRecord::gpg_secretkey) and defined($Volity::GameRecord::gpg_passphrase)) {
@@ -1482,7 +1481,7 @@ sub stop {
   foreach (grep(defined($_), $self->active_bots)) {
       $_->stop;
   }
-  $self->active_bots([]);
+  $self->{active_bots} = [];
   $self->server->remove_referee($self);
   $self->kernel->post($self->alias, 'shutdown_socket', 0);
 }
