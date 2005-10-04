@@ -32,6 +32,7 @@ public class SVGCanvas extends JSVGCanvas
 
     SVGUI ui;
     RhinoInterpreter interpreter;
+    boolean stopped = false;
 
     /**
      * @param table represents a game table (MUC)
@@ -110,20 +111,35 @@ public class SVGCanvas extends JSVGCanvas
     // we need to override the constructor.
     class GameUIInterpreter extends RhinoInterpreter {
       GameUIInterpreter() {
-	super(documentURL);
-	ui = new SVGUI();
-	ui.initGameObjects(getGlobalObject());
-	if (table != null) ui.setTable(table);
+        super(documentURL);
+        ui = new SVGUI();
+        /* This is kind of pathetic, but it's possible for an SVGCanvas to
+         * reach the createInterpreter stage after the table window has already
+         * closed. We have to continue on, but we don't want to keep a live
+         * responder in the UI. Therefore, we create a UI and immediately stop
+         * it.
+         * (Test case: create a new table, requesting nickname "referee".) */
+        if (stopped)
+          ui.stop();
+        ui.initGameObjects(getGlobalObject());
+        if (table != null) ui.setTable(table);
       }
     }
     return interpreter = new GameUIInterpreter();
   }
-  
+
   // Inherited from InterpreterFactory.
   public String getMimeType() {
     return "image/svg+xml";
   } 
 
+  // The window containing this has closed. We need to do some cleanup.
+  public void stop() {
+    stopped = true;
+    if (ui != null)
+      ui.stop();
+  }
+  
   public GameUI getUI() { return ui; }
 
   class SVGUI extends GameUI {

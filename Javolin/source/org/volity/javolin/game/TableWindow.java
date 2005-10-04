@@ -490,26 +490,10 @@ public class TableWindow extends JFrame implements PacketListener
         }
         catch (XMPPException ex)
         {
-            new ErrorWrapper(ex);
-            String msg;
-            XMPPError error = ex.getXMPPError();
-
-            if (error != null && error.getCode() == 409) {
-                /* A common case: your nickname conflicts. */
-                msg = "The nickname \"" + mNickname + "\" is already in\n"
-                    +"use at this table. Please choose another.";
-            }
-            else {
-                msg = "Cannot join table:\n" + ex.toString();
-            }
-            JOptionPane.showMessageDialog(this,
-                msg,
-                JavolinApp.getAppName() + ": Error",
-                JOptionPane.ERROR_MESSAGE);
-
-            //### We should really kill the table window in this case. We
-            //### *definitely* shouldn't be allowing the constructor to
-            //### complete normally!
+            // Clean up anything we may have started, like mGameTable.
+            leave();
+            // Re-raise exception, so that the constructor fails
+            throw ex;
         }
     }
 
@@ -602,8 +586,9 @@ public class TableWindow extends JFrame implements PacketListener
         }
 
         // Shut down the UI.
-        if (mGameViewport != null && mGameViewport.getUI() != null)
-            mGameViewport.getUI().stop();
+        if (mGameViewport != null) {
+            mGameViewport.stop();
+        }
 
         // Leave the chat room.
         if (mGameTable != null) {
