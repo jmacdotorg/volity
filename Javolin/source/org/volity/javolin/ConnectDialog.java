@@ -24,6 +24,8 @@ import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.volity.client.CapPacketExtension;
 
 /**
  * The dialog for establishing a connection to a Jabber server.
@@ -165,6 +167,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         {
             mConnection = new XMPPConnection(mHostNameField.getText());
             mConnection.setPresenceFactory(new CapPresenceFactory());
+            ServiceDiscoveryManager.getInstanceFor(mConnection).addFeature(CapPacketExtension.NAMESPACE);
 
             mConnection.login(mUserNameField.getText(),
                 new String(mPasswordField.getPassword()), "Javolin");
@@ -253,6 +256,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         try {
             mConnection = new XMPPConnection(mHostNameField.getText());
             mConnection.setPresenceFactory(new CapPresenceFactory());
+            ServiceDiscoveryManager.getInstanceFor(mConnection).addFeature(CapPacketExtension.NAMESPACE);
+
             AccountManager manager = mConnection.getAccountManager();
 
             if (!manager.supportsAccountCreation()) {
