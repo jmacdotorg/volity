@@ -1,7 +1,7 @@
+import os
 import time
 import logging
 import volent
-import game
 from zymb import sched, jabber
 from zymb.jabber import interface
 from zymb.jabber import rpc
@@ -16,6 +16,7 @@ STATE_SUSPENDED = intern('suspended')
 
 CLIENT_DEFAULT_RPC_TIMEOUT = 5 ###
 CLIENT_INVITATION_RPC_TIMEOUT = 30
+BOT_STARTUP_TIMEOUT = 60
 DEAD_CONFIG_TIMEOUT = 90
 ABANDONED_TIMEOUT = 3*60
 
@@ -54,6 +55,8 @@ class Referee(volent.VolEntity):
         self.discomuctries = 0
         self.mucrunning = False
         self.mucshutdownreason = 'The referee has shut down.'
+
+        self.botcounter = 1
         
         self.addhandler('ready', self.beginwork)
         self.conn.adddispatcher(self.handlepresence, name='presence')
@@ -69,6 +72,7 @@ class Referee(volent.VolEntity):
         self.rpccli = self.conn.getservice('rpcclience')
         
         rpcserv = self.conn.getservice('rpcservice')
+        assert isinstance(rpcserv.getopset(), volent.ClientRPCWrapperOpset)
         ops = rpcserv.getopset().getopset()
         dic = ops.getdict()
         dic['volity'] = RefVolityOpset(self)
@@ -112,10 +116,13 @@ class Referee(volent.VolEntity):
         info = jabber.disco.DiscoInfo([ident], None, form)
         info.addfeature(interface.NS_DISCO_INFO)
         info.addfeature(interface.NS_DISCO_ITEMS)
+        info.addfeature(interface.NS_CAPS)
         self.discoinfo = info
         
         disco.addinfo(None, self.updatediscoinfo)
         disco.additems()
+
+        # Set up the keepalive service
 
         sserv = self.parlor.conn.getservice('keepaliveservice')
         if (sserv):
@@ -247,7 +254,16 @@ class Referee(volent.VolEntity):
                     if (jid == self.jid):
                         self.log.error('our own JID %s showed up with resource "%s"', jidstr, resource)
                     if (typestr == ''):
-                        self.playerarrived(jid, resource)
+                        isbot = False
+                        cnod = msg.getchild('c', namespace=interface.NS_CAPS)
+                        if (cnod
+                            and cnod.getattr('node') == volent.VOLITY_CAPS_URI
+                            and cnod.getattr('ext') == 'bot'):
+                            isbot = True
+                        if (jid.barematch(self.jid)
+                            and self.parlor.actors.has_key(jid.getresource())):
+                            isbot = True
+                        self.playerarrived(jid, resource, isbot)
                         self.activitytime = time.time()
                     if (typestr == 'unavailable'):
                         self.playerleft(jid, resource)
@@ -279,7 +295,7 @@ class Referee(volent.VolEntity):
             self.stop()
             return
 
-        self.log.info('joining new muc: %s', self.muc)
+        self.log.info('joining new muc: %s', unicode(self.muc))
 
         msg = interface.Node('presence',
             attrs={ 'to':unicode(self.mucnick) })
@@ -308,7 +324,8 @@ class Referee(volent.VolEntity):
             
         if (msg.getattr('type') != 'result'):
             ex = interface.parseerrorstanza(msg)
-            self.log.error('could not configure MUC %s: %s', self.muc, ex)
+            self.log.error('could not configure MUC %s: %s',
+                unicode(self.muc), ex)
             self.stop()
             raise interface.StanzaHandled
 
@@ -337,10 +354,12 @@ class Referee(volent.VolEntity):
         dic = {
             'muc#owner_roomname':      self.parlor.gamename,
             'muc#roomconfig_roomname': self.parlor.gamename,
+            'title':                   self.parlor.gamename,
             'muc#owner_maxusers':      str(self.maxmucusers),
             'muc#roomconfig_maxusers': str(self.maxmucusers),
             'muc#owner_whois':         'anyone',
             'muc#roomconfig_whois':    'anyone',
+            'anonymous':               '0',
         }
     
         if (origform == None):
@@ -348,7 +367,9 @@ class Referee(volent.VolEntity):
 
         if (origform.getnamespace() != interface.NS_DATA):
             raise interface.BadRequest('muc config form had wrong namespace for <x>')
-        if (origform.getattr('type') != 'form'):
+        formtype = origform.getattr('type')
+        # Old MUC servers don't provide a 'type' attribute
+        if (formtype != None and formtype != 'form'):
             raise interface.BadRequest('muc config form had wrong type for <x>')
 
         newform = interface.Node('x', attrs={'type':'submit'})
@@ -382,7 +403,8 @@ class Referee(volent.VolEntity):
     def handle_stanza_configuremucresult(self, msg):
         if (msg.getattr('type') != 'result'):
             ex = interface.parseerrorstanza(msg)
-            self.log.error('failed to configure MUC %s: %s', self.muc, ex)
+            self.log.error('failed to configure MUC %s: %s',
+                unicode(self.muc), ex)
             self.mucshutdownreason = 'Failed to configure MUC.'
             self.stop()
             raise interface.StanzaHandled
@@ -394,14 +416,16 @@ class Referee(volent.VolEntity):
 
     def checktimersetting(self):
         if (self.refstate in [STATE_SETUP, STATE_SUSPENDED]):
-            if (not self.players): ### account for bots
+            ls = [ pla for pla in self.players.values()
+                if not pla.isbot ]
+            if (not ls):
                 self.settimer('deadconfig')
             else:
                 self.settimer(None)
             return
         else:   # STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED
             ls = [ player for player in self.players.values()
-                if player.live and player.seat ]
+                if player.live and player.seat and (not player.isbot) ]
             if (not ls):
                 self.refstate = STATE_ABANDONED
                 self.settimer('abandoned')
@@ -455,7 +479,7 @@ class Referee(volent.VolEntity):
         self.log.warning('the game has been abandoned in play for %d seconds -- suspending', ABANDONED_TIMEOUT)
         self.queueaction(self.suspendgame)
 
-    def playerarrived(self, jid, nick):
+    def playerarrived(self, jid, nick, isbot=False):
         jidstr = unicode(jid)
         player = self.players.get(jidstr, None)
         
@@ -486,7 +510,7 @@ class Referee(volent.VolEntity):
             return
 
         # New player.
-        player = Player(self, jid, nick)
+        player = Player(self, jid, nick, isbot)
         self.players[jidstr] = player
         self.playernicks[nick] = player
 
@@ -658,6 +682,60 @@ class Referee(volent.VolEntity):
         player.ready = False
         self.queueaction(self.reportreadiness, player)
 
+    def playeraddbot(self, sender=None):
+        botclass = self.parlor.botclass
+        if (not botclass):
+            raise game.FailureToken('volity.no_bots_provided')
+
+        botresource = 'bot_' + str(os.getpid()) + '_' + str(self.uniquestamp())
+        
+        # The player-visible name of the bot shouldn't conflict with existing
+        # MUC nicknames. We will do collision detection when we join the MUC,
+        # but some MUC servers get crashy when you do that (in cases which
+        # we haven't diagnosed yet). So we make a rough attempt to start
+        # with a never-before-used name.
+        botnick = 'Bot ' + str(self.botcounter)
+        self.botcounter += 1
+
+        try:
+            act = actor.Actor(self, self.parlor.jid, self.parlor.password,
+                self.muc, botresource, botnick, botclass)
+        except Exception, ex:
+            self.log.error('Unable to create bot',
+                exc_info=True)
+            raise rpc.RPCFault(608,
+                'unable to create bot: ' + str(ex))
+        
+        assert (not self.parlor.actors.has_key(botresource))
+        self.parlor.actors[botresource] = act
+        
+        act.start()
+
+        act.addhandler('end', self.parlor.actordied, act)
+        self.addhandler('end', act.stop)
+        self.parlor.addhandler('end', act.stop)
+
+        defer = sched.Deferred(self.botready, act)
+        
+        ac1 = act.addhandler('running', defer, 'running')
+        defer.addaction(ac1)
+        ac2 = self.addtimer(defer, 'timeout', delay=BOT_STARTUP_TIMEOUT)
+        defer.addaction(ac2)
+        ac3 = act.addhandler('end', defer, 'end')
+        defer.addaction(ac3)
+        
+        raise defer
+
+    def botready(self, act, res):
+        if (res == 'timeout'):
+            self.log.warning('bot %s failed to start up in time -- killing', act.resource)
+            act.stop()
+            raise rpc.RPCFault(608, 'unable to start bot')
+        if (res == 'end'):
+            self.log.warning('bot %s died before responding', act.resource)
+            raise rpc.RPCFault(608, 'bot failed to start up')
+        return
+    
     def playersuspend(self, sender=None):
         self.queueaction(self.suspendgame, sender)
 
@@ -768,7 +846,7 @@ class Referee(volent.VolEntity):
 
         self.game.sendplayer(player, 'volity.receive_state')
 
-        # First, the seating information        
+        # First, the seating information
         ls = [ seat.id for seat in self.seatlist ]
         subls = [ seat.id for seat in self.seatlist if seat.required ]
         self.game.sendplayer(player, 'volity.seat_list', ls)
@@ -1002,11 +1080,12 @@ class Referee(volent.VolEntity):
         
 
 class Player:
-    def __init__(self, ref, jid, nick):
+    def __init__(self, ref, jid, nick, isbot=False):
         self.referee = ref
         self.jid = jid
         self.jidstr = unicode(jid)
         self.nick = nick
+        self.isbot = isbot
         
         self.live = True
         self.aware = False
@@ -1251,8 +1330,7 @@ class RefVolityOpset(rpc.MethodOpset):
             argcount=0)
         self.validators['unready'] = Validator(afoot=False,
             argcount=0)
-        self.validators['add_bot'] = Validator(afoot=False,
-            argcount=0)
+        self.validators['add_bot'] = Validator(argcount=0)
         self.validators['suspend_game'] = Validator(afoot=True,
             argcount=0, seated=True)
         self.validators['set_language'] = Validator(state=STATE_SETUP,
@@ -1295,7 +1373,7 @@ class RefVolityOpset(rpc.MethodOpset):
         return self.referee.playerunready(sender)
 
     def rpc_add_bot(self, sender, *args):
-        raise interface.StanzaFeatureNotImplemented() ###
+        return self.referee.playeraddbot(sender)
     
     def rpc_suspend_game(self, sender, *args):
         return self.referee.playersuspend(sender)
@@ -1343,6 +1421,8 @@ class RefAdminOpset(rpc.MethodOpset):
         dic['agentstate'] = self.referee.state
         dic['state'] = self.referee.refstate
         dic['players'] = len(self.referee.players)
+        ls = [ pla for pla in self.referee.players.values() if pla.isbot ]
+        dic['bots'] = len(ls)
         dic['startup_time'] = time.ctime(self.referee.startuptime)
         dic['startup_at'] = volent.descinterval(
             self.referee.startuptime,
@@ -1358,6 +1438,11 @@ class RefAdminOpset(rpc.MethodOpset):
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'players: no arguments')
         return self.referee.players.keys()
+
+    def rpc_bots(self, sender, *args):
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'bots: no arguments')
+        return [ id for (id, pla) in self.referee.players.items() if pla.isbot ]
 
     def rpc_seats(self, sender, *args):
         if (len(args) >= 2):
@@ -1399,3 +1484,6 @@ class RefAdminOpset(rpc.MethodOpset):
         self.referee.queueaction(self.referee.stop)
         return 'stopping referee'
 
+# late imports
+import game
+import actor

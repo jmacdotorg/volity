@@ -72,7 +72,9 @@ class VolEntity(zymb.sched.Agent):
         self.conn.addservice(discoc)
 
         rpc = jabber.rpc.RPCService(notfoundhandler=self.rpcnotfound)
-        ops = ClientRPCWrapperOpset(jabber.rpc.SeparatorOpset())
+        ops = jabber.rpc.SeparatorOpset()
+        if (not isinstance(self, actor.Actor)):
+            ops = ClientRPCWrapperOpset(ops)
         rpc.setopset(ops)
         self.conn.addservice(rpc)
 
@@ -104,6 +106,21 @@ class VolEntity(zymb.sched.Agent):
                 'node': VOLITY_CAPS_URI,
                 'ver': volityversion,
                 'ext': self.volityrole })
+
+    def uniquestamp():
+        """uniquestamp() -> int
+
+        Generate a number which is unique within this process. It is
+        approximately a Unix timestamp, but incremented when necessary
+        to avoid repeats.
+        """
+        val = int(time.time())
+        if (val <= VolEntity.laststamp):
+            val = VolEntity.laststamp+1
+        VolEntity.laststamp = val
+        return val
+    uniquestamp = staticmethod(uniquestamp)
+    laststamp = 0
 
 class ClientRPCWrapperOpset(jabber.rpc.WrapperOpset):
     """###
@@ -232,5 +249,6 @@ def descinterval(endtime, starttime=None, limit=None):
     return ' '.join(ls)
 
 # ---- late imports
+import actor
 import game
 

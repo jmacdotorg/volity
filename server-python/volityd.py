@@ -29,6 +29,9 @@ popt.add_option('-g', '--game',
 popt.add_option('-j', '--jid',
     action='store', type='string', dest='jid',
     help='identity to operate game parlor under')
+popt.add_option('-b', '--bot',
+    action='store', type='string', dest='bot', metavar='BOTCLASS',
+    help='bot class to use, if requested')
 popt.add_option('--contact-jid',
     action='store', type='string', dest='contactjid', metavar='JID',
     help='identity which is operating this parlor')
@@ -77,6 +80,7 @@ argmap['jid-resource'] = opts.jidresource
 argmap['contact-jid'] = opts.contactjid
 argmap['contact-email'] = opts.contactemail
 argmap['game'] = opts.game
+argmap['bot'] = opts.bot
 argmap['password'] = opts.password
 if (opts.debuglevel):
     argmap['debug-level'] = str(opts.debuglevel)

@@ -1,10 +1,7 @@
 from zymb import jabber
 import zymb.jabber.rpc
 import zymb.jabber.interface
-import referee
 from volent import FailureToken, Literal
-
-from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED, STATE_SUSPENDED
 
 class Game:
     gamename = None
@@ -221,4 +218,8 @@ class ObjMethodOpset(jabber.rpc.Opset):
             raise jabber.rpc.CallNotFound
         self.precondition(sender, callname, '', *callargs)
         return val(sender, *callargs)
+
+# late imports
+import referee
+from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED, STATE_SUSPENDED
 

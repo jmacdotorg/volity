@@ -1,6 +1,6 @@
 import os, time, types
 import logging
-import volent, referee, game
+import volent
 from zymb import sched, jabber
 import zymb.jabber.dataform
 import zymb.jabber.disco
@@ -36,7 +36,28 @@ class Parlor(volent.VolEntity):
             raise TypeError('gameclass does not define class.gamename')
         if (not gameclass.ruleseturi):
             raise TypeError('gameclass does not define class.ruleseturi')
-            
+
+        self.botclass = None
+        if (config.get('bot')):
+            ls = config.get('bot').split('.')
+            if (len(ls) < 2):
+                raise ValueError('botclass must be of the form module.botclass')
+            classname = ls[-1]
+            modpath = '.'.join(ls[ : -1 ])
+            mod = __import__(modpath, globals(), locals(), [classname])
+            botclass = getattr(mod, classname)
+            self.botclass = botclass
+        
+            if (botclass == bot.Bot
+                or (type(botclass) != types.ClassType)
+                or (not issubclass(botclass, bot.Bot))):
+                raise ValueError('botclass must be a subclass of volity.bot.Bot')
+
+            if (botclass.gameclass == None
+                or (type(botclass.gameclass) != types.ClassType)
+                or (not issubclass(self.gameclass, botclass.gameclass))):
+                raise ValueError('botclass does not play '+config.get('game'))
+        
         self.adminjid = None
         if (config.get('admin')):
             self.adminjid = interface.JID(config.get('admin'))
@@ -54,12 +75,17 @@ class Parlor(volent.VolEntity):
         self.online = True
         self.startuptime = time.time()
         self.activitytime = None
-        self.refereesstarted = 0        
+        self.refereesstarted = 0
+
+        self.actors = {}
+        
+        # Set up the disco service
         
         disco = self.conn.getservice('discoservice')
         info = disco.addinfo()
         
         info.addidentity('volity', 'parlor', self.gamename)
+        info.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
         form.addfield('description', gameclass.gamedescription)
@@ -92,11 +118,19 @@ class Parlor(volent.VolEntity):
 
         items = disco.additems('open_games', self.listopengames)
 
+        # Set up the RPC service
+        
         rpcserv = self.conn.getservice('rpcservice')
+        assert isinstance(rpcserv.getopset(), volent.ClientRPCWrapperOpset)
         ops = rpcserv.getopset().getopset()
         dic = ops.getdict()
         dic['volity'] = ParlorVolityOpset(self)
         dic['admin'] = ParlorAdminOpset(self)
+
+        # Set up a simple roster-handler to accept subscription requests.
+        self.conn.adddispatcher(self.handlerosterquery, name='iq', type='set')
+
+        # Set up the keepalive service
 
         keepaliveflag = False
         if (config.get('keepalive')):
@@ -147,9 +181,9 @@ class Parlor(volent.VolEntity):
             
         self.log.info('new table requested by %s...', unicode(sender))
 
-        ### see unique-nick discussion from mailing list
+        # see unique-nick discussion, bug 1308207
         # assumes resource didn't change
-        refresource = 'ref_' + str(os.getpid()) + '_' + str(int(time.time()))
+        refresource = 'ref_' + str(os.getpid()) + '_' + str(self.uniquestamp())
         muc = interface.JID(self.muchost)
         muc.setnode(refresource)
 
@@ -200,12 +234,37 @@ class Parlor(volent.VolEntity):
             self.log.info('referee %s has terminated', resource)
             self.referees.pop(resource)
 
+    def actordied(self, act):
+        resource = act.resource
+        if (self.actors.has_key(resource)):
+            assert act == self.actors[resource]
+            self.log.info('actor %s has terminated', resource)
+            self.actors.pop(resource)
+
     def listopengames(self):
         items = jabber.disco.DiscoItems()
         for jid in self.referees.keys():
             ref = self.referees[jid]
             items.additem(ref.jid, name=self.gamename)
         return items
+
+    def handlerosterquery(self, msg):
+        qnod = msg.getchild('query')
+        if (not qnod or qnod.getnamespace() != interface.NS_ROSTER):
+            # Not addressed to us
+            return
+
+        item = qnod.getchild('item')
+        if (item):
+            jidstr = item.getattr('jid')
+            if (jidstr):
+                self.log.info('accepting presence subscription from %s',
+                    jidstr)
+                msg = interface.Node('presence', attrs={ 'to':jidstr,
+                    'type':'subscribed' })
+                self.conn.send(msg, addid=False, addfrom=False)
+
+        raise interface.StanzaHandled
 
 class ParlorVolityOpset(rpc.MethodOpset):
     def __init__(self, par):
@@ -250,6 +309,11 @@ class ParlorAdminOpset(rpc.MethodOpset):
             raise rpc.RPCFault(604, 'list_tables: no arguments')
         return self.parlor.referees.keys()
 
+    def rpc_list_bots(self, sender, *args):
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'list_bots: no arguments')
+        return self.parlor.actors.keys()
+
     def rpc_online(self, sender, *args):
         if (len(args) != 1):
             raise rpc.RPCFault(604, 'online TRUE/FALSE')
@@ -282,4 +346,8 @@ class ParlorAdminOpset(rpc.MethodOpset):
         self.parlor.queueaction(sched.stopall)
         return 'stopping parlor'
 
-        
+
+# late imports
+import referee
+import game
+import bot

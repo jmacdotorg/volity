@@ -60,10 +60,21 @@ SVG and Javascript, not of Python.)
 
 parlor -- contains the Parlor class
 referee -- contains the Referee class
-volent -- a base class for Parlor and Referee
+volent -- a base class for Parlor, Referee, and Actor
 game -- the base class used to develop a new game
+actor -- the framework for a robot player
+bot -- the base class used to develop a new bot
+config -- parses configuration files
 
 * Version history:
+
+- 1.4.1
+Bots exist. The framework undoubtedly needs more work, but you can
+    implement the Rock-Paper-Scissors-Bot.
+The parlor now autoaccepts roster subscription requests. (So you can add
+    a parlor to your buddy list, if that interests you.)
+Referee now works with ejabberd's MUC server (which uses very old-style
+    configuration forms).
 
 - 1.4.0
 Rearranged the volityd.py script to accept a config file and environment
@@ -138,5 +149,5 @@ Initial release. Missing many features, but I call it 1.0 anyway.
 """
 
 __all__ = [ 
-    'volent', 'parlor', 'referee', 'game', 'config'
+    'volent', 'parlor', 'referee', 'actor', 'game', 'bot', 'config'
 ]
