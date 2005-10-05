@@ -217,6 +217,9 @@ class JID:
         return ((self.node == jid.node)
             and (self.domain == jid.domain)
             and (self.resource == jid.resource))
+            
+    def __ne__(self, jid):
+        return (not self.__eq__(jid))
 
     def getnode(self):
         """getnode() -> str/unicode
@@ -605,6 +608,14 @@ class TestInterface(unittest.TestCase):
             jid = JID(st)
             self.assertEqual(st, str(jid))
             self.assertEqual(st, unicode(jid))
+
+        jid1 = JID('a@b.c')
+        jid2 = JID('a@b.c')
+        self.assert_(jid1 == jid2)
+        self.assert_(not(jid1 != jid2))
+        jid2 = JID(u'a@b.c')
+        self.assert_(jid1 == jid2)
+        self.assert_(not(jid1 != jid2))
 
         st = u'h\xe9llo@site.com/r\u1234source'
         jid = JID(st)

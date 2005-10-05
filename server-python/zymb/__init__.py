@@ -30,6 +30,9 @@ simple tasks.
 
 * Version history:
 
+- 1.2.7:
+Fixed dumb bug when comparing (jid1 != jid2)
+
 - 1.2.6:
 Added a hook API to PresenceService, so that an application can customize
     presence stanzas as they're generated.
