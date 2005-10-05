@@ -4,6 +4,7 @@ Ruleset URI: <http://volity.org/games/rps>
 This is my implementation of Rock Paper Scissors.
 """
 
+import random
 from zymb import jabber
 import zymb.jabber.rpc
 import volity.game
@@ -144,4 +145,43 @@ class RPSSeat(volity.game.Seat):
         self.hand = None
         self.wins = 0
 
+
+class RPSBot(volity.bot.Bot):
+    """RPSBot: A bot to play Rock Paper Scissors. It plays randomly, so
+    good luck beating it.
+
+    This doesn't support the game.best_of or game.no_ties RPCs; it makes
+    just one move per game. Since the UI doesn't support those RPCs either,
+    I feel no pain there.
+    """
+    
+    gameclass = RPS
+
+    def begingame(self):
+        val = self.choosehand()
+        self.send('choose_hand', val)
+
+    def resumegame(self):
+        self.begingame()
+        
+    def choosehand(self):
+        return random.choice(['rock', 'paper', 'scissors'])
+
+class RPSScissorsBot(RPSBot):
+    """Designed to beat PaperBot.
+    """
+    def choosehand(self):
+        return 'scissors'
+
+class RPSPaperBot(RPSBot):
+    """Designed to beat RockBot.
+    """
+    def choosehand(self):
+        return 'paper'
+
+class RPSRockBot(RPSBot):
+    """Good old rock! Nothing beats rock.
+    """
+    def choosehand(self):
+        return 'rock'
 
