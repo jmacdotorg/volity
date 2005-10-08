@@ -98,6 +98,7 @@ use warnings; use strict;
 sub initialize {
     my $self = shift;
     $self->{players} ||= [];
+    $self->{registered_player_jids} = {};
     return $self;
 }
 
@@ -182,7 +183,9 @@ sub register_player {
 # JIDs.
 sub registered_player_jids {
     my $self = shift;
-    return sort(keys(%{$self->{registered_player_jids}}));
+    my @jids = keys(%{$self->{registered_player_jids}});
+    @jids = sort(@jids);
+    return @jids;
 }
 
 # clear_registry: Just wipe out the history of who has sat here.
