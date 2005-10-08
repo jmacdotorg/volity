@@ -136,6 +136,17 @@ method (see L<"Other object methods">), which is itself just a
 convenience method for the common case of having a fixed,
 round-the-table turn order, which not every game has.
 
+=item seats_in_play
+
+Returns a list of the seats in play -- that is, seats that contained
+players the last time the game started or resumed, with eliminated
+seats filtered out. Each member of the list is an instance of
+Volity::Seat or the sublcass your game module specified through the
+C<seat_class> accessor method.
+
+This is distinct from the referee object's C<seats> methods, which
+returns I<all> seats at the table, regardless of status or population.
+
 =back
 
 =head2 Class Accessor methods
@@ -344,7 +355,7 @@ sub rotate_current_seat {
     # Give the seat list a rotation, then filter out eliminated seats
     # as well as seats without any registered players.
     push(@seats, shift(@seats));
-    @seats = grep(not($_->is_eliminated) && $_->registered_player_jids, @seats);
+    @seats = $self->seats_in_play;
     
     if (@seats) {
 	$self->current_seat($seats[0]);
@@ -356,6 +367,11 @@ sub rotate_current_seat {
 	$self->logger->warn("rotate_current_seat() called when there's no non-eliminated seats with IDs on the turn list. No seat returned.");
 	return;
     }
+}
+
+sub seats_in_play {
+    my $self = shift;
+    return grep(not($_->is_eliminated) && $_->registered_player_jids, $self->seats);
 }
 
 =over
@@ -503,7 +519,7 @@ sub send_full_state_to_player {
     my ($player)   = @_;
     my $player_jid = $player->jid;
     $self->logger->warn(
-        "Base class recover_state called for $player_jid. Nothing to do.");
+        "Base class send_full_state_to_player called for $player_jid. Nothing to do.");
 }
 
 ###################
