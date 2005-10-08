@@ -8,6 +8,7 @@ from zymb.jabber import rpc
 import zymb.jabber.dataform
 import zymb.jabber.keepalive
 
+# Constants for the five referee states.
 STATE_SETUP     = intern('setup')
 STATE_ACTIVE    = intern('active')
 STATE_DISRUPTED = intern('disrupted')
@@ -21,12 +22,127 @@ DEAD_CONFIG_TIMEOUT = 90
 ABANDONED_TIMEOUT = 3*60
 
 class Referee(volent.VolEntity):
+    """Referee: The implementation of a Volity referee.
+
+    Referee is a Jabber client (although it is not a subclass of the
+    Zymb Jabber client agent; instead, it creates one as a subsidiary
+    object). It is created by a Parlor when someone requests a new game
+    table. The Referee is responsible for managing one game table, at which
+    a bunch of players play one game. Or rather, a sequence of games. (When
+    a game finishes, the players have the option of setting up a new one at
+    the same table.)
+
+    Referee(parlor, jid, password, resource, muc) -- constructor.
+
+    All of the constructor arguments are passed in from the Parlor. First
+    is the parlor itself. The *jid*, *password*, and *resource* are used
+    to connect to the Jabber server. (The Referee connects with the same
+    parameters as the original Parlor, except for the *resource* string,
+    which is unique for each Referee.) The *muc* is the JID of the Jabber
+    Multi-User Chat room (which the Referee is responsible for creating).
+    
+    Agent states and events:
+
+    state 'start': Initial state. Start up the Jabber connection process.
+        When Jabber is fully connected, jump to 'ready'.
+    state 'ready': Send out initial presence. Do a disco query of the MUC
+        host, to see if it's up. Request the creation of the MUC room,
+        and then jump to 'configuring'.
+    state 'configuring': Complete the MUC configuration process. Jump to
+        'running'.
+    state 'running': At this point the Referee is considered to be complete.
+        It begins watching for game activity.
+    state 'end': The connection is closed.
+    
+    Public methods:
+
+    start() -- begin activity. (inherited)
+    stop() -- stop activity. (inherited)
+
+    Significant fields:
+
+    jid -- the JID by which this Referee is connected.
+    conn -- the Jabber client agent.
+    parlor -- the Parlor which created this Referee.
+    refstate -- the referee state (STATE_SETUP, etc).
+    players -- dict mapping players' real JIDs to Player objects.
+    playernicks -- dict mapping players' MUC nicknames to Player objects.
+    seats -- dict mapping seat IDs to Seat objects.
+    seatlist -- list of Seat objects in the game's order.
+    gameseatlist -- during a game, the list of Seats involved in the game.
+        (A subset of seatlist.)
+
+    Internal methods:
+
+    addseat() -- add a seat to the game's permanent list.
+    setseatsrequired() -- mark certain seats as required or optional.
+    sendone() -- send an RPC to a single player.
+    sendall() -- send an RPC to all players at the table.
+    sendbookkeeper() -- send an RPC to the Volity bookkeeper.
+    defaultcallback() -- generic RPC callback, used to catch errors.
+    handlemessage() -- handle a Jabber message stanza.
+    handlepresence() -- handle a Jabber presence stanza.
+    handlemucpresence() -- handle a Jabber MUC presence stanza.
+    beginwork() -- 'ready' state handler.
+    gotquerymuc() -- disco query callback.
+    configuremuc() -- begin the configuration of a MUC room.
+    handle_stanza_configuremuc() -- MUC configuration callback.
+    buildconfigmuc() -- construct a form to configure a MUC room.
+    handle_stanza_configuremucresult() -- second MUC configuration callback.
+    checktimersetting() -- check whether the Referee needs a state timer.
+    settimer() -- set a state timer.
+    deadconfigtimer() -- abandoned-in-configuration timer callback.
+    abandonedtimer() -- abandoned-during-game timer callback.
+    playerarrived() -- handle a player joining the table.
+    playerleft() -- handle a player leaving the table.
+    playersit() -- handle a player sit request.
+    playerstand() -- handle a player stand request.
+    playerready() -- handle a player ready request.
+    playerunready() -- handle a player unready request.
+    playeraddbot() -- handle a player request for a new bot.
+    botready() -- callback invoked when a bot is successfully
+        (or unsuccessfully) created.
+    playersuspend() -- handle a player game-suspend request.
+    playerinvite() -- handle a player request to invite another player to the
+        table.
+    gotinvitereply() -- callback invoked when an invitation is replied to.
+    playerinvitecont() -- callback which replies to the original invite
+        request.
+    configsetlanguage() -- handle a player request to change the table
+        language.
+    configrecordgames() -- handle a player request to change the game-record
+        flag.
+    configshowtable() -- handle a player request to change the show-table
+        flag.
+    configkillgame() -- handle a player request to change the kill-game flag.
+    unreadyall() -- mark all players as unready.
+    sendfullstate() -- send the complete table state to a player.
+    reportsit() -- report a player sitting.
+    reportstand() -- report a player standing.
+    reportreadiness() -- report a player changing readiness.
+    reportunreadylist() -- report several players becoming unready.
+    announce() -- yell a message to everyone at the table.
+    updatediscoinfo() -- update and return the disco-info form.
+    parsewinners() -- turn a list of game seats (in winning order) into
+        a standardized winners list (a list of lists of lists of players).
+    begingame() -- game-start handler.
+    endgame() -- game-end handler.
+    suspendgame() -- game-suspend handler.
+    unsuspendgame() -- game-resume handler.
+    endwork() -- 'end' state handler.
+
+    Static methods:
+
+    resolvemetharg() -- convert some Volity objects into Jabber-RPC types.
+    
+    """
+    
     logprefix = 'volity.referee'
     volityrole = 'referee'
 
     maxmucusers = 60
 
-    def __init__(self, parlor, jid, password, resource, muc, gameclass):
+    def __init__(self, parlor, jid, password, resource, muc):
         self.logprefix = Referee.logprefix + '.' + resource
         self.parlor = parlor
         self.resource = resource
@@ -35,6 +151,8 @@ class Referee(volent.VolEntity):
         self.mucnick.setresource('referee')
         
         volent.VolEntity.__init__(self, jid, password, resource)
+
+        # Lots of internal state to set up.
 
         self.refstate = STATE_SETUP
         self.startuptime = time.time()
@@ -58,9 +176,13 @@ class Referee(volent.VolEntity):
 
         self.botcounter = 1
         
+        # Various Jabber handlers.
+        
         self.addhandler('ready', self.beginwork)
         self.conn.adddispatcher(self.handlepresence, name='presence')
         self.conn.adddispatcher(self.handlemessage, name='message')
+
+        # Publicly-visible table state.
 
         self.language = 'en'
         self.recordgames = True
@@ -82,7 +204,7 @@ class Referee(volent.VolEntity):
 
         # Set up the game instance.
 
-        self.game = gameclass(self)
+        self.game = self.parlor.gameclass(self)
         assert self.game.referee == self
         self.seatsetupphase = False
         if (not self.seatlist):
@@ -132,9 +254,15 @@ class Referee(volent.VolEntity):
             self.log.warning('sending keepalive messages to self at interval of %d seconds', serv.getinterval())
             
         
-    # ---- called by game base methods
+    # ---- called by Game base methods
 
     def addseat(self, seat):
+        """addseat(seat) -> None
+
+        Add a seat to the game's permanent list. This can only be done
+        during the Game constructor.
+        """
+        
         if (not self.seatsetupphase):
             raise Exception('you cannot add new seats after the referee has started up')
             
@@ -144,6 +272,14 @@ class Referee(volent.VolEntity):
         self.seatlist.append(seat)
 
     def setseatsrequired(self, setseats=[], clearseats=[]):
+        """setseatsrequired(setseats=[], clearseats=[]) -> None
+
+        Mark certain seats as required or optional. The seats listed in
+        *setseats* become required; the ones listed in *clearseats* become
+        optional. If this results in any seats actually changing state,
+        required_seat_list RPCs are sent.
+        """
+        
         if (self.refstate != STATE_SETUP):
             raise Exception('cannot change seat requirements after game setup')
             
@@ -162,6 +298,17 @@ class Referee(volent.VolEntity):
             self.game.sendtable('volity.required_seat_list', ls)
 
     def resolvemetharg(val):
+        """resolvemetharg(val) -> val
+
+        Convert some Volity objects into Jabber-RPC types. This is called
+        on all RPC arguments before they are sent out.
+
+        A Seat object is converted to a string (the seat ID). A Player object
+        is converted to a string (the player's real JID). All other types
+        are left alone.
+
+        XXX Should work recursively on list and dict elements.
+        """
         if (isinstance(val, game.Seat)):
             return val.id
         if (isinstance(val, Player)):
@@ -170,6 +317,21 @@ class Referee(volent.VolEntity):
     resolvemetharg = staticmethod(resolvemetharg)
             
     def sendone(self, player, methname, *methargs, **keywords):
+        """sendone(player, methname, *methargs, **keywords) -> None
+
+        Send an RPC to a single player.
+
+        The *player* is the Player object to send to. The *methname* and
+        *methargs* describe the RPC. The *keywords* may contain either or
+        both of:
+
+            timeout: How long to wait (in seconds) before considering the
+                RPC to have failed.
+            callback: A deferral callback to invoke when the outcome of
+                the RPC is known. See the defaultcallback() method for an
+                example of the callback model.
+        """
+        
         op = keywords.pop('callback', self.defaultcallback)
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
@@ -183,6 +345,20 @@ class Referee(volent.VolEntity):
             methname, *methargs, **keywords)
 
     def sendall(self, methname, *methargs, **keywords):
+        """sendall(methname, *methargs, **keywords) -> None
+
+        Send an RPC to all players at the table.
+
+        The *methname* and *methargs* describe the RPC. The *keywords* may
+        contain either or both of:
+
+            timeout: How long to wait (in seconds) before considering the
+                RPC to have failed.
+            callback: A deferral callback to invoke when the outcome of
+                the RPC is known. See the defaultcallback() method for an
+                example of the callback model.
+        """
+        
         op = keywords.pop('callback', self.defaultcallback)
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
@@ -194,7 +370,50 @@ class Referee(volent.VolEntity):
                 self.rpccli.send(op, player.jidstr,
                     methname, *methargs, **keywords)
 
+    def sendbookkeeper(self, methname, *methargs, **keywords):
+        """sendbookkeeper(methname, *methargs, **keywords) -> None
+
+        Send an RPC to the Volity bookkeeper.
+
+        The *methname* and *methargs* describe the RPC. The *keywords* may
+        contain either or both of:
+
+            timeout: How long to wait (in seconds) before considering the
+                RPC to have failed.
+            callback: A deferral callback to invoke when the outcome of
+                the RPC is known. See the defaultcallback() method for an
+                example of the callback model.
+        """
+        
+        op = keywords.pop('callback', self.defaultcallback)
+        if (not keywords.has_key('timeout')):
+            keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
+            
+        methargs = [ self.resolvemetharg(val) for val in methargs ]
+        
+        self.rpccli.send(op, self.parlor.bookkeeperjid,
+            methname, *methargs, **keywords)
+
     def defaultcallback(self, tup):
+        """defaultcallback(tup) -> None
+
+        Generic RPC callback, used to catch errors.
+
+        When an RPC completes (in any sense), the Zymb RPC-sending service
+        calls a completion routine. By default, it's this one. The callback
+        invokes sched.Deferred.extract(tup) on its *tup* argument to extract
+        the RPC outcome. This may return a value, or one of the following
+        exceptions might be raised:
+
+            TimeoutException: The RPC timed out.
+            RPCFault: The RPC response was an RPC fault.
+            StanzaError: The response was a Jabber stanza-level error.
+            Exception: Something else went wrong.
+
+        The defaultcallback() method logs all exceptions, ignores all normal
+        RPC responses, and that's all it does.
+        """
+        
         try:
             res = sched.Deferred.extract(tup)
         except sched.TimeoutException, ex:
@@ -209,12 +428,24 @@ class Referee(volent.VolEntity):
     # ---- network message handlers
         
     def handlemessage(self, msg):
+        """handlemessage(msg) -> <stanza outcome>
+
+        Handle a Jabber message stanza. The Referee does not react to messages,
+        so this just raises StanzaHandled to end processing for the stanza.
+        """
         if (self.log.isEnabledFor(logging.DEBUG)):
             self.log.info('received message')
             #self.log.debug('received message:\n%s', msg.serialize(True))
         raise interface.StanzaHandled()
 
     def handlepresence(self, msg):
+        """handlepresence(msg) -> <stanza outcome>
+
+        Handle a Jabber presence stanza. If it comes from the referee's MUC
+        room, it is passed along to handlemucpresence(). Otherwise, it is
+        ignored.
+        """
+        
         typestr = msg.getattr('type', '')
                 
         fromstr = msg.getattr('from')
@@ -237,6 +468,23 @@ class Referee(volent.VolEntity):
         raise interface.StanzaHandled()
 
     def handlemucpresence(self, typestr, resource, msg):
+        """handlemucpresence(typestr, resource, msg) -> None
+
+        Handle a Jabber MUC presence stanza. The *typestr* is the presence
+        type (with '' representing default "I'm here" presence). The
+        *resource* is the resource part of the MUC JID -- that is to say,
+        the MUC nick. The *msg* is the full presence stanza, which we
+        need for further analysis.
+
+        MUC presence is interesting in two cases. First, when the referee
+        is first creating the MUC, it watches for a status code 201, which
+        indicates that it's time to configure the new MUC room.
+
+        Second, as players join and leave the MUC room, the referee must
+        track them. It calls playerarrived() and playerleft() when it
+        detects these events.
+        """
+        
         if (resource == 'referee' and self.state == 'configuring'):
             xnod = msg.getchild('x', namespace=interface.NS_MUC_USER)
             if (xnod):
@@ -270,12 +518,26 @@ class Referee(volent.VolEntity):
                         self.activitytime = time.time()
 
     def beginwork(self):
+        """beginwork() -> None
+
+        The 'ready' state handler. Send out initial presence. Do a disco
+        query of the MUC host, to see if it's up.
+        """
+        
         self.addhandler('end', self.endwork)    
 
         serv = self.conn.getservice('discoclience')
         serv.queryinfo(self.gotquerymuc, self.muc.getdomain(), timeout=30)
 
     def gotquerymuc(self, tup):
+        """gotquerymuc(tup) -> None
+
+        Disco query callback. If the disco query failed, try again. (But
+        after three failures, give up and shut down the referee.) If the
+        query succeeds, send a command to create the new MUC room, and
+        jump to state 'configuring'.
+        """
+        
         try:
             res = sched.Deferred.extract(tup)
         except Exception, ex:
@@ -308,6 +570,12 @@ class Referee(volent.VolEntity):
         self.jump('configuring')
         
     def configuremuc(self):
+        """configuremuc() -> None
+
+        Begin the configuration of a MUC room. Send out the query stanza
+        which begins the process.
+        """
+        
         msg = interface.Node('iq',
             attrs={'type':'get', 'to':unicode(self.muc)})
         msg.setchild('query', namespace=interface.NS_MUC_OWNER)
@@ -317,6 +585,13 @@ class Referee(volent.VolEntity):
             name='iq', type=('result','error'), id=id)
         
     def handle_stanza_configuremuc(self, msg):
+        """handle_stanza_configuremuc(msg) -> <stanza outcome>
+
+        MUC configuration callback. If the config query failed, shut down
+        the referee. If it succeeded, extract the MUC configuration form,
+        build a response form, and send it back.
+        """
+        
         nod = msg.getchild('query')
         if (not nod or nod.getnamespace() != interface.NS_MUC_OWNER):
             # Not addressed to us
@@ -350,6 +625,20 @@ class Referee(volent.VolEntity):
         raise interface.StanzaHandled
 
     def buildconfigmuc(self, origform):
+        """buildconfigmuc(origform) -> Node
+
+        Construct a form to configure a MUC room. The *origform* is an XML
+        Node object containing a JEP-0004 data form. This method returns
+        a new form which comes from filling the original form out.
+
+        We are really only interested in three fields: the room name,
+        the maximum number of users, and whether the room will be anonymous
+        (permit people to see each others' real JIDs). Unfortunately,
+        different MUC hosts use different names for these fields, so we
+        have to cover a lot of possibilities.
+
+        Fields which we don't care about keep their default values.
+        """
 
         dic = {
             'muc#owner_roomname':      self.parlor.gamename,
@@ -401,6 +690,12 @@ class Referee(volent.VolEntity):
         return newform
         
     def handle_stanza_configuremucresult(self, msg):
+        """handle_stanza_configuremucresult(msg) -> <stanza outcome>
+
+        Second MUC configuration callback. If our config form failed, shut
+        down the referee. If it succeeded, jump to state 'running'.
+        """
+
         if (msg.getattr('type') != 'result'):
             ex = interface.parseerrorstanza(msg)
             self.log.error('failed to configure MUC %s: %s',
@@ -415,6 +710,31 @@ class Referee(volent.VolEntity):
         raise interface.StanzaHandled
 
     def checktimersetting(self):
+        """checktimersetting() -> None
+
+        Check whether the Referee needs a state timer. This is called after
+        any referee state change that might start or stop a timer. There
+        are two timers that might be running:
+
+        'deadconfig': Starts whenever there are no (human) players in
+        the MUC, in either 'setup' or 'suspended' state. After 90 seconds,
+        shuts down the MUC.
+
+        'abandoned': Starts whenever there are no seated (human) players
+        in the MUC, in the 'active', 'disrupted', or 'abandoned' state.
+        After 3 minutes, suspends the game.
+
+        This method determines which of the above should be running, and
+        calls settimer() with that string. If no timer should be running,
+        it calls settimer(None).
+
+        In the 'active', 'disrupted', or 'abandoned' states, this method also
+        decides whether the referee should jump to a different one of those
+        three states. The 'abandoned' timer is always associated with the
+        'abandoned' state; if the timer is not running, the referee might
+        be 'active' or 'disrupted'.
+        """
+        
         if (self.refstate in [STATE_SETUP, STATE_SUSPENDED]):
             ls = [ pla for pla in self.players.values()
                 if not pla.isbot ]
@@ -444,6 +764,13 @@ class Referee(volent.VolEntity):
             return
 
     def settimer(self, reason):
+        """settimer(reason) -> None
+
+        Set a state timer. The *reason* is 'deadconfig', 'abandoned', or
+        None (for no timer). If the given timer is already set (or not set),
+        this does nothing.
+        """
+        
         if (reason == None):
             if (self.timeraction):
                 self.timeraction.remove()
@@ -471,15 +798,40 @@ class Referee(volent.VolEntity):
         assert 0, ('unknown reason %s in settimer' % reason)
 
     def deadconfigtimer(self):
+        """deadconfigtimer() -> None
+
+        Abandoned-in-configuration timer callback. This shuts down the
+        referee.
+        """
         self.log.warning('the table has been depopulated in configuration for %d seconds -- closing', DEAD_CONFIG_TIMEOUT)
         self.mucshutdownreason = 'The table has been abandoned.'
         self.stop()
 
     def abandonedtimer(self):
+        """abandonedtimer() -> None
+
+        Abandoned-during-game timer callback. This suspends the game.
+        """
         self.log.warning('the game has been abandoned in play for %d seconds -- suspending', ABANDONED_TIMEOUT)
         self.queueaction(self.suspendgame)
 
+    # ---- player request handlers
+
     def playerarrived(self, jid, nick, isbot=False):
+        """playerarrived(jid, nick, isbot=False) -> None
+
+        Handle a player joining the table. His real JID is *jid*, his
+        room nickname is *nick*, and *isbot* flags whether we think he's
+        a bot.
+
+        This may be a player changing his MUC nickname; we detect that
+        by checking the real JID. Otherwise, it's someone genuinely joining.
+
+        If we're in the middle of a game, it might be a disconnected player
+        returning to his seat. If so, mark his Player object as live.
+        Otherwise, create a new Player object for the new player.
+        """
+        
         jidstr = unicode(jid)
         player = self.players.get(jidstr, None)
         
@@ -515,6 +867,15 @@ class Referee(volent.VolEntity):
         self.playernicks[nick] = player
 
     def playerleft(self, jid, nick):
+        """playerleft(jid, nick) -> None
+
+        Handle a player leaving the table. His real jid is *jid*, his
+        room nickname is *nick.
+
+        If it's a seated player during a game, we keep the Player object.
+        (But we mark it non-live.) Otherwise, throw away the Player.
+        """
+        
         jidstr = unicode(jid)
 
         if (not self.players.has_key(jidstr)):
@@ -555,6 +916,23 @@ class Referee(volent.VolEntity):
         player.aware = False
 
     def playersit(self, sender, jidstr, seatid=None):
+        """playersit(sender, jidstr, seatid=None) -> str
+
+        Handle a player sit request. The *sender* is the JID which made the
+        request; *jidstr* is the player the request is about. This returns
+        the ID of the seat which the player actually winds up in.
+
+        If *seatid* is None, the referee gets to choose a seat. We call
+        the game's requestanyseat() method (or requestanyseatingame() if
+        the game is in progress). By default, these methods pick the first
+        empty seat, preferring required seats over optional ones. However,
+        the game may have a better scheme.
+
+        If *seatid* is not None, the request is for a particular seat. We
+        let the game vet that, by calling its requestparticularseat()
+        method. By default, the request is permitted.
+        """
+        
         if (not self.players.has_key(jidstr)):
             raise game.FailureToken('volity.jid_not_present',
                 game.Literal(jidstr))
@@ -614,6 +992,12 @@ class Referee(volent.VolEntity):
         return seat.id
 
     def playerstand(self, sender, jidstr):
+        """playerstand(sender, jidstr) -> None
+
+        Handle a player stand request. The *sender* is the JID which made the
+        request; *jidstr* is the player the request is about.
+        """
+        
         if (not self.players.has_key(jidstr)):
             raise game.FailureToken('volity.jid_not_present',
                 game.Literal(jidstr))
@@ -633,6 +1017,21 @@ class Referee(volent.VolEntity):
         self.queueaction(self.reportstand, player, seat)
 
     def playerready(self, sender):
+        """playerready(sender) -> None
+
+        Handle a player ready request. The *sender* is the player's JID.
+
+        This can trigger the beginning (or resumption) of a game, so we do
+        a lot of checking. If we're in 'setup' state, we ask the game whether
+        its state is legal, by calling checkconfig() and checkseating().
+        If we're in 'suspended', then we just have to check that all the
+        game's seats are occupied... unless the players have voted to
+        kill off the game, in which case we don't need to check anything.
+
+        Finally, if all seated players are ready, the game actually begins
+        (or resumes, or is killed).
+        """
+        
         player = self.players[unicode(sender)]
 
         if (player.ready):
@@ -668,9 +1067,15 @@ class Referee(volent.VolEntity):
                 if (not self.killgame):
                     self.queueaction(self.unsuspendgame)
                 else:
-                    self.queueaction(self.endgame, None, True)
+                    winlist = self.parsewinners(()) # everyone ties
+                    self.queueaction(self.endgame, winners, True)
             
     def playerunready(self, sender):
+        """playerunready(sender) -> None
+
+        Handle a player unready request. The *sender* is the player's JID.
+        """
+        
         player = self.players[unicode(sender)]
 
         if (not player.ready):
@@ -682,7 +1087,18 @@ class Referee(volent.VolEntity):
         player.ready = False
         self.queueaction(self.reportreadiness, player)
 
-    def playeraddbot(self, sender=None):
+    def playeraddbot(self, sender):
+        """playeraddbot(sender) -> None
+
+        Handle a player request for a new bot. The *sender* is the player's
+        JID.
+
+        This creates an Actor, which is a Volity entity that connects to
+        the Jabber server and plays as a player would. (The Bot is the game-
+        specific "brain" inside the Actor, much as the Game object is the
+        game-specific part of the Referee.)
+        """
+        
         botclass = self.parlor.botclass
         if (not botclass):
             raise game.FailureToken('volity.no_bots_provided')
@@ -715,6 +1131,16 @@ class Referee(volent.VolEntity):
         self.addhandler('end', act.stop)
         self.parlor.addhandler('end', act.stop)
 
+        # Now we wait until the Actor is finished starting up -- which
+        # is defined as "successfully connected to the MUC". This requires
+        # a Deferred handler, which is hard to use but easy to explain:
+        # it has three possible outcomes, and exactly one of them will happen.
+        # Either the Actor will start up, or it will shut down without
+        # ever connecting, or we'll give up before either of the above.
+        # (We set a timer of BOT_STARTUP_TIMEOUT for that last outcome.)
+        #
+        # Whichever happens, our boteready() method will be called.
+
         defer = sched.Deferred(self.botready, act)
         
         ac1 = act.addhandler('running', defer, 'running')
@@ -727,6 +1153,14 @@ class Referee(volent.VolEntity):
         raise defer
 
     def botready(self, act, res):
+        """botready(act, res) -> <RPC outcome>
+
+        Callback invoked when an Actor is successfully (or unsuccessfully)
+        created. This is the continuation of playeraddbot(). The *act* is
+        the Actor object that was created, and *res* is either 'running',
+        'end', or 'timeout'.
+        """
+        
         if (res == 'timeout'):
             self.log.warning('bot %s failed to start up in time -- killing', act.resource)
             act.stop()
@@ -737,14 +1171,29 @@ class Referee(volent.VolEntity):
         return
     
     def playersuspend(self, sender=None):
+        """playersuspend(sender=None) -> None
+
+        Handle a player game-suspend request. The *sender* is the player's
+        JID.
+
+        It's also possible that the game was suspended by the referee, due
+        to the 'abandoned' timer. In that case, *sender* will be None.
+        """
         self.queueaction(self.suspendgame, sender)
 
     def playerinvite(self, sender, jidstr, msg=None):
+        """playerinvite(sender, jidstr, msg=None):
+
+        Handle a player request to invite another player to the table. The
+        *sender* is the player's JID; the *jidstr* is the recipient of the
+        invitation; and *msg* is an additional message from the inviter to
+        the invitee.
+        """
+
+        # Can't invite someone who's already present!        
         if (self.players.has_key(jidstr)):
             raise game.FailureToken('volity.jid_present',
                 game.Literal(jidstr))
-
-        defer = sched.Deferred(self.playerinvitecont)
 
         argmap = {
             'player' : unicode(sender),
@@ -757,12 +1206,31 @@ class Referee(volent.VolEntity):
         if (msg):
             argmap['message'] = msg
         
+        # Set up a Deferred handler which will be invoked when the invitation
+        # completes.
+        defer = sched.Deferred(self.playerinvitecont)
+
         self.rpccli.send((self.gotinvitereply, defer, jidstr),
             jidstr, 'volity.receive_invitation', argmap,
             timeout=CLIENT_INVITATION_RPC_TIMEOUT)
         raise defer
 
     def gotinvitereply(self, tup, defer, jidstr):
+        """gotinvitereply(tup, defer, jidstr) -> None
+
+        Callback invoked when an invitation is replied to. The *tup* contains
+        the RPC result; the *defer* and *jidstr* are passed down from
+        playerinvite().
+
+        This just extracts the RPC result from *tup*, catching all the
+        possible things which could go wrong. Then it invokes the
+        playerinvitecont() callback.
+
+        (Yes, there's probably some way to combine gotinvitereply() and
+        playerinvitecont() into one function. Never bothered to work out
+        how.)
+        """
+        
         try:
             res = sched.Deferred.extract(tup)
             # If no exception, then the call succeeded.
@@ -780,11 +1248,29 @@ class Referee(volent.VolEntity):
             defer.addaction(ac)
 
     def playerinvitecont(self, jidstr, res, ex=None):
+        """playerinvitecont(jidstr, res, ex=None) -> <RPC outcome>
+
+        Callback which replies to the original invite request. The *jidstr*
+        is the JID we sent the invitation to; *res* describes whether the
+        invitation succeeded; and *ex* is the exception that caused the
+        problem, if there was a problem.
+
+        If the invitation succeeded, we just return cleanly to the original
+        invite RPC. If there was any problem, we return a 'relay_failed'
+        failure token, with *jidstr* in the \1 spot.
+        """
+        
         if (res == 'ok'):
             return
         raise game.FailureToken('volity.relay_failed', game.Literal(jidstr))
             
     def configsetlanguage(self, sender, lang):
+        """configsetlanguage(sender, lang) -> None
+
+        Handle a player request to change the table language. The *sender*
+        is the player's JID; *lang* is the language requested.
+        """
+        
         if (len(lang) != 2):
             raise rpc.RPCFault(606, 'language must be a two-character string')
 
@@ -798,6 +1284,13 @@ class Referee(volent.VolEntity):
             sender, self.language)
 
     def configrecordgames(self, sender, flag):
+        """configrecordgames(sender, flag) -> None
+
+        Handle a player request to change the game-record flag. The *sender*
+        is the player's JID; *flag* indicates whether to record games at
+        the bookkeeper.
+        """
+        
         if (self.recordgames == flag):
             return
 
@@ -808,6 +1301,13 @@ class Referee(volent.VolEntity):
             sender, self.recordgames)
 
     def configshowtable(self, sender, flag):
+        """configshowtable(sender, flag) -> None
+
+        Handle a player request to change the show-table flag. The *sender*
+        is the player's JID; *flag* indicates whether the parlor should
+        display this game.
+        """
+        
         if (self.showtable == flag):
             return
 
@@ -818,6 +1318,13 @@ class Referee(volent.VolEntity):
             sender, self.showtable)
 
     def configkillgame(self, sender, flag):
+        """configkillgame(sender, flag) -> None
+
+        Handle a player request to change the kill-game flag. The *sender*
+        is the player's JID; *flag* indicates whether the referee should
+        kill the game when it unsuspends.
+        """
+        
         if (self.killgame == flag):
             return
 
@@ -827,7 +1334,22 @@ class Referee(volent.VolEntity):
         self.queueaction(self.sendall, 'volity.kill_game',
             sender, self.killgame)
 
+    # ---- Player notification utilities
+
     def unreadyall(self, notify=True):
+        """unreadyall(notify=True) -> None
+
+        Mark all players as unready. If *notify* is True, this sends
+        out unready() RPCs for all players who changed state. If False,
+        there is no notification.
+
+        (The False form of this method is used when handling RPCs that
+        are documented as automatically unreadying all players. (Sit, stand,
+        and so on.) The client is required to know about this automatic
+        unreadying, so there's no need for us to send out notices about
+        it.)
+        """
+        
         ls = [ pla for pla in self.players.values() if pla.ready ]
         if (not ls):
             return
@@ -840,6 +1362,18 @@ class Referee(volent.VolEntity):
             self.queueaction(self.reportunreadylist, ls)
 
     def sendfullstate(self, player):
+        """sendfullstate(player) -> None
+
+        Send the complete table state to a player. The argument is a
+        Player object. This also serves as notice that the Player is
+        ready to receive RPCs, so we mark it aware.
+
+        This includes seating information, table configuration, and the
+        state of the game (if in progress). And it's all wrapped in a
+        receive_state() / state_sent() pair, so the client knows when the
+        burst is over.
+        """
+        
         if (not player.live):
             return
         player.aware = True
@@ -874,14 +1408,29 @@ class Referee(volent.VolEntity):
         self.game.sendplayer(player, 'volity.state_sent')
 
     def reportsit(self, player, seat):
+        """reportsit(player, seat) -> None
+
+        Report a player sitting. The *player* has sat in Seat *seat*.
+        """
         self.log.info('player %s sits in seat %s', unicode(player), seat.id)
         self.sendall('volity.player_sat', player.jidstr, seat.id)
         
     def reportstand(self, player, seat):
+        """reportstand(player, seat) -> None
+
+        Report a player standing. The *player* has stood from Seat *seat*.
+        """
         self.log.info('player %s stands from seat %s', unicode(player), seat.id)
         self.sendall('volity.player_stood', player.jidstr)
 
     def reportreadiness(self, player):
+        """reportreadiness(player) -> None
+
+        Report a player changing readiness. The *player*'s current state
+        determines whether this sends a player_ready() or player_unready()
+        RPC.
+        """
+        
         if (player.ready):
             st = 'ready'
         else:
@@ -890,10 +1439,36 @@ class Referee(volent.VolEntity):
         self.sendall('volity.player_'+st, player.jidstr)
 
     def reportunreadylist(self, ls):
+        """reportunreadylist(ls) -> None
+
+        Report several players becoming unready. The *ls* is a list of
+        Players.
+        """
         for player in ls:
             self.sendall('volity.player_unready', player.jidstr)
 
+    def announce(self, data):
+        """announce(data) -> None
+
+        Yell a message to everyone at the table. The *data* string is sent
+        as a group-chat message in the MUC room. (This method is used by
+        adminstrative commands, not by players or the referee.)
+        """
+        
+        msg = interface.Node('message',
+            attrs={ 'to':unicode(self.muc), 'type':'groupchat' })
+        msg.setchilddata('body', 'administrator announcement: ' + data)
+        self.queueaction(self.conn.send, msg)
+
     def updatediscoinfo(self):
+        """updatediscoinfo() -> DiscoInfo
+
+        Update and return the disco-info form. We keep a DiscoInfo object
+        lying around, but before we can send it, we have to update some
+        fields to represent the current referee state. This method does
+        that.
+        """
+        
         form = self.discoinfo.getextendedinfo()
         
         form.addfield('state', self.refstate)
@@ -925,7 +1500,78 @@ class Referee(volent.VolEntity):
 
         return self.discoinfo
 
+    def parsewinners(self, ls):
+        """parsewinners(ls) -> list
+
+        Turn a list of game seats (in winning order) into a standardized
+        winners list (a list of lists of lists of players). This is called
+        by the game-ending methods of Game. Since the *ls* comes from
+        game-specific code, we do lots of consistency-checking on it.
+
+        Each element of *ls* must be either a Seat object, or a list of
+        Seat objects. The latter indicates a tie at that position. Not
+        all Seats in the game have to be included; if any are missing,
+        they are tacked onto the end as a "tie for last place".
+
+        As a special case, if *ls* has the sole element None, then everybody
+        is considered to have tied.
+        """
+        
+        if (ls == (None,)):
+            ls = ()
+            
+        # Make a copy of gameseatlist
+        remaining = list(self.gameseatlist)
+
+        res = []
+
+        for val in ls:
+            if (isinstance(val, game.Seat)):
+                if (not(val in self.gameseatlist)):
+                    raise ValueError('winners may only contains Seats which are part of the current game')
+                if (not(val in remaining)):
+                    raise ValueError('winners may not contain any Seat twice')
+                remaining.remove(val)
+                res.append([val])
+            elif (type(val) in [tuple, list]):
+                subls = list(val)
+                for val in subls:
+                    if (not isinstance(val, game.Seat)):
+                        raise ValueError('winners must be a list of Seats or Seat lists')
+                    if (not(val in self.gameseatlist)):
+                        raise ValueError('winners may only contains Seats which are part of the current game')
+                    if (not(val in remaining)):
+                        raise ValueError('winners may not contain any Seat twice')
+                    remaining.remove(val)
+                res.append(subls)
+            else:
+                raise ValueError('winners must be a list of Seats or Seat lists')
+
+        if (remaining):
+            res.append(remaining)
+            
+        # Final step: turn each Seat element into a list of JIDs.
+        final = [
+            [ val.getplayerhistory() for val in subls ]
+            for subls in res ]
+
+        return final
+
+    # ---- Game state transitions.
+
     def begingame(self):
+        """begingame() -> None
+
+        Game-start handler. Sets up all the internal state which we will
+        use to track the game. (Game-specific setup is handled by the
+        game's begingame() method.)
+
+        This creates the gameseatlist, which is the list of seats that are
+        involved in this particular game. It also adds the current seated
+        players to each seat's history -- the list which will be used when
+        creating the game record.
+        """
+        
         if (self.refstate != STATE_SETUP):
             self.log.error('entered begingame when state was %s',
                 self.refstate)
@@ -933,6 +1579,7 @@ class Referee(volent.VolEntity):
         
         self.log.info('game beginning!')
         self.refstate = STATE_ACTIVE
+        self.gamestarttime = time.time()
 
         self.gameseatlist = []
         for seat in self.seatlist:
@@ -942,7 +1589,13 @@ class Referee(volent.VolEntity):
             else:
                 seat.ingame = False
 
-        ### add current seat.playerlists to seat accumulated totals
+        # add current seat.playerlists to seat accumulated totals
+        for seat in self.seatlist:
+            seat.playerhistory.clear()
+        for seat in self.gameseatlist:
+            for pla in seat.playerlist:
+                barejid = pla.jid.getbare()
+                seat.playerhistory[barejid] = True
         
         # From this point on, the seat listings are immutable. Also,
         # we don't discard a seated Player object even if it
@@ -956,6 +1609,17 @@ class Referee(volent.VolEntity):
         self.queueaction(self.checktimersetting)
 
     def endgame(self, winners, cancelled=False):
+        """endgame() -> None
+
+        Game-end handler. (Game-specific shutdown is handled by the game's
+        endgame() method.)
+
+        This creates and fires off the game record, if that's desired. It
+        also removes any Player objects corresponding to players who have
+        left the MUC. (Remember, we keep Player objects for unavailable
+        seated players, but only during of the game.)
+        """
+        
         if (not cancelled):
             if (self.refstate in [STATE_SETUP, STATE_SUSPENDED]):
                 self.log.error('entered endgame when state was %s',
@@ -970,6 +1634,20 @@ class Referee(volent.VolEntity):
         self.unreadyall(False)       # Might be needed in the killgame case
         self.sendall('volity.end_game')
         self.game.endgame(cancelled)
+
+        self.log.info('winners: %s', winners)
+        dic = {
+            'winners' : winners,
+            'end_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime()),
+            'start_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime(self.gamestarttime)),
+            'game_uri' : self.parlor.gameclass.ruleseturi,
+            'server' : unicode(self.parlor.jid.getbare())
+        }
+        if (cancelled):
+            dic['finished'] = False
+
+        if (self.recordgames):
+            self.queueaction(self.sendbookkeeper, 'volity.record_game', dic)
 
         # Get rid of all non-live players
         for jidstr in self.players.keys():
@@ -995,6 +1673,16 @@ class Referee(volent.VolEntity):
         self.queueaction(self.checktimersetting)
 
     def suspendgame(self, jidstr=None):
+        """suspendgame() -> None
+
+        Game-suspension handler. (Game-specific shutdown is handled by the
+        game's suspendgame() method.)
+
+        This removes any Player objects corresponding to players who have
+        left the MUC. (Remember, we keep Player objects for unavailable
+        seated players, but only during of the game.)
+        """
+        
         if (self.refstate in [STATE_SETUP, STATE_SUSPENDED]):
             self.log.error('tried to suspend when state was %s', self.refstate)
             return
@@ -1025,6 +1713,15 @@ class Referee(volent.VolEntity):
         self.queueaction(self.checktimersetting)
         
     def unsuspendgame(self):
+        """unsuspendgame() -> None
+
+        Game-resumption handler. (Game-specific shutdown is handled by the
+        game's unsuspendgame() method.)
+
+        This does not modify gameseatlist, but it does add the current
+        seated players to each seat's history.
+        """
+
         if (self.refstate != STATE_SUSPENDED):
             self.log.error('tried to unsuspendgame when state was %s',
                 self.refstate)
@@ -1039,7 +1736,11 @@ class Referee(volent.VolEntity):
         self.log.info('game unsuspended')
         self.refstate = STATE_ACTIVE
 
-        ### add current seat.playerlists to seat accumulated totals
+        # add current seat.playerlists to seat accumulated totals
+        for seat in self.gameseatlist:
+            for pla in seat.playerlist:
+                barejid = pla.jid.getbare()
+                seat.playerhistory[barejid] = True
 
         self.game.unsuspendgame()
         self.unreadyall(False)
@@ -1048,13 +1749,14 @@ class Referee(volent.VolEntity):
         # This will check against the immutable seat listings.
         self.queueaction(self.checktimersetting)
 
-    def announce(self, data):
-        msg = interface.Node('message',
-            attrs={ 'to':unicode(self.muc), 'type':'groupchat' })
-        msg.setchilddata('body', 'administrator announcement: ' + data)
-        self.queueaction(self.conn.send, msg)
-
     def endwork(self):
+        """endwork() -> None
+
+        The 'end' state handler. This destroys the MUC room. Then, it does
+        its best to blow away all of the referee's member fields, so that
+        everything can be garbage-collected efficiently.
+        """
+        
         if (self.mucrunning):
             msg = interface.Node('iq',
                 attrs={'type':'set', 'to':unicode(self.muc)})
@@ -1080,6 +1782,38 @@ class Referee(volent.VolEntity):
         
 
 class Player:
+    """Player: Represents a player at a table.
+
+    A player is identified by a full JID (including resource string).
+    During setup (and suspension), the referee only tracks players who are
+    actually present at the table; if a player becomes unavailable, his
+    Player object is removed. However, while the game is in progress,
+    the referee tracks everyone who is supposed to be seated at the table.
+    (Unavailable players remain in the Players list, so that they can be
+    recognized should they return.)
+
+    Player(ref, jid, nick, isbot=False) -- constructor.
+
+    The *ref* is the Referee which created this Player. The *jid* is the
+    player's (real) JID; *nick* is his MUC nickname (the resource part only).
+    The *isbot* flag indicates whether the player is known to be a robot.
+
+    Public methods:
+
+    send(methname, *args, **keywords) -- send an RPC to this player.
+
+    Publicly-readable fields:
+
+    jid -- the player's real JID, as a JID object.
+    jidstr -- the player's real JID, as a string.
+    nick -- the MUC nickname (resource part only).
+    isbot -- is this player a robot?
+    live -- is this player available at the table?
+    aware -- is the player's client capable of receiving RPCs?
+    seat -- the Seat the player is sitting in, or None.
+    ready -- is the player "ready"? (Can only be True if seated.)
+    """
+    
     def __init__(self, ref, jid, nick, isbot=False):
         self.referee = ref
         self.jid = jid
@@ -1099,10 +1833,113 @@ class Player:
         return u'<Player %s \'%s\'>' % (self.jidstr, self.nick)
 
     def send(self, methname, *args, **keywords):
+        """send(methname, *args, **keywords)
+
+        Send an RPC to this player. See the description of the sendplayer()
+        method in the game.Game class.
+        """
         self.referee.game.sendplayer(self, methname, *args, **keywords)
 
 class Validator:
+    """Validator: Represents a set of argument-type restrictions on a
+    Jabber RPC call.
+
+    Various parts of the Volity system accept RPCs. Most of them want to
+    check the number and type of the RPC arguments, and return appropriate
+    RPC faults if the arguments are wrong. However, type-checking code is
+    prolix and tedious. This class allows an RPC opset to check the arguments
+    easily.
+
+    A Validator also allows you to check other Volity state conditions. For
+    example, you can set a Validator to reject its RPC while the game is
+    in progress.
+
+    By default, a Validator is completely permissive. You set the conditions
+    that it checks by specifying a mapping of keywords to values. You may
+    set these either when the Validator is constructed, or afterwards (using
+    the set() method).
+
+    These are the keywords which Validators understand:
+
+        state=*str*
+            Require the referee to be in a particular state. The state
+            may be one of 'setup', 'active', 'disrupted', 'suspended',
+            'abandoned'. Or, it may contain several of those values,
+            as a space-delimited string.
+        afoot=*bool*
+            If the value is True, this requires the referee to be 'active',
+            'disrupted', or 'abandoned'. If False, it requires the referee
+            to be in 'setup' or 'suspended'.
+        seated=*bool*
+            Requires the sending player to be seated (if True) or standing
+            (if False).
+        argcount=*int*
+            Require the given number of arguments.
+        args=*typespec*
+            Specify the number and type of arguments. This is complicated,
+            so we will explain it by example.
+
+            args=None: Require there to be no arguments. (This is equivalent
+                to argcount=0.)
+            args=int: Exactly one argument, of type integer.
+            args=str: Exactly one argument, of type string.
+            args=bool: Exactly one argument, of type boolean.
+            args=float: Exactly one argument, of type float or integer.
+            args=list: Exactly one argument, of type list (array).
+            args=dict: Exactly one argument, of type dict (struct).
+            args=[int, int]: Exactly two arguments, both integers.
+            args=[int, str]: Exactly two arguments; the first an integer, the
+                second a string.
+            args=(int, str): Exactly one argument, which may be either an int
+                or a string.
+            args=[str, (int, str)]: Exactly two arguments. The first must be
+                a string; the second may be an integer or a string.
+            args=(int, None): One optional argument; if present, must be
+                an integer.
+            args=[str, (int, None)]: Either one or two arguments. The first
+                must be a string. The second, if present, must an an integer.
+            args=[int, '...']: One or more arguments. The first must be an
+                integer. The following arguments are not checked.
+
+            For the purposes of validation, unicode arguments count as strings.
+            Integers are accepted as floats. The RPC 'base64' type appears
+            as a string. The RPC 'dateTime.iso8601' is not recognized by
+            this class.
+
+            You may use the Python built-in object Ellipsis instead of the
+            literal '...'.
+
+    If you set contradictory conditions, the resulting behavior is poorly
+    defined. For example, if you set state='setup' and then set afoot=True,
+    the Validator may ignore one condition; or it may try to verify both,
+    and therefore reject all RPCs. Similarly, setting args=None and
+    argcount=1 would cause problems.
+
+    Validator(**keywords) -- constructor.
+
+    Create a Validator with the given conditions. You might say, for example:
+
+        val = Validator(argcount=2, afoot=False)
+
+    Public methods:
+
+    set() -- set more conditions.
+    check() -- check the validity of an RPC call.
+
+    Static method:
+
+    typespecstring() -- turn one or more types into a human-readable string.
+    """
+    
     def typespecstring(typ):
+        """typespecstring(typ) -> str
+
+        Turn a type, or a tuple of types, into a human-readable string.
+        The *typ* must be a Python type object (str, int, or so forth),
+        or else a tuple of type objects. The result is a string of the
+        form 'string or int or ...'
+        """
+        
         if (type(typ) != tuple):
             typ = ( typ, )
         ls = []
@@ -1139,7 +1976,29 @@ class Validator:
         if (keywords):
             self.set(keywords)
 
-    def set(self, keywords):
+    def set(self, arg_=None, **keywords):
+        """set(arg_=None, **keywords) -> None
+
+        Set more conditions. You have several options for setting keyword-
+        value pairs:
+
+            validator.set( argcount=2 )
+            validator.set( {'argcount': 2} )
+            validator.set( [ ('argcount' , 2) ] )
+            validator.set(val) # *val* is anything which can be cast to a dict
+
+        See the class documentation for the list of keywords.
+
+        If you call this multiple times, or call it on a Validator which
+        was constructed with conditions, then the conditions accumulate.
+        (But see the class documentation for warnings about contradictory
+        conditions.)
+        """
+
+        if (arg_ != None):
+            arg_ = dict(arg_)
+            keywords.update(arg_)
+        
         if (keywords.has_key('state')):
             self.phasesetup = False
             self.phaseactive = False
@@ -1195,6 +2054,21 @@ class Validator:
                 + ', '.join(keywords.keys()))
             
     def check(self, ref, sender, callname, callargs):
+        """check(ref, sender, callname, callargs) -> None
+
+        Checks the validity of an RPC invocation. The *ref* is the referee
+        which received the RPC; the *sender* is the JID which sent the
+        RPC; *callname* and *callargs* describe the RPC invocation.
+
+        If a problem is detected, this method generates either a Volity
+        failure token or an RPC fault. If the invocation is valid, this
+        simply returns.
+
+        (Note that no conditions check the *callname*, since this is the
+        Validator for that callname. It is used only to generate readable
+        RPC faults.)
+        """
+        
         if (ref.refstate == STATE_SETUP and not self.phasesetup):
             raise game.FailureToken('volity.game_not_in_progress')
         if (ref.refstate == STATE_ACTIVE and not self.phaseactive):
@@ -1264,12 +2138,39 @@ class Validator:
                 raise rpc.RPCFault(604, '%s: too many arguments' % callname)
         
 class WrapGameOpset(rpc.WrapperOpset):
+    """WrapGameOpset: An Opset which wraps all RPCs in the game.* namespace.
+
+    This Opset provides checking of argument types. It also checks a few
+    other universal conditions: you cannot send RPCs before the referee is
+    ready, and you cannot send RPCs unless you are present at the table.
+
+    WrapGameOpset(ref, subopset)
+
+    Public methods:
+
+    setopset() -- change the contained opset. (inherited)
+    validation() -- define argument-type checking for an RPC.
+    precondition() -- checks authorization and argument types before an
+    RPC handler.
+    __call__() -- invoke an RPC.
+    """
+    
     def __init__(self, ref, subopset):
         rpc.WrapperOpset.__init__(self, subopset)
         self.referee = ref
         self.validators = {}
 
     def validation(self, callname, **keywords):
+        """validation(callname, **keywords) -> None
+
+        Define argument-type checking for an RPC. The *callname* is the
+        name part of the RPC (that is, excluding the namespace). For the
+        possible *keywords*, see the Validator class.
+
+        If you call this multiple times for the same RPC, the keywords are
+        accumulated.
+        """
+        
         val = self.validators.get(callname)
         if (not val):
             val = Validator()
@@ -1277,6 +2178,13 @@ class WrapGameOpset(rpc.WrapperOpset):
         val.set(keywords)
 
     def precondition(self, sender, namehead, nametail, *callargs):
+        """precondition(sender, namehead, nametail, *callargs)
+
+        Checks authorization and argument types before an RPC handler.
+        Only players at the table are permitted to send RPCs. We also use
+        Validators to check the number and type of the RPC arguments.
+        """
+        
         if (self.referee.state != 'running'):
             raise game.FailureToken('volity.referee_not_ready')
 
@@ -1294,6 +2202,11 @@ class WrapGameOpset(rpc.WrapperOpset):
         self.referee.activitytime = time.time()
 
     def __call__(self, sender, callname, *callargs):
+        """__call__(sender, callname, *callargs) -> <rpc outcome>
+
+        Invoke an RPC. This is invoked by the Zymb RPC-handling service.
+        """
+        
         try:
             return rpc.WrapperOpset.__call__(self, sender,
                 callname, *callargs)
@@ -1317,6 +2230,36 @@ class WrapGameOpset(rpc.WrapperOpset):
             raise rpc.RPCFault(608, st)
         
 class RefVolityOpset(rpc.MethodOpset):
+    """RefVolityOpset: The Opset which responds to volity.* namespace
+    RPCs.
+
+    RefVolityOpset(ref) -- constructor.
+
+    The *ref* is the Referee to which this Opset is attached.
+
+    Methods:
+
+    precondition() -- checks authorization and argument types before an
+    RPC handler.
+
+    Handler methods:
+
+    rpc_sit() -- handle a player sit request.
+    rpc_stand() -- handle a player stand request.
+    rpc_ready() -- handle a player ready request.
+    rpc_unready() -- handle a player unready request.
+    rpc_add_bot() -- handle a player request for a new bot.
+    rpc_suspend_game() -- handle a player game-suspend request.
+    rpc_set_language() -- handle a player request to change the table language.
+    rpc_record_games() -- handle a player request to change the game-record
+        flag.
+    rpc_show_table() -- handle a player request to change the show-table flag.
+    rpc_kill_game() -- handle a player request to change the kill-game flag.
+    rpc_send_state() -- handle a player request for the complete table state.
+    rpc_invite_player() -- handle a player request to invite another player to
+        the table.
+    """
+    
     def __init__(self, ref):
         self.referee = ref
         self.validators = {}
@@ -1345,6 +2288,13 @@ class RefVolityOpset(rpc.MethodOpset):
         self.validators['invite_player'] = Validator(args=[str, (str, None)])
 
     def precondition(self, sender, namehead, nametail, *callargs):
+        """precondition(sender, namehead, nametail, *callargs)
+
+        Checks authorization and argument types before an RPC handler.
+        Only players at the table are permitted to send RPCs. We also use
+        Validators to check the number and type of the RPC arguments.
+        """
+        
         if (self.referee.state != 'running'):
             raise game.FailureToken('volity.referee_not_ready')
 
@@ -1402,11 +2352,42 @@ class RefVolityOpset(rpc.MethodOpset):
 
         
 class RefAdminOpset(rpc.MethodOpset):
+    """RefAdminOpset: The Opset which responds to admin.* namespace
+    RPCs.
+
+    RefAdminOpset(ref) -- constructor.
+
+    The *ref* is the Referee to which this Opset is attached.
+
+    Methods:
+
+    precondition() -- checks authorization before an RPC handler.
+
+    Handler methods:
+
+    rpc_status() -- return assorted status information.
+    rpc_players() -- return a list of player JIDs at the table.
+    rpc_bots() -- return a list of bot JIDs at the table.
+    rpc_seats() -- return the list of seats; also the sublists of required
+        seats, occupied seats, and (if the game is in progress) the seats
+        involved in the current game.
+    rpc_seat -- return details about a seat and who is sitting there.
+    rpc_announce() -- yell a message to the table.
+    rpc_shutdown() -- immediately shut down this Referee and its table.
+    """
+    
     def __init__(self, ref):
         self.referee = ref
         self.parlor = self.referee.parlor
 
     def precondition(self, sender, namehead, nametail, *callargs):
+        """precondition(sender, namehead, nametail, *callargs)
+
+        Checks authorization before an RPC handler. Only the admin JID
+        is permitted to send admin.* namespace RPCs. If no admin JID was
+        set, then all admin.* RPCs are rejected.
+        """
+        
         if ((not self.parlor.adminjid)
             or (not sender.barematch(self.parlor.adminjid))):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
@@ -1414,6 +2395,23 @@ class RefAdminOpset(rpc.MethodOpset):
             unicode(sender), namehead, unicode(callargs))
 
     def rpc_status(self, sender, *args):
+        """rpc_status() -> dict
+
+        Return assorted status information. This returns a Jabber-RPC struct
+        containing these fields:
+
+            agentstate: The Zymb agent state ("running" is normal operation).
+            state: The Volity referee state ("setup", "active", "disrupted",
+                "abandoned", "suspended").
+            players: The number of players (including bots).
+            bots: The number of bots.
+            startup_time: When this table was started.
+            startup_at: How long it's been since the table was started.
+            last_activity_at: How long it's been since there was any activity
+                at the table.
+            games_completed: How many games have been completed at the table.
+        """
+
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'status: no arguments')
         dic = {}
@@ -1435,30 +2433,68 @@ class RefAdminOpset(rpc.MethodOpset):
         return dic
 
     def rpc_players(self, sender, *args):
+        """rpc_players() -> list
+
+        Return a list of the (real) JIDs of all players at this table
+        (including bots).
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'players: no arguments')
         return self.referee.players.keys()
 
     def rpc_bots(self, sender, *args):
+        """rpc_bots() -> list
+
+        Return a list of the (real) JIDs of all bots at this table.
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'bots: no arguments')
         return [ id for (id, pla) in self.referee.players.items() if pla.isbot ]
 
     def rpc_seats(self, sender, *args):
-        if (len(args) >= 2):
-            raise rpc.RPCFault(604, 'seats: one optional argument')
-        if (not args):
-            dic = {}
-            ls = [ seat.id for seat in self.referee.seatlist ]
-            dic['allseats'] = ' '.join(ls)
-            ls = [ seat.id for seat in self.referee.seatlist if seat.required ]
-            dic['reqseats'] = ' '.join(ls)
-            ls = [ seat.id for seat in self.referee.seatlist if seat.playerlist ]
-            dic['occupiedseats'] = ' '.join(ls)
-            if (self.referee.gameseatlist):
-                ls = [ seat.id for seat in self.referee.gameseatlist ]
-                dic['gameseats'] = ' '.join(ls)
-            return dic
+        """rpc_seats() -> dict
+
+        This returns a Jabber-RPC struct containing these fields:
+
+            allseats: The IDs of all seats in the game configuration.
+            reqseats: The IDs of all required seats.
+            occupiedseats: The IDs of all occupied seats.
+            gameseats: The IDs of all seats involved in the current game.
+                (Only present if a game is in progress.)
+        """
+        
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'seats: no arguments')
+        dic = {}
+        ls = [ seat.id for seat in self.referee.seatlist ]
+        dic['allseats'] = ' '.join(ls)
+        ls = [ seat.id for seat in self.referee.seatlist if seat.required ]
+        dic['reqseats'] = ' '.join(ls)
+        ls = [ seat.id for seat in self.referee.seatlist if seat.playerlist ]
+        dic['occupiedseats'] = ' '.join(ls)
+        if (self.referee.gameseatlist):
+            ls = [ seat.id for seat in self.referee.gameseatlist ]
+            dic['gameseats'] = ' '.join(ls)
+        return dic
+            
+    def rpc_seat(self, sender, *args):
+        """rpc_seat(seatid) -> dict
+
+        Return information about the seat *seatid*. This returns a Jabber-RPC
+        struct containing these fields:
+
+            id: The seat ID.
+            required: Whether this is a required seat.
+            ingame: Whether this seat is involved in the current game.
+            players: A list of the players currently in this seat.
+            history: A list of the players who have sat in this seat at any
+                time in the current game.
+        """
+
+        if (len(args) != 1):
+            raise rpc.RPCFault(604, 'seat STRING')
         seat = self.referee.game.getseat(args[0])
         if (not seat):
             raise rpc.RPCFault(606, 'not a seat ID')
@@ -1467,9 +2503,18 @@ class RefAdminOpset(rpc.MethodOpset):
         dic['required'] = seat.required
         dic['ingame'] = seat.ingame
         dic['players'] = [ pla.jidstr for pla in seat.playerlist ]
+        dic['history'] = seat.getplayerhistory()
         return dic
             
     def rpc_announce(self, sender, *args):
+        """rpc_announce(msg) -> str
+
+        Yell a message on the table. The message is broadcast as an ordinary
+        group-chat message, so all connected clients will see it.
+
+        Returns a message saying that the message was sent.
+        """
+        
         if (len(args) != 1):
             raise rpc.RPCFault(604, 'announce STRING')
         val = args[0]
@@ -1479,6 +2524,12 @@ class RefAdminOpset(rpc.MethodOpset):
         return 'sent'
 
     def rpc_shutdown(self, sender, *args):
+        """rpc_shutdown() -> str
+
+        Immediately shut down this Referee and its table. This kills the game
+        if it is in progress, so use it considerately.
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'shutdown: no arguments')
         self.referee.queueaction(self.referee.stop)

@@ -11,6 +11,86 @@ from zymb.jabber import rpc
 REFEREE_STARTUP_TIMEOUT = 120
 
 class Parlor(volent.VolEntity):
+    """Parlor: The implementation of a Volity parlor (i.e., game server).
+
+    This is the central class which runs games on a system. When you
+    run the volityd.py script, it creates a Parlor and starts it running.
+    
+    Parlor is a Jabber client (although it is not a subclass of the
+    Zymb Jabber client agent; instead, it creates one as a subsidiary
+    object). It sits around and waits for the "new table" command,
+    which tells it to start up a Referee. That's nearly all it does,
+    actually, although there are some extra debugging and administration
+    features.
+
+    Parlor(config) -- constructor.
+
+    The *config* is a ConfigFile object, containing various options needed
+    to set up the Parlor. The volityd.py script creates this. For the
+    record, the significant fields are:
+
+        jid: Used when connecting to Jabber
+        jid-resource: Resource string to use (optional, overrides the
+            one in *jid*; if no resource is provided in either *jid* or
+            *jid-resource*, then "volity" is used)
+        password: Used when connecting to Jabber
+        game: Name of Python class which implements the game
+        bot: Name of Python class which implements the bot (optional;
+            if not provided, then the parlor will not create bots)
+        admin: JID which is permitted to send admin commands (optional)
+        muchost: JID of Jabber MUC server (optional, defaults to
+            "conference.volity.net")
+        bookkeeper: JID of Volity bookkeeper (optional, defaults to
+            "bookkeeper@volity.net/volity")
+        contact-email: Contact email address of person hosting this
+            parlor (optional)
+        contact-jid: Contact Jabber address of person hosting this
+            parlor (optional)
+        keepalive: If present, send periodic messages to exercise the
+            Jabber connection (optional)
+        keepalive-interval: If present, send periodic messages every
+            *keepalive-interval* seconds to exercise the Jabber
+            connection (optional)
+
+    Agent states and events:
+
+    state 'start': Initial state. Start up the Jabber connection process.
+        When Jabber is fully connected, jump to 'ready'.
+    state 'ready': Send out initial presence. In this state, the Parlor
+        accepts new_table requests.
+    state 'end': The connection is closed.
+
+    Public methods:
+
+    start() -- begin activity. (inherited)
+    stop() -- stop activity. (inherited)
+
+    Significant fields:
+
+    jid -- the JID by which this Parlor is connected.
+    conn -- the Jabber client agent.
+    adminjid -- the JID which is permitted to send admin commands.
+    gameclass -- the Game subclass which implements the game.
+    botclass -- the Bot subclass which implements the bot (or None).
+    gamename -- the game's human-readable name (taken from gameclass).
+    referees -- dict mapping resource strings to Referees.
+    actors -- dict mapping resource strings to Actors.
+    online -- whether the Parlor is accepting new_table requests.
+
+    Internal methods:
+
+    handlemessage() -- handle a Jabber message stanza.
+    handlepresence() -- handle a Jabber presence stanza.
+    newtable() -- create a new table and Referee.
+    refereeready() -- callback invoked when a Referee is successfully
+        (or unsuccessfully) created.
+    refereedied() -- callback invoked when a Referee shuts down.
+    actordied() -- callback invoked when an Actor (bot) shuts down.
+    listopengames() -- create a DiscoItems list of currently-active games.
+    handlerosterquery() -- accept a request to be added to someone's roster.
+
+    """
+    
     logprefix = 'volity.parlor'
     volityrole = 'parlor'
 
@@ -18,6 +98,8 @@ class Parlor(volent.VolEntity):
         volent.VolEntity.__init__(self, config.get('jid'),
             config.get('password'), config.get('jid-resource'))
 
+        # Locate the game class.
+        
         ls = config.get('game').split('.')
         if (len(ls) < 2):
             raise ValueError('gameclass must be of the form module.gameclass')
@@ -37,6 +119,8 @@ class Parlor(volent.VolEntity):
         if (not gameclass.ruleseturi):
             raise TypeError('gameclass does not define class.ruleseturi')
 
+        # Locate the bot class (if there is one).
+        
         self.botclass = None
         if (config.get('bot')):
             ls = config.get('bot').split('.')
@@ -57,17 +141,28 @@ class Parlor(volent.VolEntity):
                 or (type(botclass.gameclass) != types.ClassType)
                 or (not issubclass(self.gameclass, botclass.gameclass))):
                 raise ValueError('botclass does not play '+config.get('game'))
+
+        bookjidstr = config.get('bookkeeper', 'bookkeeper@volity.net/volity')
+        self.bookkeeperjid = interface.JID(bookjidstr)
+        if (not self.bookkeeperjid.getresource()):
+            self.bookkeeperjid.setresource('volity')
+                
+        # Set the administrative JID (if present)
         
         self.adminjid = None
         if (config.get('admin')):
             self.adminjid = interface.JID(config.get('admin'))
 
-        self.gamename = gameclass.gamename
-        self.log.warning('Game parlor running: %s', self.gamename)
-
+        # Various Jabber handlers.
+        
         self.addhandler('end', self.log.warning, 'Parlor stopped.')
         self.conn.adddispatcher(self.handlepresence, name='presence')
         self.conn.adddispatcher(self.handlemessage, name='message')
+
+        # Set up internal state.
+        
+        self.gamename = gameclass.gamename
+        self.log.warning('Game parlor running: %s', self.gamename)
 
         self.referees = {}
         self.muchost = interface.JID(config.get('muchost',
@@ -82,8 +177,8 @@ class Parlor(volent.VolEntity):
         # Set up the disco service
         
         disco = self.conn.getservice('discoservice')
-        info = disco.addinfo()
         
+        info = disco.addinfo()
         info.addidentity('volity', 'parlor', self.gamename)
         info.addfeature(interface.NS_CAPS)
 
@@ -112,7 +207,7 @@ class Parlor(volent.VolEntity):
 
         items = disco.additems('ruleset')
         items.additem(
-            config.get('bookkeeper', 'bookkeeper@volity.net'),
+            unicode(self.bookkeeperjid),
             node=gameclass.ruleseturi,
             name='Ruleset information (%s)' % gameclass.ruleseturi)
 
@@ -128,6 +223,7 @@ class Parlor(volent.VolEntity):
         dic['admin'] = ParlorAdminOpset(self)
 
         # Set up a simple roster-handler to accept subscription requests.
+        
         self.conn.adddispatcher(self.handlerosterquery, name='iq', type='set')
 
         # Set up the keepalive service
@@ -147,13 +243,27 @@ class Parlor(volent.VolEntity):
             self.addhandler('ready', serv.start)
             self.log.warning('sending keepalive messages to self at interval of %d seconds', serv.getinterval())
 
+        # End of constructor.
+
     def handlemessage(self, msg):
+        """handlemessage(msg) -> <stanza outcome>
+
+        Handle a Jabber message stanza. The Parlor does not react to messages,
+        so this just raises StanzaHandled to end processing for the stanza.
+        """
+        
         if (self.log.isEnabledFor(logging.DEBUG)):
             self.log.info('received message')
             #self.log.debug('received message:\n%s', msg.serialize(True))
         raise interface.StanzaHandled()
 
     def handlepresence(self, msg):
+        """handlepresence(msg) -> <stanza outcome>
+
+        Handle a Jabber presence stanza. The Parlor does not react to presence,
+        so this just raises StanzaHandled to end processing for the stanza.
+        """
+        
         typestr = msg.getattr('type', '')
                 
         fromstr = msg.getattr('from')
@@ -170,6 +280,13 @@ class Parlor(volent.VolEntity):
         raise interface.StanzaHandled()
             
     def newtable(self, sender, *args):
+        """newtable(sender, *args) -> <RPC outcome>
+
+        Create a new table and Referee. The RPC response will be the
+        table JID, but that doesn't happen in this function; see the
+        refereeready() callback.
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'new_table takes no arguments')
 
@@ -187,9 +304,11 @@ class Parlor(volent.VolEntity):
         muc = interface.JID(self.muchost)
         muc.setnode(refresource)
 
+        # Create the actual Referee object.
+        
         try:
             ref = referee.Referee(self, self.jid, self.password, refresource,
-                muc, self.gameclass)
+                muc)
         except Exception, ex:
             self.log.error('Unable to create referee',
                 exc_info=True)
@@ -204,6 +323,16 @@ class Parlor(volent.VolEntity):
         ref.addhandler('end', self.refereedied, ref)
         self.addhandler('end', ref.stop)
 
+        # Now we wait until the Referee is finished starting up -- which
+        # is defined as "successfully connected to the MUC". This requires
+        # a Deferred handler, which is hard to use but easy to explain:
+        # it has three possible outcomes, and exactly one of them will happen.
+        # Either the Referee will start up, or it will shut down without
+        # ever connecting, or we'll give up before either of the above.
+        # (We set a timer of REFEREE_STARTUP_TIMEOUT for that last outcome.)
+        #
+        # Whichever happens, our refereeready() method will be called.
+
         defer = sched.Deferred(self.refereeready, ref)
         
         ac1 = ref.addhandler('running', defer, 'running')
@@ -216,6 +345,17 @@ class Parlor(volent.VolEntity):
         raise defer
 
     def refereeready(self, ref, res):
+        """refereeready(ref, res) -> <RPC outcome>
+
+        Callback invoked when a Referee is successfully (or unsuccessfully)
+        created. This is the continuation of newtable(). The *ref* is the
+        Referee object that was created, and *res* is either 'running',
+        'end', or 'timeout'.
+
+        If the Referee is running, we return the table JID. If not, we
+        return an RPC fault.
+        """
+        
         if (res == 'timeout'):
             self.log.warning('referee %s failed to start up in time -- killing', ref.resource)
             ref.stop()
@@ -228,6 +368,12 @@ class Parlor(volent.VolEntity):
         return unicode(ref.muc)
 
     def refereedied(self, ref):
+        """refereedied(ref) -> None
+
+        Callback invoked when a Referee shuts down. Remove the Referee
+        from our internal table.
+        """
+        
         resource = ref.resource
         if (self.referees.has_key(resource)):
             assert ref == self.referees[resource]
@@ -235,6 +381,12 @@ class Parlor(volent.VolEntity):
             self.referees.pop(resource)
 
     def actordied(self, act):
+        """refereedied(ref) -> None
+
+        Callback invoked when an Actor shuts down. Remove the Actor from
+        our internal table.
+        """
+        
         resource = act.resource
         if (self.actors.has_key(resource)):
             assert act == self.actors[resource]
@@ -242,13 +394,25 @@ class Parlor(volent.VolEntity):
             self.actors.pop(resource)
 
     def listopengames(self):
+        """listopengames() -> DiscoItems
+
+        Create a DiscoItems list of currently-active games. This is used
+        when responding to disco#items queries.
+        """
+        
         items = jabber.disco.DiscoItems()
         for jid in self.referees.keys():
             ref = self.referees[jid]
-            items.additem(ref.jid, name=self.gamename)
+            if (ref.showtable):
+                items.additem(ref.jid, name=self.gamename)
         return items
 
     def handlerosterquery(self, msg):
+        """handlerosterquery(msg) -> <stanza outcome>
+
+        Accept a request to be added to someone's roster.
+        """
+        
         qnod = msg.getchild('query')
         if (not qnod or qnod.getnamespace() != interface.NS_ROSTER):
             # Not addressed to us
@@ -267,25 +431,87 @@ class Parlor(volent.VolEntity):
         raise interface.StanzaHandled
 
 class ParlorVolityOpset(rpc.MethodOpset):
+    """ParlorVolityOpset: The Opset which responds to volity.* namespace
+    RPCs.
+
+    ParlorVolityOpset(par) -- constructor.
+
+    The *par* is the Parlor to which this Opset is attached.
+
+    Handler methods:
+
+    rpc_new_table() -- create a new table and Referee.
+    """
+    
     def __init__(self, par):
         self.parlor = par
 
     def rpc_new_table(self, sender, *args):
-        self.parlor.newtable(sender, *args)
+        """rpc_new_table() -> table JID
+
+        Create a new table and Referee.
+
+        Implemented by the parlor's newtable() method.
+        """
+        
+        return self.parlor.newtable(sender, *args)
 
 
 class ParlorAdminOpset(rpc.MethodOpset):
+    """ParlorAdminOpset: The Opset which responds to admin.* namespace
+    RPCs.
+
+    ParlorAdminOpset(par) -- constructor.
+
+    The *par* is the Parlor to which this Opset is attached.
+
+    Methods:
+
+    precondition() -- checks authorization before an RPC handler.
+
+    Handler methods:
+
+    rpc_status() -- return assorted status information.
+    rpc_list_tables() -- return a list of open table IDs.
+    rpc_list_bots() -- return a list of running bots (on all tables).
+    rpc_online() -- set the Parlor to accept or reject new table requests.
+    rpc_announce() -- yell a message on all open tables.
+    rpc_shutdown() -- immediately shut down this Parlor and all tables.
+    """
+    
     def __init__(self, par):
         self.parlor = par
 
     def precondition(self, sender, namehead, nametail, *callargs):
+        """precondition(sender, namehead, nametail, *callargs)
+
+        Checks authorization before an RPC handler. Only the admin JID
+        is permitted to send admin.* namespace RPCs. If no admin JID was
+        set, then all admin.* RPCs are rejected.
+        """
+        
         if ((not self.parlor.adminjid)
             or (not sender.barematch(self.parlor.adminjid))):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
+        # Log the command that we're about to perform.
         self.parlor.log.warning('admin command from <%s>: %s %s',
             unicode(sender), namehead, unicode(callargs))
 
     def rpc_status(self, sender, *args):
+        """rpc_status() -> dict
+
+        Return assorted status information. This returns a Jabber-RPC struct
+        containing these fields:
+
+            online: Whether the Parlor is online.
+            startup_time: When the Parlor was started.
+            startup_at: How long ago the Parlor was started.
+            last_new_table: How long ago it's been since a table was started.
+            tables_running: How many tables are currently open.
+            tables_started: How many tables have been started since the
+                Parlor began.
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'status: no arguments')
         dic = {}
@@ -305,16 +531,35 @@ class ParlorAdminOpset(rpc.MethodOpset):
     ### RPC to change log levels?
 
     def rpc_list_tables(self, sender, *args):
+        """rpc_list_tables() -> list
+
+        Return a list of open table IDs.
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'list_tables: no arguments')
         return self.parlor.referees.keys()
 
     def rpc_list_bots(self, sender, *args):
+        """rpc_list_bots() -> list
+
+        Return a list of running bots (on all tables).
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'list_bots: no arguments')
         return self.parlor.actors.keys()
 
     def rpc_online(self, sender, *args):
+        """rpc_online(val) -> str
+
+        Set the Parlor to accept or reject new table requests. The *val*
+        must be a boolean. If it is False, then new_table requests will
+        be rejected with a 'volity.offline' failure token.
+
+        Returns a message describing the outcome.
+        """
+        
         if (len(args) != 1):
             raise rpc.RPCFault(604, 'online TRUE/FALSE')
         val = args[0]
@@ -329,6 +574,15 @@ class ParlorAdminOpset(rpc.MethodOpset):
         return 'no change to online status'
     
     def rpc_announce(self, sender, *args):
+        """rpc_announce(msg) -> str
+
+        Yell a message on all open tables. The message is broadcast as
+        an ordinary group-chat message, so all connected clients will see
+        it.
+
+        Returns a message saying how many tables were yelled at.
+        """
+        
         if (len(args) != 1):
             raise rpc.RPCFault(604, 'announce STRING')
         val = args[0]
@@ -341,6 +595,15 @@ class ParlorAdminOpset(rpc.MethodOpset):
         return ('sent to %d tables' % len(ls))
             
     def rpc_shutdown(self, sender, *args):
+        """rpc_shutdown() -> str
+
+        Immediately shut down this Parlor and all tables. This kills all
+        open games, so use it considerately. It is preferable to set the
+        Parlor offline (so no new tables start up), then announce that the
+        system is being shut down, and then wait for everybody to finish
+        their games and leave.
+        """
+        
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'shutdown: no arguments')
         self.parlor.queueaction(sched.stopall)
