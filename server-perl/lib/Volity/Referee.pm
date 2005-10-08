@@ -941,7 +941,7 @@ sub end_game {
   # Create and initialize a new game record object.
   $self->logger->debug("Preparing game record.");
   my $record = Volity::GameRecord->new({
-					server=>$self->basic_jid,
+					parlor=>$self->basic_jid,
 				      });
   $record->game_uri($self->game_class->uri);
   $record->end_time(scalar(localtime));
@@ -956,8 +956,7 @@ sub end_game {
 	  }
 	  push (@player_jids, \@slot_jids);
       }
-      # This is hacky... swerving around the accessor like this. OH WELL.
-      $record->{winners} = \@player_jids;
+      $record->winners(@player_jids);
   }
 
   # Give it the ol' John Hancock, if possible.
