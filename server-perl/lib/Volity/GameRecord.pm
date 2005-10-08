@@ -30,16 +30,17 @@ use Volity::GameRecord;
 
 An object of this class represents an information record about. In
 practical terms, it's an abstraction of the information that a game
-server passes to a . Through the methods this class provides, it's
-easy for a server to build and sign this RPC call, and just as easy
-for the receiving bookkeeper.
+referee sends to its Volity network's bookkeeper once a game has
+finished. Through the methods this class provides, it's easy for a
+parlor to build and sign this RPC call, and just as easy for the
+receiving bookkeeper.
 
 Note that, since RPC is the neutral middle ground, a Frivolity game
-server (a.k.a. a Perl object of a Volity::Game::Server subclass) can
+parlor (a.k.a. a Perl object of a Volity::Game::Server subclass) can
 pass a Volity::GameRecord object to any Volity bookkeeper, regardless
 of its platform. Similarly, A Volity::Bookkeeper object can knit a
-Volity::Gamerecord object out of any game server's RPC request,
-whether or not that server runs Frivolity. (In reality, this latter
+Volity::Gamerecord object out of any game parlor's RPC request,
+whether or not that parlor runs Frivolity. (In reality, this latter
 situation will probably be quite common.)
 
 =head1 USAGE
@@ -65,7 +66,7 @@ use Date::Format;
 
 use base qw( Volity );
 use fields qw( id signature winners start_time end_time game_uri_object
-    game_name server finished );
+    game_name parlor finished );
 
 # Set up package variables for GPG config.
 our ( $gpg_bin, $gpg_secretkey, $gpg_passphrase );
@@ -118,7 +119,7 @@ detailed in L<Class::Accessor> apply here as well.
 
 =item game_name
 
-=item server
+=item parlor
 
 =item finished
 
@@ -179,7 +180,7 @@ sub game_uri {
 =item confirm_record_owner
 
 I<Bookkeeper only.> Confirms that the existing, DB-stored copy of this
-record assets the same server relationship as this record, and then
+record assets the same parlor relationship as this record, and then
 re-verifies its signature (as per C<verify()>. Returns truth if everything
 looks OK, and falsehood otherwise.
 
@@ -188,9 +189,9 @@ looks OK, and falsehood otherwise.
 =cut
 
 # confirm_record_owner: Make sure that the stored copy of this record agrees
-# with what this record asserts is its server, and that the record's signature
+# with what this record asserts is its parlor, and that the record's signature
 # is valid. This is a necessary step before performing an SQL UPDATE on this
-# record's DB entry, lest stupid/evil servers stomp other servers' records.
+# record's DB entry, lest stupid/evil parlors stomp other parlors' records.
 sub confirm_record_owner {
     my $self = shift;
     unless ( $self->id ) {
@@ -458,13 +459,21 @@ E<lt>sructE<gt> argument. Fancy that!
 sub render_as_hashref {
     my $self    = shift;
     my $hashref = {};
+
+    # First, directly copy some fields from the object into the hashref...
     foreach (
-        qw( id winners start_time end_time game_uri server signature
+        qw( id winners start_time end_time parlor signature
         finished )
         )
     {
+        $$hashref{$_} = $self->{$_} if defined( $self->$_ );
+    }
+
+    # ...then define some others based on the results of method calls.
+    foreach ( qw( game_uri ) ) {
         $$hashref{$_} = $self->$_ if defined( $self->$_ );
     }
+
     return $hashref;
 }
 
