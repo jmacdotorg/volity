@@ -304,8 +304,6 @@ be useful as well. Game modules can always advance the turn manually
 by calling the C<current_player> accessor with arguments. (And some
 games don't have turns at all...)
 
-B<UH OH> This method is currently broken and does nothing.
-
 =item register_config_variables (@variables)
 
 Registers the given instance variables (which should be declared in your
