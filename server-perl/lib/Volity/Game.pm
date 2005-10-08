@@ -171,13 +171,17 @@ its own compatibility with a game server.
 
 =item seat_ids 
 
-An array of strings representing the IDs of I<all> the seats that this game
-implementation supports. 
+An array reference of strings representing the IDs of I<all> the seats
+that this game implementation supports. Example:
+
+ My::Game->seat_ids([qw(black white)]);
+ my $seat_ids = My::Game->seat_ids; # $seat_ids is now ['black', 'white']
 
 =item required_seat_ids
 
-An array of strings representing the IDs of role-differentiated seats that
-players should be aware of, as defined by the ruleset.
+An array reference of strings representing the IDs of
+role-differentiated seats that players should be aware of, as defined
+by the ruleset.
 
 =back
 
@@ -299,6 +303,8 @@ where the turn order is stable enough for the C<turn_order> method to
 be useful as well. Game modules can always advance the turn manually
 by calling the C<current_player> accessor with arguments. (And some
 games don't have turns at all...)
+
+B<UH OH> This method is currently broken and does nothing.
 
 =item register_config_variables (@variables)
 
