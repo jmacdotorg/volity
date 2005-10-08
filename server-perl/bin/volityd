@@ -19,10 +19,10 @@ foreach ('user', 'host', 'password',) {
   }
 }
 
+# XXX Undoing the necessity of GPG signatures for now.
 foreach ('key id (GPG)', 'passphrase (GPG)', 'GPG binary path',) {
   unless (defined($opts{uc(substr($_, 0, 1))})) {
-#    die "You must define a $_, with the " . uc(substr($_, 0, 1)) . " switch.\n";
-      warn "You have not defined a $_. Game records will _not_ be sent to the bookkeeper.\n";
+#      warn "You have not defined a $_. Game records will _not_ be sent to the bookkeeper.\n";
       last;
   }
 }
@@ -94,6 +94,7 @@ if (defined($opts{l})) {
 }
 
 $server->bot_classes(@bot_classes);
+
 $Volity::GameRecord::gpg_bin = $opts{G};
 $Volity::GameRecord::gpg_secretkey = $opts{K};
 $Volity::GameRecord::gpg_passphrase = $opts{P};
