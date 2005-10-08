@@ -23,7 +23,7 @@ use strict;
 
 use base qw(Volity::Jabber);
 
-our $VERSION = '0.4';
+our $VERSION = '0.5.2';
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
@@ -61,11 +61,24 @@ sub handle_rpc_request {
     my $method = $1;
     $method = "_rpc_" . $method;
     if ($self->can($method)) {
-      my @return_values = $self->$method($$rpc_info{from}, @{$$rpc_info{args}});
-      if (@return_values < 2) {
-	  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, @return_values);
+      my @response = $self->$method($$rpc_info{from}, @{$$rpc_info{args}});
+      if (@response) {
+	  my $response_flag = $response[0];
+	  if ($response_flag eq 'fault') {
+	      # Oh, there's some in-game problem with the player's request.
+	      # (This is here for backwards compatibility.)
+	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
+	  } elsif ($response_flag =~ /^\d\d\d$/) {
+	      # Looks like a fault error code. So, send back a fault.
+	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
+	  } else {
+	      # The game has a specific, non-fault response to send back.
+	      $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
+	  }
       } else {
-	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @return_values);
+	  # We have silently approved the request,
+	  # so send back a minimal positive response.
+	  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
       }
     } else {
       $self->logger->warn("I received a $$rpc_info{method} RPC request from $$rpc_info{from}, but I don't know what to do about it.\n");
@@ -303,33 +316,36 @@ sub _rpc_record_game {
   unless (defined($game_record)) {
     $self->logger->warn("Got bad game struct from $sender_jid.\n");
     # XXX Error response here.
-    return ('999', 'Bad game struct.');
+    return ('606', 'Bad game struct.');
   }
 
   # Verify the signature!
-  unless ($game_record->verify) {
-    $self->logger->warn("Uh oh... signature on game record doesn't seem to verify!!\n");
-    # XXX Error response here.
-    return ('999', 'Bad signature.');
-  }
+  # XXX ...or don't. I'm hobbling this action while the whole notion of game
+  # records enters a probationary period.
+#  unless ($game_record->verify) {
+#    $self->logger->warn("Uh oh... signature on game record doesn't seem to verify!!\n");
+#    # XXX Error response here.
+#    return ('999', 'Bad signature.');
+#  }
 
   # Looks good. Store it.
-  $self->store_record_in_db($game_record);
-  return ('ok');
+  return $self->store_record_in_db($game_record);
 }
 
+# store_record_in_db: This must return a value like into an _rpc_* method.
 sub store_record_in_db {
   my $self = shift;
   my ($game_record) = @_;
-  my ($server) = Volity::Info::Server->search({jid=>$game_record->server});
+  use Data::Dumper; warn Dumper($game_record);
+  my ($server) = Volity::Info::Server->search({jid=>$game_record->parlor});
   unless ($server) {
-      $self->logger->warn("Bizarre... got a record with server JID " . $game_record->server . ", but couldn't get a server object from the DB from it. No record stored.");
-      return;
+      $self->logger->warn("Bizarre... got a record with parlor JID " . $game_record->parlor . ", but couldn't get a parlor object from the DB from it. No record stored.");
+      return (608=>"Internal error: Failed to fetch the parlor with JID " . $game_record->server . " from internal database. No record stored.");
   }
   my ($ruleset) = Volity::Info::Ruleset->search({uri=>$game_record->game_uri});
   unless ($ruleset) {
-      $self->logger->warn("Bizarre... got a record with server JID " . $game_record->game_uri . ", but couldn't get a server object from the DB from it. No record stored.");
-      return;
+      $self->logger->warn("Bizarre... got a record with ruleset URI " . $game_record->game_uri . ", but couldn't get a ruleset object from the DB from it. No record stored.");
+      return (608=>"Internal error: Failed to fetch the ruleset with URI " . $game_record->game_uri . " from internal database. No record stored.");
   }
   my $game;			# Volity::Info::Game object
   if (defined($game_record->id)) {
@@ -342,37 +358,13 @@ sub store_record_in_db {
 					end_time=>$game_record->end_time || undef,
 					server_id=>$server->id,
 					ruleset_id=>$ruleset->id,
-					signature=>$game_record->signature,
+#					signature=>$game_record->signature,
 				       });
 					
     $game_record->id($game->id);
   }
-  # Now go through the player lists. It's always a case of drop-and-insert,
-  # for they're all many-to-many linking tables.
 
-=begin old
-
-I'm cutting out this "quitters" code for now, since we're not really using it.
-We may come back to it later.
-
-  foreach my $player_list (qw(quitters)) {
-    my $class = "Volity::Info::Game" . ucfirst(substr($player_list, 0, length($player_list) - 1));
-    foreach ($class->search({game_id=>$game->id})) {
-      $_->delete;
-    }
-    my @players = map(Volity::Info::Player->find_or_create({jid=>$_}),
-		      grep(defined($_), $game_record->$player_list));
-    for my $player (@players) {
-      $class->create({game_id=>$game->id, player_id=>$player->id});
-    }
-  }
-  
-=end old
-
-=cut
-
-  # The winners list is a special case, since we must also record how
-  # each player placed.
+  # Winners list handling takes of the rest of this method...
   my $current_place = 1;	# Start with first place, work down.
   my @places = $game_record->winners;
   my @seats_to_update;
@@ -466,7 +458,7 @@ We may come back to it later.
     $current_place++;
   }
   map($_->update, @seats_to_update);
-  return $game;
+  return;			# This results in a volity.ok response.
 }
 
 sub get_rating_delta {
