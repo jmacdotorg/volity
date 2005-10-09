@@ -1,29 +1,5 @@
 package Volity::Game::CrazyEights;
 
-=pod
-
-=begin TODO
-
-Find out hand values, and add an 'evaluate hand' method to players.
-This may need to use int(), if face cards all have the same value.
-
-Add error messages for incorrect play.
-
-BIG IDEA (regarding the above):
-All calls to rpc_* wait for a return value.
-If false, automatically send a successful response to the player.
-If true, send the given code + message to the player as a fault.
-
-=end TODO
-
-=begin doc notes
-
-BE CAREFUL of your player-call return values. If you don't want to
-send anything other than an ack back to the player (this will often be
-the case), manually return undef.
-
-=cut
-
 use warnings;
 use strict;
 
@@ -32,7 +8,7 @@ use base qw(Volity::Game);
 #  deck: A Cards::Games::Deck object.
 #  discard_pile: A Cards::Games::Pile object.
 #  last_8_suit: The initial of the suit that the last 8-player called.
-#  last_card_player: The player who has most recently played a card.
+#  last_card_player: The seat who has most recently played a card.
 use fields qw(orig_deck deck discard_pile last_8_suit last_card_player);
 use Games::Cards;
 
@@ -41,13 +17,13 @@ use Games::Cards;
 ################
 
 # Configure some class data, using field names inherited from Volity::Game.
-__PACKAGE__->max_allowed_players(5);
-__PACKAGE__->min_allowed_players(1);
 __PACKAGE__->uri("http://volity.org/games/eights/index.html");
-__PACKAGE__->player_class("Volity::Player::CrazyEights");
+__PACKAGE__->seat_class("Volity::Seat::CrazyEights");
 __PACKAGE__->name("Jmac's Crazy Eights");
 __PACKAGE__->description("Crazy Eights, according to Hoyle, by Jason McIntosh.");
-__PACKAGE__->ruleset_version("1.0");
+__PACKAGE__->ruleset_version("1.1");
+__PACKAGE__->seat_ids([qw(player_1 player_2 player_3 player_4)]);
+__PACKAGE__->required_seat_ids([qw(player_1)]);
 
 
 ################
@@ -55,9 +31,10 @@ __PACKAGE__->ruleset_version("1.0");
 ################
 
 # The server will call start on us. Crack open a new deck,
-# shuffle it, and kick the players.
+# shuffle it, and kick the seats.
 sub start {
   my $self = shift;
+
   my $game = Games::Cards::Game->new(
 				     {cards_in_suit=>{
 						      Ace=>1,
@@ -76,8 +53,7 @@ sub start {
 						     }
 				     });
 
-  # Kludge. Does this fix things?
-  $self->current_player(($self->players)[0]);
+  $self->turn_order(qw(player_1 player_2 player_3 player_4));
 
   # Set up all the different card-holding objects we'll need.
   $self->orig_deck(Games::Cards::Deck->new($game, 'deck'))->shuffle;
@@ -85,31 +61,31 @@ sub start {
   $self->orig_deck->give_cards($self->deck, 'all');
   $self->discard_pile(Games::Cards::Stack->new($game, 'discard'));
 
-  # Tell the players that a new game has begun.
-  foreach ($self->players) { $_->hand(Games::Cards::Hand->new($game, "$_")) }
+  # Tell the seats that a new game has begun.
+  foreach ($self->seats_in_play) { $_->hand(Games::Cards::Hand->new($game, "$_")) }
 
   # Deal 'em out...
   $self->deal_cards;
   # Flip the starter.
   $self->flip_starter;
-  # Announce the first player's turn.
-  $self->call_ui_function_on_everyone(start_turn=>$self->current_player->nick);
-  # Have the first player draw cards, maybe.
-  $self->make_player_draw;
-  # Now we sit back and let the first player make his or her move...
+  # Announce the first seat's turn.
+  $self->call_ui_function_on_everyone(start_turn=>$self->current_seat->id);
+  # Have the first seat draw cards, maybe.
+  $self->make_seat_draw;
+  # Now we sit back and let the first seat make his or her move...
 }
 
 ################
-# Player Actions
+# Seat Actions
 ################
 
 sub rpc_play_card {
   my $self = shift;
-  my ($player, $card_name) = @_;
-  unless ($player eq $self->current_player) {
+  my ($seat, $card_name) = @_;
+  unless ($seat eq $self->current_seat) {
     return(fault=>901, "It's not your turn!");
   }
-  my $hand = $player->hand;
+  my $hand = $seat->hand;
   my $card_index;
   eval { $card_index = $hand->index($card_name); };
   unless (defined($card_index)) {
@@ -134,24 +110,22 @@ sub rpc_play_card {
     $hand->give_a_card($self->discard_pile, $card_index);
     # Reset the declared suit.
     $self->last_8_suit(undef);
-    # Announce the play to  the players.
-    foreach ($self->players) { 
-	$_->call_ui_function(player_played_card =>
-			       $player->nick,
-			       $card->name . $card->suit);
-    }
+    # Announce the play to  the seats.
+    $self->call_ui_function_on_everyone(seat_played_card =>
+					$seat->id,
+					$card->name . $card->suit);
   } else {
     return(fault=>907, "That's not a legal play!");
   }
-  # Set the current player as the last card-player. This will help in case
-  # the player later makes a 'change_suit()' call.
-  $self->last_card_player($player);
+  # Set the current seat as the last card-seat. This will help in case
+  # the seat later makes a 'change_suit()' call.
+  $self->last_card_player($seat);
 
   # See if the game is over.
   return if $self->check_for_game_over;
 
   # Move the turn along, unless an 8 was played. In that case,
-  # we must wait for the player to choose a suit first.
+  # we must wait for the seat to choose a suit first.
   unless ($card->name eq '8') {
     $self->end_turn;
   }
@@ -162,20 +136,20 @@ sub rpc_play_card {
 
 sub rpc_choose_suit {
   my $self = shift;
-  my ($player, $suit) = @_;
-  unless ($player eq $self->current_player) {
+  my ($seat, $suit) = @_;
+  unless ($seat eq $self->current_seat) {
     return(fault=>901, "It isn't your turn.");
   }
   unless (
 	  (defined($self->last_card_player)) and
 	  ($self->last_card->name eq '8') and
-	  ($self->last_card_player eq $player)
+	  ($self->last_card_player eq $seat)
 	 ) {
     return(fault=>905, "You can't change the suit now!");
   }
   my $suit_letter = uc(substr($suit, 0, 1));
   if (grep($suit_letter eq $_, qw(D S H C))) {
-    $self->call_ui_function_on_everyone(player_chose_suit=>$player->nick, $suit);
+    $self->call_ui_function_on_everyone(seat_chose_suit=>$seat->id, $suit);
     $self->last_8_suit($suit_letter);
     $self->end_turn;
   } else {
@@ -185,41 +159,38 @@ sub rpc_choose_suit {
 
 sub rpc_draw_card {
   my $self = shift;
-  my ($player) = @_;
-  unless ($player eq $self->current_player) {
+  my ($seat) = @_;
+  unless ($seat eq $self->current_seat) {
     return(fault=>901, "It isn't your turn.");
   }
   unless (@{$self->deck->cards}) {
     return(fault=>904, "You can't draw a card; the draw pile has no cards left!");
   }
   my $drawn_card_name = $self->deck->top_card->name . $self->deck->top_card->suit;
-  $self->deck->give_cards($player->hand, 1);
-  # Tell the player about this new card.
-  $player->call_ui_function(draw_card=>$drawn_card_name);
-  # Tell the other players that the player drew a card.
-  map($_->call_ui_function(player_drew_card=>$player->nick), grep($_ ne $player, $self->players));
+  $self->deck->give_cards($seat->hand, 1);
+  # Tell the seat about this new card.
+  $seat->call_ui_function(draw_card=>$drawn_card_name);
+  $self->call_ui_function_on_everyone(seat_drew_card=>$seat->id);
 }
 
-# get_full_state: The requesting player gets a reminder of its own cards,
-# and also is told about the card counts for all opponents.
-sub rpc_get_full_state {
+sub send_full_state_to_player {
     my $self = shift;
     my ($player) = @_;
-    # Send the player its hand.
-    my @card_names = map($_->name . $_->suit, @{$player->hand->cards});
-    $player->call_ui_function(receive_hand=>\@card_names);
-    # Now send it everyone's card counts.
-    # The order of sent players matches the play order, conveniently.
-    for my $opponent ($self->players) {
-	my $card_count = @{$player->hand->cards};
-	$self->logger->debug("I will now tell $player about $opponent, who has $card_count cards.");
-#	next if $player eq $opponent;
-	$self->logger->debug("yes, ok.");
-	$player->call_ui_function(set_player_hand_size=>$opponent->nick, $card_count);
-	$self->logger->debug("Done telling the player about its opponent.");
+    if (my $seat = $player->seat) {
+	# Send the seat its hand.
+	my @card_names = map($_->name . $_->suit, @{$seat->hand->cards});
+	$seat->call_ui_function(receive_hand=>\@card_names);
+	# Now send it everyone's card counts.
+	# The order of sent seats matches the play order, conveniently.
+	for my $opponent ($self->seats_in_play) {
+	    my $card_count = @{$seat->hand->cards};
+	    $self->logger->debug("I will now tell $seat about $opponent, who has $card_count cards.");
+	    $seat->call_ui_function(set_seat_hand_size=>$opponent->id, $card_count);
+	    $self->logger->debug("Done telling the seat about its opponent.");
+	}
     }
     # Send whose turn it is.
-    $player->call_ui_function("set_current_player", $self->current_player->nick);
+    $player->call_ui_function("set_current_seat", $self->current_seat->id) if ($self->current_seat);
     return 1;
 }
 
@@ -229,16 +200,26 @@ sub rpc_get_full_state {
 
 sub deal_cards {
   my $self = shift;
-  # Two-player games have seven-card hands; others get five-card hands.
-  my $hand_size = scalar($self->players) == 2? 7: 5;
-  for my $player ($self->players) {
-    $self->deck->give_cards($player->hand, $hand_size);
-#    my @cardz = map($_->name . $_->suit, @{$player->hand->cards});
-#    $player->call_ui_function(receive_hand=>\@cardz);
+  # Two-seat games have seven-card hands; others get five-card hands.
+  my $hand_size = scalar($self->seats_in_play) == 2? 7: 5;
+  for my $seat ($self->seats_in_play) {
+    $self->deck->give_cards($seat->hand, $hand_size);
   }
   # Tell everyone what just happened.
-  for my $player ($self->players) {
-      $self->rpc_get_full_state($player);
+  for my $seat ($self->seats_in_play) {
+      # Send the seat its hand.
+      my @card_names = map($_->name . $_->suit, @{$seat->hand->cards});
+      $seat->call_ui_function(receive_hand=>\@card_names);
+      # Now send it everyone's card counts.
+      # The order of sent seats matches the play order, conveniently.
+      for my $opponent ($self->seats_in_play) {
+	  my $card_count = @{$seat->hand->cards};
+	  $self->logger->debug("I will now tell $seat about $opponent, who has $card_count cards.");
+	  $seat->call_ui_function(set_seat_hand_size=>$opponent->id, $card_count);
+	  $self->logger->debug("Done telling the seat about its opponent.");
+      }
+      # Send whose turn it is.
+      $seat->call_ui_function("set_current_seat", $self->current_seat->id) if ($self->current_seat);
   }
 }
 
@@ -260,19 +241,19 @@ sub last_card {
 
 sub end_turn {
   my $self = shift;
-  $self->rotate_current_player;
-  $self->call_ui_function_on_everyone(start_turn=>$self->current_player->nick);
-  $self->make_player_draw;
+  $self->rotate_current_seat;
+  $self->call_ui_function_on_everyone(start_turn=>$self->current_seat->id);
+  $self->make_seat_draw;
 }
 
-# make_player_draw: Called at the start of a turn. Has the player draw
+# make_seat_draw: Called at the start of a turn. Has the seat draw
 # cards from the deck until a play becomes possible. (This will draw
-# no cards if the player starts the turn with legal plays already
+# no cards if the seat starts the turn with legal plays already
 # available.)
-sub make_player_draw {
+sub make_seat_draw {
   my $self = shift;
-  my $player = $self->current_player;
-  my @hand_cards = @{$player->hand->cards};
+  my $seat = $self->current_seat;
+  my @hand_cards = @{$seat->hand->cards};
   my $last_card = $self->last_card;
   my $last_value = $last_card->name;
   my $last_suit = defined($self->last_8_suit)?
@@ -291,81 +272,85 @@ sub make_player_draw {
 	 @{$self->deck->cards} == 0
 	) {
       if (@{$self->deck->cards} == 0) {
-	# Ye gods, the draw pile has run out. This player's turn is over.
-	$self->call_ui_function_on_everyone(player_passes=>$player->nick);
+	# Ye gods, the draw pile has run out. This seat's turn is over.
+	$self->call_ui_function_on_everyone(seat_passes=>$seat->id);
 	$self->end_turn;
       }
-#    print "Lookit: " . $self->deck->top_card . "\n";
     my $drawn_card_name = $self->deck->top_card->name . $self->deck->top_card->suit;
-    $self->deck->give_cards($player->hand, 1);
-    @hand_cards = @{$player->hand->cards};
-    $player->call_ui_function(draw_card=>$drawn_card_name);
-    # Tell the other players that the player drew a card.
-    map($_->call_ui_function(player_drew_card=>$player->nick), grep($_ ne $player, $self->players));
+    $self->deck->give_cards($seat->hand, 1);
+    if (@{$self->deck->cards} == 0) {
+      # The stock's run out. Replenish by shuffling the discards into it.
+      $self->discard_pile->shuffle;
+      $self->discard_pile->give_cards($self->deck, 'all');
+    }
+    @hand_cards = @{$seat->hand->cards};
+    $seat->call_ui_function(draw_card=>$drawn_card_name);
+    # Tell the other seats that the seat drew a card.
+    $self->call_ui_function_on_everyone(seat_drew_card=>$seat->id);
   }
 }
 
 sub check_for_game_over {
   my $self = shift;
-  my $hand = $self->current_player->hand;
+  my $hand = $self->current_seat->hand;
   unless ($hand->cards->[0]) {
-    # The current player has no cards. Game over!
-    # Sort the players into a Frivolity winner list.
-    # Each member of this list is a listref, containing all the players
-    # tied for that place. (This will often be just a single player, if
+    # The current seat has no cards. Game over!
+    # Sort the seats into a Frivolity winner list.
+    # Each member of this list is a listref, containing all the seats
+    # tied for that place. (This will often be just a single seat, if
     # there are no actual ties for that place.)
-    my %players_by_hand_value;
-    my %scores_by_nickname;
-    for my $player ($self->players) {
-      my $hand_value = $player->evaluate_hand;
-      $scores_by_nickname{$player->nick} = $hand_value;
-      if ($players_by_hand_value{$hand_value}) {
-	push (@{$players_by_hand_value{$hand_value}}, $player);
+    my %seats_by_hand_value;
+    my %scores_by_idname;
+    for my $seat ($self->seats_in_play) {
+      my $hand_value = $seat->evaluate_hand;
+      $scores_by_idname{$seat->id} = $hand_value;
+      if ($seats_by_hand_value{$hand_value}) {
+	push (@{$seats_by_hand_value{$hand_value}}, $seat);
       } else {
-	$players_by_hand_value{$hand_value} = [$player];
+	$seats_by_hand_value{$hand_value} = [$seat];
       }
     }
     my @winners;		# Sorted winner list!
-    # We will add players to the winner list according to their hand values.
+    # We will add seats to the winner list according to their hand values.
     # A simple sort by these values will give us the right order, since 
     # the fewer points, the better you did. (The first-place winner has zero
     # points!)
-    foreach (sort(keys(%players_by_hand_value))) {
-      push (@winners, $players_by_hand_value{$_});
+    foreach (sort(keys(%seats_by_hand_value))) {
+      push (@winners, $seats_by_hand_value{$_});
     }
 
-    use Data::Dumper;
-    print Dumper(\%scores_by_nickname);
-
-    # The the players about this.
-    $self->call_ui_function_on_everyone(scores=>\%scores_by_nickname);
+    # The the seats about this.
+    $self->call_ui_function_on_everyone(scores=>\%scores_by_idname);
     
     # Set this array as my winner list, and signal that we're all done,
     # by calling the end() method.
     # The ref will take care of the rest!
-    $self->winners(@winners);
+    my $position = 1;
+    foreach (@winners) {
+	$self->winners->add_seat_to_slot($_, $position++);
+    }
     
     $self->end;
     return 1;
   } else {
-    # Else, the player still holds cards, so the game ain't over yet...
+    # Else, the seat still holds cards, so the game ain't over yet...
     return 0;
   }
 }
     
 ################
-# Player Class
+# Seat Class
 ################
 
-package Volity::Player::CrazyEights;
+package Volity::Seat::CrazyEights;
 
 use warnings;
 use strict;
 
-use base qw(Volity::Player);
+use base qw(Volity::Seat);
 use fields qw(hand score);
 
-# add_points: Convenience method to increase the player's score.
+# add_points: Convenience method to increase the seat's score.
 # (This is useful for multi-deal games.)
 sub add_points {
   my $self = shift;
@@ -374,7 +359,7 @@ sub add_points {
   $self->{score} += $points;
 }
 
-# evaluate_hand: Return the game-over score of this player's hand.
+# evaluate_hand: Return the game-over score of this seat's hand.
 sub evaluate_hand {
   my $self = shift;
   my $score = 0;
@@ -418,7 +403,7 @@ recent version of) this very code...
 
 * L<Volity::Game>
 
-* L<Volity::Player>
+* L<Volity::Seat>
 
 http://volity.org
 
