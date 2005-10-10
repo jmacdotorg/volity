@@ -283,11 +283,8 @@ sub init_finish {
   $self->logger->debug("***REFEREE*** We have authed!\n");
   $kernel->post($self->alias, 'register', qw(iq presence message));
 
-#  # Join the game MUC.
-
+  # Join the game MUC.
   $self->join_muc({jid=>$self->muc_jid, nick=>'volity'});
-
-  $self->logger->debug("I think I sent something?!\n");
 
 }
 
@@ -488,23 +485,14 @@ sub jabber_presence {
       # been configured yet, and _that_ means that the user is me!
       # I must have just created it. Well, then.
       $self->logger->debug("Configuring the new MUC...\n");
-      # Configure the MUC.
 
-      my $config_form = Volity::Jabber::Form->new({type=>'submit'});
-      $config_form->fields(
-		           Volity::Jabber::Form::Field->new({var=>"muc#owner_roomname"})->values("A volity game..."),
-		           Volity::Jabber::Form::Field->new({var=>"muc#owner_whois"})->values("anyone"),
-			   );
-
-      # We'll listen for this query's return before telling the user
-      # about the table.
+      # Request a MUC configuration form. The muc_creation method will
+      # handle it when it comes in.
       $self->send_query({
-	  to=>$self->muc_jid,
-	  from=>$self->jid,
-	  id=>'muc-creation',
-	  type=>'set',
-	  query_ns=>"http://jabber.org/protocol/muc#owner",
-	  content=>[$config_form],
+	  query_ns => "http://jabber.org/protocol/muc#owner",
+	  type => "get",
+	  to => $self->muc_jid,
+	  id => 'muc-configuration',
       });
 
     } else {
@@ -596,7 +584,62 @@ sub jabber_presence {
   }
 }
 
+# muc_creation: This handler is called when a blank MUC config form arrives
+# from the MUC server. 
+sub muc_creation {
+    my $self = shift;
+    my ($iq) = @_;
 
+    my $config_form = Volity::Jabber::Form->new({type=>'submit'});
+    
+    # Figure out what this form wants from us, since there are so many
+    # non-spec MUC implementatons out there.
+
+    # To figure out what flavor of muc-config form this is, we'll
+    # just run some regexes over it.
+    my $text = $iq->to_str;
+
+    my @field_info;
+    if ($text =~ /var=['"]muc#owner.*?['"]/) {
+        # Looks like an mu_conference server.
+        @field_info = ("muc#owner_roomname", "muc#owner_whois", "anyone");
+    }
+    elsif ($text =~ /var=['"]anonymous['"]/) {
+        # Looks like an old ejabberd server.
+        @field_info = ("title", "anonymous", "0");
+    }
+    elsif ($text =~ /var=['"]muc#roomconfig.*?['"]/) {
+	# Glory be, it's an actual spec-compliant form.
+        @field_info = ("muc#roomconfig_roomname", "muc#roomconfig_whois", "anyone");
+    }
+    else {
+	$self->logger->error("Received a configuration form from the MUC server but I can't figure out its level of spec compliance.");
+	# Report an internal error via a fault, and then go away.
+	$self->server->send_rpc_fault($self->starting_request_jid,
+				      $self->starting_request_id,
+				      608,
+				      "Created a MUC but could not understand its configuration form.",
+				      );
+	$self->stop;
+	return;			# Waste of breath, but just making it clear.
+    }
+
+    $config_form->fields(
+			 Volity::Jabber::Form::Field->new({var=>$field_info[0]})->values("A volity game..."),
+			 Volity::Jabber::Form::Field->new({var=>$field_info[1]})->values($field_info[2]),
+			 );
+    
+    # We'll listen for this query's return before telling the user
+    # about the table.
+    $self->send_query({
+	to=>$self->muc_jid,
+	from=>$self->jid,
+	id=>'muc-creation',
+	type=>'set',
+	query_ns=>"http://jabber.org/protocol/muc#owner",
+	content=>[$config_form],
+    });
+}
 
 ###################
 # MUC user tracking
