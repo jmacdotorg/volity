@@ -4,9 +4,16 @@ lib/Volity/Bookkeeper.pm
 lib/Volity/Info.pm
 lib/Volity/Info/Game.pm
 lib/Volity/Info/Player.pm
-lib/Volity/Info/GamePlayer.pm
-lib/Volity/Info/GameQuitter.pm
 lib/Volity/Info/Ruleset.pm
+lib/Volity/Info/Feature.pm
+lib/Volity/Info/File.pm
+lib/Volity/Info/FileFeature.pm
+lib/Volity/Info/FileLanguage.pm
+lib/Volity/Info/Fileset.pm
+lib/Volity/Info/GameSeat.pm
+lib/Volity/Info/PlayerSeat.pm
+lib/Volity/Info/Seat.pm
+lib/Volity/Info/Server.pm
 LICENSE
 MANIFEST			This list of files
 README
