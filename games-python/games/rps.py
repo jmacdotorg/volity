@@ -17,22 +17,45 @@ class RPS(volity.game.Game):
     rulesetversion = '1.5'
 
     def __init__(self, ref):
+        """__init__(self, ref)
+
+        Set up the RPS game.
+        """
+        
         volity.game.Game.__init__(self, ref)
 
+        # Set ourself as the opset (so this instance's rpc_* methods are
+        # called.)
         self.setopset(self)
-        self.validatecalls('no_ties', 'best_of', afoot=False)
+
+        # Set up argument-type checkers and state checkers.
+
+        # These two RPCs are setup-time only. (Not allowed during suspension.)
+        self.validatecalls('no_ties', 'best_of', state=volity.game.STATE_SETUP)
+        
+        # This RPC is game-time only.
         self.validatecalls('choose_hand', afoot=True)
+        
+        # Add argument-checking conditions. The choose_hand call is also
+        # limited to seated players.
+        self.validatecalls('choose_hand', args=str, seated=True)
         self.validatecalls('no_ties', args=int)
         self.validatecalls('best_of', args=int)
-        self.validatecalls('choose_hand', args=str, seated=True)
 
+        # Initial default values.
         self.no_ties = 1
         self.best_of = 1
-        
+
+        # Construct the two seats. These are RPSSeat objects, our customized
+        # subclass of Seat.
         self.whiteseat = RPSSeat(self, 'white')
         self.blackseat = RPSSeat(self, 'black')
 
     def begingame(self):
+        """begingame() -> None
+
+        Game-beginning conditions.
+        """
         self.gamecount = 0
         self.whiteseat.hand = None
         self.whiteseat.wins = 0
@@ -40,12 +63,25 @@ class RPS(volity.game.Game):
         self.blackseat.wins = 0
 
     def sendconfigstate(self, player):
+        """sendconfigstate(player) -> None
+
+        Send the current game configuration to a player who has just joined
+        the table.
+        """
         player.send('no_ties', '', self.no_ties)
         player.send('best_of', '', self.best_of)
 
-    # The following methods are RPC handlers.
+    # The following methods are RPC handlers. Note that the argument types
+    # have already been checked, so we can pull arguments out of the *args*
+    # array with no fear of an IndexError or TypeError. The *sender* is
+    # always the real JID of a player at the table.
                 
     def rpc_no_ties(self, sender, *args):
+        """rpc_no_ties(int)
+
+        Configure the game to allow or disallow ties. Notify the players
+        of the change, and mark them all unready.
+        """
 
         val = args[0]
         if (not val in [0,1]):
@@ -60,6 +96,11 @@ class RPS(volity.game.Game):
         self.unready()
 
     def rpc_best_of(self, sender, *args):
+        """rpc_best_of(int)
+
+        Configure the game to "best of N", where N is odd. Notify the players
+        of the change, and mark them all unready.
+        """
 
         val = args[0]
         if (val <= 0 or (val & 1) == 0):
@@ -74,6 +115,14 @@ class RPS(volity.game.Game):
         self.unready()
 
     def rpc_choose_hand(self, sender, *args):
+        """rpc_choose_hand(move)
+
+        The *move* is a string, which must be 'rock', 'paper', or 'scissors'.
+        After each move, we queue the checkoutcome() method, which checks
+        to see if the game is over. (We queue the method rather than calling
+        it, because we don't want the end-of-game operation to occur inside
+        the RPC handler.)
+        """
 
         val = args[0]
 
@@ -89,13 +138,20 @@ class RPS(volity.game.Game):
         self.queueaction(self.checkoutcome)
 
     def checkoutcome(self):
+        """checkoutcome() -> None
+
+        Check the game state; see if the game is over, and who has won.
+        This is invoked after every player move.
+        """
         white = self.whiteseat
         black = self.blackseat
 
         if ((not white.hand) or (not black.hand)):
             # no outcome yet
             return
-                
+
+        # We have an outcome, so make all the moves public.
+                        
         self.sendtable('player_chose_hand', white.id, white.hand)
         self.sendtable('player_chose_hand', black.id, black.hand)
 
@@ -124,8 +180,11 @@ class RPS(volity.game.Game):
         black.hand = None
 
         if (self.gamecount < self.best_of):
+            # More rounds still to go.
             return
 
+        # We've completed best_of N rounds, so the game is over.
+            
         if (black.wins > white.wins):
             winner = black
             self.log.info('black wins the match')
@@ -140,6 +199,9 @@ class RPS(volity.game.Game):
 
     
 class RPSSeat(volity.game.Seat):
+    """RPSSeat: A Seat class which tracks each player's pending move, and
+    how many wins he has (if best_of is greater than 1).
+    """
     def __init__(self, game, id):
         volity.game.Seat.__init__(self, game, id)
         self.hand = None
@@ -150,21 +212,41 @@ class RPSBot(volity.bot.Bot):
     """RPSBot: A bot to play Rock Paper Scissors. It plays randomly, so
     good luck beating it.
 
-    This doesn't support the game.best_of or game.no_ties RPCs; it makes
-    just one move per game. Since the UI doesn't support those RPCs either,
-    I feel no pain there.
+    ###BUG: This bot does not recognize tie situations; it only makes one move
+    per game. If a tie occurs, the game will get stuck. This bot also does
+    not recognize the game.best_of and game.no_ties RPCs, but since the UI
+    doesn't either, I don't sweat it.
     """
     
     gameclass = RPS
 
     def begingame(self):
+        """begingame() -> None
+
+        Game on? Make a move.
+        """
+        
         val = self.choosehand()
         self.send('choose_hand', val)
 
     def resumegame(self):
-        self.begingame()
+        """begingame() -> None
+
+        Game resumed? Make a move. (A move might already have been made before
+        the suspension -- if the bot was seated, it definitely moved. But
+        we don't care.)
+        """
+        
+        val = self.choosehand()
+        self.send('choose_hand', val)
         
     def choosehand(self):
+        """choosehand() -> str
+
+        Choose a move. Returns 'rock', 'paper', or 'scissors'. This method
+        is broken out so that subclasses of the Bot can have different
+        strategies.
+        """
         return random.choice(['rock', 'paper', 'scissors'])
 
 class RPSScissorsBot(RPSBot):

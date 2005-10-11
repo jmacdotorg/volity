@@ -150,6 +150,7 @@ class BarsoomGo(volity.game.Game):
                 penalty = targsize + size
 
         seat.stash[size] -= 1
+        seat.penalties += penalty
         self.board[xpos][ypos] = (seat, size, dir)
 
         self.sendtable('move', seat, xpos, ypos, size, dir)
@@ -158,7 +159,12 @@ class BarsoomGo(volity.game.Game):
             self.sendtable('penalty', seat, penalty, xpos, ypos, dir)
 
         if (self.whiteseat.empty() and self.blackseat.empty()):
-            self.gameover()
+            winner = None
+            if (self.whiteseat.penalties < self.blackseat.penalties):
+                winner = self.whiteseat
+            if (self.whiteseat.penalties > self.blackseat.penalties):
+                winner = self.blackseat
+            self.gameover(winner)
             return
             
         if (self.turn != self.whiteseat):
@@ -174,6 +180,7 @@ class GoSeat(volity.game.Seat):
 
     def begingame(self):
         self.stash = [None, 5, 5, 5]
+        self.penalties = 0
 
     def empty(self):
         return (self.stash[1] + self.stash[2] + self.stash[3] == 0)
