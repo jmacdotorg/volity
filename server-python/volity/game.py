@@ -98,6 +98,11 @@ class Game:
 
     referee -- the Referee object which this Game is attached to. You should
         not need to refer to this, but if you do, here it is.
+    log -- a logging object. You can use this to put messages in the volityd
+        log. (As a rule, you should log ordinary game operations as info();
+        detailed game operations as debug(); problems of interest to the
+        parlor admin as warning(); and problems that indicate bugs in your
+        code as error().)
 
     Internal methods:
     

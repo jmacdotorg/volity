@@ -68,6 +68,12 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.4.2:
+We now send a game record to the bookkeeper. The Game.gameover() API is
+    well-specified now, so the game can do this.
+Respect the table's show_table setting.
+Much documentation added. Finally.
+
 - 1.4.1
 Bots exist. The framework undoubtedly needs more work, but you can
     implement the Rock-Paper-Scissors-Bot.
