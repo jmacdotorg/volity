@@ -24,6 +24,14 @@ ABANDONED_TIMEOUT = 3*60
 class Referee(volent.VolEntity):
     """Referee: The implementation of a Volity referee.
 
+    A Referee is dedicated to running a particular kind of game. However,
+    there is no game-specific code in Referee (nor is it subclassed for
+    a particular game). Instead, the game-specific code is in a subclass
+    of the Game class. The game implementor creates this class; the Parlor
+    loads its module; and the Referee instantiates it (at constructor time).
+    The Game subclass handles all game.* RPCs, and provides assorted other
+    methods which the Referee calls to decide what to do.
+
     Referee is a Jabber client (although it is not a subclass of the
     Zymb Jabber client agent; instead, it creates one as a subsidiary
     object). It is created by a Parlor when someone requests a new game
@@ -211,11 +219,12 @@ class Referee(volent.VolEntity):
             raise Exception('the game must create at least one seat')
 
         if (self.game.defaultlanguage != None):
-            self.language = self.game.defaultlanguage
+            self.language = bool(self.game.defaultlanguage)
         if (self.game.defaultrecordgames != None):
-            self.recordgames = self.game.defaultrecordgames
+            self.recordgames = bool(self.game.defaultrecordgames)
         if (self.game.defaultshowtable != None):
-            self.showtable = self.game.defaultshowtable
+            self.showtable = bool(self.game.defaultshowtable)
+        ### let parlor config override these?
 
         # Set up the disco replier.
 
@@ -433,6 +442,7 @@ class Referee(volent.VolEntity):
         Handle a Jabber message stanza. The Referee does not react to messages,
         so this just raises StanzaHandled to end processing for the stanza.
         """
+        
         if (self.log.isEnabledFor(logging.DEBUG)):
             self.log.info('received message')
             #self.log.debug('received message:\n%s', msg.serialize(True))
@@ -1641,7 +1651,7 @@ class Referee(volent.VolEntity):
             'end_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime()),
             'start_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime(self.gamestarttime)),
             'game_uri' : self.parlor.gameclass.ruleseturi,
-            'server' : unicode(self.parlor.jid.getbare())
+            'parlor' : unicode(self.parlor.jid.getbare())
         }
         if (cancelled):
             dic['finished'] = False
@@ -1675,7 +1685,7 @@ class Referee(volent.VolEntity):
     def suspendgame(self, jidstr=None):
         """suspendgame() -> None
 
-        Game-suspension handler. (Game-specific shutdown is handled by the
+        Game-suspension handler. (Game-specific work is handled by the
         game's suspendgame() method.)
 
         This removes any Player objects corresponding to players who have
@@ -1715,7 +1725,7 @@ class Referee(volent.VolEntity):
     def unsuspendgame(self):
         """unsuspendgame() -> None
 
-        Game-resumption handler. (Game-specific shutdown is handled by the
+        Game-resumption handler. (Game-specific work is handled by the
         game's unsuspendgame() method.)
 
         This does not modify gameseatlist, but it does add the current
@@ -1800,7 +1810,7 @@ class Player:
 
     Public methods:
 
-    send(methname, *args, **keywords) -- send an RPC to this player.
+    send() -- send an RPC to this player.
 
     Publicly-readable fields:
 

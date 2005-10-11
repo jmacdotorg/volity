@@ -37,7 +37,7 @@ class Bot:
     def suspendgame(self):
         pass
 
-    def resumegame(self):
+    def unsuspendgame(self):
         pass
 
     def destroy(self):
