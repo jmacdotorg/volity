@@ -1,0 +1,11 @@
+    <para>
+      That done, get yourself a copy of Frivolity, a collection of Perl
+      libraries and programs for creating Volity modules and then
+      running then as servers on the Volity network. The most recent
+      version is always available as an easy-to-install tarball from
+      <ulink url="http://volity.org">the Volity.org
+      website</ulink>. Even though you'll be working principally with
+      only the Volity::Player and Volity::Game packages, they depend on
+      other modules within the Volity namespace, so you'll want to
+      install the whole shebang.
+    </para>

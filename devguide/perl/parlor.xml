@@ -1,0 +1,38 @@
+  <section>
+    <title>Running the server</title>
+    <para>
+      To make your game actually run, launch the
+      <literal>server.pl</literal> script that ships with the
+      Frivolity software, supplying your module's classname as an
+      argument. You will need to supply additional arguments to
+      specify important connection information (such as your server's
+      Jabber account name), as detailed in the script's manpage.
+    </para>
+    <para>
+      Once the server successfully launches, it runs as a "headless",
+      noninteractive process until it terminates, either through user
+      intervention (i.e. you send it a <literal>kill</literal> signal)
+      or because it crashed (in which case you should notify
+      me).
+    </para>
+    <para>
+      This, combined with the fact that the script can be configured
+      only through a pile of command-line switches at launch-time, and
+      features no real logging of any kind, rather gives one the
+      impression that the Volity team hasn't spent much time
+      developing the server executable yet, eh? Fear not; if you're
+      reading these words, you're either an early adopter who can ask
+      the core designers for personal help getting your game to work,
+      or you're reading some hideously outdated version of this
+      document and should <ulink
+      url="http://volity.org/docs/devguide_perl">go check for a more
+      recent version</ulink>. In either case, you can expect to see a
+      much friendlier server interface in the near future.
+    </para>
+    <para>
+      In the meantime, please keep an eye on <ulink
+      url="http://volity.org"/> for developer updates, contact <ulink
+      url="mailto:jmac@jmac.org">me</ulink> with any questions and
+      comments about this article or Volity, and <emphasis>happy hacking!</emphasis>
+    </para>
+  </section>

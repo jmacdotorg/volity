@@ -1,0 +1,1146 @@
+<section id="SECT-hacking">
+  <title>Creating a Frivolity Game Module</title>
+  <note>
+    <para>
+      This is when we start getting very Perl-specific. To make the
+      most sense from the remainder of this article, you should grok
+      object-oriented Perl.
+    </para>
+  </note>
+  <para>
+    Frivolity, Perl's Volity implementation, makes the creation of
+    Volity modules in Perl very easy. It involves the creation of an
+    object class that subclasses the stock
+    <literal>Volity::Game</literal> module, which (as <xref
+    linkend="FIGURE-frivolity-diagram"/> shows) plugs into the
+    black box of the Frivolity game server application. Whenever a
+    game; the module becomes, in effect, a driver for the referee object.
+  </para>
+  <para>
+You could
+    think of the Frivolity server as a video game console, and the
+    Perl-based game modules it can run as interchangeable cartridges;
+    only one can be plugged in at a time, but while it is, it
+    completely defines how the game console presents itself to the
+    world, without having to perform any changes to the console itself.
+  </para>
+  <figure id="FIGURE-frivolity-diagram">
+    <title>Frivolity server, referee, and game object relationships</title>
+    <graphic fileref="perl/frivolity_diagram.png" />
+  </figure>
+  <para>
+    Depending upon the needs of your game, you might also want to
+    subclass the stock <literal>Volity::Player</literal> module. You
+    can almost always leave untouched the various other modules that
+    go into a running Frivolity game server, such as
+    <literal>Volity::Server</literal> and
+    <literal>Volity::Referee</literal>, as they're flexible enough to
+    handle a wide variety of games. Frivolity does provide methods
+    for running the server with subclasses of even these core modules
+    if you need to perform some deep voodoo, but this article leaves
+    this as an (unlikely) exercise for the reader; see the Volity
+    manpages for more information.
+  </para>
+  <section>
+    <title>The Life of a Game Object</title>
+    <para>
+      Before getting into the gory details of writing game objects,
+      let's have a look at the life cycle of one of these interesting
+      creatures.
+    </para>
+    <para>
+      In Frivolity, a table's referee begins its interaction with its
+      game module before the game even begins. When all the players at
+      the table signal their readiness to play, the ref calls some
+      methods, such as <literal>min_allowed_players()</literal>, on
+      the game class to make sure that the game can start under the
+      present conditions.
+    </para>
+    <para>
+      Once the ref confirms that the game can begin, it finally
+      creates the game object by calling the game class's
+      <literal>new()</literal> constructor. It then stores this object
+      in its own <literal>game</literal> field, and also puts a
+      reference to itself inside the game object's
+      <literal>referee</literal> field. (Creation of this field &emdash; and
+      properly managing the circular reference that its presence
+      causes &emdash; are both handled for you by the base class.)
+    </para>
+    <para>
+      After completing all the necessarily initialization on its own
+      end, the referee calls the game's
+      <literal>start_game()</literal> object method, and from that
+      point on the game object has full control of things. Even though
+      the referee remains the entity which at players aim their
+      game-related communication, the ref simply passes all the game
+      RPC requests players send to its underlying game object, who
+      reacts to them however it deems best. Similarly, the referee holds
+      the game's public face when sending messages out to players, so
+      the game object calls methods on the referee when it wants to
+      respond to players' RPC requests, or otherwise communicate with
+      the folks at the table.
+    </para>
+    <note>
+      <para>
+	To make things convenient for programmers, a
+	<literal>Volity::Game</literal> subclass rarely if ever needs
+	to directly refer to the referee. The base module's predefined
+	communication methods handle most of the game-to-referee
+	message-passing that needs to take place. If you ever
+	<emphasis>do</emphasis> need the referee object for some
+	nefarious purpose of your own devising, don't
+	forget that it's always sitting right there in the game
+	object's <literal>referee</literal> field.
+      </para>
+    </note>
+    <para>
+      Eventually, the game decides that it's over, most likely because
+      a winning condition has been met. It sets a few important fields
+      on itself, such as the final ranking of all the players in the
+      <literal>winners</literal> field, and then calls its own
+      <literal>end_game()</literal> method. Defined by its base class,
+      this sets in motion several events that culminates in the
+      referee sending a record of the completed game to the Volity
+      bookkeeper.
+    </para>
+    <para>
+      This is the end of the object's life; the referee destroys it,
+      and then waits at the table to see if the players wish to play
+      again. If so, it instances the game class once more, and the
+      game's circle of life begins anew.
+    </para>
+  </section> <!-- Life of a game object -->
+  <section>
+    <title>A Game Module's Structure</title>
+    <para>
+      Because Frivolity game modules must fulfill certain requirements
+      in order to work, they tend to have a predictable structure,
+      including the following features. We'll get into the details of
+      each section in <xref linkend="SECT-writing-module"/>.
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>Perl OO Declaration</term>
+	<listitem>
+	  <para>
+	    The module must subclass, through the <literal>use
+	    base</literal> pragma, the <literal>Volity::Game</literal>
+	    Perl module. This lets your module inherit some crucial
+	    object and class methods, as well as object fields and
+	    class data.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Ruleset configuration</term>
+	<listitem>
+	  <para>
+	    By setting some class data, you let your module know which
+	    ruleset URI it adheres to. You also set some configuration
+	    information that your game needs in order to let the
+	    referee run a "pre-flight check" before creating the game
+	    object, such as the minimum and maximum number of players
+	    that the game supports.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Referee callbacks</term>
+	<listitem>
+	  <para>
+	    There are a handful of methods that the Frivolity referee
+	    might call on your game object after it's instanced. For
+	    example, it will call <literal>start_game()</literal> when
+	    it's all done setting up the playing table, in order to
+	    signal that it's ready for any initialization that the
+	    game might require (such as dealing out cards or setting
+	    up the board). The <literal>Volity::Game</literal> module
+	    provides some default methods for these, which you can
+	    override in your own module for custom behavior.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Player callbacks</term>
+	<listitem>
+	  <para>
+	    These important methods provide the players' interface to
+	    your game. Generally, you must create exactly one of
+	    these subroutines for every player-to-referee method
+	    defined in the ruleset's API (see <xref
+	    linkend="SECT-player-to-referee"/>). Players will call
+	    them via RPC. (They can't accidentally (or
+	    "<emphasis>accidentally</emphasis>") call any other
+	    methods, due to Frivolity's simple RPC security mechanism,
+	    which we'll cover later.)
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Internal methods and functions</term>
+	<listitem>
+	  <para>
+	    This is just the freewheeling part of your code, that
+	    which isn't a callback or a configuration setting, and
+	    instead houses all the game's internal logic. Generally,
+	    these functions are triggered by player callbacks, since
+	    most of a game object's activity comes about in reaction
+	    to player input.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>Player Classes</term>
+	<listitem>
+	  <para>
+	    The <literal>Volity::Player</literal> class defines a
+	    fairly generic player-object, with a few basic fields and
+	    methods pre-defined. This is fine for many games, but many
+	    others will want to customize this class a bit; for
+	    example, giving them a <literal>hand</literal> field for
+	    holding cards. These game implementations are free to
+	    subclass <literal>Volity::Player</literal>, and include
+	    the package definition in the same file as the game
+	    module.<footnote><para>You don't have to do it this way,
+	    of course; if a stand-alone module file that defines a
+	    player subclass is visible in your Perl's
+	    <literal>@INC</literal> path, you can use it in your
+	    game. But since player classes are often explicitly tied
+	    to game implementations, and useful only in that context,
+	    it's often handy to keep the two together in the same Perl
+	    module file.</para></footnote> You then let the referee
+	    know what kind of players to hand the game object by
+	    setting a class variable.
+	  </para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </section> <!-- Module structure -->
+  <section id="SECT-writing-module">
+    <title>Writing the module</title>
+    <para>
+      This section covers the fields you must define, methods you must
+      override, and other work you must do for your game module to
+      come alive. You should, however, refer to the
+      <literal>Volity::Player</literal> and
+      <literal>Volity::Game</literal> manpages as final-word
+      references on those base classes and their methods.
+    </para>
+    <para>
+      For the remainder of this section, we're going to build, piece
+      by piece, a simple Frivolity module that plays Rock Paper
+      Scissors, using the ruleset API that we sketched out in <xref
+      linkend="SECT-creating-ruleset" />.
+    </para>
+    <section id="SECT-writing-preparation">
+      <title>Preparation</title>
+      <para>
+	The first step, of course, involves creating a new Perl module
+	that subclasses <literal>Volity::Game</literal>. See <xref
+	linkend="SECT-rps-example-finish"/> or <xref
+	linkend="SECT-eights-example"/> if you need a nudge in this
+	direction.
+      </para>
+      <para>
+	Frivolity uses Perl's <literal>fields</literal> pragma for
+	defining inheritable object fields<footnote><para>Which are,
+	under the hood, simply members of the pseudohash that is the
+	game object. At the time of this writing (mid-2004), Perl has
+	mixed feelings about pseudohashes; as of version 5.8.3, Perl
+	actually generates deprecation warnings upon their use, which
+	is why the base Frivolity code contains <literal>no warnings
+	qw(deprecated);</literal> statements. However, nothing in the
+	code <emphasis>literally</emphasis> refers to pseudohashes,
+	since it created them through the
+	<literal>fields::new()</literal> function, and refers to the
+	resulting objects as ordinary hashes thereafter. It is my
+	hope that Perl will silently shift its guts so that the
+	<literal>fields</literal> stuff uses (the conceptualized but not
+	yet implemented) restricted hashes in a future version. In
+	the meantime, everything Just Works for now, and you
+	shouldn't worry too much about it. I
+	hope.</para></footnote>. Three of these fields are of
+	particular interest to game module programmers.
+      </para>
+      <variablelist>
+	<varlistentry>
+	  <term>players</term>
+	  <listitem>
+	    <para>
+	      Contains a list of player objects, belonging to the
+	      <literal>Volity::Player</literal> class, or whichever
+	      subclass you declare through the
+	      <literal>player_class</literal> configuration field (as
+	      discussed in <xref
+	      linkend="SECT-module-configuration"/>).
+	    </para>
+	    <para>
+	      When the referee creates the game object, it places all
+	      the game's players into this field, in no particular
+	      order. After it awakens, your module can reorder them
+	      according to some scheme if it wishes.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>winners</term>
+	  <listitem>
+	    <para>
+	      When the game ends, your module puts a winner-ordered
+	      list of the players into this field, as described in
+	      <xref linkend="SECT-ending-game"/>.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>referee</term>
+	  <listitem>
+	    <para>
+	      The referee object, which you can do whatever you'd like
+	      with (including completely ignoring it, as most game
+	      modules probably end up doing). It's a direct reference
+	      to the real, live referee, so feel free to call any of
+	      the methods described in the
+	      <literal>Volity::Referee</literal> manpage. You can
+	      even call methods that would be obviously detrimental
+	      to the health of your game (such as having the referee
+	      leave the table and disconnect from the Jabber
+	      network), but you probably wouldn't want to.
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </section> <!-- Writing: prep -->
+    <section id="SECT-module-configuration">
+      <title>Configuration</title>
+      <para>
+	To configure your module, you call some methods that set some
+	class data fields.<footnote><para>These fields, and the
+	accessor methods you use, are implemented through the
+	Class::Data::Inheritable Perl module. But you don't need to
+	know that in order to use the accessors.</para></footnote>
+      </para>
+    <variablelist>
+      <varlistentry>
+	<term>max_allowed_players</term>
+	<listitem>
+	  <para>
+	    The maximum number of players that this game can
+	    support. If unset, the game allows any
+	    number of players to join.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>min_allowed_players</term>
+	<listitem>
+	  <para>
+	    If set, asserts the minimum player-population of a table
+	    before a game can begin. Otherwise, the referee won't
+	    make this minimum-population check before a game
+	    starts. (Note this field should be set for any
+	    game that doesn't have a solitaire mode!)
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>uri</term>
+	<listitem>
+	  <para>
+	    The URI of the ruleset that this module implements (as
+	    discussed in <xref
+	    linkend="SECT-choosing-ruleset"/>).
+	  </para>
+	  <para>
+	    Unlike the other configuration fields, this one is
+	    mandatory; you <emphasis>must</emphasis> define it in
+	    order for you module to work.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>player_class</term>
+	<listitem>
+	  <para>
+	    If your module uses a custom player class (instead of the
+	    default <literal>Volity::Player</literal> class), set
+	    this field to the class's name. The referee will create
+	    player objects of that class before the game begins.
+	  </para>
+	</listitem>
+      </varlistentry>
+      </variablelist>
+      <tip>
+	<para>
+	  To define a game that supports exactly two players, set both
+	  <literal>min_allowed_players</literal> and
+	  <literal>max_allowed_players</literal> to
+	  <literal>2</literal>.
+	</para>
+      </tip>
+      <para>
+	With that in mind, let's start programming our RPS game. We'll
+	write the necessary Perl-module handwaving, and then add in the
+	configuration information.
+      </para>
+      <programlisting>
+package Volity::Game::RPS;
+	
+use warnings;
+use strict;
+	
+# The following line makes this an actual Frivolity game module!
+use base qw(Volity::Game);
+
+__PACKAGE__->max_allowed_players(2);
+__PACKAGE__->min_allowed_players(2);
+__PACKAGE__->uri("http://volity.org/games/rps");
+
+1;
+    </programlisting>
+    <para>
+      Actually, an RPS player should probably have a
+      field to store the hand-shape that they've chosen to throw. So,
+      let's declare and then create an appropriate subclass of
+      <literal>Volity::Player</literal> which defines a
+      <literal>hand</literal> field. After adding in the appropriate
+      lines, our module file now looks like this:
+    </para>
+    <programlisting>
+package Volity::Game::RPS;
+
+use warnings;
+use strict;
+
+# The following line makes this an actual Frivolity game module!
+use base qw(Volity::Game);
+
+__PACKAGE__->max_allowed_players(2);
+__PACKAGE__->min_allowed_players(2);
+__PACKAGE__->uri("http://volity.org/games/rps");
+__PACKAGE__->player_class("Volity::Player::RPS");
+
+# The remainder of this file defines our player subclass. We'll insert
+# edits to the game subclass above this line.
+package Volity::Player::RPS;
+
+use base qw(Volity::Player);
+use fields qw(hand);
+
+# That's it. We just wanted to add the 'hand' to the class's
+# object-field list, which will automagically create a hand()
+# accessor method for us.
+
+1;      
+    </programlisting>
+    <para>
+      We don't need to make any further changes to that player class,
+      so all the example code for the remainder of this section will
+      go above its package declaration. (We'll have a final look at
+      the entire file, with both packages, after we're done
+      putting the all the pieces together.)
+    </para>
+  </section>
+  <section>
+    <title>Referee Callbacks</title>
+    <para>
+      Your module can optionally define any of the following object
+      methods. They all exist as no-op stub methods in the base class,
+      so you can choose to not override them. However, it's likely
+      that you'll want to override at least
+      <literal>start_game</literal> in order to define custom setup
+      activity.
+    </para>
+    <para>
+      The referee calls each of these methods at certain points during the game
+      object's lifetime.
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>start_game</term>
+	<listitem>
+	  <para>
+	    The referee calls this method after it has finished all
+	    of its preparations for a new game. This is the perfect
+	    opportunity for your module to perform any initialization
+	    is has to, just as setting up the game board, or dealing
+	    out cards to players. All the objects described in <xref linkend="SECT-writing-preparation"/>
+	    are guaranteed to be defined at this time, to do with
+	    what you will.
+	  </para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+    <para>
+      In our RPS module, we override <literal>start_game</literal> to
+      set all the players' hands to <literal>undef</literal>. Even
+      though the player objects' <literal>hand</literal> fields are
+      already undefined when they are first created, they will have a
+      value (whichever hand type the player last threw) if the players
+      played in the previous game at this table.
+    </para>
+    <programlisting>
+sub start_game {
+  my $self = shift;
+  for my $player ($self->players) {
+    $player->hand(undef);
+  }
+}
+    </programlisting>
+<!--
+    <para>
+      As it happens, we <emphasis>don't</emphasis> need to
+      override <literal>start_game</literal> for RPS; there's really no
+      setup to perform, since both players will be created with
+      <literal>undef</literal> as their hand values, and that's exactly
+      how we like it. So, let's move on.
+    </para>
+-->
+  </section>
+  <section>
+    <title>Player Callbacks</title>
+    <para>
+      Your module <emphasis>must</emphasis> define one method for
+      every function defined by the ruleset's player-to-referee
+      API. Furthermore, each method must be named after the API function it implements, prefixed with "<literal>rpc_</literal>" (which offers a bit of network security, since the referee prepends that string to all the RPC requests it receives for the game). This is true even if it breaks Perl subroutine-naming convention,
+      as when a ruleset's API functions use StudlyCaps, for
+      example. Since players invoke these methods directly upon your
+      object via RPC, you've got no say in that matter (unless, of
+      course, you also happen to be writing the ruleset API).
+    </para>
+    <para>
+      Each of these player-called methods should do something
+      appropriate for the game, typically some combination of making
+      internal state changes and calling UI functions on players (see
+      <xref linkend="SECT-talking-to-players"/>).
+    </para>
+    <para>
+      Mind the return values of these callback methods! They have a
+      direct effect on the RPC response message that the referee will
+      send back to the player, as follows:
+    </para>
+    <itemizedlist>
+      <listitem>
+	<para>
+	  A <emphasis>false</emphasis> return value (or an undefined
+	  one) means that everything went OK and the game module has
+	  no particular comment about it. The player who made the
+	  original RPC request will receive a
+	  generic success response from the referee.
+	</para>
+	<para>
+	  This is the proper response for most state-affecting player
+	  actions, and as such you'll commonly finish up
+	  state-changing activity with a plain old
+	  <literal>return;</literal> statement.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  A true return value that is anything <emphasis>except
+	  for</emphasis> a list whose first value is the literal
+	  string <literal>"fault"</literal> will be passed back to
+	  the calling player as-is as the RPC response. It still
+	  means that the request executed successfully, but adds some
+	  additional information that the player might be interested in.
+	</para>
+	<para>
+	  Use this style of return value when reacting to players'
+	  information-request calls.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Finally (and I bet you saw this coming), a response
+	  consisting of a list whose first value is the literal
+	  string <literal>"fault"</literal> means that the game
+	  cannot fulfill the player's request for some in-game
+	  reason. The second member of this list
+	  <emphasis>must</emphasis> be one of the error-code numbers
+	  defined by the ruleset's error section (see <xref
+	  linkend="SECT-error-codes"/>). As an optional third
+	  argument, you can include another string with a prose error
+	  message; it's up to the receiving UI how (and if) to
+	  display this.
+	</para>
+      </listitem>
+    </itemizedlist>
+    <para>
+      According to its ruleset API, Rock Paper Scissors has but one
+      player-to-referee call, <literal>choose_hand</literal>. Let's
+      add that to our code now, but really just have it call another
+      method, since that's going to contain the entirety of our game's
+      logic! We'll see how that works in <xref linkend="SECT-rps-example-finish"/>.
+    </para>
+    <programlisting>
+sub rpc_choose_hand {
+  my $self = shift;
+  return $self->set_hand(@_);
+}
+    </programlisting>
+  </section>
+  <section id="SECT-talking-to-players">
+    <title>Talking to Players</title>
+    <para>The referee-to-player section of the ruleset's API should
+    define everything you'd ever need to tell your game's
+    players. You don't need to implement these functions yourself;
+    that's the job of the client-side UI file. Your game module simply
+    needs a way to call these functions, and Frivolity gives you two
+    ways to do this.</para>
+    <para>
+      The <literal>Volity::Player</literal> base class defines a
+      <literal>call_ui_function()</literal> object method, which takes
+      as arguments the name of a player-side function, and any of
+      <emphasis>its</emphasis> arguments you might like to pass
+      along. The referee then uses RPC to call this function on the
+      player represented by the invocant object.
+    </para>
+    <para>
+      For example, if we were implementing Crazy Eights, then we would
+      need to reaction to a player drawing a card by putting some
+      card's name into a variable named <literal>$card</literal>, and
+      then sending it to the player via the API-defined
+      <literal>draw_card(card)</literal> function. So, if that player
+      happened to be in <literal>$drawing_player</literal>, then we'd say:
+    </para>
+    <programlisting>
+$drawing_player->call_ui_function('draw_card', $card);
+    </programlisting>
+    <para>
+      Quite often (perhaps more often than not), you'll want to
+      communicate something game-related to everyone at the
+      table. You could individually invoke
+      <literal>call_player_ui()</literal> on every player stored in the
+      game's <literal>players</literal> field, but you'd probably be
+      happier using the convenient
+      <literal>call_ui_function_on_everyone()</literal> object
+      method that's attached to your game object. It takes the same
+      arguments as the other method, and does just what its name
+      implies, invoking the named function (with included arguments)
+      on every player.
+    </para>
+    <para>
+      This is actually the salient method as far as our Rock Paper
+      Scissors implementation is concerned, since the referee of this
+      game never has to send private messages to either player. And as
+      it happens, the only time that it must send messages at all
+      happens when the game ends, and it reveals both players'
+      hand-throws to everyone at the table.
+    </para>
+    <para>
+      Finally, you can use ordinary Jabber messaging to
+      communicate, sending chat messages to the table or to individual
+      players (or even other people and entities on the Jabber network,
+      if you really want to). The game classes don't offer any native
+      way to do this, but you can instead pull strings on the
+      encapsulated referee object to make it talk; for example, to
+      send a friendly greeting to everyone in the table, where
+      <literal>$self</literal> is a game object:
+    </para>
+    <programlisting>
+$self->referee->groupchat("Hello, everyone!");
+    </programlisting>
+    <para>
+      Consult the <literal>Volity::Jabber</literal> manpage to learn
+      about <literal>groupchat</literal> and the other chatty
+      messages. And note that this chatting absolutely
+      <emphasis>should not</emphasis> stand in for the API-defined
+      referee-to-player calls; it should only be used for "color", or
+      perhaps clever, off-spec hacks of your own devising, if used at all.
+    </para>
+  </section> <!-- Talking to players -->
+  <section id="SECT-ending-game">
+    <title>Ending the Game</title>
+    <para>
+      When the game has ended, you must tally up the results, and
+      then let the referee know that it's time to wrap up.
+    </para>
+    <para>
+      First, create a new list comprising the players in winning
+      order. That is, the person who won the game has their player
+      object as the first member of the list, the second-place player
+      is the second member, and so on down through whomever came in
+      last. In the case of a tie for any position, use a list
+      reference for that position, containing all the player objects
+      who share that spot.
+    </para>
+    <note>
+      <para>
+	Not all games have a sense of ordered winning; lacking any
+	sort of score or other gradient victory-metric, they instead
+	end with one clear winner and several lowly losers. In this
+	case, just lump everyone who didn't win into the second-place
+	spot, sharing the same list reference.
+      </para>
+    </note>
+    <para>
+      Once you've made this list, assign it to the game object's
+      <literal>winners</literal> field, and then call the game's
+      <literal>end_game()</literal> method, with no arguments. The
+      referee takes care of the rest, destroying the game object in
+      the process. 
+    </para>
+    <warning>
+      <para>
+	You can, if you wish, override the <literal>end_game</literal>
+	method within your subclass, if you wish to perform some
+	last-minute cleanup before your object goes away. If you
+	choose to do this, you <emphasis>must</emphasis> call
+	<literal>$self->SUPER::end_game</literal> within your method
+	definition, or the referee won't know that the game has ended!
+      </para>
+    </warning>
+  </section>
+  <section id="SECT-rps-example-finish">
+    <title>Completing the RPS example module</title>
+    <para>
+      Now that we know how to receive and react to player activity, we
+      can complete the RPS module, with a single, rather lengthy
+      method that handles the ruleset's single player-to-referee
+      function. Here's what the entire file looks like, then:
+    </para>
+    <programlisting>
+package Volity::Game::RPS;
+
+use warnings;
+use strict;
+
+use base qw(Volity::Game);
+
+__PACKAGE__->max_allowed_players(2);
+__PACKAGE__->min_allowed_players(2);
+__PACKAGE__->uri("http://volity.org/games/rps");
+__PACKAGE__->player_class("Volity::Player::RPS");
+
+sub start_game {
+  my $self = shift;
+  for my $player ($self->players) { 
+    $player->hand(undef);
+  }
+}
+			      
+sub set_hand {
+  my $self = shift;
+  my ($player, $hand) = @_;
+  if (substr("rock", 0, length($hand)) eq lc($hand)) {
+    $player->hand_type('rock');
+  } elsif (substr("paper", 0, length($hand)) eq lc($hand)) {
+    $player->hand_type('paper');
+  } elsif (substr("scissors", 0, length($hand)) eq lc($hand)) {
+    $player->hand_type('scissors');
+  } else {
+    # I don't know what this hand type is.
+    return (fault=>901);
+  }
+
+  # Has everyone registered a hand?
+  if (grep(defined($_), map($_->hand_type, $self->players)) == $self->players) {
+    # Yes! Time for BATTLE!
+    # Sort the players into winning order.
+    my @players = sort( {
+			 my $handa = $a->hand_type; my $handb = $b->hand_type;
+			 if ($handa eq $handb) {
+			   return 0;
+			 } elsif ($handa eq 'rock' and $handb eq 'scissors') {
+			   return -1;
+			 } elsif ($handa eq 'scissors' and $handb eq 'paper') {
+			   return -1;
+			 } elsif ($handa eq 'paper' and $handb eq 'rock') {
+			   return -1;
+			 } else {
+			   return 1;
+			 }
+		       }
+			$self->players);
+    # Tell both players what their opponent chose
+    for my $player (@players) {
+      $self->call_ui_function_on_everyone('player_chose_hand',
+					  $player->hand,
+					 );
+    }
+    # Tell the players who won, using Jabber messaging (just because we can).
+    my $victory_message;
+    if ($players[0]->hand_type eq $players[-1]->hand_type) {
+      $victory_message = sprintf("A tie! Both players chose %s.", $players[0]->hand_type);
+      foreach (@players) { $_->call_ui_function(game_over=>'tie') }
+      $self->winners([[@players]]);
+    } else {
+      if ($players[0]->hand_type eq 'rock') {
+	$victory_message = sprintf("%s(rock) crushes %s(scissors)!", $players[0]->nick, $players[1]->nick);
+	$self->winners($players[0], $players[1]);
+      } elsif ($players[0]->hand_type eq 'scissors') {
+	$victory_message = sprintf("%s(scissors) shreds %s(paper)!", $players[0]->nick, $players[1]->nick);
+	$self->winners($players[0], $players[1]);
+      } else {
+	$victory_message = sprintf("%s(paper) smothers %s(rock)!", $players[0]->nick, $players[1]->nick);
+	$self->winners($players[0], $players[1]);
+      }
+    }
+    $self->referee->groupchat($victory_message);
+    $self->end_game;
+  }
+
+  # At any rate, return undef, so the calling player gets a generic
+  # success response message.
+  return;
+  
+}
+
+####################
+# Incoming RPC request handlers
+###################
+
+sub rpc_choose_hand {
+  my $self = shift;
+  $self->set_hand(@_);
+}
+
+package Volity::Player::RPS;
+
+use base qw(Volity::Player);
+use fields qw(hand_type);
+
+1;
+    </programlisting>
+  </section>
+  <section id="SECT-eights-example">
+    <title>A more complex example: Crazy Eights</title>
+    <para>
+      Now we'll cover a more complex game module, one that plays Crazy
+      Eights, according to the ruleset APIs for that game which we
+      defined earlier in this article. This task is rather more
+      interesting than implementing RPS, since the player-to-referee
+      API now contains several commands, and we will make use of a third-party
+      Perl module &emdash; Games::Cards, by Amir
+      Karger<footnote><para>Available from CPAN. If you haven't used
+      CPAN to download and install Perl modules, visit <ulink
+      url="http://cpan.org"/>, or read the <literal>CPAN</literal>
+      manpage. Or just ask me for help.</para></footnote>.
+    </para>
+    <programlisting>
+package Volity::Game::CrazyEights;
+
+use warnings;
+use strict;
+
+use base qw(Volity::Game);
+# Fields:
+#  deck: A Cards::Games::Deck object.
+#  discard_pile: A Cards::Games::Pile object.
+#  last_8_suit: The initial of the suit that the last 8-player called.
+#  last_card_player: The player who has most recently played a card.
+use fields qw(orig_deck deck discard_pile last_8_suit last_card_player);
+use Games::Cards;
+
+################
+# Configuration
+################
+
+# Configure some class data, using field names inherited from Volity::Game.
+__PACKAGE__->max_allowed_players(5);
+__PACKAGE__->min_allowed_players(1);
+__PACKAGE__->uri("http://volity.org/games/eights/index.html");
+__PACKAGE__->player_class("Volity::Player::CrazyEights");
+
+################
+# Callbacks
+################
+
+# The server will call start_game on us. Crack open a new deck,
+# shuffle it, and kick the players.
+sub start_game {
+  my $self = shift;
+  my $game = Games::Cards::Game->new(
+				     {cards_in_suit=>{
+						      Ace=>1,
+						      2=>2,
+						      3=>3,
+						      4=>4,
+						      5=>5,
+						      6=>6,
+						      7=>7,
+						      8=>50,
+						      9=>9,
+						      10=>10,
+						      Jack=>10,
+						      Queen=>10,
+						      King=>10,
+						     }
+				     });
+  # Set up all the different card-holding objects we'll need.
+  $self->orig_deck(Games::Cards::Deck->new($game, 'deck'))->shuffle;
+  $self->deck(Games::Cards::Stack->new($game, 'draw'));
+  $self->orig_deck->give_cards($self->deck, 'all');
+  $self->discard_pile(Games::Cards::Stack->new($game, 'discard'));
+
+  # Tell the players that a new game has begun.
+  foreach ($self->players) { $_->hand(Games::Cards::Hand->new($game, "$_")) }
+  $self->call_ui_function_on_everyone('start_game');
+
+  # Deal 'em out...
+  $self->deal_cards;
+  # Flip the starter.
+  $self->flip_starter;
+  # Announce the first player's turn.
+  $self->call_ui_function_on_everyone(start_turn=>$self->current_player->nick);
+  # Have the first player draw cards, maybe.
+  $self->make_player_draw;
+  # Now we sit back and let the first player make his or her move...
+}
+
+################
+# Player Actions
+################
+
+sub rpc_play_card {
+  my $self = shift;
+  warn "In rpc_play_card.\n";
+  my ($player, $card_name) = @_;
+  unless ($player eq $self->current_player) {
+    return(fault=>901, "It's not your turn!");
+  }
+  my $hand = $player->hand;
+  my $card_index;
+  eval { $card_index = $hand->index($card_name); };
+  unless (defined($card_index)) {
+    return(fault=>902, "You don't have that card ($card_name).");
+  }
+  my $card = $hand->cards->[$card_index];
+  # We have a card... is it a legal play?
+  if (
+      ($card->name eq '8') or
+      ($card->name eq $self->last_card->name) or
+      (
+       ($self->last_card->name ne '8') and
+       ($card->suit eq $self->last_card->suit)
+      )
+      or
+      (
+       ($self->last_card->name eq '8') and
+       ($card->suit eq $self->last_8_suit)
+      )
+     ) {
+    # Yep. Move the card to to discard pile.
+    $hand->give_a_card($self->discard_pile, $card_index);
+    # Reset the declared suit.
+    $self->last_8_suit(undef);
+    # Announce the play to  the players.
+    foreach ($self->players) { 
+	$_->call_ui_function(player_played_card =>
+			       $player->nick,
+			       $card->name . $card->suit);
+    }
+  } else {
+    return(fault=>907, "That's not a legal play!");
+  }
+  # Set the current player as the last card-player. This will help in case
+  # the player later makes a 'change_suit()' call.
+  $self->last_card_player($player);
+
+  # See if the game is over.
+  return if $self->check_for_game_over;
+
+  # Move the turn along, unless an 8 was played. In that case,
+  # we must wait for the player to choose a suit first.
+  unless ($card->name eq '8') {
+    $self->end_turn;
+  }
+
+  return;
+
+}
+
+sub rpc_choose_suit {
+  my $self = shift;
+  my ($player, $suit) = @_;
+  unless ($player eq $self->current_player) {
+    return(fault=>901, "It isn't your turn.");
+  }
+  unless (
+	  (defined($self->last_card_player)) and
+	  ($self->last_card->name eq '8') and
+	  ($self->last_card_player eq $player)
+	 ) {
+    return(fault=>905, "You can't change the suit now!");
+  }
+  my $suit_letter = uc(substr($suit, 0, 1));
+  if (grep($suit_letter eq $_, qw(D S H C))) {
+    $self->call_ui_function_on_everyone(player_chose_suit=>$player->nick, $suit);
+    $self->last_8_suit($suit_letter);
+    $self->end_turn;
+  } else {
+    return(fault=>906, "I can't turn '$suit' into a recognizable suit name.");
+  }
+}
+
+sub rpc_draw_card {
+  my $self = shift;
+  my ($player) = @_;
+  unless ($player eq $self->current_player) {
+    return(fault=>901, "It isn't your turn.");
+  }
+  unless (@{$self->deck->cards}) {
+    return(fault=>904, "You can't draw a card; the draw pile has no cards left!");
+  }
+  my $drawn_card_name = $self->deck->top_card->name . $self->deck->top_card->suit;
+  $self->deck->give_cards($player->hand, 1);
+  # Tell the player about this new card.
+  $player->call_ui_function(draw_card=>$drawn_card_name);
+  # Tell the other players that the player drew a card.
+  map($_->call_ui_function(player_drew_card=>$player->nick), grep($_ ne $player, $self->players));
+}
+
+################
+# Internal Methods
+################
+
+sub deal_cards {
+  my $self = shift;
+  # Two-player games have seven-card hands; others get five-card hands.
+  my $hand_size = scalar($self->players) == 2? 7: 5;
+  for my $player ($self->players) {
+    $self->deck->give_cards($player->hand, $hand_size);
+    my @cardz = map($_->name . $_->suit, @{$player->hand->cards});
+    $player->call_ui_function(receive_hand=>\@cardz);
+  }
+}
+
+sub flip_starter {
+  my $self = shift;
+  $self->deck->give_cards($self->discard_pile, 1);
+  my $starter_name = $self->discard_pile->top_card->name . $self->discard_pile->top_card->suit;
+  $self->call_ui_function_on_everyone(starter_card=>$starter_name);
+  # Semi-hack... if the starter is an 8, silently set our notion of
+  # the last 8 suit. This keeps the logic in the match-checking part of
+  # rpc_play_card simpler.
+  $self->last_8_suit = $self->last_card->suit if $self->last_card->name eq '8';
+}
+
+sub last_card {
+  my $self = shift;
+  return $self->discard_pile->top_card;
+}
+
+sub end_turn {
+  my $self = shift;
+  $self->rotate_current_player;
+  $self->call_ui_function_on_everyone(start_turn=>$self->current_player->nick);
+  $self->make_player_draw;
+}
+
+# make_player_draw: Called at the start of a turn. Has the player draw
+# cards from the deck until a play becomes possible. (This will draw
+# no cards if the player starts the turn with legal plays already
+# available.)
+sub make_player_draw {
+  my $self = shift;
+  my $player = $self->current_player;
+  my @hand_cards = @{$player->hand->cards};
+  my $last_card = $self->last_card;
+  my $last_value = $last_card->name;
+  my $last_suit = defined($self->last_8_suit)?
+      $self->last_8_suit : $last_card->suit;
+  my $last_8_suit = $self->last_8_suit;
+  until (
+	 grep(
+	      (
+	       ($_->name eq 8) or
+	       ($_->suit eq $last_suit) or
+	       ($_->name eq $last_value)
+	      ),
+	      @hand_cards,
+	     ) or
+	 @{$self->deck->cards} == 0
+	) {
+      if (@{$self->deck->cards} == 0) {
+	# Ye gods, the draw pile has run out. This player's turn is over.
+	$self->call_ui_function_on_everyone(player_passes=>$player->nick);
+	$self->end_turn;
+      }
+    my $drawn_card_name = $self->deck->top_card->name . $self->deck->top_card->suit;
+    $self->deck->give_cards($player->hand, 1);
+    @hand_cards = @{$player->hand->cards};
+    $player->call_ui_function(draw_card=>$drawn_card_name);
+    # Tell the other players that the player drew a card.
+    map($_->call_ui_function(player_drew_card=>$player->nick), grep($_ ne $player, $self->players));
+  }
+}
+
+sub check_for_game_over {
+  my $self = shift;
+  my $hand = $self->current_player->hand;
+  unless ($hand->cards->[0]) {
+    # The current player has no cards. Game over!
+    # Sort the players into a Frivolity winner list.
+    # Each member of this list is a listref, containing all the players
+    # tied for that place. (This will often be just a single player, if
+    # there are no actual ties for that place.)
+    my %players_by_hand_value;
+    my %scores_by_nickname;
+    for my $player ($self->players) {
+      my $hand_value = $player->evaluate_hand;
+      $scores_by_nickname{$player->nick} = $hand_value;
+      if ($players_by_hand_value{$hand_value}) {
+	push (@{$players_by_hand_value{$hand_value}}, $player);
+      } else {
+	$players_by_hand_value{$hand_value} = [$player];
+      }
+    }
+    my @winners;		# Sorted winner list!
+    # We will add players to the winner list according to their hand values.
+    # A simple sort by these values will give us the right order, since 
+    # the fewer points, the better you did. (The first-place winner has zero
+    # points!)
+    foreach (sort(keys(%players_by_hand_value))) {
+      push (@winners, $players_by_hand_value{$_});
+    }
+
+    # The the players about this.
+    $self->call_ui_function_on_everyone(scores=>\%scores_by_nickname);
+    
+    # Set this array as my winner list, and signal that we're all done,
+    # by calling the end_game() method.
+    # The ref will take care of the rest!
+    $self->winners(@winners);
+    
+    $self->end_game;
+    return 1;
+  } else {
+    # Else, the player still holds cards, so the game ain't over yet...
+    return 0;
+  }
+}
+    
+################
+# Player Class
+################
+
+package Volity::Player::CrazyEights;
+
+use warnings;
+use strict;
+
+use base qw(Volity::Player);
+use fields qw(hand score);
+
+# evaluate_hand: Return the game-over score of this player's hand.
+sub evaluate_hand {
+  my $self = shift;
+  my $score = 0;
+  my @cards = @{$self->hand->cards};
+  for my $card (@cards) {
+    $score += $card->value;
+  }
+  return $score;
+}
+
+1;
+    </programlisting>
+    <para>
+      Presumably you'd want to add some POD documentation too, but
+      this code listing is already long enough.
+    </para>
+  </section>
+
+</section> <!-- Writing the module -->
+</section>

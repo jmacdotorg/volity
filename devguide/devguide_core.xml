@@ -1,0 +1,773 @@
+<?xml version="1.0"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.2.0//EN" 
+"/sw/share/xml/dtd/docbookx/4.2.0/docbookx.dtd" [
+<!ENTITY emdash "&#x2014;">
+<!ENTITY todo "!!!!!!!! * * * * * * * * * * TODO * * * * * * * * * * !!!!!!!!">
+<!ENTITY % language-entities SYSTEM "language-entities.dtd">
+%language-entities;
+]>
+
+<!--
+*TODO*
+
+Figure out the correct way to format the ruleset document
+pull-quotes. blockquote? example & programlisting? figure?
+
+-->
+
+<article>
+  <articleinfo>
+    <title>Volity Developer's Guide</title>
+    <subtitle>
+    &language-subtitle;
+    </subtitle>
+    <author>
+      <firstname>Jason</firstname>
+      <surname>McIntosh</surname>
+      <personblurb>
+	<para>
+	<!-- I'll write something here about myself later. (jmac) -->
+	</para>
+      </personblurb>
+      <email>jmac@jmac.org</email>
+    </author>
+    &language-author;
+    <abstract>
+      <para>
+      </para>
+    </abstract>
+  </articleinfo>
+  <section>
+    <title>Introduction</title>
+    <para>
+      This article details the creation of game modules for <ulink
+      url="http://volity.org">Volity</ulink>, a platform for turn-based,
+      networked computer games. While many concepts covered herein are
+      universally applicable to all Volity game programmers, all the
+      examples and language-specific discussion assume that the reader
+      is working with the &language-name; programming language.
+    </para>
+  </section>
+  <section>
+    <title>Before you Begin</title>
+    <para>
+      First, if you haven't already, please read the <ulink url="http://volity.orghttp://www.volity.org/docs/book/overview.html">Volity design overview article</ulink>. It defines the platform's key concepts, and while you don't need deep understanding of how Volity works in order to write games for it, you should have at least a surface familiarity of its important elements and lingo.
+    </para>
+    &language-software;
+    <para>
+      Once you are thus prepared with both knowledge and power, you are
+      ready to start working on your game. Sort of. Before you can
+      actually begin programming, you see, you must plan your approach
+      by deciding which Volity <firstterm>ruleset</firstterm> your
+      module shall adhere to &emdash; and there's a strong likelihood
+      (especially in these, the early days of the Volity empire) that
+      you'll end up defining this ruleset yourself. Fortunately, if you
+      think that programming game logic is fun, you'll probably get a
+      kick from
+      ruleset definition as well.
+    </para>
+  </section>
+  <section id="SECT-choosing-ruleset">
+    <title>Choosing a ruleset</title>
+    <para>
+      In Volity terms, a ruleset expresses a game's
+      <emphasis>concept</emphasis> by defining the communication that
+      can take place between the referee<footnote><para>The referee, of
+      course, being the automated network entity that hosts an
+      individual game instance. Refer to the Volity overview article for
+      more details.</para></footnote> and the players while that game is
+      in progress. Effectively, it's an API for that type of
+      game. Chess, for example, has a rather simple ruleset: players can
+      ask to move a piece from one square to another, and referees can
+      inform all players that a piece has moved, or decline an individual
+      player's request to move a piece (either because the move isn't
+      legal, or the piece didn't belong to the player, or it's not
+      currently the player's turn). We'll cover some other examples
+      later in this section.
+    </para>
+    <para>
+      Every ruleset possesses, as its label, a globally unique URI, and
+      ruleset implementations &emdash; such as the module you're chomping at
+      the bit to create &emdash; assert which ruleset they adhere to by
+      posting this URI in some conspicuous location. Were you making
+      your own version of a Volity Chess game, you'd want to have your
+      module "know" that it declares fealty to
+      http://volity.org/games/chess (which happens to be the Volity's
+      URI for basic chess). Your module, when run as a game server,
+      would use this URI whenever it needs to identify itself to the
+      system at large, so that the Volity bookkeeper<footnote><para>The
+      bookkeeper, another automated network entity, is responsible for
+      (among other things) keeping track of all the network's game
+      servers, and answering players' queries about them. Again, see
+      the overview essay for more information.</para></footnote> knows
+      how to categorize your server and the game records that it
+      produces. If, on the other hand, you were making your 
+      own game (perhaps a chess variant of your own invention), then
+      you'd have to go through the process of creating your own ruleset
+      definition, topping it with a URI of your own, and then linking
+      your module to that.
+    </para>
+    <para>
+      So how do you know whether or not a given ruleset already exists?
+      Currently, the best way involves visiting the Volity.net website
+      and browsing the rulesets described there. (If you're in doubt about whether or not an existing
+      ruleset is the same as that which you have in mind, just ask me
+      about it.)
+    </para>
+    <section>
+      <title>Using an existing ruleset</title>
+      <para>
+	If someone else has already defined the ruleset you wish to
+	implement, congratulations; your task may have become a bit
+	simpler. You will want to take note of the ruleset's URI, which
+	your code will need to know about, as well as the API that the
+	ruleset defines; this latter information
+      </para>
+      <note>
+	<para>
+	  At this time, Volity has no plans to police the namespace of
+	  rulesets, leaving open the possibility of "pollution" by
+	  people making bogus rulesets. Since anyone can make a ruleset
+	  called "Chess", someone can easily create a ruleset document
+	  that poorly or incorrectly defines that game, leading to
+	  confusion when someone wishes to implement it (or, worse, when
+	  a player is looking for available game server categories)
+	  since there might be multiple URIs claiming to be the unique
+	  label for chess.
+	</para>
+	<para>
+	  The hope is that the network will be self-correcting, through
+	  the fact that the bookkeeper has knowledge of who implements
+	  what. As game servers register themselves, and are then played
+	  and enjoyed by real players, then the "real" rulesets will
+	  stand out, leaving the more bogus ones (which no sane,
+	  enjoyable game server uses) in the dark. However, time will
+	  tell how well this will work in practice. For the time being?
+	  Don't worry too much about it.
+	</para>
+	<!-- Something here about publishing your own rulesets if the
+	     only ones extant are insane? Or does that go in the next
+	     section? -->
+      </note>
+    </section>
+    <section id="SECT-creating-ruleset">
+      <title>Creating your own ruleset</title>
+      <para>
+	Volity is young, and the world is a very big place. Like as not,
+	your game ideas are virgin turf for Volity, and you'll need to
+	define your own ruleset. (And if you're approaching this
+	platform with your own game design ideas in mind, this was
+	rather a predetermined outcome anyway) Congratulations, you're
+	in for some fun. (If you're into this sort of thing. <emphasis>And I just
+	know that you are.</emphasis>)
+      </para>
+      <para>
+	Creating a ruleset involves thinking about the programmatic
+	communication that must occur between referee and players while
+	a game is taking place, and then creating a pair of appropriate
+	APIs, one for each direction of this conversation. You then top
+	this mixture with a URI of your own making, and let the
+	bookkeeper know of your new concoction.
+      </para>
+      <section id="SECT-player-to-referee">
+	<title>The Player-to-Referee API</title>
+	<para>
+	  For your first trick, you will create a list of the requests
+	  that a player of the game can send to the referee. This list
+	  must be abstract enough that it remains independent from any
+	  user interface which might be applied to the game. In other
+	  words, it should not concern itself with things as low-level
+	  as player-side mouse movements or keystrokes, or even
+	  button-clicks, menu selections, or any other action that the
+	  human player might perform; instead, it defines only the
+	  final messages sent to the referee as a result of all that
+	  furious typing and clicking.
+	</para>
+	<para>
+	  These requests should contain no actual
+	  game logic. They are merely the communication vehicle
+	  between player and referee; it's up to the ref to decide is
+	  the messages it receives actually make any sense. Take the
+	  following line from Volity's chess ruleset:
+	</para>
+	<programlisting>
+move_piece(start_square, destination_square)
+	</programlisting>
+	<para>
+	  Since it's defined in the player-to-referee API, a player can
+	  send this request to the referee <emphasis>at any
+	  time</emphasis> during the game, even if (by virtue of its
+	  arguments, or even of simple timing) the player is asking for
+	  the impossible. So, the referee will happily receive requests
+	  to move a pawn ahead by three spaces, or start a move from an
+	  empty square, or even move a piece when it's not that player's
+	  turn. 
+	</para>
+	<tip>
+	  <para>
+	    You can think of all player-to-referee requests are just that &emdash;
+	    requests that the referee do something &emdash; and not commands,
+	    per se.
+	  </para>
+	</tip>
+	<para>
+	  There are, informally, two types of player-to-referee
+	  requests. Beyond the conceptual difference, they also differ
+	  in the kinds of return values they expect from the referee.
+	</para>
+	<variablelist>
+	  <varlistentry>
+	    <term>Action requests</term>
+	    <listitem>
+	      <para>
+		Requests that the referee make some change to the
+		game state, on the player's behalf. This could
+		involve moving pieces, playing cards, rolling dice,
+		and so on.
+	      </para>
+	      <para>
+		If the referee can't carry out the request due to a
+		conflict with the rules, then it sends back a fault
+		containing one of the ruleset's error codes (see <xref
+		linkend="SECT-error-codes"/>). Otherwise, the request
+		succeeded, and the referee sends back a generic success
+		response.
+	      </para>
+	      <para>
+		Since that player's action will almost always change
+		the game state in some way visible to at least one
+		player, the referee will usually follow up a
+		successful request with a few requests of its own, as
+		appropriate. For example, after accepting a player's
+		request to move a piece on the board, the referee
+		would then send all the players a message (defined in
+		the ruleset's Referee-to-Player API section)
+		informing them that the player has done this.
+	      </para>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>
+	      Information Requests
+	    </term>
+	    <listitem>
+	      <para>
+		Information requests are simply methods to ask the
+		referee about the game state. The referee provides
+		its answer as its response value.
+	      </para>
+	      <para>
+		These requests tend to be rather uncommon, since most
+		rulesets' APIs are set up so that the referee
+		continually pushes game-state information at the
+		players. However, these sorts of requests can still prove handy
+		in certain hidden-information games.
+	      </para>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+	<section>
+	  <title>Examples</title>
+	  <para>Volity's model game, Rock-Paper-Scissors ("RPS" for
+	  short)<footnote><para>Ruleset URI: <ulink
+	  url="http://volity.org/games/rps"/>. All the URIs connected to
+	  real-world examples in this article also happen to function as
+	  URLs, pointing to Web pages that describe their relative
+	  rulesets in detail. Feel free to look them
+	  up.</para></footnote> has a very simple player-to-referee API, since a
+	  player can perform only one type of
+	  action. And here it is, with attendant prose description:</para>
+	  <informalexample>
+	  <para><literal>choose_hand(hand_type)</literal></para>
+	  <para>
+	    The player declares that he "throws" the given hand. The
+	    argument must be one of "rock", "paper", or "scissors".
+	  </para>
+	  </informalexample>
+	  <para>
+	    This means that a Volity game module that claims to support
+	    the URI <literal>http://volity.org/games/rps</literal> will
+	    implement some way of receiving the
+	    <literal>choose_hand()</literal> player request, and
+	    reacting to it appropriately, probably by interpreting the
+	    argument, and then either returning a fault (if it didn't
+	    recognize the argument as a hand type) or modifying its
+	    internal representation of that player (if it
+	    did).
+	  </para>
+	  <para>
+	    Since this is the <emphasis>only</emphasis> request defined
+	    in the RPS ruleset's player-to-referee API, any other call
+	    sent to the referee will result in a fault sent back to the
+	    player. (As a game programmer; you needn't worry about this
+	    situation; the base referee module will automatically
+	    return faults for unrecognized player requests.)
+	  </para>
+	  <para>
+	    For a bigger example, let's have a look at Volity's Crazy
+	    Eights player-to-referee API, as defined by <ulink
+	    url="http://volity.org/games/eights/index.html" />.
+	  </para>
+	  <informalexample>
+	  <variablelist>
+	    <varlistentry>
+	      <term>play_card(card)</term>
+	      <listitem>
+		<para>The player wishes to play the given card, which must either match the last card in suit or rank, or match the declared suit (if one is active), or be an 8.</para>
+		<para>If this play succeeds, and the current player is left with no cards, the game immediately ends.</para>
+		<para>Possible error codes: 901, 902, 903</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term>choose_suit(suit)</term>
+	      <listitem>
+		<para>After playing an 8, a player must (unless it was his last card) follow up by using this function to declare a suit. The turn does not advance until this happens.</para>
+		<para>The <literal>suit</literal> argument should be a suit's one-letter initial (C, S, H or D), but a polite referee implementation can be more liberal in what it accepts. If it can't figure out what suit is intended from the argument, it should return an error 906.</para>
+		<para>Possible error codes: 901, 905, 906</para>
+	      </listitem>
+	    </varlistentry>
+	    <varlistentry>
+	      <term>draw_card()</term>
+	      <listitem>
+		<para>The player wishes to draw the top card from the stock, and add it to his hand.</para>
+		<para>Possible error codes: 901, 904</para>
+	      </listitem>
+	    </varlistentry>
+	  </variablelist>
+	  </informalexample>
+	  <para>
+	    We can see from this excerpt that a proper Crazy Eights
+	    implementation must handle these three (and only these
+	    three) player requests. As with our RPS example, they all
+	    result in either the ref sending a fault to the player, or
+	    changing its internal representation of the game state in
+	    some appropriate fashion (and then telling the players what
+	    just happened, which we'll cover in <xref
+	    linkend="SECT-referee-to-player" />). (And in <xref linkend="SECT-hacking"/>, we'll
+	    talk about what these mysterious game-state changes are all
+	    about, in terms of actual code.)
+	  </para>
+	  <para>
+	    Note how each request's description concludes with a list
+	    of possible error codes. These mysterious codes are spelled
+	    out elsewhere in the same document, and handle outlier
+	    situations such as the player acting out of turn (which
+	    happens to be the ubiquitous 901), or attempting to play a
+	    card he isn't actually holding. We'll talk more
+	    about how they work in <xref linkend="SECT-error-codes"/>.
+	  </para>
+      </section>
+    </section>
+    <section id="SECT-referee-to-player">
+      <title>Referee-to-Player API</title>
+      <para>
+	Since the referee must tell the players &emdash; quite often all at
+	once &emdash; about every player-knowable change in the game state,
+	the referee-to-player API tends to run much longer than its
+	complement, with functions for every sort of information that
+	a game's referee might need to pass along to players. The
+	attitude of these messages also differs from the
+	player-to-referee methods, more resembling assertions and
+	commands than requests. While running a game, the referee is
+	the lone arbiter of that game's reality, and the players take
+	its word as the unquestionable truth.
+      </para>
+      <para>
+	As with the player-to-referee API, one can informally divide
+	methods defined by a ruleset's referee-to-player API into two
+	categories. The division comes, however, by the number and
+	nature of intended receivers. There is no real difference in
+	the way the referee sends them, or in how client applications
+	receive and react to them.
+      </para>
+      <variablelist>
+	<varlistentry>
+	  <term>Calls to all players</term>
+	  <listitem>
+	    <para>
+	      These messages are broadcast to every player at the
+	      table, in order to inform everyone that the game state
+	      has changed in some publicly knowable way.
+	      A common first argument to these calls is a player's
+	      name, since a referee often blasts out these
+	      table-broadcasts in order to inform the players that one of
+	      their number just did something interesting, such as moving
+	      a piece or rolling a die.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>Calls to specific players</term>
+	  <listitem>
+	    <para>
+	      Some messages are eyes-only, either due to in-game hidden
+	      information (as with a player drawing a card into
+	      his hand) or from a referee otherwise needing to relay
+	      something to a single player (or a group of players
+	      smaller than the entire table.
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <para>
+	Let's see what our old friend RPS has as its
+	referee-to-player API. Actually, this simple game contains
+	only a single function in that direction:
+      </para>
+      <!-- Example-o-box. -->
+      <variablelist>
+	<varlistentry>
+	  <term>player_chose_hand(player, hand)</term>
+	  <listitem>
+	    <para>
+	      The named player has thrown the given hand. Sent after
+	      the referee has collected hand information from both players.
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <!-- END example -->
+      <para>
+	And that's that, for this trivial game. Note that the ruleset
+	assumes that the client-side UI file is smart enough to
+	declare a winner for itself, based on the results of the two
+	<literal>player_chose_hand</literal> calls that it will
+	receive. It didn't <emphasis>have</emphasis> to do it this
+	way; we wouldn't necessarily have slapped the Considered
+	Harmful label onto a
+	<literal>declare_winner(player)</literal> function, or the
+	like. It just happens that this particular ruleset
+	author<footnote><para>Yours truly.</para></footnote> prefers
+	to make communication protocols as small as
+	possible<footnote><para>Volity culture might eventually
+	declare small protocols the Right Thing to Do, but Volity
+	culture is rather too young at the time of this writing to be
+	making any such statements. On the other hand, there
+	<emphasis>is</emphasis> a lot to be said about the benefits of
+	small, simple protocols and APIs...</para></footnote>.
+      </para>
+      <para>
+	Crazy Eights, being a more sophisticated game than RPS, has
+	an API to match.
+      </para>
+      <informalexample>
+      <variablelist>
+	<varlistentry>
+	  <term>player_played_card(player, card)</term>
+	  <listitem>
+	    <para>The named player played the given card, which is now the card to match.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>player_chose_suit(player, suit)</term>
+	  <listitem>
+	    <para>Having played an 8, the named player has declared the given suit to be the one to follow.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>player_drew_card(player)</term>
+	  <listitem>
+	    <para>The named player drew a card from the stock.</para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>player_passed(player)</term>
+	  <listitem>
+	    <para>The named player, unable to either play or draw, had to pass.</para>
+	  </listitem>
+	</varlistentry>
+	
+	<varlistentry>
+	  <term>scores({player=>score, player=>score, ... })</term>
+	  <listitem>
+	    <para>
+	      Called when the game ends. The given struct is a hashtable of all the game's players, and their score for this game, representing the value of the cards they were left holding at the end.
+	    </para>
+	    <para>
+	      Sorting the players in ascending order by their
+	      respective scores will reveal the ranking for this game. Exactly one player will have a score of 0, indicating that they held no cards at the end; that player has won this game.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	
+	<varlistentry>
+	  <term>draw_card(card)</term>
+	  <listitem>
+	    <para>The receiver of this call has drawn the given card.</para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      </informalexample>
+      <para>
+	Here, the latter two functions are meant to the directed at
+	individual players, as they deal with information that only
+	those players should see (that being the rank and suit of the
+	cards). Note that, when a player successfully draws a card (by
+	sending the <literal>draw_card()</literal> request seen in
+	<xref linkend="SECT-player-to-referee"/>), the referee reacts by sending
+	<emphasis>two</emphasis> messages to the players:
+	the secret <literal>draw_card()</literal> to the player who
+	actually made the action, and the public
+	<literal>player_drew_card</literal> to the entire
+	table, thus informing everyone about that player's increased
+	hand size, without spilling the beans as to the card's specifics.
+      </para>
+    </section>
+    
+    <section id="SECT-error-codes">
+      <title>Defining error codes</title>
+      <para>
+	The referee-to-player function-call API really defines only
+	half of the communication that the ref can send players over
+	the course of a game. Error codes provide the rest, giving the
+	referee a way to bark at players about what they're doing
+	wrong, using predefined code numbers so that players' UI files
+	can (if they choose) interpret these errors in creative ways.
+      </para>
+      <para>
+	The error-codes section of a ruleset definition document lists
+	all the possible fault-responses that the ref might choose to
+	blast back at players after receiving faulty requests from
+	them. By convention, these codes exist in the 900-range, and
+	each is paired with a suggested error message that should
+	accompany the code. 
+      </para>
+      <para>
+	Let's have a look at the RPS and Crazy eights error-code tables.
+      </para>
+      <!-- example on -->
+<table id="TABLE-rps-errors">
+<title>Rock Paper Scissors error codes</title>
+<tgroup cols="2">
+<thead>
+  <row>
+    <entry>Code</entry>
+    <entry>Message</entry>
+  </row>
+</thead>
+<tbody>
+<row>
+  <entry>901</entry>
+  <entry>Unrecognized hand type. (Spock? Dynamite?)</entry>
+</row>  
+</tbody>
+</tgroup>
+</table>
+      <!-- example off -->
+
+      <!-- example on -->
+<table id="TABLE-eights-errors">
+<title>Crazy Eights error codes</title>
+<tgroup cols="2">
+<thead>
+  <row>
+    <entry>Code</entry>
+    <entry>Message</entry>
+  </row>
+</thead>
+<tbody>
+<row><entry>901</entry><entry>It's not your turn.</entry></row>
+<row><entry>902</entry><entry>You don't have that card.</entry></row>
+<row><entry>903</entry><entry>Unknown card. <emphasis>(Malformed play_card() argument.)</emphasis></entry></row>
+<row><entry>904</entry><entry>You can't draw a card; the stock is empty.</entry></row>
+<row><entry>905</entry><entry>You can't choose a suit; you haven't just played an 8.</entry></row>
+<row><entry>906</entry><entry>Unknown suit. <emphasis>(Malformed choose_suit()
+argument.)</emphasis></entry></row>
+</tbody>
+</tgroup>
+</table>
+      <!-- example off -->
+      <para>
+	Note that codes have a particular meaning only for a single
+	ruleset, as 901 is defined two different ways in the above two
+	examples.
+      </para>
+    </section>
+
+    <section>
+      <title>Registering under a URI</title>
+      <para>
+	With all the APIs and error codes for your ruleset defined,
+	you're nearly done! The final step involves choosing a URI
+	to use as the ruleset's label, and then registering it with
+	the Volity bookkeeper.
+      </para>
+      <para>
+	Volity places no restrictions on what you may use as a
+	URI. While rulesets written or maintained by members of the
+	core Volity development team often have URIs falling within
+	the <literal>volity.org</literal> domain, ruleset authors are
+	encouraged to use any URI under their own control. Optimally,
+	a ruleset URI will also act as a URL, pointing at a Web page
+	that, when visited with a browser, results in a page
+	summarizing the ruleset (perhaps with additional,
+	human-readable game rules and other notes), making it an
+	excellent resource for developers and players alike.
+      </para>
+      <para>
+	When you have chosen a URI, take it over to <ulink
+	url="http://volity.net"/> and use the tools there to make it
+	official. Congratulations! You can now move on to the
+	<emphasis>really</emphasis> fun part &emdash;: making your game module actually
+	happen by writing its &language-name; code.
+      </para>
+    </section>
+  </section>
+</section>
+
+&language-programming;
+
+<section>
+  <title>UI Files</title>
+  <warning>
+    <para>
+      For the remainder of this article, things are going to get a
+      little bit unsure, mushy, and generally handwringy. While the
+      core Volity concepts (and Frivolity's implementation of them)
+      have received a lot of thought and work, the finer points of
+      handling UI files and actually running game servers haven't
+      enjoyed this attention. Blunt ways exist to handle both tasks,
+      and are described here, but the human interface to both is
+      subject to change. (In fact, it had better, since it's not very
+      good right now.)
+    </para>
+    <para>
+      Future editions of this document will describe these processes
+      in greater detail as they become more detailed themselves. For
+      now, you're going to see sheepish phrases like "at the time of
+      this writing" and "for now" quite a bit.
+    </para>
+  </warning>
+  <para>
+    Once you've written a game module, you can immediately try running
+    it within a game server, as described in <xref
+    linkend="SECT-running"/>. Before you (or anyone else) can actually
+    enjoy the game, however, at least one UI file must exist for its
+    ruleset.
+  </para>
+  <section>
+    <title>UI file fundamentals</title>
+    <para>
+      Each Volity UI file is either a simple ECMAScript document, or
+      some other kind of document (perhaps XML) containing embedded
+      ECMAScript. It defines a collection of ECMAScript objects and
+      methods that meet the needs of a single intersection of ruleset
+      and <firstterm>client type</firstterm>. For example, one UI file
+      might allow users of text clients to play chess, while another
+      lets SVG-clients play chess, and a third is meant for text
+      clients wishing to play poker.
+    </para>
+    <para>
+      At this time, Volity lacks a standard way to let a UI file
+      indentify the ruleset and client type at which it aims itself,
+      and there's also no agreed-upon method to get these files into
+      the hands of users. The core development team hopes to hash out
+      these crucial topics in mid-2004.
+    </para>
+  </section>
+  <section>
+    <title>Predefined objects</title>
+    <para>
+      Volity UI files should adhere to a a certain code protocol in
+      order to work correctly. Volity client programs hand them a few
+      predefined ECMAScript objects when the game begins, and expect
+      that it defines at least a couple of globally standard methods
+      in order to start and stop the game properly. Furthermore, the
+      ruleset will have method-definition expectations of its own.
+    </para>
+    <para>
+      Volity client applications, upon starting a new game, instance
+      an internal ECMAScript interpreter, and then define a handful of
+      objects with standard names, properties, and methods. The game's
+      UI file may use these objects however it likes, and in some
+      cases <emphasis>must</emphasis> do so in order to define the UI
+      protocol's few required methods.
+    </para>
+    <variablelist>
+      <varlistentry>
+	<term>game</term>
+	<listitem>
+	  <para>
+	    This object primarily represents
+	    <emphasis>incoming</emphasis> RPC-based communicaion from
+	    the referee. The UI file must define one method for its
+	    <literal>game</literal> object for every function named in
+	    its ruleset's referee-to-player API.
+	  </para>
+	  <para>
+	    A UI file must also define
+	    <literal>game.start_game()</literal> and
+	    <literal>game.end_game()</literal>, which set up and
+	    cleanup the playing area, respectively.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>client</term>
+	<listitem>
+	  <para>
+	    The client application uses this object as the principal
+	    communication conduit between itself and the UI files it
+	    loads. By making method calls on it, a UI file can change
+	    the client's behavior in ways that don't have to do with
+	    the referee, such as making game-specific commands
+	    available to the human user. These commands can then
+	    trigger methods defined by the UI file, 
+	    themselves also attached to this <literal>client</literal>
+	    object.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>info</term>
+	<listitem>
+	  <para>
+	    This object simply holds some predefined properties
+	    containing some information about the game in
+	    progress. Salient fields include
+	    <literal>info.nickname</literal>, which contains the
+	    player's own nickname for this game, and
+	    <literal>info.opponents</literal>, a hash whose keys are
+	    the nicknames of the other people at the table, and whose
+	    values are initially undefined; the file can later write
+	    interesting tidbits about opponents here, such as their
+	    scores, or their visible hand sizes.
+	  </para>
+	</listitem>
+      </varlistentry>
+    </variablelist>
+  </section>
+</section>
+
+<section id="SECT-running">
+  <title>Running your game</title>
+
+  <para>
+    Your game module is complete &emdash; well, it
+    <emphasis>compiles</emphasis>, at least &emdash; and you've either
+    obtained or created a UI file that works with your favorite Volity
+    client. Finally, you can try running your module within a game
+    server, and playing the resulting game!
+  </para>
+  <para>
+    Well, that's a tad optimistic. More likely, you will instead note
+    the way that your game fails, and then tinker with
+    the module code (or the UI file, if you are its author) until
+    you acutally <emphasis>can</emphasis> play the game. The point is,
+    you now have all the tools you need to enter this last leg
+    of Volity game development, so let's dive in.
+  </para>
+  <section>
+    <title>Registering your server</title>
+    <para>
+      If you haven't already done so, you must create a Jabber account
+      for your game server to use, and then inform the Volity
+      bookkeeper about your server's existence. You can fulfill
+      both of these tasks at once by visiting the registration tools
+      at the volity.net website.
+    </para>
+  </section>
+  &language-parlor;
+</section> <!-- running it -->
+
+</article>
