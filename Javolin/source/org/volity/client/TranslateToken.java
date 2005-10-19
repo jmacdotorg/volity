@@ -65,6 +65,15 @@ public class TranslateToken {
     }
 
     /**
+     * Return the language being used for TranslateToken output.
+     *
+     * @return the two-letter language code
+     */
+    public static String getLanguage() {
+        return currentLanguage;
+    }
+
+    /**
      * Translate tokens.
      *
      * @param tokens a list of tokens
