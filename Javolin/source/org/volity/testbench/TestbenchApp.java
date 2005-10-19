@@ -70,6 +70,14 @@ public class TestbenchApp extends JFrame
             System.exit(1);
         }
 
+        // Make sure we can reach the handler for our special Volity URLs
+        String val = System.getProperty("java.protocol.handler.pkgs");
+        if (val == null)
+            val = "org.volity.client.protocols";
+        else
+            val = val + "|org.volity.client.protocols";
+        System.setProperty("java.protocol.handler.pkgs", val);
+
         // Set the look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
