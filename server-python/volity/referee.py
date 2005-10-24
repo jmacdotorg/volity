@@ -306,22 +306,39 @@ class Referee(volent.VolEntity):
             ls = [ seat.id for seat in self.seatlist if seat.required ]
             self.game.sendtable('volity.required_seat_list', ls)
 
-    def resolvemetharg(val):
+    def resolvemetharg(val, gameresolve=None):
         """resolvemetharg(val) -> val
 
         Convert some Volity objects into Jabber-RPC types. This is called
         on all RPC arguments before they are sent out.
 
-        A Seat object is converted to a string (the seat ID). A Player object
-        is converted to a string (the player's real JID). All other types
-        are left alone.
-
-        XXX Should work recursively on list and dict elements.
+        If *gameresolve* is not None, it is invoked on the value (and on each
+        member of list and tuple values). If it returns non-None, then that
+        is the conversion.
+        
+        Otherwise, a Seat object is converted to a string (the seat ID).
+        A Player object is converted to a string (the player's real JID).
+        All other types are left alone.
         """
+        if (gameresolve):
+            newval = gameresolve(val)
+            if (newval != None):
+                return newval
+
+        selffunc = Referee.resolvemetharg
+                
         if (isinstance(val, game.Seat)):
             return val.id
         if (isinstance(val, Player)):
             return val.jidstr
+        if (type(val) in [list, tuple]):
+            return [ selffunc(subval, gameresolve) for subval in val ]
+        if (type(val) == dict):
+            newval = {}
+            for key in val.keys():
+                subval = val[key]
+                newval[key] = selffunc(subval, gameresolve)
+            return newval
         return val
     resolvemetharg = staticmethod(resolvemetharg)
             
@@ -348,7 +365,8 @@ class Referee(volent.VolEntity):
         if (not (player.live and player.aware)):
             return
 
-        methargs = [ self.resolvemetharg(val) for val in methargs ]
+        methargs = [ self.resolvemetharg(val, self.game.makerpcvalue)
+            for val in methargs ]
         
         self.rpccli.send(op, player.jidstr,
             methname, *methargs, **keywords)
@@ -372,7 +390,8 @@ class Referee(volent.VolEntity):
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
             
-        methargs = [ self.resolvemetharg(val) for val in methargs ]
+        methargs = [ self.resolvemetharg(val, self.game.makerpcvalue)
+            for val in methargs ]
         
         for player in self.players.values():
             if (player.live and player.aware):
@@ -397,7 +416,10 @@ class Referee(volent.VolEntity):
         op = keywords.pop('callback', self.defaultcallback)
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = CLIENT_DEFAULT_RPC_TIMEOUT
-            
+
+        # Game-specific types don't need to be transformed. Besides, it
+        # would be a security hole, to the extent that Python has such
+        # things.
         methargs = [ self.resolvemetharg(val) for val in methargs ]
         
         self.rpccli.send(op, self.parlor.bookkeeperjid,
@@ -1410,7 +1432,7 @@ class Referee(volent.VolEntity):
 
         # Then, the game state (if in progress)
         if (self.refstate != STATE_SETUP):
-            seat = self.game.getplayerseat(player)
+            seat = player.seat
             ### or the last known seat, if in suspended state
             ### or no seat?
             self.game.sendgamestate(player, seat)
@@ -2218,8 +2240,10 @@ class WrapGameOpset(rpc.WrapperOpset):
         """
         
         try:
-            return rpc.WrapperOpset.__call__(self, sender,
+            val = rpc.WrapperOpset.__call__(self, sender,
                 callname, *callargs)
+            return self.referee.resolvemetharg(val,
+                self.referee.game.makerpcvalue)
         except rpc.CallNotFound:
             raise rpc.RPCFault(603,
                 'method does not exist in game opset: ' + callname)

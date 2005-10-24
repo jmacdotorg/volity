@@ -1,7 +1,6 @@
 from zymb import jabber
 import zymb.jabber.rpc
 import zymb.jabber.interface
-from volent import FailureToken, Literal
 
 class Game:
     """Game: The implementation of a particular game.
@@ -64,6 +63,7 @@ class Game:
         game is suspended).
     checkconfig() -- validate the game configuration before starting.
     checkseating() -- validate the player seating arrangement, before starting.
+    makerpcvalue() -- convert a game value to an RPC value.
     begingame() -- handle the beginning of the game.
     endgame() -- handle the end of the game.
     suspendgame() -- handle game suspension.
@@ -76,6 +76,8 @@ class Game:
 
     getseat() -- get the Seat for a given ID.
     getseatlist() -- get the list of Seats.
+    getgameseatlist() -- get the list of Seats which are involved in the
+        current game.
     setseatsrequired() -- set which Seats are required and which are optional.
     getplayer() -- get the Player for a given JID.
     getplayerlist() -- get the list of Players.
@@ -89,6 +91,7 @@ class Game:
     sendgame() -- send an RPC to everyone at the table who is seated.
     sendplayer() -- send an RPC to a single player.
     sendseat() -- send an RPC to everyone who is sitting in a given Seat.
+    sendnotseat() -- send an RPC to everyone who isn't sitting in a given Seat.
     queueaction() -- schedule an action to occur "soon".
     addtimer() -- schedule an action to occur later on.
     gameover() -- end the game and declare the winners.
@@ -183,6 +186,18 @@ class Game:
         created in your constructor.
         """
         return list(self.referee.seatlist)
+
+    def getgameseatlist(self):
+        """getgameseatlist() -> list
+
+        Get the list of Seats which are involved in the current game. If
+        there is no current game, this returns None.
+        """
+        
+        ls = self.referee.gameseatlist
+        if (ls == None):
+            return None
+        return list(ls)
 
     def setseatsrequired(self, set=[], clear=[]):
         """setseatsrequired(set=[], clear=[]) -> None
@@ -418,8 +433,15 @@ class Game:
         Send an RPC to everyone present at the table.
 
         The *methname* is the RPC's name. (If it does not contain a period,
-        it is assumed to be in the game.* namespace.) The *args*, if present,
-        are the RPC arguments. The *keywords* may contain either or both of:
+        it is assumed to be in the game.* namespace.)
+
+        The *args*, if present, are the RPC arguments. These must be of types
+        that the RPC system understands: str, int, long, bool, float, list,
+        dict, JID, Seat, and Player. (Note that None is not a legal value.)
+        If you want to include game-specific types, you will need to override
+        the makerpcvalue() method.
+
+        The *keywords* may contain either or both of:
 
             timeout: How long to wait (in seconds) before considering the
                 RPC to have failed.
@@ -502,7 +524,7 @@ class Game:
     def sendseat(self, seat, methname, *args, **keywords):
         """sendseat(seat, methname, *args, **keywords) -> None
 
-        Send an RPC to a everyone who is sitting in a given Seat. The *seat*
+        Send an RPC to everyone who is sitting in a given Seat. The *seat*
         may be a Seat object or the (string) ID of a seat.
 
         See sendtable() for the description of *methname*, *args*, and
@@ -514,6 +536,27 @@ class Game:
         if (not seat):
             return
         ls = seat.playerlist
+        self.queueaction(self.performsend, ls,
+            methname, args, keywords)
+
+    def sendnotseat(self, seat, methname, *args, **keywords):
+        """sendnotseat(seat, methname, *args, **keywords) -> None
+
+        Send an RPC to everyone who isn't sitting in a given Seat. (This
+        includes unseated players.) The *seat* may be a Seat object or the
+        (string) ID of a seat. If *seat* is None, this sends to everyone
+        at the table.
+
+        See sendtable() for the description of *methname*, *args*, and
+        *keywords*.
+        """
+        
+        if (not isinstance(seat, Seat)):
+            seat = self.getseat(seat)
+        if (not seat):
+            ls = self.getplayerlist()
+        else:
+            ls = [ pla for pla in self.getplayerlist() if pla.seat != seat ]
         self.queueaction(self.performsend, ls,
             methname, args, keywords)
 
@@ -755,6 +798,30 @@ class Game:
         if (ls):
             raise FailureToken('volity.empty_seats')
 
+    def makerpcvalue(self, val):
+        """makerpcvalue(val) -> val
+        Convert a game value to an RPC value. By default, the sending methods
+        (sendtable(), sendgame(), etc.) can only accept RPC-legal types:
+        str, int, long, bool, float, list, dict, JID, Seat, and Player.
+        If you want to include game-specific types, you will need to override
+        this method.
+
+        This method should either convert *val* to one of the legal types
+        listed above, or return None (to use the default translation).
+
+        You do not need to interate through list or dict values. This method
+        will be called for each member in the list (as well as for the list
+        itself).
+
+        In general, this should only convert game-specific types (game
+        card instances, for example). If you mess around with the handling
+        of standard RPC types, you will probably break the standard Volity
+        RPC calls.
+
+        Default: return None.
+        """
+        pass
+            
     def begingame(self):
         """begingame() -> None
 
@@ -898,6 +965,7 @@ class Seat:
     isrequired() -- is this a required seat?
     isingame() -- is this Seat involved in the current game?
     send() -- send an RPC to the players in this seat.
+    sendothers() -- send an RPC to the players not sitting in this seat.
 
     Significant fields:
 
@@ -998,6 +1066,14 @@ class Seat:
         """
         self.referee.game.sendseat(self, methname, *args, **keywords)
         
+    def sendothers(self, methname, *args, **keywords):
+        """send(methname, *args, **keywords)
+
+        Send an RPC to the players not sitting in this seat. See the 
+        description of the sendnotseat() method in the Game class.
+        """
+        self.referee.game.sendnotseat(self, methname, *args, **keywords)
+        
         
 class ObjMethodOpset(jabber.rpc.Opset):
     """ObjMethodOpset: An Opset which handles a simple list of call names.
@@ -1040,6 +1116,7 @@ class ObjMethodOpset(jabber.rpc.Opset):
         return val(sender, *callargs)
 
 # late imports
+from volent import FailureToken, Literal
 import referee
 
 # Import the STATE_* constants into this module's namespace.

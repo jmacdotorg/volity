@@ -68,6 +68,16 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.4.3:
+Added more useful send methods to Game and Seat.
+Added getgameseatlist method to Game.
+Added makerpcvalue stub to Game. Arguments and results of game RPC calls
+    can now be parsed from game-specific types to standard RPC types.
+Fixed a bug where a player rejoining a table would not get seat-private
+    information.
+Rearranged import statements slightly, so that the game module can be
+    imported first.
+
 - 1.4.2:
 We now send a game record to the bookkeeper. The Game.gameover() API is
     well-specified now, so the game can do this.
