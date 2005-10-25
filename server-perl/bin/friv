@@ -1614,12 +1614,20 @@ sub jabber_presence {
     # Aha, someone has joined the table.
     my $new_person_jid = $x->get_tag('item')->attr('jid');
     my $affiliation = $x->get_tag('item')->attr('affiliation');
-    if ($affiliation eq 'owner') {
-      # This is the table's ref.
-      $self->referee_jid($new_person_jid);
-      # Ask it for some state info.
-      $self->request_state;
-    } else {
+
+    # What is this newcomer's role?
+    $self->request_disco_info({to=>$new_person_jid, id=>"role-grope"});
+    my $deadline = time + $self->server_timeout;
+    # Wait to see if the disco response handler magically sets the
+    # referee JID variable before we give up waiting...
+    until ( ($self->referee_jid) or (time > $deadline) ) {
+	$self->kernel->run_one_timeslice;
+    }
+    unless ($self->referee_jid) {
+	$self->print_message("Uh oh... I don't know who the referee here is. Something's amiss.");
+    }
+
+    if (defined($self->referee_jid) and $new_person_jid ne $self->referee_jid) {
       # This is a potential opponent!
       unless ($node->attr('type')) {
         # No 'type' attribute means they're joining us...
@@ -1696,6 +1704,19 @@ sub handle_disco_info {
 	my ($server_info) = $self->salient_servers->{$server_jid};
 	$server_info->{name} = "Billy bob's bar-b-q";
 	$self->responding_servers->{$server_jid} = $server_jid;
+    } elsif ($id eq 'role-grope') {
+	if (my $role_field = $$fields{'volity-role'}) {
+	    if ($role_field) {
+		my ($role) = @$role_field;
+		if (defined($role) and $role eq 'referee') {
+		    if (defined($self->referee_jid)) {
+			$self->print_message("Whoah nelly! $from is claiming to be a referee, but I already have " . $self->referee_jid . " as the ref! What's going on??");
+		    } else {
+			$self->referee_jid($from);
+		    }
+		}
+	    }
+	}
     } else {
         $self->print_message("Um... I got a disco info response with id $id. I'm not sure what to do about it.");
     }
