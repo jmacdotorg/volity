@@ -136,6 +136,7 @@ sub handle_disco_info_request {
 							
 	} elsif (my $ruleset = $self->get_ruleset_with_uri($nodes[0])) {
 	    $fields{description} = [$ruleset->description];
+	    $fields{name} = [$ruleset->name];
 	}
     } else {
 	$identity->name('the volity.net bookkeeper');
