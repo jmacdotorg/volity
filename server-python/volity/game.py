@@ -674,6 +674,62 @@ class Game:
         
         winlist = self.referee.parsewinners(winners)
         self.queueaction(self.referee.endgame, winlist, True)
+
+    def sortseats(self, sortfunc, relative=False, seats=None):
+        """sortseats(sortfunc, relative=False, seats=None) -> list
+
+        Sort seats by a scoring or comparison function. If *seats* is not
+        given, it defaults to the list of seats involved in the current game.
+
+        If *relative* is False, then *sortfunc* should be a function of the
+        form:
+            sortfunc(seat) -> number
+        The function should return the seat's score, or some other numeric
+        rank of how well it did in the game. Higher values are better. If
+        two seats receive the same number, they are considered to have tied.
+
+        If *relative* is True, then *sortfunc* should be a function of the
+        form:
+            sortfunc(seat1, seat2) -> number
+        The function should return a negative or positive number depending on
+        whether seat1 did worse or better than seat. If they tied, the function
+        should return zero.
+
+        In either case, sortseats() will return a list of lists of seats.
+        The first sublist contains the seat(s) that won, or tied for first;
+        the second sublist contains the seat(s) that came in second; and so
+        on.
+
+        You may pass the result of sortseats() to gameover() or
+        gamecancelled(). Be sure to precede it with an asterisk:
+            winlist = self.sortseats(scorefunction)
+            self.gameover(*winlist)
+        """
+        
+        if (seats == None):
+            seats = self.getgameseatlist()
+            if (seats == None):
+                return None
+        else:
+            seats = list(seats)
+
+        if (relative):
+            def func(s1, s2):
+                return sortfunc(s2, s1)
+        else:
+            def func(s1, s2):
+                return cmp(sortfunc(s2), sortfunc(s1))
+        seats.sort(func)
+        
+        res = []
+        while (seats):
+            seat = seats.pop(0)
+            place = [seat]
+            while (seats and func(seat, seats[0])==0):
+                place.append(seats.pop(0))
+            res.append(place)
+
+        return res
     
     # The methods below are stubs, meant to be overridden by the game class.
 
