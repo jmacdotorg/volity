@@ -29,49 +29,69 @@ public class VolityHandler implements RPCHandler {
 
     // Inherited from RPCHandler.
     public void handleRPC(String methodName, List params, 
-        RPCResponseHandler k) {
-	System.out.println("handleRPC: " + methodName + " " + params.toString());
+        final RPCResponseHandler k) {
+        System.out.println("handleRPC: " + methodName + " " + params.toString());
 
         GameTable table = gameUI.table;
 
         // Any argument mismatches will show up as runtime exceptions. 
         // Should we catch those? (What would we do with them?)
 
-	// Figure out which method to call now. There are only a handful
-	// of possibilities so we'll just use an if/else chain.
+        // Figure out which method to call now. There are only a handful
+        // of possibilities so we'll just use an if/else chain.
 
-	if (methodName.equals("start_game")) {
-	    // The ref is telling us that it's time to start this game.
+        if (methodName.equals("start_game")) {
+            // The ref is telling us that it's time to start this game.
             table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
-	    Object method = gameUI.game.get("START", gameUI.scope);
-	    try {
-                if (method != Scriptable.NOT_FOUND) {
-                    k.respondValue(gameUI.callUIMethod((Function) method, params));
-                }
-	    } catch (JavaScriptException e) {
-		gameUI.errorHandler.error(e);
-		k.respondFault(901, "UI script exception: " + e);
-	    } catch (EvaluatorException e) {
-		gameUI.errorHandler.error(e);
-		k.respondFault(902, "UI script error: " + e);
-	    }		    
-	} else if (methodName.equals("end_game")) {
-	    // The ref is telling us that this game is over.
+            Object method = gameUI.game.get("START", gameUI.scope);
+            if (!(method instanceof Function)) {
+                // No game.START is the same as a no-op
+                k.respondValue(Boolean.TRUE);
+            }
+            else {
+                gameUI.callUIMethod((Function) method, params, 
+                    new GameUI.Completion() {
+                        public void result(Object obj) { 
+                            if (obj instanceof Undefined) {
+                                // function returned null/void, but RPC result
+                                // has to be non-void
+                                obj = Boolean.TRUE;
+                            }
+                            k.respondValue(obj);
+                        }
+                        public void error(Exception ex) {
+                            gameUI.errorHandler.error(ex);
+                            k.respondFault(608, "UI script exception: " + ex);
+                        }
+                    });
+            }
+        } else if (methodName.equals("end_game")) {
+            // The ref is telling us that this game is over.
             table.setRefereeState(GameTable.STATE_SETUP);
             table.setAllPlayersUnready();
-	    Object method = gameUI.game.get("END", gameUI.scope);
-	    try {
-                if (method != Scriptable.NOT_FOUND) {
-                    k.respondValue(gameUI.callUIMethod((Function) method, params));
-                }
-	    } catch (JavaScriptException e) {
-		gameUI.errorHandler.error(e);
-		k.respondFault(901, "UI script exception: " + e);
-	    } catch (EvaluatorException e) {
-		gameUI.errorHandler.error(e);
-		k.respondFault(902, "UI script error: " + e);
-	    }		    
+            Object method = gameUI.game.get("END", gameUI.scope);
+            if (!(method instanceof Function)) {
+                // No game.END is the same as a no-op
+                k.respondValue(Boolean.TRUE);
+            }
+            else {
+                gameUI.callUIMethod((Function) method, params, 
+                    new GameUI.Completion() {
+                        public void result(Object obj) { 
+                            if (obj instanceof Undefined) {
+                                // function returned null/void, but RPC result
+                                // has to be non-void
+                                obj = Boolean.TRUE;
+                            }
+                            k.respondValue(obj);
+                        }
+                        public void error(Exception ex) {
+                            gameUI.errorHandler.error(ex);
+                            k.respondFault(608, "UI script exception: " + ex);
+                        }
+                    });
+            }
 	} else if (methodName.equals("player_ready")) {
 	    table.setPlayerReadiness((String)params.get(0), true);
 	} else if (methodName.equals("player_unready")) {

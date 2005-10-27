@@ -81,7 +81,7 @@ public class TestButtonBar
             List params = new ArrayList(0);
 	    try {
                 if (method != Scriptable.NOT_FOUND) {
-                    testUI.callUIMethod((Function) method, params);
+                    testUI.callUIMethod((Function) method, params, null);
                 }
 	    }
             catch (Exception ex) {
@@ -96,7 +96,7 @@ public class TestButtonBar
             List params = new ArrayList(0);
 	    try {
                 if (method != Scriptable.NOT_FOUND) {
-                    testUI.callUIMethod((Function) method, params);
+                    testUI.callUIMethod((Function) method, params, null);
                 }
 	    }
             catch (Exception ex) {

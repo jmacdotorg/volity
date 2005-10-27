@@ -14,6 +14,7 @@ import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
+import org.apache.batik.util.RunnableQueue;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
@@ -71,9 +72,9 @@ public class SVGTestCanvas extends JSVGCanvas
      * Kludge to force the component to redraw itself.
      */
     public void forceRedraw() {
-	Dimension2D size = getSVGDocumentSize();
-	setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
-	revalidate();
+        Dimension2D size = getSVGDocumentSize();
+        setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
+        revalidate();
     }  
 
     // Inherited from JSVGComponent.
@@ -136,7 +137,10 @@ public class SVGTestCanvas extends JSVGCanvas
         public void loadString(final String uiScript, final String scriptLabel) {
             // Handle the request in the UpdateManager's thread, so the
             // display will be repainted correctly.
-            getUpdateManager().getUpdateRunnableQueue().invokeLater(new Runnable() {
+
+            RunnableQueue rq = getUpdateManager().getUpdateRunnableQueue();
+
+            rq.invokeLater(new Runnable() {
                     // Make sure we use the interpreter's context rather than
                     // one returned by Context.enter() in a new thread, because
                     // it needs to be a special subclass of Context.
@@ -152,18 +156,27 @@ public class SVGTestCanvas extends JSVGCanvas
                 });
         }
 
-        public Object callUIMethod(Function method, List params)
-            throws JavaScriptException {
-            try {
-                // Make sure we use the interpreter's context rather than one
-                // returned by Context.enter() in a new thread, because it
-                // needs to be a special subclass of Context.
-                interpreter.enterContext();
-                return super.callUIMethod(method, params);
-            } 
-            finally {
-                Context.exit();
-            }
+        public void callUIMethod(final Function method, final List params,
+            final Completion callback) {
+            // Handle the request in the UpdateManager's thread, so the
+            // display will be repainted correctly.
+
+            RunnableQueue rq = getUpdateManager().getUpdateRunnableQueue();
+
+            rq.invokeLater(new Runnable() {
+                    // Make sure we use the interpreter's context rather than
+                    // one returned by Context.enter() in a new thread, because
+                    // it needs to be a special subclass of Context.
+                    public void run() {
+                        try {
+                            interpreter.enterContext();
+                            SVGUI.super.callUIMethod(method, params, callback);
+                        }
+                        finally {
+                            Context.exit();
+                        }
+                    }
+                });
         }
     }
 

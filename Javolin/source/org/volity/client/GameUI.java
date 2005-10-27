@@ -52,6 +52,7 @@ public class GameUI implements RPCHandler, PacketFilter {
   Scriptable scope, game, info, client;
   GameTable table;
   RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
+  private Boolean callInProgress = Boolean.FALSE;
 
   public interface ErrorHandler {
     /**
@@ -65,6 +66,11 @@ public class GameUI implements RPCHandler, PacketFilter {
      * Report a status or game-response message.
      */
     public abstract void print(String msg);
+  }
+
+  public interface Completion {
+    public abstract void result(Object obj);
+    public abstract void error(Exception ex);
   }
 
   /**
@@ -263,38 +269,73 @@ public class GameUI implements RPCHandler, PacketFilter {
   }
 
   // Implements RPCHandler interface.
-  public void handleRPC(String methodName, List params, RPCResponseHandler k) {
+  public void handleRPC(String methodName, List params, 
+    final RPCResponseHandler k) {
     Object method = game.get(methodName, scope);
-    if (method instanceof Function)
-      try {
-        k.respondValue(callUIMethod((Function) method, params));
-      } catch (JavaScriptException e) {
-        errorHandler.error(e);
-        // FIXME: Volity protocol should probably define these
-        // error codes. ### internal errors, etc
-        k.respondFault(901, "UI script exception: " + e);
-      } catch (EvaluatorException e) {
-        errorHandler.error(e);
-        k.respondFault(902, "UI script error: " + e);
+
+    if (!(method instanceof Function)) {
+      k.respondFault(603, "No game."+methodName+" function in UI.");
+      return;        
+    }
+
+    /*
+     * Call the method, passing a callback which will be certain to respond to
+     * the RPC.
+     */
+
+    callUIMethod((Function) method, params, new Completion() {
+      public void result(Object obj) {
+        if (obj instanceof Undefined) {
+          // function returned null/void, but RPC result has to be non-void
+          obj = Boolean.TRUE;
+        }
+        k.respondValue(obj);
       }
-    else
-      k.respondFault(903, "No such UI function.");
+      public void error(Exception ex) {
+        errorHandler.error(ex);
+        k.respondFault(608, "UI script error: " + ex.toString());
+      }
+    });
   }
 
   /**
-   * Call a UI method.
+   * Call a UI method. Since this is a slow operation, probably involving work
+   * in another thread, it does not return a value or throw exceptions.
+   * Instead, you may supply a callback which will be called when the method
+   * completes. (The callback may not be called in your thread!) If the
+   * callback is null, the result (or exception) of the method is silently
+   * dropped.
+   *
+   * A word on concurrency: it is a bad idea for the UI to execute two methods
+   * in different threads at the same time. ECMAScript isn't built for
+   * multithreading, and if it were, UI authors still wouldn't want to do it.
+   * However, it is not useful to put serialization guards (say, mutexes) in
+   * this method. The right way to solve the problem is to queue everything in
+   * one thread -- but the UI package (Batik) will have its own methods for
+   * doing this.
+   *
+   * Therefore, you must subclass GameUI, and wrap callUIMethod in code that
+   * does the appropriate serialization. (For Batik, that means calling
+   * getUpdateRunnableQueue.invokeLater(). See SVGUI in SVGCanvas.)
+   *
+   * If I were being more consistent, I'd make this an abstract method. In lieu
+   * of that, and to ensure that mistakes are obvious, I am putting asserts in
+   * this method. The callInProgress field is used as a guard against
+   * concurrent method calling.
+   *
    * @param method the UI method to be called
    * @param params the list of method arguments (RPC data objects)
-   * @return the method return value (RPC data object)
-   * @throws JavaScriptException if the UI method throws an exception
-   * @throws EvaluatorException if an error occurs while evaluating
-   *                            the UI method body
+   * @param callback completion function, or null
    */
-  public Object callUIMethod(Function method, List params)
-    throws JavaScriptException
+  public void callUIMethod(Function method, List params, Completion callback)
   {
     try {
       Context context = Context.enter();
+      synchronized (callInProgress) {
+        if (callInProgress == Boolean.TRUE)
+          throw new AssertionError("Tried to run two ECMAScript calls at the same time");
+        callInProgress = Boolean.TRUE;
+      }
 
       /* We can't run SVG script in any old Context; it has to be a Context
        * created by the Batik classes. (If we fail to do this, various things
@@ -312,13 +353,19 @@ public class GameUI implements RPCHandler, PacketFilter {
       }
 
       context.setWrapFactory(rpcWrapFactory);
-      Object ret = method.call(context, scope, game, params.toArray());
-      if (ret instanceof Undefined) {
-        // function returned void, but RPC result has to be non-void
-        ret = Boolean.TRUE;
+      try {
+        Object ret = method.call(context, scope, game, params.toArray());
+        if (callback != null)
+          callback.result(ret);
       }
-      return ret;
+      catch (Exception ex) {
+        if (callback != null) 
+          callback.error(ex);
+      }
     } finally {
+      synchronized (callInProgress) {
+        callInProgress = Boolean.FALSE;
+      }
       Context.exit();
     }
   }

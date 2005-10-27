@@ -29,20 +29,49 @@ public class TestUI
         public abstract void error(Throwable e, String prefix);
     }
 
+    public interface Completion {
+        public abstract void result(Object obj);
+        public abstract void error(Throwable ex);
+    }
+
     /**
-     * Call a UI method.
+     * Call a UI method. Since this is a slow operation, probably involving
+     * work in another thread, it does not return a value or throw exceptions.
+     * Instead, you may supply a callback which will be called when the method
+     * completes. (The callback may not be called in your thread!) If the
+     * callback is null, the result (or exception) of the method is silently
+     * dropped.
+     *
+     * A word on concurrency: it is a bad idea for the UI to execute two
+     * methods in different threads at the same time. ECMAScript isn't built
+     * for multithreading, and if it were, UI authors still wouldn't want to do
+     * it. However, it is not useful to put serialization guards (say, mutexes)
+     * in this method. The right way to solve the problem is to queue
+     * everything in one thread -- but the UI package (Batik) will have its own
+     * methods for doing this.
+     *
+     * Therefore, you must subclass TestUI, and wrap callUIMethod in code that
+     * does the appropriate serialization. (For Batik, that means calling
+     * getUpdateRunnableQueue.invokeLater(). See SVGUI in SVGTestCanvas.)
+     *
+     * If I were being more consistent, I'd make this an abstract method. In
+     * lieu of that, and to ensure that mistakes are obvious, I am putting
+     * asserts in this method. The callInProgress field is used as a guard
+     * against concurrent method calling.
+     *
      * @param method the UI method to be called
      * @param params the list of method arguments (RPC data objects)
-     * @return the method return value (RPC data object)
-     * @throws JavaScriptException if the UI method throws an exception
-     * @throws EvaluatorException if an error occurs while evaluating
-     *                            the UI method body
+     * @param callback completion function, or null
      */
-    public Object callUIMethod(Function method, List params)
-        throws JavaScriptException
+    public void callUIMethod(Function method, List params, Completion callback)
     {
         try {
             Context context = Context.enter();
+            synchronized (callInProgress) {
+                if (callInProgress == Boolean.TRUE)
+                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
+                callInProgress = Boolean.TRUE;
+            }
 
             /* We can't run SVG script in any old Context; it has to be a
              * Context created by the Batik classes. (If we fail to do this,
@@ -55,13 +84,24 @@ public class TestUI
             }
 
             context.setWrapFactory(rpcWrapFactory);
-            Object ret = method.call(context, scope, game, params.toArray());
-            if (ret instanceof Undefined) {
-                // function returned void, but RPC result has to be non-void
-                ret = Boolean.TRUE;
+            try {
+                Object ret = method.call(context, scope, game, params.toArray());
+                if (ret instanceof Undefined) {
+                    // function returned void, but RPC result has to be non-void
+                    ret = Boolean.TRUE;
+                }
+                if (callback != null) 
+                    callback.result(ret);
             }
-            return ret;
+            catch (JavaScriptException ex) {
+                errorHandler.error(ex);
+                if (callback != null) 
+                    callback.error(ex);
+            }
         } finally {
+            synchronized (callInProgress) {
+                callInProgress = Boolean.FALSE;
+            }
             Context.exit();
         }
     }
@@ -231,6 +271,7 @@ public class TestUI
     String currentSeat;
     Scriptable scope, game, info, client;
     RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
+    private Boolean callInProgress = Boolean.FALSE;
 
     public TestUI(TranslateToken translator,
         MessageHandler messageHandler,
@@ -270,7 +311,13 @@ public class TestUI
     public void load(File uiScript) throws IOException, JavaScriptException {
         try {
             if (scope == null) initGameObjects();
-            Context.enter().evaluateReader(scope, new FileReader(uiScript),
+            Context context = Context.enter();
+
+            if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
+                throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
+            }
+
+            context.evaluateReader(scope, new FileReader(uiScript),
                 uiScript.getName(), 1, null);
         } finally {
             Context.exit();
@@ -289,6 +336,11 @@ public class TestUI
         try {
             if (scope == null) initGameObjects();
             Context context = Context.enter();
+            synchronized (callInProgress) {
+                if (callInProgress == Boolean.TRUE)
+                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
+                callInProgress = Boolean.TRUE;
+            }
 
             if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
                 throw new AssertionError("Tried to run debug ECMAScript for SVG in a non-Batik Context");
@@ -301,6 +353,9 @@ public class TestUI
             errorHandler.error(ex, scriptLabel + " failed");
         }
         finally {
+            synchronized (callInProgress) {
+                callInProgress = Boolean.FALSE;
+            }
             Context.exit();
         }
     }

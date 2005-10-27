@@ -10,11 +10,12 @@ import org.apache.batik.script.Interpreter;
 import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
 import org.apache.batik.script.rhino.RhinoInterpreter;
+import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
-import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.svg.GVTTreeBuilderAdapter;
 import org.apache.batik.swing.svg.GVTTreeBuilderEvent;
+import org.apache.batik.util.RunnableQueue;
 import org.jivesoftware.smack.XMPPConnection;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -148,42 +149,37 @@ public class SVGCanvas extends JSVGCanvas
         SVGCanvas.this.messageHandler, SVGCanvas.this.errorHandler);
     }
 
-    public void handleRPC(final String methodName,
-                          final List params,
-                          final RPCResponseHandler k)
+    /**
+     * Customization of GameUI.callUIMethod. The Batik library requires that we
+     * invoke ECMAScript from a Batik thread. Therefore, all callUIMethod calls
+     * have to invoke the Batik thread before they can do work.
+     *
+     * Note that handleRPC calls callUIMethod, so it's covered by this wrapper
+     * too.
+     * 
+     * Also note that by queueing everything in the Batik RunnableQueue, we
+     * ensure that all ECMAScript calls are serialized. This is a very good
+     * thing -- otherwise the UI code would have to deal with concurrency
+     * issues. (And then UI authors would come after us with pitchforks.)
+     */
+    public void callUIMethod(final Function method, final List params, 
+      final Completion callback)
     {
-      // Handle the request in the UpdateManager's thread, so the
-      // display will be repainted correctly.
-      getUpdateManager().getUpdateRunnableQueue().invokeLater(new Runnable() {
-          public void run() {
-            // We don't need to call interpreter.enterContext() here, because
-            // super.handleRPC calls around to callUIMethod, which does it.
-            // That's confusing, but it suffices.
-            // Since this is inside an invokeLater, we can't let exceptions
-            // escape -- they'll just slam into a Batik thread and fall on
-            // the floor (i.e., on stdout).
-            try {
-              SVGUI.super.handleRPC(methodName, params, k);
-            }
-            catch (Exception ex) {
-              errorHandler.error(ex);                
-            }
-          }
-        });
-    }
+      RunnableQueue rq = getUpdateManager().getUpdateRunnableQueue();
 
-    public Object callUIMethod(Function method, List params)
-      throws JavaScriptException
-    {
-      try {
-	// Make sure we use the interpreter's context rather than one
-	// returned by Context.enter() in a new thread, because it
-	// needs to be a special subclass of Context.
-	interpreter.enterContext();
-	return super.callUIMethod(method, params);
-      } finally {
-	Context.exit();
-      }
+      rq.invokeLater(new Runnable() {
+        // Make sure we use the interpreter's context rather than one
+        // returned by Context.enter() in a new thread, because it
+        // needs to be a special subclass of Context.
+        public void run() {        
+          try {
+            interpreter.enterContext();
+            SVGUI.super.callUIMethod(method, params, callback);
+          } finally {
+            Context.exit();
+          }
+        }
+      });
     }
   }
 
