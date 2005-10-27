@@ -77,13 +77,13 @@ public class TestButtonBar
                 tmpmsg = "player in seat \"" + seatid + "\"";
             writeMessageText("Starting game (" + tmpmsg + ")");
 
-	    Object method = testUI.game.get("START", testUI.scope);
+            Object method = testUI.game.get("START", testUI.scope);
             List params = new ArrayList(0);
-	    try {
+            try {
                 if (method != Scriptable.NOT_FOUND) {
                     testUI.callUIMethod((Function) method, params, null);
                 }
-	    }
+            }
             catch (Exception ex) {
                 errorHandler.error(ex, "game.START failed");
             }
@@ -92,13 +92,13 @@ public class TestButtonBar
             //### track "ref" state
             writeMessageText("Ending game");
 
-	    Object method = testUI.game.get("END", testUI.scope);
+            Object method = testUI.game.get("END", testUI.scope);
             List params = new ArrayList(0);
-	    try {
+            try {
                 if (method != Scriptable.NOT_FOUND) {
                     testUI.callUIMethod((Function) method, params, null);
                 }
-	    }
+            }
             catch (Exception ex) {
                 errorHandler.error(ex, "game.END failed");
             }

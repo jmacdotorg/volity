@@ -481,12 +481,12 @@ public class GameTable extends MultiUserChat
 
     /** Add a player readiness change listener. */
     public void addStatusListener(StatusListener listener) {
-	statusListeners.add(listener);
+        statusListeners.add(listener);
     }
     
     /** Remove a player readiness change listener. */
     public void removeStatusListener(StatusListener listener) {
-	statusListeners.remove(listener);
+        statusListeners.remove(listener);
     }
 
     /***** Dealing with the referee state *****/
@@ -566,12 +566,12 @@ public class GameTable extends MultiUserChat
 
         /* Create our seats list. */
 
-	for (Iterator it = ids.iterator(); it.hasNext(); ) {
-	    String seatId = (String)it.next();
-	    Seat seat = new Seat(seatId);
-	    mSeats.add(seat);
+        for (Iterator it = ids.iterator(); it.hasNext(); ) {
+            String seatId = (String)it.next();
+            Seat seat = new Seat(seatId);
+            mSeats.add(seat);
             mSeatsById.put(seatId, seat);
-	}
+        }
 
         fireStatusListeners_seatListKnown();
     }

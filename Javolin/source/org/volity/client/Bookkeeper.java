@@ -90,11 +90,11 @@ public class Bookkeeper {
     for (Iterator it = items.getItems(); it.hasNext();) {
       DiscoverItems.Item item = (DiscoverItems.Item) it.next();
       try {
-	URL location = new URL(item.getNode());
-	String name = item.getName();
-	DiscoverInfo info = discoMan.discoverInfo(jid, location.toString());
-	Form form = Form.getFormFrom(info);
-	gameUIs.add(new GameUIInfo(name, location, form));
+        URL location = new URL(item.getNode());
+        String name = item.getName();
+        DiscoverInfo info = discoMan.discoverInfo(jid, location.toString());
+        Form form = Form.getFormFrom(info);
+        gameUIs.add(new GameUIInfo(name, location, form));
       } catch (MalformedURLException e) { }
     }
     return gameUIs;
@@ -116,7 +116,7 @@ public class Bookkeeper {
     for (Iterator it = gameUIs.iterator(); it.hasNext();) {
       GameUIInfo gameUI = (GameUIInfo) it.next();
       if (gameUI.getClientTypes().contains(clientType))
-	compatibleGameUIs.add(gameUI);
+        compatibleGameUIs.add(gameUI);
     }
     return compatibleGameUIs;
   }

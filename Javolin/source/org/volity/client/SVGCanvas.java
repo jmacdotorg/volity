@@ -80,9 +80,9 @@ public class SVGCanvas extends JSVGCanvas
    * Kludge to force the component to redraw itself.
    */
   public void forceRedraw() {
-	Dimension2D size = getSVGDocumentSize();
-	setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
-	revalidate();
+        Dimension2D size = getSVGDocumentSize();
+        setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
+        revalidate();
   }  
 
   // Inherited from JSVGComponent.
@@ -98,8 +98,8 @@ public class SVGCanvas extends JSVGCanvas
     // Instead, make a new context.
     BridgeContext newContext =
       new BridgeContext(context.getUserAgent(),
-			pool,
-			context.getDocumentLoader());
+                        pool,
+                        context.getDocumentLoader());
     newContext.setDynamic(true);
     return newContext;
   }

@@ -12,12 +12,12 @@ public class Seat {
     boolean mRequired;
     
     public Seat(String seatId) {
-	mId = seatId;
+        mId = seatId;
         mRequired = false;
     }
 
     public String getID() {
-	return mId;
+        return mId;
     }
 
     public boolean isRequired() {
@@ -29,34 +29,34 @@ public class Seat {
     }
 
     protected void addPlayer(Player player) {
-	if (mPlayers.indexOf(player) > -1) {
-	    // already there
-	}
+        if (mPlayers.indexOf(player) > -1) {
+            // already there
+        }
         else {
-	    mPlayers.add(player);
-	}
+            mPlayers.add(player);
+        }
     }
 
     protected void removePlayer(Player player) {
-	int index = mPlayers.indexOf(player);
-	if (index > -1) {
-	    mPlayers.remove(index);
-	}
+        int index = mPlayers.indexOf(player);
+        if (index > -1) {
+            mPlayers.remove(index);
+        }
         else {
-	    // already gone
-	}
+            // already gone
+        }
     }
 
     public Iterator getPlayers() {
-	return mPlayers.iterator();
+        return mPlayers.iterator();
     }
 
     public boolean isOccupied() {
-	if (mPlayers.isEmpty()) {
-	    return false;
-	} else {
-	    return true;
-	}
+        if (mPlayers.isEmpty()) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
 

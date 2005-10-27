@@ -45,7 +45,7 @@ public class GameUIInfo {
     FormField field = form.getField("client-type");
     for (Iterator it = field.getValues(); it.hasNext();)
       try {
-	types.add(new URI((String) it.next()));
+        types.add(new URI((String) it.next()));
       } catch (URISyntaxException e) { }
     return types;
   }
@@ -128,8 +128,8 @@ public class GameUIInfo {
       s += field.getVariable() + ": ";
       boolean first = true;
       for (Iterator it2 = field.getValues(); it2.hasNext();) {
-	if (first) first = false; else s += ", ";
-	s += it2.next();
+        if (first) first = false; else s += ", ";
+        s += it2.next();
       }
       s += "\n";
     }

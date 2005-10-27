@@ -115,7 +115,7 @@ public class Referee extends TokenRequester {
      */
     public void stand() throws XMPPException, RPCException, TokenFailure
     {
-	this.stand(mTable.getSelfPlayer());
+        this.stand(mTable.getSelfPlayer());
     }
 
     /**
@@ -127,7 +127,7 @@ public class Referee extends TokenRequester {
     public void stand(Player player) throws XMPPException, RPCException, TokenFailure
     {
         String jid = player.getJID();
-	invoke("volity.stand",
+        invoke("volity.stand",
             Arrays.asList(new String[] { jid }));
     }
 
@@ -138,7 +138,7 @@ public class Referee extends TokenRequester {
      */
     public void sit() throws XMPPException, RPCException, TokenFailure
     {
-	sit(mTable.getSelfPlayer(), null);
+        sit(mTable.getSelfPlayer(), null);
     }
 
     /**
@@ -149,7 +149,7 @@ public class Referee extends TokenRequester {
      */
     public void sit(Seat seat) throws XMPPException, RPCException, TokenFailure
     {
-	sit(mTable.getSelfPlayer(), seat);
+        sit(mTable.getSelfPlayer(), seat);
     }
 
     /**

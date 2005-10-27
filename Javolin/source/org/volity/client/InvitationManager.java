@@ -56,7 +56,7 @@ public class InvitationManager implements PacketFilter, RPCHandler {
 
   // Implements PacketFilter interface.
   public void handleRPC(String methodName, List params,
-			RPCResponseHandler responseHandler)
+                        RPCResponseHandler responseHandler)
   {
     if (params.size() != 1) {
       responseHandler.respondFault(604, "missing argument in invitation");
