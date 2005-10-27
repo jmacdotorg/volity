@@ -4,7 +4,6 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.net.URL;
 import java.util.*;
-import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.PacketFilter;
@@ -100,59 +99,59 @@ public class GameUI implements RPCHandler, PacketFilter {
       scope.put("info", scope, info = new Info());
       scope.put("client", scope, client = context.newObject(scope));
       scope.put("rpc", scope, new Callback() {
-	  public Object run(Object[] args) {
-	    try {
-	      List params = Arrays.asList(args).subList(1, args.length);
-	      return table.getReferee().invoke("game." + args[0], params);
-	    } catch (Exception e) {
-	      errorHandler.error(e);
+          public Object run(Object[] args) {
+            try {
+              List params = Arrays.asList(args).subList(1, args.length);
+              return table.getReferee().invoke("game." + args[0], params);
+            } catch (Exception e) {
+              errorHandler.error(e);
               /* This will print TokenFailures in window log, and display
                * other exceptions as dialog box */
-	      return null;
-	    }
-	  }
-	});
+              return null;
+            }
+          }
+        });
       scope.put("literalmessage", scope, new Callback() {
-	  public Object run(Object[] args) {
-	    try {
+          public Object run(Object[] args) {
+            try {
               if (args.length != 1) {
                 throw new Exception("message() requires one argument");
               }
               messageHandler.print((String)args[0]);
               return null;
-	    } catch (Exception e) {
-	      errorHandler.error(e);
-	      return null;
-	    }
-	  }
-	});
+            } catch (Exception e) {
+              errorHandler.error(e);
+              return null;
+            }
+          }
+        });
       scope.put("localize", scope, new Callback() {
-	  public Object run(Object[] args) {
-	    try {
+          public Object run(Object[] args) {
+            try {
               if (args.length == 0)
                 throw new Exception("localize() requires at least one argument");
               List params = massageTokenList(args);
               return translator.translate(params);
-	    } catch (Exception e) {
-	      errorHandler.error(e);
-	      return null;
-	    }
-	  }
-	});
+            } catch (Exception e) {
+              errorHandler.error(e);
+              return null;
+            }
+          }
+        });
       scope.put("message", scope, new Callback() {
-	  public Object run(Object[] args) {
-	    try {
+          public Object run(Object[] args) {
+            try {
               if (args.length == 0)
                 throw new Exception("message() requires at least one argument");
               List params = massageTokenList(args);
               messageHandler.print(translator.translate(params));
               return null;
-	    } catch (Exception e) {
-	      errorHandler.error(e);
-	      return null;
-	    }
-	  }
-	});
+            } catch (Exception e) {
+              errorHandler.error(e);
+              return null;
+            }
+          }
+        });
     } catch (JavaScriptException e) {
       errorHandler.error(e);
     } finally {
@@ -196,10 +195,10 @@ public class GameUI implements RPCHandler, PacketFilter {
     public String getClassName() { return "Info"; }
     {
       try {
-	defineProperty("nickname", Info.class, PERMANENT);
-	defineProperty("seat", Info.class, PERMANENT);
+        defineProperty("nickname", Info.class, PERMANENT);
+        defineProperty("seat", Info.class, PERMANENT);
       } catch (PropertyException e) {
-	errorHandler.error(e);
+        errorHandler.error(e);
       }
     }
     public String getSeat() { 
@@ -236,7 +235,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     try {
       if (scope == null) initGameObjects();
       Context.enter().evaluateReader(scope, new FileReader(uiScript),
-				     uiScript.getName(), 1, null);
+                                     uiScript.getName(), 1, null);
     } finally {
       Context.exit();
     }
@@ -268,15 +267,15 @@ public class GameUI implements RPCHandler, PacketFilter {
     Object method = game.get(methodName, scope);
     if (method instanceof Function)
       try {
-	k.respondValue(callUIMethod((Function) method, params));
+        k.respondValue(callUIMethod((Function) method, params));
       } catch (JavaScriptException e) {
-	errorHandler.error(e);
-	// FIXME: Volity protocol should probably define these
-	// error codes.
-	k.respondFault(901, "UI script exception: " + e);
+        errorHandler.error(e);
+        // FIXME: Volity protocol should probably define these
+        // error codes. ### internal errors, etc
+        k.respondFault(901, "UI script exception: " + e);
       } catch (EvaluatorException e) {
-	errorHandler.error(e);
-	k.respondFault(902, "UI script error: " + e);
+        errorHandler.error(e);
+        k.respondFault(902, "UI script error: " + e);
       }
     else
       k.respondFault(903, "No such UI function.");
@@ -302,16 +301,21 @@ public class GameUI implements RPCHandler, PacketFilter {
        * go wrong in the script. Notably, any attempt to refer to "document"
        * throws a ClassCastException.) See the SVGCanvas.SVGUI methods for the
        * code that ensures this.
+       *
+       * NOTE: Technically the GameUI class should never mention Batik -- all
+       * Batik-specific behavior should be in the SGVUI subclass. However, this
+       * assertion is protecting our asses. If we ever get an HTMLUI subclass,
+       * we'll have to modify the assert appropriately.
        */
-      if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
+      if (!(context instanceof org.apache.batik.script.rhino.RhinoInterpreter.ExtendedContext)) {
         throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
       }
 
       context.setWrapFactory(rpcWrapFactory);
       Object ret = method.call(context, scope, game, params.toArray());
       if (ret instanceof Undefined) {
-	// function returned void, but RPC result has to be non-void
-	ret = Boolean.TRUE;
+        // function returned void, but RPC result has to be non-void
+        ret = Boolean.TRUE;
       }
       return ret;
     } finally {
@@ -326,134 +330,134 @@ public class GameUI implements RPCHandler, PacketFilter {
    */
   class RPCWrapFactory extends WrapFactory {
     public Object wrap(Context cs, Scriptable scope,
-		       Object obj, Class staticType)
+                       Object obj, Class staticType)
     {
       if (obj != null && obj instanceof List) {
-	final List list = (List) obj;
-	return new Scriptable() {
-	    public boolean has(int index, Scriptable start) {
-	      return index >= 0 && index < list.size();
-	    }
-	    public Object get(int index, Scriptable start) {
-	      return list.get(index);
-	    }
-	    public void put(int index, Scriptable start, Object value) {
-	      list.set(index, value);
-	    }
-	    public void delete(int index) {
-	      list.remove(index);
-	    }
-	    public Object[] getIds() {
-	      Object[] ids = new Object[list.size()];
-	      for (int i = 0; i < ids.length; i++)
-		ids[i] = new Integer(i);
-	      return ids;
-	    }
+        final List list = (List) obj;
+        return new Scriptable() {
+            public boolean has(int index, Scriptable start) {
+              return index >= 0 && index < list.size();
+            }
+            public Object get(int index, Scriptable start) {
+              return list.get(index);
+            }
+            public void put(int index, Scriptable start, Object value) {
+              list.set(index, value);
+            }
+            public void delete(int index) {
+              list.remove(index);
+            }
+            public Object[] getIds() {
+              Object[] ids = new Object[list.size()];
+              for (int i = 0; i < ids.length; i++)
+                ids[i] = new Integer(i);
+              return ids;
+            }
 
-	    // Not really sure what to do with all these...
-	    public String getClassName() {
-	      return list.getClass().getName();
-	    }
-	    public Object getDefaultValue(Class hint) {
-	      if (hint == null || hint == String.class)
-		return list.toString();
-	      if (hint == Boolean.class)
-		return Boolean.TRUE;
-	      if (hint == Number.class)
-		return new Double(Double.NaN);
-	      return this;
-	    }
-	    public boolean hasInstance(Scriptable instance) {
-	      return false;
-	    }
-	    public boolean has(String name, Scriptable start) {
-	      return false;
-	    }
-	    public Object get(String name, Scriptable start) {
-	      return NOT_FOUND;
-	    }
-	    public void put(String name, Scriptable start, Object value) {
-	      // ignore
-	    }
-	    public void delete(String name) {
-	      // ignore
-	    }
-	    public Scriptable getParentScope() {
-	      return null;
-	    }
-	    public void setParentScope(Scriptable parent) {
-	      // ignore
-	    }
-	    public Scriptable getPrototype() {
-	      return null;
-	    }
-	    public void setPrototype(Scriptable prototype) {
-	      // ignore;
-	    }
-	  };
+            // Not really sure what to do with all these...
+            public String getClassName() {
+              return list.getClass().getName();
+            }
+            public Object getDefaultValue(Class hint) {
+              if (hint == null || hint == String.class)
+                return list.toString();
+              if (hint == Boolean.class)
+                return Boolean.TRUE;
+              if (hint == Number.class)
+                return new Double(Double.NaN);
+              return this;
+            }
+            public boolean hasInstance(Scriptable instance) {
+              return false;
+            }
+            public boolean has(String name, Scriptable start) {
+              return false;
+            }
+            public Object get(String name, Scriptable start) {
+              return NOT_FOUND;
+            }
+            public void put(String name, Scriptable start, Object value) {
+              // ignore
+            }
+            public void delete(String name) {
+              // ignore
+            }
+            public Scriptable getParentScope() {
+              return null;
+            }
+            public void setParentScope(Scriptable parent) {
+              // ignore
+            }
+            public Scriptable getPrototype() {
+              return null;
+            }
+            public void setPrototype(Scriptable prototype) {
+              // ignore;
+            }
+          };
       } else if (obj != null && obj instanceof Map) {
-	final Map map = (Map) obj;
-	return new Scriptable() {
-	    public boolean has(String name, Scriptable start) {
-	      return map.containsKey(name);
-	    }
-	    public Object get(String name, Scriptable start) {
-	      return map.get(name);
-	    }
-	    public void put(String name, Scriptable start, Object value) {
-	      map.put(name, value);
-	    }
-	    public void delete(String name) {
-	      map.remove(name);
-	    }
+        final Map map = (Map) obj;
+        return new Scriptable() {
+            public boolean has(String name, Scriptable start) {
+              return map.containsKey(name);
+            }
+            public Object get(String name, Scriptable start) {
+              return map.get(name);
+            }
+            public void put(String name, Scriptable start, Object value) {
+              map.put(name, value);
+            }
+            public void delete(String name) {
+              map.remove(name);
+            }
 
-	    public Object[] getIds() {
-	      return map.keySet().toArray();
-	    }
+            public Object[] getIds() {
+              return map.keySet().toArray();
+            }
 
-	    // Not really sure what to do with all these...
-	    public String getClassName() {
-	      return map.getClass().getName();
-	    }
-	    public Object getDefaultValue(Class hint) {
-	      if (hint == null || hint == String.class)
-		return map.toString();
-	      if (hint == Boolean.class)
-		return Boolean.TRUE;
-	      if (hint == Number.class)
-		return new Double(Double.NaN);
-	      return this;
-	    }
-	    public boolean hasInstance(Scriptable instance) {
-	      return false;
-	    }
-	    public boolean has(int index, Scriptable start) {
-	      return false;
-	    }
-	    public Object get(int index, Scriptable start) {
-	      return NOT_FOUND;
-	    }
-	    public void put(int index, Scriptable start, Object value) {
-	      // ignore
-	    }
-	    public void delete(int index) {
-	      // ignore
-	    }
-	    public Scriptable getParentScope() {
-	      return null;
-	    }
-	    public void setParentScope(Scriptable parent) {
-	      // ignore
-	    }
-	    public Scriptable getPrototype() {
-	      return null;
-	    }
-	    public void setPrototype(Scriptable prototype) {
-	      // ignore;
-	    }
-	  };
+            // Not really sure what to do with all these...
+            public String getClassName() {
+              return map.getClass().getName();
+            }
+            public Object getDefaultValue(Class hint) {
+              if (hint == null || hint == String.class)
+                return map.toString();
+              if (hint == Boolean.class)
+                return Boolean.TRUE;
+              if (hint == Number.class)
+                return new Double(Double.NaN);
+              return this;
+            }
+            public boolean hasInstance(Scriptable instance) {
+              return false;
+            }
+            public boolean has(int index, Scriptable start) {
+              return false;
+            }
+            public Object get(int index, Scriptable start) {
+              return NOT_FOUND;
+            }
+            public void put(int index, Scriptable start, Object value) {
+              // ignore
+            }
+            public void delete(int index) {
+              // ignore
+            }
+            public Scriptable getParentScope() {
+              return null;
+            }
+            public void setParentScope(Scriptable parent) {
+              // ignore
+            }
+            public Scriptable getPrototype() {
+              return null;
+            }
+            public void setPrototype(Scriptable prototype) {
+              // ignore;
+            }
+          };
       } else {
-	return super.wrap(cs, scope, obj, staticType);
+        return super.wrap(cs, scope, obj, staticType);
       }
     }
   }
@@ -464,7 +468,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     public String getClassName() { return "Function"; }
     // Inherited from Function.
     public Object call(Context cx, Scriptable scope, Scriptable thisObj,
-		       Object[] args) {
+                       Object[] args) {
       return run(args);
     }
     // Inherited from Function.
