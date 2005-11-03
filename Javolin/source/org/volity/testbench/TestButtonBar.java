@@ -18,7 +18,6 @@ import org.mozilla.javascript.*;
 public class TestButtonBar
     implements ActionListener, SVGTestCanvas.UIListener
 {
-    File uiDir;
     TestUI.MessageHandler messageHandler;
     TestUI.ErrorHandler errorHandler;
     TestUI testUI;
@@ -31,15 +30,14 @@ public class TestButtonBar
     List mComponents = new ArrayList();
     Map mFields = new Hashtable();
 
-    public TestButtonBar(File uiDir, 
+    public TestButtonBar(DebugInfo info,
         TestUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
 
         this.messageHandler = messageHandler;
         this.errorHandler = errorHandler;
-        this.uiDir = uiDir;
+        this.mDebugInfo = info;
 
-        mDebugInfo = new DebugInfo(uiDir);
         buildUI(true);
     }
 
@@ -130,8 +128,8 @@ public class TestButtonBar
      * Reload the testbench.xml file, and update the controls in the buttonbar
      * to match.
      */
-    public void reload() {
-        mDebugInfo = new DebugInfo(uiDir);
+    public void reload(DebugInfo info) {
+        mDebugInfo = info;
         buildUI(false);
     }
 

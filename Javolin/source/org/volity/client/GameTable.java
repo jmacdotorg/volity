@@ -683,6 +683,19 @@ public class GameTable extends MultiUserChat
             };
     }
 
+    /**
+     * Return an iterator of seats which are visible (i.e., either required or
+     * occupied).
+     */
+    public Iterator getVisibleSeats() {
+        return new IteratorFilter(mSeats) {
+                public boolean matches(Object obj) {
+                    Seat seat = (Seat)obj;
+                    return (seat.isOccupied() || seat.isRequired());
+                }
+            };
+    }
+
     /** Return the Player object which represents this client. */
     public Player getSelfPlayer() {
         return mSelfPlayer;

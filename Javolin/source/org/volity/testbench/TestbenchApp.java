@@ -33,6 +33,8 @@ public class TestbenchApp extends JFrame
     private final static String LOG_SPLIT_POS = "LogSplitPos";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
 
+    private File mUIDir;
+    private DebugInfo mDebugInfo;
     private TranslateToken mTranslator;
     private TestButtonBar mButtonBar;
 
@@ -149,6 +151,7 @@ public class TestbenchApp extends JFrame
 
         URL uiMainUrl = uiFile.toURI().toURL();
 
+        mUIDir = uiDir;
         mTranslator = new TranslateToken(TableWindow.findFileCaseless(uiDir, "locale"));
 
         TestUI.MessageHandler messageHandler = new TestUI.MessageHandler() {
@@ -169,10 +172,12 @@ public class TestbenchApp extends JFrame
                 }
             };
             
-        mViewport = new SVGTestCanvas(uiMainUrl, mTranslator,
+        mDebugInfo = new DebugInfo(uiDir);
+
+        mViewport = new SVGTestCanvas(uiMainUrl, mDebugInfo, mTranslator,
             messageHandler, errorHandler);
 
-        mButtonBar = new TestButtonBar(uiDir, messageHandler, errorHandler);
+        mButtonBar = new TestButtonBar(mDebugInfo, messageHandler, errorHandler);
         mViewport.addUIListener(mButtonBar);
         
         mViewport.addUpdateManagerListener(
@@ -250,8 +255,9 @@ public class TestbenchApp extends JFrame
         } 
         else if (ev.getSource() == mReloadMenuItem) {
             writeMessageText("Reloading UI files...");
-            mButtonBar.reload();
-            mViewport.reloadUI();
+            mDebugInfo = new DebugInfo(mUIDir);
+            mButtonBar.reload(mDebugInfo);
+            mViewport.reloadUI(mDebugInfo);
         }
         else if (ev.getSource() == mLastExceptionMenuItem) {
             if (lastException instanceof Exception) {

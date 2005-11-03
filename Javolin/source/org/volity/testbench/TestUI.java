@@ -12,7 +12,7 @@ import org.volity.client.TranslateToken;
  * interface, only for the testbench environment rather than a true Volity
  * client.
  */
-public class TestUI 
+public abstract class TestUI 
 {
     public interface MessageHandler {
         /**
@@ -273,6 +273,8 @@ public class TestUI
     RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
     private Boolean callInProgress = Boolean.FALSE;
 
+    Map seatObjects = new HashMap();
+
     public TestUI(TranslateToken translator,
         MessageHandler messageHandler,
         ErrorHandler parentErrorHandler) {
@@ -299,6 +301,8 @@ public class TestUI
 
         currentSeat = null;
     }
+
+    public abstract DebugInfo getDebugInfo();
     
     /**
      * Execute a UI script.
@@ -498,6 +502,9 @@ public class TestUI
         return ls;
     }
 
+    /**
+     * Convert a list of arguments for rpc() into a string.
+     */
     protected String prettifyParams(Object[] args) {
         StringBuffer buf = new StringBuffer();
         buf.append("game." + args[0]);
@@ -507,49 +514,153 @@ public class TestUI
             if (ix > 1)
                 buf.append(", ");
             Object obj = args[ix];
-            if (obj instanceof Number) {
-                Number nobj = (Number)obj;
-                if (nobj.doubleValue() == nobj.intValue())
-                    buf.append(String.valueOf(nobj.intValue()));
-                else
-                    buf.append(nobj.toString());
-            }
-            else if (obj instanceof String) {
-                String sobj = (String)obj;
-                buf.append("\"" + sobj + "\"");
-            }
-            //### org.mozilla.javascript.NativeArray, and whatever struct maps to
-            else {
-                buf.append(obj.toString());
-            }
+            prettifyParam(buf, obj);
         }
         buf.append(")");
 
         return buf.toString();
     }
 
+    /**
+     * Convert a single RPC argument into a string, and append it to the given
+     * StringBuffer.
+     */
+    protected void prettifyParam(StringBuffer buf, Object obj) {
+        if (obj instanceof Number) {
+            Number nobj = (Number)obj;
+            if (nobj.doubleValue() == nobj.intValue())
+                buf.append(String.valueOf(nobj.intValue()));
+            else
+                buf.append(nobj.toString());
+        }
+        else if (obj instanceof String) {
+            String sobj = (String)obj;
+            buf.append("\"" + sobj + "\"");
+        }
+        else if (obj instanceof NativeArray) {
+            NativeArray arr = (NativeArray)obj;
+            Object[] ids = arr.getIds();
+
+            boolean simple = true;
+            for (int ix=0; ix<ids.length; ix++) {
+                Object id = ids[ix];
+                if (id instanceof Number && ((Number)id).doubleValue() == ix)
+                    continue;
+                simple = false;
+                break;
+            }
+
+            //### This doesn't work right in the non-simple case -- sorry.
+
+            buf.append("[");
+            for (int ix=0; ix<ids.length; ix++) {
+                if (ix > 0)
+                    buf.append(", ");
+                Object id = ids[ix];
+                Object val = arr.get(ix, arr);
+                if (!simple) {
+                    prettifyParam(buf, id);
+                    buf.append(": ");
+                }
+                prettifyParam(buf, val);
+            }
+            buf.append("]");
+        }
+        //### and whatever struct maps to
+        else {
+            buf.append(obj.toString());
+        }
+    }
+
+    /**
+     * Return the UISeat object for a given seat ID.
+     *
+     * We keep a cache of these, in a hash table. Any call to getSeatById() for
+     * a given ID returns the same UISeat.
+     *
+     * Why? If there were two UISeat objects for the same ID, they'd compare as
+     * "not equal" in UI code -- even though they'd appear identical. This
+     * would be confusing and weird.
+     */
+    UISeat getSeatById(String id) {
+        if (!seatObjects.containsKey(id)) {
+            UISeat seat = new UISeat(id);
+            seatObjects.put(id, seat);
+            return seat;
+        }
+        else {
+            UISeat seat = (UISeat)seatObjects.get(id);
+            return seat;
+        }
+    }
+
     class Info extends ScriptableObject {
-        public String getClassName() { return "Info"; }
         {
             try {
                 defineProperty("nickname", Info.class, PERMANENT);
                 defineProperty("seat", Info.class, PERMANENT);
-                defineProperty("opponents", Info.class, PERMANENT);
+                defineProperty("allseats", Info.class, PERMANENT);
+                defineProperty("gameseats", Info.class, PERMANENT);
             } catch (PropertyException e) {
                 throw new RuntimeException(e.toString());
             }
         }
-        public String getSeat() { return currentSeat; }
+
+        public String getClassName() { return "Info"; }
+        public Object getDefaultValue(Class typeHint) { return toString(); }
+
+        public UISeat getSeat() { 
+            if (currentSeat == null)
+                return null;
+            return getSeatById(currentSeat);
+        }
         public String getNickname() { return "XXX-nickname"; }
         public void setNickname(String nickname) throws Exception {
             throw new Exception("Cannot change nickname in testbench");
         }
-        Scriptable opponents;
-        public Object getOpponents() throws JavaScriptException {
+        public Object getAllseats() throws JavaScriptException {
+            List seatlist = getDebugInfo().getSeatList();
+
             Context context = Context.getCurrentContext();
-            opponents = context.newArray(scope, 0); //XXX?
-            return opponents;
+            Scriptable ls = context.newArray(scope, 0);
+            int count = 0;
+            for (Iterator it = seatlist.iterator(); it.hasNext(); ) {
+                String val = (String)it.next();
+                ls.put(count++, ls, getSeatById(val));
+            }
+            return ls;
+        }
+        public Object getGameseats() throws JavaScriptException {
+            return getAllseats();
         }
     }
 
+    class UISeat extends ScriptableObject {
+        {
+            try {
+                defineProperty("players", UISeat.class, PERMANENT);
+            } catch (PropertyException e) {
+                throw new RuntimeException(e.toString());
+            }
+        }
+
+        protected String id;
+
+        public UISeat(String id) {
+            this.id = id;
+        }
+
+        public String getClassName() { return "Seat"; }
+        public Object getDefaultValue(Class typeHint) { return id; }
+
+        public Object getPlayers() throws JavaScriptException {
+            Context context = Context.getCurrentContext();
+            Scriptable ls = context.newArray(scope, 0);
+            ls.put(0, ls, id+"@testbench/app");
+            if (currentSeat != null && id.equals(currentSeat)) {
+                ls.put(1, ls, "you@testbench/testbench");
+            }
+            return ls;
+        }
+    }
 }

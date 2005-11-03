@@ -27,17 +27,20 @@ public class SVGTestCanvas extends JSVGCanvas
     implements InterpreterFactory
 {
     URL uiDocument;
+    DebugInfo debugInfo;
     TranslateToken translator;
     TestUI.MessageHandler messageHandler;
     TestUI.ErrorHandler errorHandler;
 
     public SVGTestCanvas(URL uiDocument,
+        DebugInfo debugInfo,
         TranslateToken translator,
         TestUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
         super();
 
         this.uiDocument = uiDocument;
+        this.debugInfo = debugInfo;
         this.messageHandler = messageHandler;
         this.errorHandler = errorHandler;
         this.translator = translator;
@@ -64,7 +67,8 @@ public class SVGTestCanvas extends JSVGCanvas
      * Kludge (or maybe it's just a clever way) to force the canvas to reload
      * the SVG file from disk.
      */
-    public void reloadUI() {
+    public void reloadUI(DebugInfo debugInfo) {
+        this.debugInfo = debugInfo;
         setURI(uiDocument.toString());
     }
 
@@ -132,6 +136,10 @@ public class SVGTestCanvas extends JSVGCanvas
             super(SVGTestCanvas.this.translator, 
                 SVGTestCanvas.this.messageHandler,
                 SVGTestCanvas.this.errorHandler);
+        }
+
+        public DebugInfo getDebugInfo() {
+            return SVGTestCanvas.this.debugInfo;
         }
 
         public void loadString(final String uiScript, final String scriptLabel) {

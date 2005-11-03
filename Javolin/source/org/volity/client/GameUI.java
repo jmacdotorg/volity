@@ -53,6 +53,7 @@ public class GameUI implements RPCHandler, PacketFilter {
   GameTable table;
   RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
   private Boolean callInProgress = Boolean.FALSE;
+  Map seatObjects = new HashMap();
 
   public interface ErrorHandler {
     /**
@@ -197,28 +198,112 @@ public class GameUI implements RPCHandler, PacketFilter {
     return ls;
   }
 
+  /**
+   * Return the UISeat object for a given Seat.
+   *
+   * We keep a cache of these, in a hash table. Any call to getUISeat() for a
+   * given Seat returns the same UISeat. (This is true even if the seating
+   * system discards a Seat and replaces it with a new one that has the same
+   * ID. Not that this should happen... but if it does, it should be
+   * transparent to the UI.)
+   *
+   * Why? If there were two UISeat objects for the same ID, they'd compare as
+   * "not equal" in UI code -- even though they'd appear identical. This
+   * would be confusing and weird.
+   */
+  UISeat getUISeat(Seat gameseat) {
+    String id = gameseat.getID();
+    if (!seatObjects.containsKey(id)) {
+      UISeat seat = new UISeat(id);
+      seatObjects.put(id, seat);
+      return seat;
+    }
+    else {
+      UISeat seat = (UISeat)seatObjects.get(id);
+      return seat;
+    }
+  }
+
   public class Info extends ScriptableObject {
-    public String getClassName() { return "Info"; }
     {
       try {
         defineProperty("nickname", Info.class, PERMANENT);
         defineProperty("seat", Info.class, PERMANENT);
+        defineProperty("allseats", Info.class, PERMANENT);
+        defineProperty("gameseats", Info.class, PERMANENT);
       } catch (PropertyException e) {
         errorHandler.error(e);
       }
     }
-    public String getSeat() { 
-        Player player = table.getSelfPlayer();
-        if (player == null)
-            return null;
-        Seat seat = player.getSeat();
-        if (seat == null)
-            return null;
-        return seat.getID();
+
+    public String getClassName() { return "Info"; }
+    public Object getDefaultValue(Class typeHint) { return toString(); }
+
+    public UISeat getSeat() { 
+      Player player = table.getSelfPlayer();
+      if (player == null)
+        return null;
+      Seat seat = player.getSeat();
+      if (seat == null)
+        return null;
+      return getUISeat(seat);
     }
     public String getNickname() { return table.getNickname(); }
     public void setNickname(String nickname) throws XMPPException {
       table.changeNickname(nickname);
+    }
+    public Object getAllseats() throws JavaScriptException {
+      Context context = Context.getCurrentContext();
+      Scriptable ls = context.newArray(scope, 0);
+      int count = 0;
+      for (Iterator it = table.getSeats(); it.hasNext(); ) {
+        Seat seat = (Seat)it.next();
+        ls.put(count++, ls, getUISeat(seat));
+      }
+      return ls;
+    }
+    public Object getGameseats() throws JavaScriptException {
+      Context context = Context.getCurrentContext();
+      Scriptable ls = context.newArray(scope, 0);
+      int count = 0;
+      for (Iterator it = table.getVisibleSeats(); it.hasNext(); ) {
+        Seat seat = (Seat)it.next();
+        ls.put(count++, ls, getUISeat(seat));
+      }
+      return ls;
+    }
+  }
+
+  class UISeat extends ScriptableObject {
+    {
+      try {
+        defineProperty("players", UISeat.class, PERMANENT);
+      } catch (PropertyException e) {
+        throw new RuntimeException(e.toString());
+      }
+    }
+
+    protected String id;
+
+    public UISeat(String id) {
+      this.id = id;
+    }
+
+    public String getClassName() { return "Seat"; }
+    public Object getDefaultValue(Class typeHint) { return id; }
+
+    public Object getPlayers() throws JavaScriptException {
+      Context context = Context.getCurrentContext();
+      Scriptable ls = context.newArray(scope, 0);
+      Seat seat = table.getSeat(id);
+      if (seat != null) {
+        int count = 0;
+        for (Iterator it = seat.getPlayers(); it.hasNext(); ) {
+          Player player = (Player)it.next();
+          ls.put(count++, ls, player.getJID());
+        }
+      }
+      return ls;
     }
   }
 
