@@ -503,9 +503,13 @@ public class GameUI implements RPCHandler, PacketFilter {
               return false;
             }
             public boolean has(String name, Scriptable start) {
+              if (name.equals("length"))
+                return true;
               return false;
             }
             public Object get(String name, Scriptable start) {
+              if (name.equals("length"))
+                return new Integer(list.size());
               return NOT_FOUND;
             }
             public void put(String name, Scriptable start, Object value) {
