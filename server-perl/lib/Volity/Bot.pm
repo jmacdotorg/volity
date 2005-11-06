@@ -115,6 +115,20 @@ sub jabber_presence {
     }
 }
 
+# We override Volity::Jabber's send_presence in order to attach some
+# additional JEP-0115 information.
+sub send_presence {
+    my $self = shift;
+    my ($config) = @_;
+    $config ||= {};
+    $$config{caps} = {
+	node => "http://volity.org/protocol/caps",
+	ext => "bot",
+	ver => "1.0",
+    };
+    return $self->SUPER::send_presence($config);
+}
+
 sub join_table {
     my $self = shift;
 

@@ -847,12 +847,10 @@ sub send_rpc_response {
   my $response_xml = $response->as_string;
   # This s/// chops off the XML prolog.
   # (Ugly, yes. Suggestions welcome.)
-#  $response_xml =~ s/^<\s*\?\s*xml\s*version\s*=\s*['"]1\.0['"]\s*\?\s*>//;
   $response_xml =~ s/^<\s*\?\s*xml\s.*?\?\s*>//;
   $rpc_iq->insert_tag(query=>[xmlns=>'jabber:iq:rpc'])
     ->rawdata($response_xml);
   $self->logger->debug("Sending response: " . $rpc_iq->to_str);
-#  $self->kernel->post($self->alias, 'output_handler', $rpc_iq);
   $self->post_node($rpc_iq);
   return 1;
 }
@@ -1048,7 +1046,6 @@ sub join_muc {
   my $presence = POE::Filter::XML::Node->new('presence');
   $presence->attr(to=>$muc_jid);
   $presence->insert_tag('x', [xmlns=>'http://jabber.org/protocol/muc']);
-#  $self->kernel->post($self->alias, 'output_handler', $presence);
   $self->post_node($presence);
   $self->logger->debug("Presence sent.\n");
   return $muc_jid;
@@ -1076,6 +1073,10 @@ Sets the type attribute. See the XMPP-IM protocol for more information as to the
 
 These all set sub-elements on the outgoing presence element. See the XMPP-IM protocol for more information as to their use. You may set these to localized values by setting their values to hashrefs instead of strings, as described in L<"Localization">.
 
+=item caps
+
+This optional key has a value of another hashref containing entity capabilities (JEP-0115) information. Its keys are C<node>, C<ver> and C<ext>.
+
 =back
 
 You can leave out the hashref entirely to send a blank <<presence/>>
@@ -1094,7 +1095,19 @@ sub send_presence {
   foreach (qw(show status priority)) {
     $self->insert_localized_tags($presence, $_, $$config{$_}) if defined($$config{$_});
   }
-#  $self->kernel->post($self->alias, 'output_handler', $presence);
+  if (my $caps_config = $$config{caps}) {
+      if (ref($caps_config) eq 'HASH') {
+	  my $caps_node = $presence->insert_tag('c');
+	  $caps_node->attr(xmlns=>"http://jabber.org/protocol/caps");
+	  foreach (qw(ext node ver)) {
+	      $caps_node->attr($_=>$$caps_config{$_}) if defined($$caps_config{$_});
+	  }
+      }
+      else {
+	  $self->warn("The 'caps' argument in the send_presence() method must contain a hash reference.");
+      }
+  }
+      
   $self->post_node($presence);
 }
 

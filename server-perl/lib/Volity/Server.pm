@@ -180,6 +180,20 @@ sub jabber_presence {
   }
 }
 
+# We override Volity::Jabber's send_presence in order to attach some
+# additional JEP-0115 information.
+sub send_presence {
+    my $self = shift;
+    my ($config) = @_;
+    $config ||= {};
+    $$config{caps} = {
+	node => "http://volity.org/protocol/caps",
+	ext => "parlor",
+	ver => "1.0",
+    };
+    return $self->SUPER::send_presence($config);
+}
+
 sub new_table {
   my $self = shift;
   # Start a new session to play this game.
@@ -364,12 +378,14 @@ sub handle_disco_items_request {
 		name=>"ruleset information (URI: $uri )",
 	    }));
 	} elsif ( $nodes[0] eq 'open_games' ) {
+	    $self->logger->debug("It's an open_games request.");
 	    # Get a list of referees with open games, and return
 	    # pointers to them.
 	    my @open_referees = grep(
 		not($_->is_hidden),
 		$self->referees
 	    );
+	    $self->logger->debug("I am returning " . @open_referees . " referee nodes.");
 	    foreach (@open_referees) {
 		push (@items, Volity::Jabber::Disco::Item->new({
 		    jid=>$_->jid,
