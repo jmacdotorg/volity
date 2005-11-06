@@ -615,7 +615,36 @@ sub cmd_load_ui {
     my $source = join '', <FILE>;
     close FILE;
 
-    $heap->{'default_player'}->load_js_from_source( $source );
+    # If could be a raw JS file, or it could be a ZIP archive.
+    if (-T $filename) {
+	# It's a text file, so we'll treat it as JS.
+	$heap->{'default_player'}->load_js_from_source( $source );
+    } else {
+	# Try treating it at a ZIP archive.
+	my $zip_reader;
+	unless ($zip_reader = Archive::Zip->new($filename)) {
+	    $heap->{'default_player'}->print_message("Oh, there was a problem reading the zipfile $filename. Sorry.");
+	    return;
+	}
+	my $js_fh;
+	my @js_source;
+	if ($js_fh = Archive::Zip::MemberRead->new($zip_reader, "main")) {
+	    while (defined(my $line = $js_fh->getline)) { 
+		push (@js_source, $line);
+	    }
+	} else {
+	    $heap->{'default_player'}->print_message("The archive $filename doesn't seem to have a main file. I can't use it. Sorry...");
+	    return;
+	}
+
+	unless (@js_source) {
+	    $heap->{'default_player'}->print_message("The archive $filename doesn't seem to have any JavaScript content. I can't use it. Sorry...");
+	    return;
+	}
+	# Having done all that, create the JS interpreter.
+	$heap->{'default_player'}->load_js_from_source(join("\n", @js_source));
+    }
+
     $heap->{'default_player'}->manual_ui_load( 1 );
 
 }
