@@ -19,7 +19,9 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
 import java.net.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.*;
@@ -36,7 +38,7 @@ import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
-
+import org.volity.jabber.JIDUtils;
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
 import org.volity.javolin.roster.*;
@@ -126,6 +128,9 @@ public class JavolinApp extends JFrame
                 },
                 new Runnable() {
                     public void run() { doQuit(); }
+                },
+                new RunnableFile() {
+                    public void run(File file) { doOpenFile(file); }
                 });
         }
 
@@ -207,13 +212,24 @@ public class JavolinApp extends JFrame
      */
     public static void main(String[] args)
     {
-        // Make sure we can reach the handler for our special Volity URLs
+        /*
+         * Make sure we can reach the handlers for our special Volity URLs.
+         * (Content and protocol handlers are both in the same package -- 
+         * there's no conflict.)
+         */
         String val = System.getProperty("java.protocol.handler.pkgs");
         if (val == null)
             val = "org.volity.client.protocols";
         else
             val = val + "|org.volity.client.protocols";
         System.setProperty("java.protocol.handler.pkgs", val);
+
+        val = System.getProperty("java.content.handler.pkgs");
+        if (val == null)
+            val = "org.volity.client.protocols";
+        else
+            val = val + "|org.volity.client.protocols";
+        System.setProperty("java.content.handler.pkgs", val);
 
         // Set the look and feel
         try
@@ -520,6 +536,91 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * We sometimes need a nickname in a context where the player has not
+     * entered one. This is a hack to pick something halfway reasonable.
+     */
+    String getDefaultNickname()
+    {
+        // Make a default nickname based on the user ID
+        String defNick = mConnection.getUser();
+        defNick = defNick.substring(0, defNick.indexOf('@'));
+
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NewTableAtDialog.NODENAME);
+
+        return prefs.get(NewTableAtDialog.NICKNAME_KEY, defNick);
+    }
+
+    /**
+     * Handler for OpenFile events, which occur when the user double-clicks on
+     * a file in the Finder (or whatever). Currently, this only handles Volity
+     * command stub files.
+     */
+    void doOpenFile(File file)
+    {
+        try {
+            FileInputStream instr = new FileInputStream(file);
+            Charset utf8 = Charset.forName("UTF-8");
+            Reader reader = new BufferedReader(new InputStreamReader(instr, utf8));
+            CommandStub stub = CommandStub.parse(reader);
+
+            /* Make sure we're connected to Jabber. If we're not, display an
+             * annoying error message. If the player clicks on a Volity command
+             * file in the filesystem, this error is certain to appear --
+             * that's the annoying part. A better implementation would hang on
+             * to the file reference until connection was complete. */
+            if (!isConnected()) {
+                JOptionPane.showMessageDialog(this,
+                    "You must be connected in order to play Volity games.\n"
+                    +"Use the Connect menu option to log in.",
+                    getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (stub.getCommand() == CommandStub.COMMAND_CREATE_TABLE) {
+                try {
+                    String serverID = stub.getJID();
+                    if (!JIDUtils.hasResource(serverID))
+                        serverID = JIDUtils.setResource(serverID, "volity");
+                    TableWindow win = TableWindow.makeTableWindow(mConnection,
+                        serverID, getDefaultNickname());
+                    handleNewTableWindow(win);
+                }
+                catch (TokenFailure ex) {
+                    String msg = getTranslator().translate(ex);
+                    JOptionPane.showMessageDialog(this,
+                        "Cannot create table:\n" + msg,
+                        getAppName() + ": Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+            else if (stub.getCommand() == CommandStub.COMMAND_JOIN_TABLE) {
+                String mucID = stub.getJID();
+                JOptionPane.showMessageDialog(this,
+                    "join-table command not yet implemented.",
+                    getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            else if (stub.getCommand() == CommandStub.COMMAND_JOIN_LOBBY) {
+                String mucID = stub.getJID();
+                MUCWindow win = new MUCWindow(mConnection, mucID,
+                    getDefaultNickname());
+                handleNewMucWindow(win);
+            }
+            else {
+                throw new Exception("Unknown Volity command stub: " + stub.toString());
+            }
+        }
+        catch (Exception ex) {
+            new ErrorWrapper(ex);
+            JOptionPane.showMessageDialog(this,
+                ex.toString(),
+                getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
      * Handler for the New Table At... menu item.
      */
     void doNewTableAt()
@@ -570,7 +671,6 @@ public class JavolinApp extends JFrame
             });
     }
 
-
     /**
      * Handler for the Join Multi-user Chat... menu item.
      */
@@ -580,23 +680,28 @@ public class JavolinApp extends JFrame
         joinMucDlg.show();
         MUCWindow mucWin = joinMucDlg.getMUCWindow();
 
-        if (mucWin != null)
-        {
-            mucWin.show();
-            mMucWindows.add(mucWin);
-            JavolinMenuBar.notifyUpdateWindowMenu();
+        handleNewMucWindow(mucWin);
+    }
 
-            // Remove the MUC window from the list and menu when it closes
-            mucWin.addWindowListener(
-                new WindowAdapter()
+    public void handleNewMucWindow(MUCWindow mucWin)
+    {
+        if (mucWin == null)
+            return;
+
+        mucWin.show();
+        mMucWindows.add(mucWin);
+        JavolinMenuBar.notifyUpdateWindowMenu();
+
+        // Remove the MUC window from the list and menu when it closes
+        mucWin.addWindowListener(
+            new WindowAdapter()
+            {
+                public void windowClosed(WindowEvent we)
                 {
-                    public void windowClosed(WindowEvent we)
-                    {
-                        mMucWindows.remove(we.getWindow());
-                        JavolinMenuBar.notifyUpdateWindowMenu();
-                    }
-                });
-        }
+                    mMucWindows.remove(we.getWindow());
+                    JavolinMenuBar.notifyUpdateWindowMenu();
+                }
+            });
     }
 
     /**
@@ -973,6 +1078,14 @@ public class JavolinApp extends JFrame
                     }
                 }
             });
+    }
+
+    /**
+     * Interface to call a function with a File argument.
+     */
+    public interface RunnableFile
+    {
+        public void run(File file);
     }
 
 

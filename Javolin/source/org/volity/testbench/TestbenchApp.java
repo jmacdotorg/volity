@@ -72,7 +72,10 @@ public class TestbenchApp extends JFrame
             System.exit(1);
         }
 
-        // Make sure we can reach the handler for our special Volity URLs
+        /*
+         * Make sure we can reach the handlers for our special Volity URLs.
+         * Testbench only uses the protocol handlers, not the content handlers.
+         */
         String val = System.getProperty("java.protocol.handler.pkgs");
         if (val == null)
             val = "org.volity.client.protocols";

@@ -33,10 +33,11 @@ import org.volity.javolin.*;
  */
 public class NewTableAtDialog extends BaseDialog implements ActionListener
 {
-    private final static String NODENAME = "NewTableAtDialog";
-    private final static String SERVERID_KEY = "GameServerID";
-    private final static String NICKNAME_KEY = "Nickname";
-    // XXX Should the nickname pref be unified with JoinTableAtDialog?
+    public final static String NODENAME = "NewTableAtDialog";
+    public final static String SERVERID_KEY = "GameServerID";
+    public final static String NICKNAME_KEY = "Nickname";
+    // XXX Should the nickname pref be unified with JoinTableAtDialog? 
+    // XXX and JavolinApp.getDefaultNickname?
 
     private JTextField mServerIdField;
     private JTextField mNicknameField;

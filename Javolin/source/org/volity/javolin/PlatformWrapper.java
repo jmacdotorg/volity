@@ -1,5 +1,6 @@
 package org.volity.javolin;
 
+import java.io.File;
 import java.lang.reflect.*;
 
 /**
@@ -91,10 +92,13 @@ public class PlatformWrapper
      * @param doQuit a Runnable which performs the Quit menu option. (Null
      *        does the default action, which is to shut down the app
      *        immediately.)
+     * @param doFile a RunnableFile which is called when the user opens
+     *        a Volity file from the OS UI. (Null means do nothing.)
      */
     public static boolean setApplicationMenuHandlers(
         Runnable doAbout,
-        Runnable doQuit) {
+        Runnable doQuit,
+        JavolinApp.RunnableFile doFile) {
 
         if (isMac) {
             try {
@@ -114,7 +118,7 @@ public class PlatformWrapper
                 // listener = new ApplicationListener() { ... };
                 Class[] interfaces = new Class[] { intApplicationListener };
                 InvocationHandler handler = new AppListenerInvocationHandler(
-                    doAbout, doQuit);
+                    doAbout, doQuit, doFile);
                 Class proxyClass = Proxy.getProxyClass(
                     intApplicationListener.getClassLoader(), 
                     interfaces);
@@ -150,18 +154,24 @@ public class PlatformWrapper
     {
         Runnable mDoAbout;
         Runnable mDoQuit;
+        JavolinApp.RunnableFile mDoFile;
         Class classApplicationEvent;
         Method methEventSetHandled;
+        Method methEventGetFilename;
 
-        AppListenerInvocationHandler(Runnable doAbout, Runnable doQuit)
+        AppListenerInvocationHandler(Runnable doAbout, Runnable doQuit,
+            JavolinApp.RunnableFile doFile)
             throws ClassNotFoundException, NoSuchMethodException {
             mDoAbout = doAbout;
             mDoQuit = doQuit;
+            mDoFile = doFile;
 
             classApplicationEvent = Class.forName(
                 "com.apple.eawt.ApplicationEvent");
             methEventSetHandled = classApplicationEvent.getMethod(
                 "setHandled", new Class[] { Boolean.TYPE });
+            methEventGetFilename = classApplicationEvent.getMethod(
+                "getFilename", null);
         }
 
         public Object invoke(Object proxy, Method method, Object[] args)
@@ -187,9 +197,14 @@ public class PlatformWrapper
                     setEventHandled(ev, true);
                 }
             }
+            else if (methName.equals("handleOpenFile")) {
+                String filename = getEventFilename(ev);
+                if (mDoFile != null) {
+                    mDoFile.run(new File(filename));
+                }
+            }
             else {
                 // handleOpenApplication
-                // handleOpenFile
                 // handlePreferences
                 // handlePrintFile
                 // handleReOpenApplication
@@ -201,6 +216,12 @@ public class PlatformWrapper
         private void setEventHandled(Object ev, boolean flag) 
             throws IllegalAccessException, InvocationTargetException {
             methEventSetHandled.invoke(ev, new Object[] { new Boolean(flag)});
+        }
+
+        private String getEventFilename(Object ev)
+            throws IllegalAccessException, InvocationTargetException {
+            Object val = methEventGetFilename.invoke(ev, null);
+            return (String)val;
         }
     }
 

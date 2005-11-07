@@ -3,16 +3,14 @@ package org.volity.client;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.List;
-import java.util.Hashtable;
-import java.util.Map;
 import java.util.Arrays;
-
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import org.volity.client.TokenFailure;
+import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.mxp1.MXParser;
-
-import org.volity.client.TokenFailure;
 
 /**
  * A utility class which takes a failure token list, and translates it
