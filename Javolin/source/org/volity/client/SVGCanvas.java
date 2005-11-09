@@ -20,7 +20,6 @@ import org.jivesoftware.smack.XMPPConnection;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
-import org.volity.jabber.RPCResponseHandler;
 
 public class SVGCanvas extends JSVGCanvas 
     implements InterpreterFactory

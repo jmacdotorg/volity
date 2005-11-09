@@ -94,42 +94,56 @@ public class VolityHandler implements RPCHandler {
             }
         } else if (methodName.equals("player_ready")) {
             table.setPlayerReadiness((String)params.get(0), true);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_unready")) {
             table.setPlayerReadiness((String)params.get(0), false);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_stood")) {
             table.setAllPlayersUnready();
             table.setPlayerSeat((String)params.get(0), null);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_sat")) {
             table.setAllPlayersUnready();
             table.setPlayerSeat((String)params.get(0), (String)params.get(1));
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("seat_list")) {
             table.setSeats((List)params.get(0));
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("required_seat_list")) {
             table.setRequiredSeats((List)params.get(0));
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("receive_state")) {
             System.out.println("Receiving game state.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("state_sent")) {
             System.out.println("Game state received.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("suspend_game")) {
             table.setRefereeState(GameTable.STATE_SUSPENDED);
             table.setAllPlayersUnready();
             System.out.println("Game suspended.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("resume_game")) {
             table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
             System.out.println("Game resumed.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("language")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set language.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("show_table")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set show_table.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("record_games")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set record_games.");
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("kill_game")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set kill_game.");
+            k.respondValue(Boolean.TRUE);
         } else {
             k.respondFault(999, "I don't know what to do about the volity RPC request " + methodName);
         }

@@ -40,6 +40,8 @@ public class GameServer extends TokenRequester
             ServiceDiscoveryManager.getInstanceFor(getConnection());
 
         try {
+            /* ### this really ought to be async, although since it's cached,
+             * ### it's not a serious problem. */
             DiscoverInfo info = discoMan.discoverInfo(parlorJID);
             mGameInfo = new GameInfo(parlorJID, info);
         }

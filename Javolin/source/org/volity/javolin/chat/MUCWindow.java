@@ -154,6 +154,7 @@ public class MUCWindow extends JFrame implements PacketListener
         {
             // If the room exists, it must answer to service discovery.
             // We don't actually care what the answer is.
+            // ### ought to be async.
             discoMan.discoverInfo(mMucObject.getRoom());
             return true;
         }
