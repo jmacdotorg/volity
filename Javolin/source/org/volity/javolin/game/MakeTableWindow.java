@@ -153,11 +153,14 @@ public class MakeTableWindow
                 mServerID = JIDUtils.setResource(mServerID, "volity");
             }
 
-            //### asyncify!
             try {
                 mGameServer = new GameServer(mConnection, mServerID);
-                GameTable table = mGameServer.newTable();
-                contCreateDidNewTable(table, null);
+                mGameServer.newTable(new RPCBackground.Callback() {
+                        public void run(Object result, Exception err, Object rock) {
+                            GameTable table = (GameTable)result;
+                            contCreateDidNewTable(table, err);
+                        }
+                    }, null);
             }
             catch (Exception ex) {
                 contCreateDidNewTable(null, ex);

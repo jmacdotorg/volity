@@ -60,19 +60,43 @@ public class GameServer extends TokenRequester
     }
 
     /**
-     * Create a new instance (table) of the game (a Multi-User Chat room).
-     * @return the new MUC, which should immediately be joined
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if an RPC fault occurs
+     * Tell the parlor to create a new game table MUC, asyncly.
+     *
+     * The callback argument is invoked (in the Swing UI thread) when the RPC
+     * either succeeds or fails. If it succeeds, the callback's first argument
+     * will be a GameTable. The caller should join it. (The second argument
+     * will be null.)
+     *
+     * If the RPC fails, the first argument will be null, and the second
+     * argument will be an Exception:
+     *
+     *   XMPPException if there was an XMPP error
+     *   RPCException if the remote method resulted in a fault or timed out
+     *   TokenFailure if the remote method returned a non-success token
+     *
+     * The third callback argument will be the rock you passed to this method.
      */
-    public GameTable newTable() 
-        throws XMPPException, RPCException, TokenFailure {
-        Object res = invokeTimeout("volity.new_table", 120);
+    public void newTable(final RPCBackground.Callback callback, Object rock) {
+
         /* We allow an extra-long timeout for the new_table call, because
          * the server may have to do a lot of work. (I've seen it take over
          * a minute, if the server is on a different Jabber server from
          * the conference host.) */
-        return new GameTable(getConnection(), (String) res);
+        RPCBackground background = new RPCBackground(this, 
+            new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock) {
+                    GameTable table = null;
+                    if (result != null && !(result instanceof String)) {
+                        result = null;
+                        err = new RPCException(605, "new_table reply was not a string");
+                    }
+                    if (result != null) {
+                        table = new GameTable(getConnection(), (String) result);
+                    }
+                    callback.run(table, err, rock);
+                }
+            },
+            "volity.new_table", 120, rock);
     }
 
 }

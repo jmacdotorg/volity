@@ -18,6 +18,8 @@ import java.util.*;
  */
 public class RPCRequester {
 
+  public static int DEFAULT_RPC_TIMEOUT = 30;
+
   static {
     // Register the provider so that response packets get parsed correctly.
     ProviderManager.addIQProvider(RPC.elementName,
@@ -55,7 +57,7 @@ public class RPCRequester {
   public Object invoke(String methodName)
     throws XMPPException, RPCException
   {
-    return invokeTimeout(methodName, null, 30);
+    return invokeTimeout(methodName, null, DEFAULT_RPC_TIMEOUT);
   }
 
   /**
@@ -70,7 +72,7 @@ public class RPCRequester {
   public Object invoke(String methodName, List params)
     throws XMPPException, RPCException
   {
-    return invokeTimeout(methodName, params, 30);
+    return invokeTimeout(methodName, params, DEFAULT_RPC_TIMEOUT);
   }
 
   /**

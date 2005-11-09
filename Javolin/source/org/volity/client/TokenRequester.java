@@ -18,7 +18,8 @@ import org.volity.client.TokenFailure;
  */
 public class TokenRequester {
 
-    public String VOLITY_OK_TOKEN = "volity.ok";
+    public static String VOLITY_OK_TOKEN = "volity.ok";
+    public static int DEFAULT_RPC_TIMEOUT = RPCRequester.DEFAULT_RPC_TIMEOUT;
     
     /**
      * @param connection an authenticated connection to an XMPP server
@@ -55,7 +56,7 @@ public class TokenRequester {
     public Object invoke(String methodName)
         throws XMPPException, RPCException, TokenFailure
     {
-        return invokeTimeout(methodName, null, 30);
+        return invokeTimeout(methodName, null, DEFAULT_RPC_TIMEOUT);
     }
 
     /**
@@ -71,7 +72,7 @@ public class TokenRequester {
     public Object invoke(String methodName, List params)
         throws XMPPException, RPCException, TokenFailure
     {
-        return invokeTimeout(methodName, params, 30);
+        return invokeTimeout(methodName, params, DEFAULT_RPC_TIMEOUT);
     }
 
     /**
