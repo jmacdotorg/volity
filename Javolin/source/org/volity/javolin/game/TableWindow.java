@@ -25,7 +25,6 @@ import java.text.*;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.Preferences;
-import java.util.zip.ZipException;
 import javax.swing.*;
 import javax.swing.text.*;
 
@@ -39,7 +38,6 @@ import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
-import org.jivesoftware.smackx.packet.MUCUser;
 
 import org.volity.client.*;
 import org.volity.jabber.*;
@@ -59,7 +57,6 @@ public class TableWindow extends JFrame implements PacketListener
     private final static String VIEW_GAME = "GameViewport";
     private final static String VIEW_LOADING = "LoadingMessage";
 
-    private static Map sLocalUiFileMap = new HashMap();
     private static Map sGameNameNumberMap = new HashMap();
 
     private final static String INVITE_LABEL = "Invite";
@@ -118,71 +115,10 @@ public class TableWindow extends JFrame implements PacketListener
     private InfoDialog mInfoDialog = null;
 
     /**
-     * Factory method for a TableWindow. This form will create a new table.
-     *
-     * @param connection                 The current active XMPPConnection
-     * @param serverId                   The ID of the game table to create and join.
-     * @param nickname                   The nickname to use to join the table.
-     * @return                           A new TableWindow.
-     * @exception XMPPException          If the table could not be joined.
-     * @exception RPCException           If a new table could not be created.
-     * @exception IOException            If a UI file could not be downloaded.
-     * @exception MalformedURLException  If an invalid UI file URL was used.
-     * @exception TokenFailure           If a new_table RPC failed.
-     */
-    public static TableWindow makeTableWindow(XMPPConnection connection, String serverId,
-        String nickname) throws XMPPException, RPCException, IOException,
-        TokenFailure, MalformedURLException
-    {
-        GameServer server = new GameServer(connection, serverId);
-        GameTable table = server.newTable();
-
-        return makeTableWindow(connection, server, table, nickname);
-    }
-
-    /**
-     * Factory method for a TableWindow. This form will join an existing table.
-     *
-     * @param connection                 The current active XMPPConnection
-     * @param server                     The GameServer.
-     * @param table                      The GameTable to join.
-     * @param nickname                   The nickname to use to join the table.
-     * @return                           A new TableWindow, or null if one could not be
-     *  created.
-     * @exception XMPPException          If the table could not be joined.
-     * @exception RPCException           If a new table could not be created.
-     * @exception IOException            If a UI file could not be downloaded.
-     * @exception ZipException           If a UI file could not be unpacked.
-     * @exception MalformedURLException  If an invalid UI file URL was used.
-     * @exception TokenFailure           If a new_table RPC failed.
-     */
-    public static TableWindow makeTableWindow(XMPPConnection connection, 
-        GameServer server,
-        GameTable table, 
-        String nickname) throws XMPPException, RPCException,
-        IOException, TokenFailure, MalformedURLException, ZipException
-    {
-        TableWindow retVal = null;
-
-        URL uiUrl = getUIURL(server);
-
-        if (uiUrl == null)
-        {
-            return null;
-        }
-
-        File dir = JavolinApp.getUIFileCache().getUIDir(uiUrl);
-        retVal = new TableWindow(server, table, nickname, dir, uiUrl);
-
-        return retVal;
-    }
-
-    /**
      * Constructor.
      *
-     * @param server                     The GameServer
-     * @param table                      The GameTable to join. If null,
-     *        a new table will be created.
+     * @param server                     The GameServer.
+     * @param table                      The GameTable to join.
      * @param nickname                   The nickname to use to join the table.
      * @param uiDir                      The UI directory.
      * @param uiUrl                      The (original, remote) UI URL.
@@ -197,6 +133,10 @@ public class TableWindow extends JFrame implements PacketListener
         throws XMPPException, RPCException, IOException, TokenFailure,
         MalformedURLException
     {
+        assert (server != null);
+        assert (table != null);
+        assert (nickname != null);
+
         mServer = server;
         mGameTable = table;
         mNickname = nickname;
@@ -233,11 +173,6 @@ public class TableWindow extends JFrame implements PacketListener
         // TranslateToken() will be null. In this case, no game.* or seat.*
         // tokens will be translatable.)
         mTranslator = new TranslateToken(findFileCaseless(uiDir, "locale"));
-
-        if (mGameTable == null)
-        {
-            mGameTable = mServer.newTable();
-        }
 
         /* Store the basic game name (as determined by the parlor info), and
          * the uniquifying number which we may add onto the end in the window
@@ -673,57 +608,6 @@ public class TableWindow extends JFrame implements PacketListener
     public TranslateToken getTranslator()
     {
         return mTranslator;
-    }
-
-    /**
-     * Helper method for makeTableWindow. Returns the URL for the given game server's
-     * UI.
-     *
-     * @param server                     The game server for which to retrieve the UI URL.
-     * @return                           The URL for the game UI, or null if none was
-     *  available.
-     * @exception XMPPException          If an XMPP error occurs.
-     * @exception MalformedURLException  If an error ocurred creating a URL for a local
-     *  file.
-     */
-    private static URL getUIURL(GameServer server) throws XMPPException,
-        MalformedURLException
-    {
-        URL retVal = null;
-
-        Bookkeeper keeper = new Bookkeeper(server.getConnection());
-        java.util.List uiList = keeper.getCompatibleGameUIs(server.getRuleset(),
-            JavolinApp.getClientTypeURI());
-
-        if (uiList.size() != 0)
-        {
-            // Use first UI info object
-            GameUIInfo info = (GameUIInfo)uiList.get(0);
-            retVal = info.getLocation();
-        }
-        else
-        {
-            if (sLocalUiFileMap.containsKey(server.getRuleset()))
-            {
-                retVal = (URL)sLocalUiFileMap.get(server.getRuleset());
-            }
-            else if (JOptionPane.showConfirmDialog(null,
-                "No UI file is known for this game.\nChoose a local file?",
-                JavolinApp.getAppName(), JOptionPane.YES_NO_OPTION) ==
-                JOptionPane.YES_OPTION)
-            {
-                JFileChooser fDlg = new JFileChooser();
-                int val = fDlg.showOpenDialog(null);
-
-                if (val == JFileChooser.APPROVE_OPTION)
-                {
-                    retVal = fDlg.getSelectedFile().toURI().toURL();
-                    sLocalUiFileMap.put(server.getRuleset(), retVal);
-                }
-            }
-        }
-
-        return retVal;
     }
 
     /**

@@ -38,7 +38,6 @@ import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
-import org.volity.jabber.JIDUtils;
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
 import org.volity.javolin.roster.*;
@@ -377,6 +376,16 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * Handle the Game Finder item (in the Windows menu). Create a Finder
+     * window if there is none; display the one we've got if there is.
+     */
+    void doGetFinder()
+    {
+        Finder win = Finder.getSoleFinder(this);
+        win.show();
+    }
+
+    /**
      * Handle the Connect/Disconnect menu item
      */
     void doConnectDisconnect()
@@ -563,6 +572,25 @@ public class JavolinApp extends JFrame
             Reader reader = new BufferedReader(new InputStreamReader(instr, utf8));
             CommandStub stub = CommandStub.parse(reader);
 
+            doOpenFile(stub);
+        }
+        catch (Exception ex) {
+            new ErrorWrapper(ex);
+            JOptionPane.showMessageDialog(this,
+                ex.toString(),
+                getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Handler for OpenFile events, which occur when the user double-clicks on
+     * a file in the Finder (or whatever). Currently, this only handles Volity
+     * command stub files.
+     */
+    void doOpenFile(CommandStub stub)
+    {
+        try {
             /* Make sure we're connected to Jabber. If we're not, display an
              * annoying error message. If the player clicks on a Volity command
              * file in the filesystem, this error is certain to appear --
@@ -578,28 +606,14 @@ public class JavolinApp extends JFrame
             }
 
             if (stub.getCommand() == CommandStub.COMMAND_CREATE_TABLE) {
-                try {
-                    String serverID = stub.getJID();
-                    if (!JIDUtils.hasResource(serverID))
-                        serverID = JIDUtils.setResource(serverID, "volity");
-                    TableWindow win = TableWindow.makeTableWindow(mConnection,
-                        serverID, getDefaultNickname());
-                    handleNewTableWindow(win);
-                }
-                catch (TokenFailure ex) {
-                    String msg = getTranslator().translate(ex);
-                    JOptionPane.showMessageDialog(this,
-                        "Cannot create table:\n" + msg,
-                        getAppName() + ": Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
+                MakeTableWindow maker = new MakeTableWindow(this,
+                    mConnection, this);
+                maker.newTable(stub.getJID(), getDefaultNickname(), null);
             }
             else if (stub.getCommand() == CommandStub.COMMAND_JOIN_TABLE) {
-                String mucID = stub.getJID();
-                JOptionPane.showMessageDialog(this,
-                    "join-table command not yet implemented.",
-                    getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
+                MakeTableWindow maker = new MakeTableWindow(this,
+                    mConnection, this);
+                maker.joinTable(stub.getJID(), getDefaultNickname(), null);
             }
             else if (stub.getCommand() == CommandStub.COMMAND_JOIN_LOBBY) {
                 String mucID = stub.getJID();
@@ -627,9 +641,6 @@ public class JavolinApp extends JFrame
     {
         NewTableAtDialog newTableDlg = new NewTableAtDialog(this, mConnection);
         newTableDlg.show();
-        TableWindow tableWin = newTableDlg.getTableWindow();
-
-        handleNewTableWindow(tableWin);
     }
 
     /**
@@ -639,22 +650,19 @@ public class JavolinApp extends JFrame
     {
         JoinTableAtDialog joinTableDlg = new JoinTableAtDialog(this, mConnection);
         joinTableDlg.show();
-        TableWindow tableWin = joinTableDlg.getTableWindow();
-
-        handleNewTableWindow(tableWin);
     }
 
     /**
-     * Incorporates a newly created TableWindow properly into the system. This method
-     * should be called any time a new TableWindow is created.
+     * Incorporates a newly created TableWindow properly into the system. This
+     * method should be called any time a new TableWindow is created.
+     *
+     * This is called by MakeTableWindow, so it does not need to be called by
+     * anyone else.
      *
      * @param tableWin  The newly created TableWindow.
      */
     public void handleNewTableWindow(TableWindow tableWin)
     {
-        if (tableWin == null)
-            return;
-
         tableWin.show();
         mTableWindows.add(tableWin);
         JavolinMenuBar.notifyUpdateWindowMenu();

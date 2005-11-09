@@ -19,21 +19,9 @@ package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
 import java.util.prefs.*;
 import javax.swing.*;
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.packet.IQ;
-import org.jivesoftware.smack.packet.XMPPError;
-import org.jivesoftware.smackx.Form;
-import org.jivesoftware.smackx.FormField;
-import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
-import org.jivesoftware.smackx.packet.DiscoverInfo;
-import org.volity.client.DiscoBackground;
-import org.volity.client.GameServer;
-import org.volity.client.GameTable;
-import org.volity.client.TokenFailure;
-import org.volity.client.TranslateToken;
+import org.jivesoftware.smack.XMPPConnection;
 import org.volity.javolin.*;
 
 /**
@@ -51,8 +39,9 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
     private JButton mCancelButton;
     private JButton mJoinButton;
 
+    private JavolinApp mOwner;
     private XMPPConnection mConnection;
-    private TableWindow mTableWindow;
+    private boolean mInProgress;
 
     /**
      * Constructor.
@@ -60,11 +49,13 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
      * @param owner       The Frame from which the dialog is displayed.
      * @param connection  The current active XMPPConnection.
      */
-    public JoinTableAtDialog(Frame owner, XMPPConnection connection)
+    public JoinTableAtDialog(JavolinApp owner, XMPPConnection connection)
     {
         super(owner, JavolinApp.getAppName() + ": Join Table At", true, NODENAME);
 
+        mOwner = owner;
         mConnection = connection;
+        mInProgress = false;
 
         // Set up dialog
         buildUI();
@@ -76,17 +67,6 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
         // Restore default field values
         restoreFieldValues();
-    }
-
-    /**
-     * Gets the TableWindow that was created.
-     *
-     * @return   The TableWindow for the game table that was joined when the
-     * user pressed the Join button, or null if the user pressed Cancel.
-     */
-    public TableWindow getTableWindow()
-    {
-        return mTableWindow;
     }
 
     /**
@@ -111,6 +91,9 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
      */
     private void doJoin()
     {
+        if (mInProgress)
+            return;
+
         if (mTableIdField.getText().equals("")) {
             mTableIdField.requestFocusInWindow();
             return;
@@ -121,292 +104,25 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
             return;
         }
 
+        mInProgress = true;
+
         // Store field values in preferences
         saveFieldValues();
 
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        /**
-         * Here begins a sequence of actions. Some of them are asynchronous. In
-         * fact, as many of them as possible are asynchronous, because we'd
-         * rather not block the Swing thread.
-         * 
-         * The rule is, if you're going to exit the sequence, you must set the
-         * cursor back to DEFAULT. If the table window is successfully created,
-         * you should also call dispose() to close the dialog box.
-         */
-
-        JoinRock rock = new JoinRock(mTableIdField.getText(),
-            mNicknameField.getText());
-
-        // Stage 1: check to see if the MUC exists.
-
-        new DiscoBackground(mConnection, 
-            new DiscoBackground.Callback() {
-                public void run(IQ result, XMPPException err, Object rock) {
-                    doJoinCont0(result, err, (JoinRock)rock);
+        MakeTableWindow maker = new MakeTableWindow(mOwner, mConnection, this);
+        maker.joinTable(mTableIdField.getText(), mNicknameField.getText(),
+            new MakeTableWindow.TableWindowCallback() {
+                public void fail() {
+                    mInProgress = false;
+                    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
                 }
-            },
-            DiscoBackground.QUERY_INFO, rock.tableID, rock);
-    }
-
-    private void doJoinCont0(IQ result, XMPPException err, 
-        final JoinRock rock) {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        if (err != null) {
-            // Disco query failed.
-            XMPPException ex = err;
-            new ErrorWrapper(ex);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            String msg = "The table could not be contacted.";
-
-            // Any or all of these may be null.
-            String submsg = ex.getMessage();
-            XMPPError error = ex.getXMPPError();
-            Throwable subex = ex.getWrappedThrowable();
-
-            if (error != null 
-                && (error.getCode() == 404 || error.getCode() == 400)) {
-                /* A common case: the JID was not found. */
-                msg = "No table exists at this address.";
-                if (error.getMessage() != null)
-                    msg = msg + " (" + error.getMessage() + ")";
-                msg = msg + "\n(" + rock.tableID + ")";
-            }
-            else {
-                msg = "The table could not be contacted";
-                if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
-                else
-                    msg = msg + ".";
-                if (subex != null)
-                    msg = msg + "\n" + subex.toString();
-                if (error != null)
-                    msg = msg + "\nJabber error " + error.toString();
-            }
-
-            JOptionPane.showMessageDialog(this, 
-                msg,
-                JavolinApp.getAppName() + ": Error", 
-                JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        assert (result != null && result instanceof DiscoverInfo);
-
-        DiscoverInfo info = (DiscoverInfo)result;
-        if (!info.containsFeature("http://jabber.org/protocol/muc")) {
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            String msg = "This address (" + rock.tableID + ")\n"
-                +"does not refer to a Volity game table.";
-
-            JOptionPane.showMessageDialog(this, 
-                msg,
-                JavolinApp.getAppName() + ": Error", 
-                JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        /* Disco success. Next step: Create a GameTable, and join the MUC.
-         *
-         * Note that we don't have a GameServer.
-         *
-         * This code is cloned in GetInvitationDialog, so if you change
-         * anything here, make the same change there.
-         *
-         * A more correct solution would be to have a single, asynchronous
-         * entry point in TableWindow. This would accept various combinations
-         * of arguments (including a parlor ID, or not), do all the work --
-         * *not* blocking the calling thread -- and then call back to the
-         * caller to indicate the success or failure of the operation.
-         */
-        GameTable gameTable = null;
-        GameTable.ReadyListener listener = null;
-
-        try
-        {
-            gameTable = new GameTable(mConnection, rock.tableID);
-            rock.table = gameTable;
-
-            /* To get the GameServer, we need to join the MUC early. */
-
-            listener = new GameTable.ReadyListener() {
-                    public void ready() {
-                        // Called outside Swing thread!
-                        // Remove the listener, now that it's triggered
-                        rock.table.removeReadyListener(this);
-                        // Invoke into the Swing thread.
-                        SwingUtilities.invokeLater(new Runnable() {
-                                public void run() {
-                                    doJoinCont1(rock);
-                                }
-                            });
-                    }
-                };
-            gameTable.addReadyListener(listener);
-
-            gameTable.join(rock.nickname);
-
-            /*
-             * Now we wait for the ReadyListener to fire, which will invoke
-             * doJoinCont1(), below. 
-             */
-        }
-        catch (XMPPException ex) 
-        {
-            new ErrorWrapper(ex);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            if (gameTable != null) {
-                if (listener != null)
-                    gameTable.removeReadyListener(listener);
-                gameTable.leave();
-            }
-
-            String msg = "The table could not be joined.";
-
-            // Any or all of these may be null.
-            String submsg = ex.getMessage();
-            XMPPError error = ex.getXMPPError();
-            Throwable subex = ex.getWrappedThrowable();
-
-            if (error != null && error.getCode() == 404) 
-            {
-                /* A common case: the JID was not found. */
-                msg = "No table exists at this address.";
-                if (error.getMessage() != null)
-                    msg = msg + " (" + error.getMessage() + ")";
-                msg = msg + "\n(" + rock.tableID + ")";
-            }
-            else if (error != null && error.getCode() == 409) 
-            {
-                /* A common case: your nickname conflicts. */
-                msg = "The nickname \"" + rock.nickname + "\" is already in\n"
-                    +"use at this table. Please choose another.";
-            }
-            else {
-                msg = "The table could not be joined";
-                if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
-                else
-                    msg = msg + ".";
-                if (subex != null)
-                    msg = msg + "\n" + subex.toString();
-                if (error != null)
-                    msg = msg + "\nJabber error " + error.toString();
-            }
-
-            JOptionPane.showMessageDialog(this, 
-                msg,
-                JavolinApp.getAppName() + ": Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-        catch (Exception ex)
-        {
-            new ErrorWrapper(ex);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            if (gameTable != null) {
-                if (listener != null)
-                    gameTable.removeReadyListener(listener);
-                gameTable.leave();
-            }
-
-            JOptionPane.showMessageDialog(this, 
-                "Cannot join table:\n" + ex.toString(),
-                JavolinApp.getAppName() + ": Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void doJoinCont1(JoinRock rock)
-    {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        // Next step: disco the referee.
-
-        String refJID = rock.table.getRefereeJID();
-        
-        new DiscoBackground(mConnection, 
-            new DiscoBackground.Callback() {
-                public void run(IQ result, XMPPException err, Object rock) {
-                    doJoinCont2(result, err, (JoinRock)rock);
+                public void succeed(TableWindow win) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                    dispose();
                 }
-            },
-            DiscoBackground.QUERY_INFO, refJID, rock);
-    }
-
-    private void doJoinCont2(IQ result, XMPPException err, 
-        final JoinRock rock) {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        if (err != null) {
-            // Disco query failed.
-            XMPPException ex = err;
-            new ErrorWrapper(ex);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            rock.table.leave();
-
-            JOptionPane.showMessageDialog(this,
-                "Cannot contact referee:\n" + ex.toString(),
-                JavolinApp.getAppName() + ": Error",
-                JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        assert (result != null && result instanceof DiscoverInfo);
-
-        try {
-            DiscoverInfo info = (DiscoverInfo)result;
-            String serverID = null;
-
-            Form form = Form.getFormFrom(info);
-            if (form != null) {
-                FormField field = form.getField("parlor");
-                if (field != null)
-                    serverID = (String) field.getValues().next();
-            }
-            
-            if (serverID == null || serverID.equals("")) {
-                throw new IOException("Unable to fetch parlor ID from referee");
-            }
-
-            GameServer server = new GameServer(mConnection, serverID);
-
-            //### makeTableWindow could be asynchronous. Actually, it could
-            //### include a lot of the gunk that's happened in this
-            //### asynchronous sequence.
-            mTableWindow = TableWindow.makeTableWindow(mConnection, 
-                server, rock.table, rock.nickname);
-
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            // Success!
-            dispose();
-        }
-        catch (Exception ex)
-        {
-            new ErrorWrapper(ex);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            JOptionPane.showMessageDialog(this,
-                "Cannot join table:\n" + ex.toString(),
-                JavolinApp.getAppName() + ": Error",
-                JOptionPane.ERROR_MESSAGE);
-
-            // Destroy TableWindow object
-            if (mTableWindow != null) {
-                mTableWindow.leave();
-                mTableWindow = null;
-            }
-            else {
-                rock.table.leave();
-            }
-        }
+            });
     }
 
     /**
@@ -530,20 +246,5 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
 
         mCancelButton.setPreferredSize(dim);
         mJoinButton.setPreferredSize(dim);
-    }
-
-    /**
-     * Simple data class, used to store information over the course of the join
-     * operation.
-     */
-    protected class JoinRock {
-        String tableID;
-        String nickname;
-        GameTable table;
-        protected JoinRock(String id, String nick) {
-            tableID = id;
-            nickname = nick;
-            table = null;
-        }
     }
 }

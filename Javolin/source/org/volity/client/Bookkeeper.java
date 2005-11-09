@@ -9,6 +9,8 @@ import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.DiscoverItems;
 
+//### asyncify all APIs
+
 /** A connection to a Volity bookkeeper. */
 public class Bookkeeper {
   /**

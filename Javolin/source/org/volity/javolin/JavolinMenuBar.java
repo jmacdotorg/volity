@@ -41,6 +41,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
+    private final static String MENUCMD_GAME_FINDER = "Game Finder";
 
     private JavolinApp mApplication = null;
     private TableWindow mTableWindow = null;
@@ -56,6 +57,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mGameInfoMenuItem;
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
+    private JMenuItem mGameFinderMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -238,6 +240,12 @@ public class JavolinMenuBar extends JMenuBar
 
         mWindowMenu.clear();
 
+        /* Include the game-finder window. This isn't added as a JFrame menu
+         * item; it's a routine that calls JavolinApp.doGetFinder. */
+        mGameFinderMenuItem = new JMenuItem(MENUCMD_GAME_FINDER);
+        mGameFinderMenuItem.addActionListener(this);
+        mWindowMenu.add(mGameFinderMenuItem);
+
         /* Include the main (roster) window in the menu. */
         mWindowMenu.add(mApplication);
 
@@ -317,6 +325,9 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (e.getSource() == mShowLastErrorMenuItem) {
             mApplication.doShowLastError();
+        }
+        else if (e.getSource() == mGameFinderMenuItem) {
+            mApplication.doGetFinder();
         }
     }
 
