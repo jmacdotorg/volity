@@ -74,3 +74,13 @@ Lib file(s): batik-awt-util.jar, batik-bridge.jar, batik-css.jar, batik-dom.jar,
 Comments: Note that Batik 1.5.1 includes version 1.5R4.1 of Rhino (js.jar), but
     Javolin needs 1.5R5 instead.
 ---
+Name: Flying Saucer (xhtmlrenderer)
+Version: R5 beta
+Download: http://joshy.org/flyingsaucer/downloads/flyingsaucer.src.zip
+Lib file(s): core-renderer.jar, cssparser-0-9-4-fs.jar
+Comments: Given the source distribution, type "ant jar", then copy 
+    core-renderer.jar from the build directory and cssparser-0-9-4-fs.jar
+    from the lib directory.
+    You might want to delete the "System.out.println()" call from line 185
+    of src/java/org/xhtmlrenderer/util/Configuration.java. It is unsightly.
+

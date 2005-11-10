@@ -7,8 +7,12 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import javax.swing.*;
-import org.w3c.dom.Document;
 import org.volity.client.CommandStub;
+import org.w3c.dom.Document;
+import org.xhtmlrenderer.extend.UserAgentCallback;
+import org.xhtmlrenderer.simple.extend.XhtmlNamespaceHandler;
+import org.xhtmlrenderer.swing.BasicPanel;
+import org.xhtmlrenderer.swing.LinkListener;
 
 public class Finder extends JFrame
 {
@@ -28,6 +32,7 @@ public class Finder extends JFrame
     }
 
     private JavolinApp mOwner;
+    private BasicPanel mDisplay;
     private SizeAndPositionSaver mSizePosSaver;
 
     private Finder(JavolinApp owner) 
@@ -70,11 +75,122 @@ public class Finder extends JFrame
         show();
     }
 
+    {
+        /* The current version of xhtmlrenderer has a lot of logging turned on
+         * by default. We do not like it, so we turn it all off. This must be
+         * done before the xhtmlrenderer packages load. */
+        String[] logprops = {
+            "show-config",
+            "xr.util-logging..level",
+            "xr.util-logging.plumbing.level",
+            "xr.util-logging.plumbing.config.level",
+            "xr.util-logging.plumbing.exception.level",
+            "xr.util-logging.plumbing.general.level",
+            "xr.util-logging.plumbing.init.level",
+            "xr.util-logging.plumbing.load.level",
+            "xr.util-logging.plumbing.load.xml-entities.level",
+            "xr.util-logging.plumbing.match.level",
+            "xr.util-logging.plumbing.cascade.level",
+            "xr.util-logging.plumbing.css-parse.level",
+            "xr.util-logging.plumbing.layout.level",
+            "xr.util-logging.plumbing.render.level"
+        };
+        for (int ix=0; ix<logprops.length; ix++) {
+            System.setProperty(logprops[ix], "OFF");
+        }
+    }
+
+    /**
+     * A customized LinkListener. When the user clicks on a URL which returns a
+     * CommandStub, this executes the command. Any other URL does the default
+     * thing -- changes the document display.
+     */
+    private class FinderLinkListener extends LinkListener {
+        final Class[] arrayCommandStub = new Class[] { CommandStub.class };
+
+        BasicPanel mPanel;
+        public FinderLinkListener(BasicPanel panel) {
+            super(panel);
+            mPanel = panel;
+        }
+        public void linkClicked(String uri) {
+            String urlstr = mPanel.getRenderingContext().getUac().resolveURI(uri);
+            URL url = null;
+            try {
+                url = new URL(urlstr);
+                CommandStub stub = (CommandStub)url.getContent(arrayCommandStub);
+                if (stub != null) {
+                    mOwner.doOpenFile(stub);
+                    return;
+                }
+
+                // If there's no CommandStub content, fall through.
+                super.linkClicked(uri);
+                return;
+            }
+            catch (MalformedURLException ex) {
+                new ErrorWrapper(ex);
+                JOptionPane.showMessageDialog(Finder.this,
+                    ex.toString(),
+                    JavolinApp.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            catch (IOException ex) {
+                new ErrorWrapper(ex);
+                JOptionPane.showMessageDialog(Finder.this,
+                    ex.toString(),
+                    JavolinApp.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    /**
+     * A customized XHTML component, which knows about the
+     * "application/x-volity-command-stub" MIME type, and triggers the
+     * appropriate commands when the user clicks on links of that type.
+     *
+     * This is a copy of the standard XHTMLPanel, except that it doesn't have
+     * the font-scaling stuff, and it uses our custom LinkListener.
+     */
+    private class XHTMLFinder extends BasicPanel {
+
+        public XHTMLFinder() {
+            super();
+            setupListeners();
+        }
+        public XHTMLFinder(UserAgentCallback uac) {
+            super(uac);
+            setupListeners();
+        }
+
+        public void setDocument(String uri) {
+            setDocument(loadDocument(uri), uri);
+        }
+        public void setDocument(Document doc) {
+            setDocument(doc, "");
+        }
+        public void setDocument(Document doc, String url) {
+            super.setDocument(doc, url, new XhtmlNamespaceHandler());
+        }
+        public void setDocument(InputStream stream, String url)
+            throws Exception {
+            super.setDocument(stream, url, new XhtmlNamespaceHandler());
+        }
+
+        private void setupListeners() {
+            addMouseListener(new FinderLinkListener(this));
+        }
+    }
+
     private void buildUI()
     {
         Container cPane = getContentPane();
         cPane.setLayout(new BorderLayout());
         
+        mDisplay = new XHTMLFinder();
+        mDisplay.setDocument("http://www.volity.net/gamefinder/");
+        cPane.add(new JScrollPane(mDisplay), BorderLayout.CENTER);
 
         // Necessary for all windows, for Mac support
         JavolinMenuBar.applyPlatformMenuBar(this);
