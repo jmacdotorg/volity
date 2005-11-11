@@ -138,7 +138,7 @@ public class RPCProvider implements IQProvider {
       if (elementName.equals("i4") || elementName.equals("int"))
 	value = Integer.valueOf(parser.nextText());
       else if (elementName.equals("boolean"))
-	value = (parser.nextText().equals("0") ? Boolean.TRUE : Boolean.FALSE);
+	value = (parser.nextText().equals("0") ? Boolean.FALSE : Boolean.TRUE);
       else if (elementName.equals("string"))
 	value = parser.nextText();
       else if (elementName.equals("double"))
