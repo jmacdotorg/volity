@@ -486,27 +486,28 @@ public class TableWindow extends JFrame implements PacketListener
          * When we begin receiving RPCs from the referee, we don't necessarily
          * know what state the referee is in. (There's no status RPC for that.)
          * So we have to do a disco query.
-         * 
-         * ### This ought to be asynchronous. Blocking the Swing thread is bad
-         * form.
          */
-        try {
-            ServiceDiscoveryManager discoMan = 
-                ServiceDiscoveryManager.getInstanceFor(referee.getConnection());
-            DiscoverInfo info = discoMan.discoverInfo(referee.getResponderJID());
-            Form form = Form.getFormFrom(info);
-            if (form != null) {
-                FormField field = form.getField("state");
-                if (field != null) {
-                    String refState = (String) field.getValues().next();
-                    mGameTable.setRefereeState(refState);
+        new DiscoBackground(referee.getConnection(), 
+            new DiscoBackground.Callback() {
+                public void run(IQ result, XMPPException err, Object rock) {
+                    if (err != null) {
+                        new ErrorWrapper(err);
+                        writeMessageText(err.toString());
+                        return;
+                    }
+                    assert (result != null && result instanceof DiscoverInfo);
+                    DiscoverInfo info = (DiscoverInfo)result;
+                    Form form = Form.getFormFrom(info);
+                    if (form != null) {
+                        FormField field = form.getField("state");
+                        if (field != null) {
+                            String refState = (String) field.getValues().next();
+                            mGameTable.setRefereeState(refState);
+                        }
+                    }
                 }
-            }
-        }
-        catch (XMPPException ex) {
-            new ErrorWrapper(ex);
-            writeMessageText(ex.toString());
-        }
+            },
+            DiscoBackground.QUERY_INFO, referee.getResponderJID(), null);
     }
 
     /**

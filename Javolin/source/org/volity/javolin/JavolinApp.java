@@ -35,6 +35,7 @@ import org.jivesoftware.smack.provider.ProviderManager;
 import org.jivesoftware.smack.util.*;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
+import org.jivesoftware.smackx.ServiceDiscoveryFactory;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
@@ -184,6 +185,14 @@ public class JavolinApp extends JFrame
          * class-loading race, we ping the SmackConfiguration class first.
          */
         String ref = SmackConfiguration.getVersion();
+
+        ServiceDiscoveryManager.setServiceDiscoveryFactory(
+            new ServiceDiscoveryFactory() {
+                public ServiceDiscoveryManager create(XMPPConnection connection) {
+                    return new JServiceDiscoveryManager(connection);
+                }
+            }
+            );
 
         ServiceDiscoveryManager.setIdentityName(APPNAME);
         ServiceDiscoveryManager.setIdentityType("player");
