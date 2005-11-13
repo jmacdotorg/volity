@@ -6,6 +6,8 @@ import java.net.URL;
 import java.util.List;
 import org.apache.batik.bridge.BridgeContext;
 import org.apache.batik.bridge.UpdateManager;
+import org.apache.batik.bridge.svg12.SVG12BridgeContext;
+import org.apache.batik.dom.svg.SVGOMDocument;
 import org.apache.batik.script.Interpreter;
 import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
@@ -13,8 +15,6 @@ import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
-import org.apache.batik.swing.svg.GVTTreeBuilderAdapter;
-import org.apache.batik.swing.svg.GVTTreeBuilderEvent;
 import org.apache.batik.util.RunnableQueue;
 import org.jivesoftware.smack.XMPPConnection;
 import org.mozilla.javascript.Context;
@@ -77,34 +77,45 @@ public class SVGCanvas extends JSVGCanvas
   
   /**
    * Kludge to force the component to redraw itself.
+   *
+   * This was necessary due to bugs in the original Batik 1.6 release. These
+   * bugs are fixed in the Batik release we are now using. I am leaving this
+   * routine in place, as a stub, in case I'm wrong.
    */
   public void forceRedraw() {
-        Dimension2D size = getSVGDocumentSize();
-        setSize(new Dimension((int)(size.getWidth() + 10), (int)(size.getHeight() + 10)));
-        revalidate();
+    // Do nothing.
   }  
 
-  // Inherited from JSVGComponent.
-  protected BridgeContext createBridgeContext() {
+  // Inherited from AbstractJSVGComponent.
+  protected BridgeContext createBridgeContext(SVGOMDocument doc) {
     InterpreterPool pool = new InterpreterPool();
     pool.putInterpreterFactory("text/ecmascript", this);
-    BridgeContext context = super.createBridgeContext();
+    BridgeContext context = super.createBridgeContext(doc);
     // This doesn't work, because setInterpreterPool is protected:
     //
     // context.setInterpreterPool(pool);
     // return context;
     //
     // Instead, make a new context.
-    BridgeContext newContext =
-      new BridgeContext(context.getUserAgent(),
-                        pool,
-                        context.getDocumentLoader());
+    BridgeContext newContext;
+    if (doc.isSVG12()) {
+        newContext = new SVG12BridgeContext(context.getUserAgent(),
+            pool, context.getDocumentLoader());
+    }
+    else {
+        newContext = new BridgeContext(context.getUserAgent(),
+            pool, context.getDocumentLoader());
+    }
     newContext.setDynamic(true);
     return newContext;
   }
 
   // Inherited from InterpreterFactory.
-  public Interpreter createInterpreter(final URL documentURL) {
+  public Interpreter createInterpreter(final URL documentURL, boolean isSVG12) {
+    /* To accept SVG12 documents, we'd need to create an SVG12RhinoInterpreter
+     * subclass instead of a RhinoInterpreter subclass. */
+    assert (!isSVG12);
+
     // We need to add our game objects to the interpreter's global
     // object, but RhinoInterpreter.getGlobalObject is protected, so
     // we have to make a subclass.  And it can't be anonymous because

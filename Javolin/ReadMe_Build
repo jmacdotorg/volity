@@ -69,22 +69,35 @@ Lib file(s): js.jar
 Name: Batik
 Home page: http://xml.apache.org/batik/
 Version: 1.6
-Download: http://apache.mirrors.pair.com/xml/batik/batik-1.6.zip
-Lib file(s): batik-awt-util.jar, batik-bridge.jar, batik-css.jar, batik-dom.jar,
-    batik-ext.jar, batik-gui-util.jar, batik-gvt.jar, batik-parser.jar,
-    batik-script.jar, batik-svg-dom.jar, batik-swing.jar, batik-util.jar,
-    batik-xml.jar, xerces_2_5_0.jar, xml-apis.jar
-Comments: Note that Batik 1.5.1 includes version 1.5R4.1 of Rhino (js.jar), but
+Download: svn checkout -r 333250 http://svn.apache.org/repos/asf/xmlgraphics/batik/trunk
+    (The "-r 333250" fetches the source as of 2005-Nov-13, which works with
+    the current Javolin source.)
+    % cd trunk
+    % setenv JAVA_HOME /usr
+    (Set JAVA_HOME so that $JAVA_HOME/bin/java points to your java runtime.
+    The line above is correct for MacOSX.)
+    % sh build.sh all-jar
+Lib file(s): batik-all.jar, xerces_2_5_0.jar, xml-apis-dom3.jar
+    (After building, batik-all.jar will be in the batik-1.6/lib directory; 
+    xerces_2_5_0.jar and xml-apis-dom3.jar are in the lib directory.)
+Comments: If you were building the previous version of Javolin, be sure to
+    delete batik-*.jar and xml-apis.jar from your lib directory before
+    installing the current Batik libs.
+    If you want to save space, you can delete the directories test-resources,
+    test-sources, test-references, samples from the Batik source tree.
+    Note that Batik 1.6 includes version 1.5R4.1 of Rhino (js.jar), but
     Javolin needs 1.5R5 instead.
 ---
 Name: Flying Saucer (xhtmlrenderer)
 Home page: https://xhtmlrenderer.dev.java.net/
 Version: R5 beta
 Download: http://joshy.org/flyingsaucer/downloads/flyingsaucer.src.zip
-Lib file(s): core-renderer.jar, cssparser-0-9-4-fs.jar
-Comments: Given the source distribution, type "ant jar", then copy 
-    core-renderer.jar from the build directory and cssparser-0-9-4-fs.jar
-    from the lib directory.
-    You might want to delete the "System.out.println()" call from line 185
-    of src/java/org/xhtmlrenderer/util/Configuration.java. It is unsightly.
+    (Then, after unpacking the source...)
+    % ant jar
+Lib files: core-renderer.jar, cssparser-0-9-4-fs.jar
+    (After the "ant jar" command, core-renderer.jar will be in the build
+    directory; cssparser-0-9-4-fs.jar is in the lib directory.)
+Comments: You might want to delete the "System.out.println()" call from 
+    line 185 of src/java/org/xhtmlrenderer/util/Configuration.java. It is
+    unsightly.
 

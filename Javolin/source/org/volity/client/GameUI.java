@@ -422,21 +422,6 @@ public class GameUI implements RPCHandler, PacketFilter {
         callInProgress = Boolean.TRUE;
       }
 
-      /* We can't run SVG script in any old Context; it has to be a Context
-       * created by the Batik classes. (If we fail to do this, various things
-       * go wrong in the script. Notably, any attempt to refer to "document"
-       * throws a ClassCastException.) See the SVGCanvas.SVGUI methods for the
-       * code that ensures this.
-       *
-       * NOTE: Technically the GameUI class should never mention Batik -- all
-       * Batik-specific behavior should be in the SGVUI subclass. However, this
-       * assertion is protecting our asses. If we ever get an HTMLUI subclass,
-       * we'll have to modify the assert appropriately.
-       */
-      if (!(context instanceof org.apache.batik.script.rhino.RhinoInterpreter.ExtendedContext)) {
-        throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
-      }
-
       context.setWrapFactory(rpcWrapFactory);
       try {
         Object ret = method.call(context, scope, game, params.toArray());

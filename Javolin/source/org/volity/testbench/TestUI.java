@@ -73,16 +73,6 @@ public abstract class TestUI
                 callInProgress = Boolean.TRUE;
             }
 
-            /* We can't run SVG script in any old Context; it has to be a
-             * Context created by the Batik classes. (If we fail to do this,
-             * various things go wrong in the script. Notably, any attempt to
-             * refer to "document" throws a ClassCastException.) See the
-             * SVGCanvas.SVGUI methods for the code that ensures this.
-             */
-            if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
-                throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
-            }
-
             context.setWrapFactory(rpcWrapFactory);
             try {
                 Object ret = method.call(context, scope, game, params.toArray());
@@ -316,14 +306,18 @@ public abstract class TestUI
         try {
             if (scope == null) initGameObjects();
             Context context = Context.enter();
-
-            if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
-                throw new AssertionError("Tried to run ECMAScript for SVG in a non-Batik Context");
+            synchronized (callInProgress) {
+                if (callInProgress == Boolean.TRUE)
+                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
+                callInProgress = Boolean.TRUE;
             }
 
             context.evaluateReader(scope, new FileReader(uiScript),
                 uiScript.getName(), 1, null);
         } finally {
+            synchronized (callInProgress) {
+                callInProgress = Boolean.FALSE;
+            }
             Context.exit();
         }
     }
@@ -331,10 +325,6 @@ public abstract class TestUI
     /**
      * Execute a string as a UI script.
      * @param uiScript a string containing ECMAScript code
-     * @throws IOException if there is an I/O problem reading the UI script
-     * @throws JavaScriptException if the UI script throws an exception
-     * @throws EvaluationException if an error occurs while evaluating
-     *                             the UI script
      */
     public void loadString(String uiScript, String scriptLabel) {
         try {
@@ -344,10 +334,6 @@ public abstract class TestUI
                 if (callInProgress == Boolean.TRUE)
                     throw new AssertionError("Tried to run two ECMAScript calls at the same time");
                 callInProgress = Boolean.TRUE;
-            }
-
-            if (!(context instanceof RhinoInterpreter.ExtendedContext)) {
-                throw new AssertionError("Tried to run debug ECMAScript for SVG in a non-Batik Context");
             }
 
             context.evaluateString(scope, uiScript,
