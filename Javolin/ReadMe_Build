@@ -55,16 +55,19 @@ when we move to a new version of a library that we are already using.)
 
 ---
 Name: Smack (modified version in Volity CVS)
+Home page: http://www.jivesoftware.org/smack/
 Version: 2.0.0-v-1
 Download: https://sourceforge.net/project/showfiles.php?group_id=91751 (the smack-volity package)
 Lib file(s): smack.jar, smackx.jar
 ---
 Name: Rhino
+Home page: http://www.mozilla.org/rhino/
 Version: 1.5R5
 Download: ftp://ftp.mozilla.org/pub/mozilla.org/js/rhino1_5R5.zip
 Lib file(s): js.jar
 ---
 Name: Batik
+Home page: http://xml.apache.org/batik/
 Version: 1.6
 Download: http://apache.mirrors.pair.com/xml/batik/batik-1.6.zip
 Lib file(s): batik-awt-util.jar, batik-bridge.jar, batik-css.jar, batik-dom.jar,
@@ -75,6 +78,7 @@ Comments: Note that Batik 1.5.1 includes version 1.5R4.1 of Rhino (js.jar), but
     Javolin needs 1.5R5 instead.
 ---
 Name: Flying Saucer (xhtmlrenderer)
+Home page: https://xhtmlrenderer.dev.java.net/
 Version: R5 beta
 Download: http://joshy.org/flyingsaucer/downloads/flyingsaucer.src.zip
 Lib file(s): core-renderer.jar, cssparser-0-9-4-fs.jar
