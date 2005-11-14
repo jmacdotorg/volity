@@ -12,7 +12,6 @@ import org.apache.batik.bridge.*;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
-import org.volity.javolin.game.TableWindow;
 import org.volity.javolin.game.UIFileCache;
 
 /**
@@ -134,7 +133,7 @@ public class TestbenchApp extends JFrame
         }
 
         if (uiFile == null) {
-            uiDir = TableWindow.locateTopDirectory(uiDir);
+            uiDir = UIFileCache.locateTopDirectory(uiDir);
             
             File[] entries = uiDir.listFiles();
 
@@ -144,7 +143,7 @@ public class TestbenchApp extends JFrame
             }
             else
             {
-                uiFile = TableWindow.findFileCaseless(uiDir, "main.svg");
+                uiFile = UIFileCache.findFileCaseless(uiDir, "main.svg");
                 if (uiFile == null)
                 {
                     throw new IOException("unable to locate UI file in cache");
@@ -155,7 +154,7 @@ public class TestbenchApp extends JFrame
         URL uiMainUrl = uiFile.toURI().toURL();
 
         mUIDir = uiDir;
-        mTranslator = new TranslateToken(TableWindow.findFileCaseless(uiDir, "locale"));
+        mTranslator = new TranslateToken(UIFileCache.findFileCaseless(uiDir, "locale"));
 
         TestUI.MessageHandler messageHandler = new TestUI.MessageHandler() {
                 public void print(String msg) {

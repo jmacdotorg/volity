@@ -67,6 +67,12 @@ public class JavolinApp extends JFrame
     private static JavolinApp soleJavolinApp = null;
     private static TranslateToken sTranslator = new TranslateToken(null);
 
+    protected static GameResourcePrefs sGameResourcePrefs;
+    {
+        sGameResourcePrefs = new GameResourcePrefs(sUIFileCache);
+        org.volity.client.protocols.volresp.Handler.setResourcePrefs(sGameResourcePrefs);
+    }
+
     private JButton mShowHideUnavailBut;
     private JButton mAddUserBut;
     private JButton mDelUserBut;

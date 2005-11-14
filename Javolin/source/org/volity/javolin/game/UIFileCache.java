@@ -367,4 +367,88 @@ public class UIFileCache
         
         return name.delete();
     }
+
+    /**
+     * Look in a directory to see if it contains anything interesting, or if
+     * it's just a wrapper around a subdirectory (and nothing else). In the
+     * latter case, look into the subdirectory, and so on recursively.
+     *
+     * The first directory which is "interesting" (contains any files, or
+     * contains more than one subdirectory) is the final result. This may be
+     * the same as the directory that was passed in to begin with.
+     *
+     * This function is useful to search a directory created by unpacking a ZIP
+     * file (or other archive). Some people create archives with the important
+     * files at the top level; others create archives with everything important
+     * wrapped in a folder. This function handles both -- or, indeed, any
+     * number of wrappers -- and gives you back the directory in which to find
+     * things.
+     *
+     * @param dir  the directory in which to search
+     * @return     the directory which contains significant files
+     */
+    public static File locateTopDirectory(File dir)
+    {
+        while (true)
+        {
+            File[] entries = dir.listFiles();
+            if (entries.length != 1)
+            {
+                break;
+            }
+            if (!(entries[0].isDirectory()))
+            {
+                break;
+            }
+            dir = entries[0];
+        }
+
+        return dir;
+    }
+
+    /**
+     * Given a directory and a string, locate a directory entry which matches
+     * the string, case-insensitively. More precisely: this looks for an entry
+     * which matches name, name.toLowerCase(), or name.toUpperCase(). It will
+     * not find arbitrary mixed-case entries.
+     *
+     * @param dir   the directory to search.
+     * @param name  the file/dir name to search for.
+     * @return      a File representing an existing file/dir; or null, if no 
+     *         entry was found.
+     */
+    public static File findFileCaseless(File dir, String name)
+    {
+        File res;
+        String newname;
+
+        res = new File(dir, name);
+        if (res.exists())
+        {
+            return res;
+        }
+
+        newname = name.toUpperCase();
+        if (!newname.equals(name))
+        {
+            res = new File(dir, newname);
+            if (res.exists())
+            {
+                return res;
+            }
+        }
+
+        newname = name.toLowerCase();
+        if (!newname.equals(name))
+        {
+            res = new File(dir, newname);
+            if (res.exists())
+            {
+                return res;
+            }
+        }
+
+        return null;
+    }
+
 }
