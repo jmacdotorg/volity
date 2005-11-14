@@ -5,7 +5,7 @@ import java.util.*;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.mxp1.MXParser;
-import org.volity.javolin.game.TableWindow;
+import org.volity.javolin.game.UIFileCache;
 
 /**
  * Represents the contents of a testbench.xml file. It also includes a list of
@@ -53,7 +53,7 @@ public class DebugInfo
         seatList = new ArrayList();
 
         try {
-            File localeDir = TableWindow.findFileCaseless(uiDir, "locale");
+            File localeDir = UIFileCache.findFileCaseless(uiDir, "locale");
             if (localeDir != null && localeDir.isDirectory()) {
                 File seatTokenFile = null;
 
@@ -62,7 +62,7 @@ public class DebugInfo
                 for (int ix=0; ix<children.length; ix++) {
                     File langDir = new File(localeDir, children[ix]);
                     if (langDir.isDirectory()) {
-                        seatTokenFile = TableWindow.findFileCaseless(langDir,
+                        seatTokenFile = UIFileCache.findFileCaseless(langDir,
                             "seattokens.xml");
                         if (seatTokenFile != null)
                             break;
@@ -81,7 +81,7 @@ public class DebugInfo
 
         commandList = new ArrayList();
 
-        File debugFile = TableWindow.findFileCaseless(uiDir, "testbench.xml");
+        File debugFile = UIFileCache.findFileCaseless(uiDir, "testbench.xml");
         if (debugFile != null) {
             try {
                 parseDebugFile(commandList, debugFile);
