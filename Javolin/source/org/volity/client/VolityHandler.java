@@ -29,7 +29,7 @@ public class VolityHandler implements RPCHandler {
 
     // Inherited from RPCHandler.
     public void handleRPC(String methodName, List params, 
-        final RPCResponseHandler k) {
+        RPCResponseHandler k) {
         System.out.println("handleRPC: " + methodName + " " + params.toString());
 
         GameTable table = gameUI.table;
@@ -44,54 +44,14 @@ public class VolityHandler implements RPCHandler {
             // The ref is telling us that it's time to start this game.
             table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
-            Object method = gameUI.game.get("START", gameUI.scope);
-            if (!(method instanceof Function)) {
-                // No game.START is the same as a no-op
-                k.respondValue(Boolean.TRUE);
-            }
-            else {
-                gameUI.callUIMethod((Function) method, params, 
-                    new GameUI.Completion() {
-                        public void result(Object obj) { 
-                            if (obj instanceof Undefined) {
-                                // function returned null/void, but RPC result
-                                // has to be non-void
-                                obj = Boolean.TRUE;
-                            }
-                            k.respondValue(obj);
-                        }
-                        public void error(Exception ex) {
-                            gameUI.errorHandler.error(ex);
-                            k.respondFault(608, "UI script exception: " + ex);
-                        }
-                    });
-            }
+            callUI(gameUI.game, "START", params);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("end_game")) {
             // The ref is telling us that this game is over.
             table.setRefereeState(GameTable.STATE_SETUP);
             table.setAllPlayersUnready();
-            Object method = gameUI.game.get("END", gameUI.scope);
-            if (!(method instanceof Function)) {
-                // No game.END is the same as a no-op
-                k.respondValue(Boolean.TRUE);
-            }
-            else {
-                gameUI.callUIMethod((Function) method, params, 
-                    new GameUI.Completion() {
-                        public void result(Object obj) { 
-                            if (obj instanceof Undefined) {
-                                // function returned null/void, but RPC result
-                                // has to be non-void
-                                obj = Boolean.TRUE;
-                            }
-                            k.respondValue(obj);
-                        }
-                        public void error(Exception ex) {
-                            gameUI.errorHandler.error(ex);
-                            k.respondFault(608, "UI script exception: " + ex);
-                        }
-                    });
-            }
+            callUI(gameUI.game, "END", params);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_ready")) {
             table.setPlayerReadiness((String)params.get(0), true);
             k.respondValue(Boolean.TRUE);
@@ -150,4 +110,29 @@ public class VolityHandler implements RPCHandler {
 
     }
 
+    /**
+     * Utility function to call a named method of an object. If the method
+     * doesn't exist, that's okay. The method's return value is ignored, but if
+     * an exception occurs, it is passed back to the GameUI's error handler.
+     *
+     * @return Whether the method existed.
+     */
+    protected boolean callUI(Scriptable obj, String name, List params) {
+        Object method = obj.get(name, gameUI.scope);
+        if (!(method instanceof Function)) {
+            // No UI method is the same as a no-op
+            return false;
+        }
+
+        gameUI.callUIMethod((Function) method, params, 
+            new GameUI.Completion() {
+                public void result(Object obj) { 
+                    // Drop the return value on the floor.
+                }
+                public void error(Exception ex) {
+                    gameUI.errorHandler.error(ex);
+                }
+            });
+        return true;
+    }
 }
