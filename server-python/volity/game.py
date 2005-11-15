@@ -365,6 +365,8 @@ class Game:
         seated=*bool*
             Requires the sending player to be seated (if True) or standing
             (if False).
+        admin=*bool*
+            If True, requires the sending player to be a parlor administrator.
         argcount=*int*
             Require the given number of arguments.
         args=*typespec*

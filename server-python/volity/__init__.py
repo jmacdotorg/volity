@@ -68,9 +68,13 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.4.5:
+Game.* RPC methods can now validate admin=True; this ensures that the caller
+    is a parlor administrator. Good for debugging RPCs.
+
 - 1.4.4:
 Added the sortseats() utility method to Game. This makes it easier to build
-a list of winning seats to pass to gameover().
+    a list of winning seats to pass to gameover().
 
 - 1.4.3:
 Added more useful send methods to Game and Seat.

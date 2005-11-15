@@ -1905,6 +1905,8 @@ class Validator:
         seated=*bool*
             Requires the sending player to be seated (if True) or standing
             (if False).
+        admin=*bool*
+            If True, requires the sending player to be a parlor administrator.
         argcount=*int*
             Require the given number of arguments.
         args=*typespec*
@@ -2002,6 +2004,7 @@ class Validator:
         self.phasesuspended = True
         self.seated = True
         self.observer = True
+        self.administrator = False
         self.argcount = None
         self.arglist = None
         self.hasarglist = False
@@ -2072,6 +2075,10 @@ class Validator:
             else:
                 self.observer = True
                 self.seated = False
+        if (keywords.has_key('admin')):
+            val = keywords.pop('admin')
+            if (val):
+                self.administrator = True
         if (keywords.has_key('argcount')):
             val = keywords.pop('argcount')
             self.argcount = int(val)
@@ -2120,6 +2127,13 @@ class Validator:
             pla = ref.game.getplayer(sender)
             if (not pla.seat):
                 raise game.FailureToken('volity.not_seated')
+
+        if (self.administrator):
+            if ((not ref.parlor.adminjid)
+                or (not sender.barematch(ref.parlor.adminjid))):
+                raise interface.StanzaNotAuthorized('admin operations are restricted')
+            ref.log.warning('admin RPC from <%s>: %s %s',
+                unicode(sender), callname, unicode(callargs))
 
         if (self.argcount != None):
             if (len(callargs) != self.argcount):
