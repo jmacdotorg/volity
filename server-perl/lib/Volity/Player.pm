@@ -371,6 +371,7 @@ sub receive_game_state {
 	id=>'receive-state',
 	methodname=>'volity.receive_state',
 	to=>$self->jid,
+	args=>[{state=>$self->referee->current_state}],
     });
     $self->referee->game->send_full_state_to_player($self);
     $self->referee->send_rpc_request({
