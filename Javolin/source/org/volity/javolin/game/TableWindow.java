@@ -33,11 +33,7 @@ import org.apache.batik.bridge.UpdateManagerEvent;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
-import org.jivesoftware.smackx.Form;
-import org.jivesoftware.smackx.FormField;
-import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DelayInformation;
-import org.jivesoftware.smackx.packet.DiscoverInfo;
 
 import org.volity.client.*;
 import org.volity.jabber.*;
@@ -481,33 +477,6 @@ public class TableWindow extends JFrame implements PacketListener
             new ErrorWrapper(ex);
             writeMessageText(ex.toString());
         }
-
-        /**
-         * When we begin receiving RPCs from the referee, we don't necessarily
-         * know what state the referee is in. (There's no status RPC for that.)
-         * So we have to do a disco query.
-         */
-        new DiscoBackground(referee.getConnection(), 
-            new DiscoBackground.Callback() {
-                public void run(IQ result, XMPPException err, Object rock) {
-                    if (err != null) {
-                        new ErrorWrapper(err);
-                        writeMessageText(err.toString());
-                        return;
-                    }
-                    assert (result != null && result instanceof DiscoverInfo);
-                    DiscoverInfo info = (DiscoverInfo)result;
-                    Form form = Form.getFormFrom(info);
-                    if (form != null) {
-                        FormField field = form.getField("state");
-                        if (field != null) {
-                            String refState = (String) field.getValues().next();
-                            mGameTable.setRefereeState(refState);
-                        }
-                    }
-                }
-            },
-            DiscoBackground.QUERY_INFO, referee.getResponderJID(), null);
     }
 
     /**

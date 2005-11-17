@@ -627,7 +627,8 @@ public class MakeTableWindow
     {
         URL retVal = null;
 
-        //### asyncify this call! and all of getUIURL.
+        //### asyncify this call! and all of getUIURL. And make sure that a
+        //### Bookkeeper XMPPException shows a distinct error dialog!
 
         Bookkeeper keeper = new Bookkeeper(server.getConnection());
         List uiList = keeper.getCompatibleGameUIs(server.getRuleset(),

@@ -227,6 +227,7 @@ public class GameUI implements RPCHandler, PacketFilter {
   public class Info extends ScriptableObject {
     {
       try {
+        defineProperty("state", Info.class, PERMANENT);
         defineProperty("nickname", Info.class, PERMANENT);
         defineProperty("seat", Info.class, PERMANENT);
         defineProperty("allseats", Info.class, PERMANENT);
@@ -239,6 +240,10 @@ public class GameUI implements RPCHandler, PacketFilter {
     public String getClassName() { return "Info"; }
     public Object getDefaultValue(Class typeHint) { return toString(); }
 
+    public String getState() {
+        int val = table.getRefereeState();
+        return table.refereeStateToString(val);
+    }
     public UISeat getSeat() { 
       Player player = table.getSelfPlayer();
       if (player == null)

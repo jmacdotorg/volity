@@ -7,7 +7,11 @@ import java.util.*;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.PacketFilter;
+import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smackx.Form;
+import org.jivesoftware.smackx.FormField;
+import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
 import org.volity.jabber.*;
@@ -74,6 +78,19 @@ public class VolityHandler implements RPCHandler {
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("receive_state")) {
             System.out.println("Receiving game state.");
+            String foundstate = null;
+            if (params.size() > 0 && (params.get(0) instanceof Map)) {
+                Map map = (Map)params.get(0);
+                Object obj = map.get("state");
+                if (obj instanceof String)
+                    foundstate = (String)obj;
+            }
+            if (foundstate != null) {
+                table.setRefereeState(foundstate);
+            }
+            else {
+                queryRefereeState();
+            }
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("state_sent")) {
             System.out.println("Game state received.");
@@ -134,5 +151,38 @@ public class VolityHandler implements RPCHandler {
                 }
             });
         return true;
+    }
+
+    /**
+     * If the referee doesn't provide a game state in the receive_state RPC, we
+     * have to do a disco query for it. (This only exists to support old
+     * referee code.)
+     */
+    protected void queryRefereeState() {
+        final GameTable table = gameUI.table;
+
+        DiscoBackground.Callback callback = new DiscoBackground.Callback() {
+                public void run(IQ result, XMPPException err, Object rock) {
+                    if (err != null) {
+                        gameUI.errorHandler.error(err);
+                        return;
+                    }
+                    assert (result != null && result instanceof DiscoverInfo);
+                    DiscoverInfo info = (DiscoverInfo)result;
+                    Form form = Form.getFormFrom(info);
+                    if (form != null) {
+                        FormField field = form.getField("state");
+                        if (field != null) {
+                            String refState = (String) field.getValues().next();
+                            table.setRefereeState(refState);
+                        }
+                    }
+                }
+            };
+
+        new DiscoBackground(table.getConnection(), 
+            callback,
+            DiscoBackground.QUERY_INFO,
+            table.getReferee().getResponderJID(), null);
     }
 }

@@ -533,6 +533,15 @@ public class GameTable extends MultiUserChat
         return mRefereeState;
     }
 
+    public static String refereeStateToString(int val) {
+        switch (val) {
+        case STATE_ACTIVE:    return "active";
+        case STATE_SUSPENDED: return "suspended";
+        case STATE_SETUP:     return "setup";
+        default:              return null;
+        }
+    }
+
     /***** Dealing with seats *****/
 
     /**

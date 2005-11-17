@@ -583,6 +583,7 @@ public abstract class TestUI
     class Info extends ScriptableObject {
         {
             try {
+                defineProperty("state", Info.class, PERMANENT);
                 defineProperty("nickname", Info.class, PERMANENT);
                 defineProperty("seat", Info.class, PERMANENT);
                 defineProperty("allseats", Info.class, PERMANENT);
@@ -595,6 +596,9 @@ public abstract class TestUI
         public String getClassName() { return "Info"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
+        public String getState() {
+            return null; //### track "ref" state
+        }
         public UISeat getSeat() { 
             if (currentSeat == null)
                 return null;
