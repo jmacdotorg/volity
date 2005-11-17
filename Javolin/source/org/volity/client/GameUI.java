@@ -49,7 +49,7 @@ public class GameUI implements RPCHandler, PacketFilter {
   ErrorHandler errorHandler;
   MessageHandler messageHandler;
   RPCResponder responder;
-  Scriptable scope, game, info, client;
+  Scriptable scope, game, volity, info;
   GameTable table;
   RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
   private Boolean callInProgress = Boolean.FALSE;
@@ -83,7 +83,7 @@ public class GameUI implements RPCHandler, PacketFilter {
   }
 
   /**
-   * Initialize game-handling objects: "game", "info", "client", and "rpc".
+   * Initialize game-handling objects: "game", "info", "volity", and "rpc".
    * @return the initialized scope
    */
   public ScriptableObject initGameObjects() {
@@ -91,7 +91,7 @@ public class GameUI implements RPCHandler, PacketFilter {
   }
 
   /**
-   * Initialize game-handling objects: "game", "info", "client", and "rpc".
+   * Initialize game-handling objects: "game", "info", "volity", and "rpc".
    * @param scope the scope to initialize, or null, in which case a
    *              new object will be created to serve as the scope.
    * @return the initialized scope, which is the same as the scope
@@ -103,8 +103,8 @@ public class GameUI implements RPCHandler, PacketFilter {
       if (scope == null) scope = context.initStandardObjects();
       this.scope = scope;
       scope.put("game", scope, game = context.newObject(scope));
+      scope.put("volity", scope, volity = context.newObject(scope));
       scope.put("info", scope, info = new Info());
-      scope.put("client", scope, client = context.newObject(scope));
       scope.put("rpc", scope, new Callback() {
           public Object run(Object[] args) {
             try {
@@ -228,6 +228,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     {
       try {
         defineProperty("state", Info.class, PERMANENT);
+        defineProperty("recovery", Info.class, PERMANENT);
         defineProperty("nickname", Info.class, PERMANENT);
         defineProperty("seat", Info.class, PERMANENT);
         defineProperty("allseats", Info.class, PERMANENT);
@@ -243,6 +244,10 @@ public class GameUI implements RPCHandler, PacketFilter {
     public String getState() {
         int val = table.getRefereeState();
         return table.refereeStateToString(val);
+    }
+    public Boolean getRecovery() {
+        boolean val = table.getInStateRecovery();
+        return Boolean.valueOf(val);
     }
     public UISeat getSeat() { 
       Player player = table.getSelfPlayer();

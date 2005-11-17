@@ -54,6 +54,7 @@ public class GameTable extends MultiUserChat
     protected XMPPConnection mConnection;
     protected Referee mReferee;
     protected int mRefereeState = STATE_UNKNOWN;
+    protected boolean mInStateRecovery = false;
 
     protected List mQueuedMessages = new ArrayList();
     protected PacketListener mParticipantListener;
@@ -540,6 +541,20 @@ public class GameTable extends MultiUserChat
         case STATE_SETUP:     return "setup";
         default:              return null;
         }
+    }
+
+    /**
+     * Set whether the table is currently sending us a state-recovery burst.
+     */
+    public void setInStateRecovery(boolean val) {
+        mInStateRecovery = val;
+    }
+
+    /**
+     * Check whether the table is currently sending us a state-recovery burst.
+     */ 
+    public boolean getInStateRecovery() {
+        return mInStateRecovery;
     }
 
     /***** Dealing with seats *****/

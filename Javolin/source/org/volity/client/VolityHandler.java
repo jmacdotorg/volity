@@ -48,36 +48,45 @@ public class VolityHandler implements RPCHandler {
             // The ref is telling us that it's time to start this game.
             table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
-            callUI(gameUI.game, "START", params);
+            if (!callUI(gameUI.volity, "start_game", params))
+                callUI(gameUI.game, "START", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("end_game")) {
             // The ref is telling us that this game is over.
             table.setRefereeState(GameTable.STATE_SETUP);
             table.setAllPlayersUnready();
-            callUI(gameUI.game, "END", params);
+            if (!callUI(gameUI.volity, "end_game", params))
+                callUI(gameUI.game, "END", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_ready")) {
             table.setPlayerReadiness((String)params.get(0), true);
+            callUI(gameUI.volity, "player_ready", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_unready")) {
             table.setPlayerReadiness((String)params.get(0), false);
+            callUI(gameUI.volity, "player_unready", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_stood")) {
             table.setAllPlayersUnready();
             table.setPlayerSeat((String)params.get(0), null);
+            callUI(gameUI.volity, "player_stood", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_sat")) {
             table.setAllPlayersUnready();
             table.setPlayerSeat((String)params.get(0), (String)params.get(1));
+            callUI(gameUI.volity, "player_sat", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("seat_list")) {
             table.setSeats((List)params.get(0));
+            callUI(gameUI.volity, "seat_list", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("required_seat_list")) {
             table.setRequiredSeats((List)params.get(0));
+            callUI(gameUI.volity, "required_seat_list", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("receive_state")) {
             System.out.println("Receiving game state.");
+            table.setInStateRecovery(true);
             String foundstate = null;
             if (params.size() > 0 && (params.get(0) instanceof Map)) {
                 Map map = (Map)params.get(0);
@@ -91,35 +100,44 @@ public class VolityHandler implements RPCHandler {
             else {
                 queryRefereeState();
             }
+            callUI(gameUI.volity, "receive_state", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("state_sent")) {
             System.out.println("Game state received.");
+            callUI(gameUI.volity, "state_sent", params);
+            table.setInStateRecovery(false);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("suspend_game")) {
             table.setRefereeState(GameTable.STATE_SUSPENDED);
             table.setAllPlayersUnready();
             System.out.println("Game suspended.");
+            callUI(gameUI.volity, "suspend_game", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("resume_game")) {
             table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
             System.out.println("Game resumed.");
+            callUI(gameUI.volity, "resume_game", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("language")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set language.");
+            callUI(gameUI.volity, "language", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("show_table")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set show_table.");
+            callUI(gameUI.volity, "show_table", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("record_games")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set record_games.");
+            callUI(gameUI.volity, "record_games", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("kill_game")) {
             table.setAllPlayersUnready();
             System.out.println("Configuration set kill_game.");
+            callUI(gameUI.volity, "kill_game", params);
             k.respondValue(Boolean.TRUE);
         } else {
             k.respondFault(999, "I don't know what to do about the volity RPC request " + methodName);
@@ -136,7 +154,7 @@ public class VolityHandler implements RPCHandler {
      */
     protected boolean callUI(Scriptable obj, String name, List params) {
         Object method = obj.get(name, gameUI.scope);
-        if (!(method instanceof Function)) {
+        if (method == null || !(method instanceof Function)) {
             // No UI method is the same as a no-op
             return false;
         }

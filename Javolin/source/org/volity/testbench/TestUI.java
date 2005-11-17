@@ -259,7 +259,7 @@ public abstract class TestUI
     Object securityDomain; 
 
     String currentSeat;
-    Scriptable scope, game, info, client;
+    Scriptable scope, game, info, volity;
     RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
     private Boolean callInProgress = Boolean.FALSE;
 
@@ -359,7 +359,7 @@ public abstract class TestUI
     }
 
     /**
-     * Initialize game-handling objects: "game", "info", "client", and "rpc".
+     * Initialize game-handling objects: "game", "info", "volity", and "rpc".
      * @return the initialized scope
      */
     public ScriptableObject initGameObjects() {
@@ -367,7 +367,7 @@ public abstract class TestUI
     }
 
     /**
-     * Initialize game-handling objects: "game", "info", "client", and "rpc".
+     * Initialize game-handling objects: "game", "info", "volity", and "rpc".
      * @param scope the scope to initialize, or null, in which case a
      *              new object will be created to serve as the scope.
      * @return the initialized scope, which is the same as the scope
@@ -381,8 +381,8 @@ public abstract class TestUI
             }
             this.scope = scope;
             scope.put("game", scope, game = context.newObject(scope));
+            scope.put("volity", scope, volity = context.newObject(scope));
             scope.put("info", scope, info = new Info());
-            scope.put("client", scope, client = context.newObject(scope));
             scope.put("rpc", scope, new Callback() {
                     public Object run(Object[] args) {
                         try {
@@ -584,6 +584,7 @@ public abstract class TestUI
         {
             try {
                 defineProperty("state", Info.class, PERMANENT);
+                defineProperty("recovery", Info.class, PERMANENT);
                 defineProperty("nickname", Info.class, PERMANENT);
                 defineProperty("seat", Info.class, PERMANENT);
                 defineProperty("allseats", Info.class, PERMANENT);
@@ -598,6 +599,9 @@ public abstract class TestUI
 
         public String getState() {
             return null; //### track "ref" state
+        }
+        public Boolean getRecovery() {
+            return Boolean.FALSE; //### track?
         }
         public UISeat getSeat() { 
             if (currentSeat == null)
