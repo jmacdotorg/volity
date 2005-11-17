@@ -1410,7 +1410,8 @@ class Referee(volent.VolEntity):
             return
         player.aware = True
 
-        self.game.sendplayer(player, 'volity.receive_state')
+        argmap = { 'state':self.refstate }
+        self.game.sendplayer(player, 'volity.receive_state', argmap)
 
         # First, the seating information
         ls = [ seat.id for seat in self.seatlist ]

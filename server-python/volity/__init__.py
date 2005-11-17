@@ -68,6 +68,9 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.4.6:
+Added a struct argument to the receive_state RPC.
+
 - 1.4.5:
 Game.* RPC methods can now validate admin=True; this ensures that the caller
     is a parlor administrator. Good for debugging RPCs.
