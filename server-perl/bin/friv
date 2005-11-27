@@ -29,6 +29,7 @@
 use warnings;
 use strict;
 
+use Time::HiRes 'time';
 use POE;
 use POE::Wheel::ReadLine;
 sub ARGS() { ARG0..$#_ }
@@ -87,6 +88,8 @@ POE::Session->create(
     inline_states => {
         _start     => \&start,
         user_input => \&user_input,
+        run_cmd_queue => \&run_cmd_queue,
+        unpause_queue => \&unpause_queue,
         }
     );
 
@@ -364,6 +367,18 @@ sub cmd_echo {
     output( $heap, join ' ', @args );
 }
 
+sub cmd_sleep {
+    my( $kernel, $heap, $how_long ) = @_[ KERNEL, HEAP, &ARGS ];
+    $heap->{'cmd_queue_paused'} = 1;
+    $kernel->delay_set( "unpause_queue", $how_long );
+}
+
+sub unpause_queue {
+    my( $kernel, $heap ) = @_[ KERNEL, HEAP ];
+    $heap->{'cmd_queue_paused'} = 0;
+    $kernel->yield('run_cmd_queue');
+}
+
 sub cmd_set {
     my( $heap, $var_value ) = @_[ HEAP, &ARGS ];
     if ( $var_value ) {
@@ -434,18 +449,35 @@ sub cmd_disconnect {
 }
 
 sub cmd_source {
-    my( $heap, $file ) = @_[ HEAP, &ARGS ];
+    my( $kernel, $heap, $file ) = @_[ KERNEL, HEAP, &ARGS ];
     my $fh;
     open( $fh, $file )
         or open( $fh, File::Spec->catdir($working_dir, $file) )
         or return output($heap,"source: Could not open $file: $!");
+    my @cmd_queue;
     while ( <$fh> ) {
-        my $result = run_command( &POE, $_ );
-        unless ( $result ) {
-            output( $heap, "source: Unknown command: $_" );
-        }
+        push @cmd_queue, $_;
     }
     close( $fh );
+    if ( @cmd_queue ) {
+        $heap->{'cmd_queue'} ||= [];
+        push @{$heap->{'cmd_queue'}}, @cmd_queue;
+    }
+    $kernel->yield('run_cmd_queue');
+}
+
+sub run_cmd_queue {
+    my($kernel,$heap) = @_[ KERNEL, HEAP ];
+    return unless @{$heap->{'cmd_queue'}};
+    return if $heap->{'cmd_queue_paused'};
+    my $command = shift( @{$heap->{'cmd_queue'}} );
+    my $result = run_command( &POE, $command );
+    unless ( $result ) {
+        output( $heap, "source: Unknown command: $command" );
+    }
+    if ( @{ $heap->{'cmd_queue'} } ) {
+        $kernel->yield( "run_cmd_queue" );
+    }
 }
 
 no strict 'refs';
@@ -1113,7 +1145,7 @@ sub cmd_timeout_reaction {
 =cut
 
 sub cmd_suspend {
-    my ( $heap ) = @_[ HEAP ];
+    my ( $heap ) = $_[ HEAP ];
     my $user = $heap->{default_player};
     $user->make_rpc_request({
         id         => 'suspend',
@@ -1123,7 +1155,7 @@ sub cmd_suspend {
 }
 
 sub cmd_kill {
-    my ( $heap ) = @_[ HEAP ];
+    my ( $heap ) = $_[ HEAP ];
     my $user = $heap->{default_player};
     $user->make_rpc_request({
         id         => 'suspend',
@@ -1134,7 +1166,7 @@ sub cmd_kill {
 }
 
 sub cmd_keep {
-    my ( $heap ) = @_[ HEAP ];
+    my ( $heap ) = $_[ HEAP ];
     my $user = $heap->{default_player};
     $user->make_rpc_request({
         id         => 'suspend',
