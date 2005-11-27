@@ -197,6 +197,7 @@ use POE::Filter::XML::Node;
 use Scalar::Util qw(weaken);
 use Time::HiRes qw(gettimeofday);
 use Locale::Language;
+use List::Util qw(first);
 
 ###################
 # Internal config variables 
@@ -776,7 +777,7 @@ sub look_up_player_with_nickname {
 sub look_up_seat_with_id {
     my $self = shift;
     my ($seat_id) = @_;
-    my ($seat) = grep($_->id eq $seat_id, $self->seats);
+    my ($seat) = first {$_->id eq $seat_id} $self->seats;
     return $seat;
 }
 
@@ -1577,7 +1578,6 @@ sub start_game {
   map ($_->register_occupants, $self->seats);
 
   # Tell the game to start itself.
-  $self->game->start;
   $self->game->is_afoot(1);
   
   # Tell the players' clients to get ready for some fun.
