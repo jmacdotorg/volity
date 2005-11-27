@@ -57,7 +57,7 @@ $bookkeeper->start;
 
 =head1 NAME
 
-vbookkeeperd -- A simle Volity bookkeeper
+bookkeeper.pl -- A simple Volity bookkeeper
 
 =head1 DESCRIPTION
 
@@ -99,7 +99,7 @@ The DBI resource string to use, such as 'dbi:mysql:volity'.
 
 =item U
 
-The database usersname.
+The database username.
 
 =item W
 

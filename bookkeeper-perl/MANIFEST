@@ -18,3 +18,7 @@ LICENSE
 MANIFEST			This list of files
 README
 Changes
+META.yml
+t/pod-coverage.t
+t/pod-spelling.t
+t/pod-test.t
