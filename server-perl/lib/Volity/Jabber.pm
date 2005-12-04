@@ -429,13 +429,15 @@ sub jabber_iq {
     if ($query = $node->get_tag('query') and $query->attr('xmlns') eq 'jabber:iq:rpc') {
       # Yep, that's an RPC response.
       my $raw_xml = join("\n", map($_->to_str, @{$query->get_children}));
+
+      massage_rpc_numbers(\$raw_xml);
+
       # We should be getting only RPC responses, not requests.
       my $response_obj = $self->rpc_parser->parse($raw_xml);
       unless (ref($response_obj)) {
 	  $self->logger->warn("Failed to parse this response: $raw_xml");
 	  return;
       }
-#      $self->logger->debug("Finally, got $response_obj.\n");
       $self->logger->debug("The response is: " . $response_obj->value->value . "\n");
       if ($response_obj->value->is_fault) {
 	$self->handle_rpc_fault({
@@ -459,6 +461,9 @@ sub jabber_iq {
 
       # Hack, to deal with apparent RPC::XML bug?
       $raw_xml =~ s/<int\/>/<int>0<\/int>/g;
+
+      massage_rpc_numbers(\$raw_xml);
+
       $self->logger->debug("$self got Apparent RPC XML from $from_jid: $raw_xml\n");
       my @kids = @{$query->get_children};
       my $rpc_obj = $self->rpc_parser->parse($raw_xml);
@@ -494,6 +499,14 @@ sub jabber_iq {
       $self->$method($node);
     }
   }
+}
+
+# massage_rpc_numbers: Fixes Bug #1372065.
+# Basically, if a <double> looks, walks and talks like an <int>, then
+# an <int> it shall become.
+sub massage_rpc_numbers {
+    my ($raw_xml_ref) = @_;
+    $$raw_xml_ref =~ s|<\s*double\s*>\s*(\d*?)\.0*\s*<\s*/\s*double\s*>|$1 ne '' ? "<int>$1</int>" : "<int>0<int>"|ge;
 }
 
 # Message handler! Figures out the message type, and calls a deleagating
