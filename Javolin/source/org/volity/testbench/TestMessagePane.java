@@ -4,11 +4,16 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
+import java.util.prefs.*;
 import javax.swing.*;
 
 public class TestMessagePane
     implements SVGTestCanvas.UIListener
 {
+    private final static String NODENAME = "TestMessagePane";
+    private final static String CMD_HISTORY = "CmdHistory";
+    private final static int MAX_HISTORY_SAVED = 20;
+
     private JTextArea mInputText;
     private TestButtonBar mButtonBar;
     private TestUI ui;
@@ -36,7 +41,14 @@ public class TestMessagePane
                     String st = mInputText.getText();
                     mInputText.setText("");
 
-                    history.add(st);
+                    /* Don't save the empty string in command history. Don't
+                     * save a string if it's identical to the last string.
+                     */
+                    int cursize = history.size();
+                    if ((cursize == 0 || !st.equals(history.get(cursize-1)))
+                        && !st.equals("")) {
+                        history.add(st);
+                    }
                     historyPos = history.size();
 
                     if (st.startsWith("?")) {
@@ -84,6 +96,7 @@ public class TestMessagePane
                 }
             });
 
+        restoreHistory();
     }
 
     public JComponent getComponent() {
@@ -95,6 +108,36 @@ public class TestMessagePane
      */
     public void newUI(TestUI ui) {
         this.ui = ui;
+    }
+
+    public void saveHistory() {
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+
+        StringBuffer buf = new StringBuffer();
+
+        int ix = history.size() - MAX_HISTORY_SAVED;
+        if (ix < 0)
+            ix = 0;
+
+        for (; ix<history.size(); ix++) {
+            String st = (String)history.get(ix);
+            buf.append(st);
+            buf.append("\n");
+        }
+
+        prefs.put(CMD_HISTORY, buf.toString());
+    }
+
+    public void restoreHistory() {
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+
+        String buf = prefs.get(CMD_HISTORY, "");
+        String arr[] = buf.split("\n");
+
+        for (int ix = 0; ix < arr.length; ix++) {
+            history.add(arr[ix]);
+        }
+        historyPos = history.size();
     }
 
     /**

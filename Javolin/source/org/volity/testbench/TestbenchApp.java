@@ -367,6 +367,7 @@ public class TestbenchApp extends JFrame
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
         mSizePosSaver.saveSizeAndPosition();
+        mInputPane.saveHistory();
 
         prefs.putInt(LOG_SPLIT_POS, mLogSplitter.getDividerLocation());
         prefs.putInt(CHAT_SPLIT_POS, mChatSplitter.getDividerLocation());
