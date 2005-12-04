@@ -506,7 +506,7 @@ sub jabber_iq {
 # an <int> it shall become.
 sub massage_rpc_numbers {
     my ($raw_xml_ref) = @_;
-    $$raw_xml_ref =~ s|<\s*double\s*>\s*(\d*?)\.0*\s*<\s*/\s*double\s*>|$1 ne '' ? "<int>$1</int>" : "<int>0<int>"|ge;
+    $$raw_xml_ref =~ s|<\s*double\s*>\s*(-?)(\d*?)\.0*\s*<\s*/\s*double\s*>|$2 ne '' ? "<int>$1$2</int>" : "<int>0<int>"|ge;
 }
 
 # Message handler! Figures out the message type, and calls a deleagating
