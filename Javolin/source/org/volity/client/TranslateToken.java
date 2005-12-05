@@ -369,6 +369,15 @@ public class TranslateToken {
     }
 
     /**
+     * Clear the cached tables we loaded from the UI package. This has no value
+     * in Javolin, but it's useful in Testbench when we reload changes.
+     */
+    public void clearCache() {
+        tableCacheGame.clear();
+        tableCacheSeat.clear();
+    }
+
+    /**
      * Parse an XML token translation table, and store its entries into
      * a provided Map.
      *

@@ -257,6 +257,7 @@ public class TestbenchApp extends JFrame
         } 
         else if (ev.getSource() == mReloadMenuItem) {
             writeMessageText("Reloading UI files...");
+            mTranslator.clearCache();
             mDebugInfo = new DebugInfo(mUIDir);
             mButtonBar.reload(mDebugInfo);
             mViewport.reloadUI(mDebugInfo);
