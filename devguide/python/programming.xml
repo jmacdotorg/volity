@@ -1,0 +1,13 @@
+<section id="SECT-hacking">
+  <title>Creating a Python Game Module</title>
+  <note>
+    <para>
+      This is when we start getting very Python-specific. The Python
+      Volity libraries require Python 2.3 or later.
+    </para>
+  </note>
+  <para>
+    La la la not written anything here either.
+  </para>
+</section>
+

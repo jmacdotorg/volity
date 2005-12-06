@@ -1,0 +1,14 @@
+<para>
+That done, get a copy of the Python Volity modules. You will need three 
+items: the volity module, the zymb module, and the volityd.py script.
+</para>
+
+<para>
+These can be found on 
+<ulink url="http://volity.org">the Volity.org website</ulink>,
+or on Andrew Plotkin's 
+<ulink url="http://eblong.com/zarf/zymb/">Zymb</ulink>
+and
+<ulink url="http://eblong.com/zarf/volity/">Volity</ulink>
+pages.
+</para>
