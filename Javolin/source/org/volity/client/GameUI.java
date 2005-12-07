@@ -159,6 +159,11 @@ public class GameUI implements RPCHandler, PacketFilter {
             }
           }
         });
+      scope.put("seatmark", scope, new Callback() {
+          public Object run(Object[] args) {
+            return null;
+          }
+        });
     } catch (JavaScriptException e) {
       errorHandler.error(e);
     } finally {
