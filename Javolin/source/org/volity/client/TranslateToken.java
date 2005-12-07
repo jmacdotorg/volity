@@ -45,7 +45,8 @@ public class TranslateToken {
      * containing subdirectories "en", "fr", etc -- one per two-letter
      * language code the translator wishes to support. A subdirectory
      * may contain files gametokens.xml and/or seattokens.xml, in
-     * order to translate tokens in the "game" and "seat" namespaces.
+     * order to translate tokens in the "game", "seat", and "ui"
+     * namespaces.
      * 
      * @param localeDir a File referring to the locale directory
      */
@@ -222,6 +223,13 @@ public class TranslateToken {
             }
             /* else, fall through */
         }
+        if (ns.equals("ui") && localeDir != null) {
+            Map tab = getCurrentTableUi();
+            if (tab.containsKey(token)) {
+                return (String)tab.get(token);
+            }
+            /* else, fall through */
+        }
         if (ns.equals("seat") && localeDir != null) {
             Map tab = getCurrentTableSeat();
             if (tab.containsKey(token)) {
@@ -331,6 +339,44 @@ public class TranslateToken {
     }
 
     /**
+     * Fetch the map for "ui" tokens, in the current language.
+     * This is fast if the map has already been built.
+     *
+     * @return a Map which maps token names to Strings.
+     */
+    protected Map getCurrentTableUi() {
+        if (tableCacheUi.containsKey(currentLanguage)) {
+            return (Map)tableCacheUi.get(currentLanguage);
+        }
+
+        /* We want to go through this exactly once, even if the XML
+         * table is missing or unreadable. Therefore, we create an
+         * empty Map, and we'll stick that Map into tableCacheUi
+         * even if the importLocaleTable call fails. */
+        Map tab = new Hashtable();
+
+        File localeSubdir = new File(localeDir, currentLanguage);
+        File localeFile = new File(localeSubdir, "uitokens.xml");
+        if (!localeFile.exists()) {
+            localeFile = new File(localeSubdir, "UITOKENS.XML");
+        }
+        if (localeFile.exists()) {
+            try {
+                importLocaleTable(tab, localeFile);
+            }
+            catch (Exception ex) { 
+                /* No obvious way to smuggle exception messages out of
+                 * here, so we just drop them. */
+                System.err.println("Error importing \"" 
+                    + currentLanguage + "\" uitokens: " + ex.toString());
+            }
+        }
+
+        tableCacheUi.put(currentLanguage, tab);
+        return tab;
+    }
+
+    /**
      * Fetch the map for "seat" tokens, in the current language.
      * This is fast if the map has already been built.
      *
@@ -374,6 +420,7 @@ public class TranslateToken {
      */
     public void clearCache() {
         tableCacheGame.clear();
+        tableCacheUi.clear();
         tableCacheSeat.clear();
     }
 
@@ -454,6 +501,7 @@ public class TranslateToken {
 
     protected File localeDir;
     private Map tableCacheGame = new Hashtable();
+    private Map tableCacheUi = new Hashtable();
     private Map tableCacheSeat = new Hashtable();
 
     /* Source tables for the "volity" namespace. Each of these is just
