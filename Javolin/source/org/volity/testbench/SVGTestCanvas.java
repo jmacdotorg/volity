@@ -41,8 +41,6 @@ public class SVGTestCanvas extends JSVGCanvas
         TestUI.ErrorHandler errorHandler) {
 
         super();
-        //### if we passed a SVGUserAgent here, we could override the standard
-        //### exception-alert-box behavior.
 
         this.uiDocument = uiDocument;
         this.debugInfo = debugInfo;
@@ -61,11 +59,24 @@ public class SVGTestCanvas extends JSVGCanvas
     }
 
     /**
-     * Expose the UserAgent so that the app can throw up exception dialog
-     * boxes. This may not be the clean way to do this, but it works. 
+     * Override the creation of a UserAgent. This lets us customize the
+     * handling of SVG errors.
      */
-    public UserAgent getUserAgent() {
-        return userAgent;
+    protected UserAgent createUserAgent() {
+        /**
+         * Define an anonymous class which customizes the handling of SVG
+         * errors. Instead of popping up Batik's standard ugly dialog box, we
+         * pass the buck to our own handlers.
+         */
+        UserAgent agent = new JSVGCanvas.CanvasUserAgent () {
+                public void displayError(String msg) {
+                    SVGTestCanvas.this.messageHandler.print(msg);
+                }
+                public void displayError(Exception ex) {
+                    SVGTestCanvas.this.errorHandler.error(ex);
+                }
+            };
+        return agent;
     }
 
     /**

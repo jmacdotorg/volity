@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.apache.batik.bridge.*;
+import org.apache.batik.util.gui.JErrorPane;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
@@ -264,7 +265,13 @@ public class TestbenchApp extends JFrame
         }
         else if (ev.getSource() == mLastExceptionMenuItem) {
             if (lastException instanceof Exception) {
-                mViewport.getUserAgent().displayError((Exception)lastException);
+                JErrorPane pane = new JErrorPane(
+                    (Exception)lastException, 
+                    JOptionPane.ERROR_MESSAGE);
+                JDialog dialog = pane.createDialog(this, 
+                    APPNAME+" Exception");
+                dialog.setModal(false);
+                dialog.setVisible(true);
             }
             else {
                 writeMessageText("Last exception was not an Exception: " + lastException.toString());

@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.List;
 import org.apache.batik.bridge.BridgeContext;
 import org.apache.batik.bridge.UpdateManager;
+import org.apache.batik.bridge.UserAgent;
 import org.apache.batik.bridge.svg12.SVG12BridgeContext;
 import org.apache.batik.dom.svg.SVGOMDocument;
 import org.apache.batik.script.Interpreter;
@@ -62,8 +63,6 @@ public class SVGCanvas extends JSVGCanvas
         GameUI.ErrorHandler errorHandler) {
 
         super();
-        //### if we passed a SVGUserAgent here, we could override the standard
-        //### exception-alert-box behavior.
 
         this.connection = connection;
         this.messageHandler = messageHandler;
@@ -78,6 +77,27 @@ public class SVGCanvas extends JSVGCanvas
             });
     }
   
+    /**
+     * Override the creation of a UserAgent. This lets us customize the
+     * handling of SVG errors.
+     */
+    protected UserAgent createUserAgent() {
+        /**
+         * Define an anonymous class which customizes the handling of SVG
+         * errors. Instead of popping up Batik's standard ugly dialog box, we
+         * pass the buck to our own handlers.
+         */
+        UserAgent agent = new JSVGCanvas.CanvasUserAgent () {
+                public void displayError(String msg) {
+                    SVGCanvas.this.messageHandler.print(msg);
+                }
+                public void displayError(Exception ex) {
+                    SVGCanvas.this.errorHandler.error(ex);
+                }
+            };
+        return agent;
+    }
+
   /**
    * Kludge to force the component to redraw itself.
    *
