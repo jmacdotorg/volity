@@ -39,7 +39,10 @@ public class SVGTestCanvas extends JSVGCanvas
         TranslateToken translator,
         TestUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
+
         super();
+        //### if we passed a SVGUserAgent here, we could override the standard
+        //### exception-alert-box behavior.
 
         this.uiDocument = uiDocument;
         this.debugInfo = debugInfo;

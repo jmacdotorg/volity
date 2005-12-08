@@ -48,6 +48,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         " Jabber host that offers open registration. You are" +
         " welcome to use volity.net.";
 
+    private static String staticResourceString = null;
+
     private JTextField mHostNameField;
     private JTextField mUserNameField;
     private JPasswordField mPasswordField;
@@ -170,7 +172,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             ServiceDiscoveryManager.getInstanceFor(mConnection).addFeature(CapPacketExtension.NAMESPACE);
 
             mConnection.login(mUserNameField.getText(),
-                new String(mPasswordField.getPassword()), "Javolin");
+                new String(mPasswordField.getPassword()), 
+                getJIDResource());
 
             dispose();
         }
@@ -346,7 +349,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             manager.createAccount(mUserNameField.getText(), password, attr);
 
-            mConnection.login(mUserNameField.getText(), password, "Javolin");
+            mConnection.login(mUserNameField.getText(), password, 
+                getJIDResource());
 
             dispose();
         }
@@ -425,6 +429,30 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         String val = prefs.get(USERNAME_KEY, "");
         return (val.equals(""));
+    }
+
+    /**
+     * Create a resource for the JID we are going to use to log in.
+     *
+     * It is desirable to randomize this string, so that the user can run
+     * Javolin in two places (or twice on the same machine) without disaster.
+     * On the other hand, we can keep the same value for the duration of the
+     * Javolin process. (If you disconnect and reconnect, using the same
+     * resource string, there's no disaster.) So this is stored in a static
+     * field.
+     */
+    public String getJIDResource() 
+    {
+        if (staticResourceString == null) {
+            StringBuffer buf = new StringBuffer("javolin");
+            for (int ix=0; ix<6; ix++) {
+                int val = (int)(Math.random() * 25.9999);
+                buf.append((char)('A'+val));
+            }
+            staticResourceString = buf.toString();
+        }
+
+        return staticResourceString;
     }
 
     /**

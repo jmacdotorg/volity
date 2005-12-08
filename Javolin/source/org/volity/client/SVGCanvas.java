@@ -62,6 +62,9 @@ public class SVGCanvas extends JSVGCanvas
         GameUI.ErrorHandler errorHandler) {
 
         super();
+        //### if we passed a SVGUserAgent here, we could override the standard
+        //### exception-alert-box behavior.
+
         this.connection = connection;
         this.messageHandler = messageHandler;
         this.errorHandler = errorHandler;
