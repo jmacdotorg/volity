@@ -865,7 +865,17 @@ class Referee(volent.VolEntity):
         """
         
         jidstr = unicode(jid)
+        jidchanged = False
         player = self.players.get(jidstr, None)
+        
+        if (not player):
+            # Conceivably this is a disconnected player returning to us
+            # with a new resource.
+            for jidstr2 in self.players.keys():
+                player2 = self.players[jidstr2]
+                if ((not player2.live) and jid.barematch(jidstr2)):
+                    player = player2
+                    jidchanged = True
         
         self.queueaction(self.checktimersetting)
         
@@ -884,6 +894,16 @@ class Referee(volent.VolEntity):
                 self.playernicks.pop(player.nick, None)
                 player.nick = nick
                 self.playernicks[nick] = player
+
+            if (jidchanged):
+                # We have to change the player's JID, and his key in
+                # self.players.
+                self.log.info('player %s has changed to resource %s',
+                    player.jidstr, jidstr)
+                self.players.pop(player.jidstr)
+                player.jid = jid
+                player.jidstr = unicode(jid)
+                self.players[jidstr] = player
 
             if (not player.live):
                 self.log.info('player %s has rejoined the table',

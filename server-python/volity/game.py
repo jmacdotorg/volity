@@ -1017,8 +1017,8 @@ class Seat:
     Public methods:
 
     getplayerlist() -- get all the Players in this seat.
-    getplayerhistory() -- get the JIDs of all players who have sat in this
-        Seat during the current game.
+    getplayerhistory() -- get the (bare) JIDs of all players who have sat in
+        this Seat during the current game.
     isempty() -- is anyone sitting here?
     isrequired() -- is this a required seat?
     isingame() -- is this Seat involved in the current game?
@@ -1035,10 +1035,10 @@ class Seat:
     required -- whether this is a required seat.
     ingame -- whether this seat is participating in the current game.
     playerlist -- the Players in this seat.
-    playerhistory -- the JIDs of the players who have sat in this seat during
-        the current game. (The *playerlist* is a subset of the *playerhistory*.
-        The *playerhistory* may contain players who used to sit here, but
-        changed seats during a game suspension.)
+    playerhistory -- the bare JIDs of the players who have sat in this seat
+        during the current game. (The *playerlist* is a subset of the
+        *playerhistory*. The *playerhistory* may contain players who used to
+        sit here, but changed seats during a game suspension.)
     """
     
     def __init__(self, game, id, required=True):

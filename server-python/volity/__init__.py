@@ -68,6 +68,12 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.0:
+Accept a player back into the game even if he reconnects with a different
+    JID resource. We still permit a player to play against himself with
+    two different JID resources. (This change works with the Javolin change
+    to use randomized resource strings.)
+
 - 1.4.6:
 Added a struct argument to the receive_state RPC.
 
