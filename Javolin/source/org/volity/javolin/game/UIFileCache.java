@@ -21,6 +21,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.zip.*;
+import org.volity.javolin.JavolinApp;
 
 /**
  * Manages the on-disk cache of the Volity UI files.
@@ -64,11 +65,11 @@ public class UIFileCache
 
         if (!MacStyle) 
         {
-            cacheDirName += sSep + ".Javolin";
+            cacheDirName += sSep + "." + JavolinApp.getAppName();
         }
         else 
         {
-            cacheDirName += sSep + "Library" + sSep + "Caches" + sSep + "Javolin";
+            cacheDirName += sSep + "Library" + sSep + "Caches" + sSep + JavolinApp.getAppName();
         }
         mFileCacheDir = new File(cacheDirName, "UIFileCache");
         mDirCacheDir = new File(cacheDirName, "UIDirCache");
