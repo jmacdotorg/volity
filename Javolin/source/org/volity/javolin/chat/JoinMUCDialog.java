@@ -19,6 +19,7 @@ package org.volity.javolin.chat;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Iterator;
 import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
@@ -38,6 +39,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     private JButton mCancelButton;
     private JButton mJoinButton;
 
+    private JavolinApp mOwner;
     private XMPPConnection mConnection;
     private MUCWindow mMucWindow;
 
@@ -47,10 +49,11 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      * @param owner       The Frame from which the dialog is displayed.
      * @param connection  The current active XMPPConnection.
      */
-    public JoinMUCDialog(Frame owner, XMPPConnection connection)
+    public JoinMUCDialog(JavolinApp owner, XMPPConnection connection)
     {
         super(owner, JavolinApp.getAppName() + ": Join Multi-user Chat", true, NODENAME);
 
+        mOwner = owner;
         mConnection = connection;
 
         // Set up dialog
@@ -98,13 +101,36 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      */
     private void doJoin()
     {
+        if (mMucIdField.getText().equals("")) {
+            mMucIdField.requestFocusInWindow();
+            return;
+        }
+
+        if (mNicknameField.getText().equals("")) {
+            mNicknameField.requestFocusInWindow();
+            return;
+        }
+
         // Store field values in preferences
         saveFieldValues();
+
+        String mucID = mMucIdField.getText();
+
+        // Make sure we're not already in this MUC.
+        for (Iterator it = mOwner.getMucWindows(); it.hasNext(); ) {
+            MUCWindow win = (MUCWindow)it.next();
+            if (mucID.equals(win.getRoom())) {
+                // We are. Bring up the existing window, and exit.
+                dispose();
+                win.show();
+                return;
+            }
+        }
 
         // Create the MUCWindow
         try
         {
-            mMucWindow = new MUCWindow(mConnection, mMucIdField.getText(),
+            mMucWindow = new MUCWindow(mConnection, mucID,
                 mNicknameField.getText());
 
             dispose();

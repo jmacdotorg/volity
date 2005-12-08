@@ -953,6 +953,20 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * Return the list of MucWindow objects we have open.
+     */ 
+    public Iterator getMucWindows() {
+        return mMucWindows.iterator();
+    }
+
+    /**
+     * Return the list of TableWindow objects we have open.
+     */ 
+    public Iterator getTableWindows() {
+        return mTableWindows.iterator();
+    }
+
+    /**
      * Return the RosterPanel. (Which is useful for the invitation mechanism.)
      */
     public RosterPanel getRosterPanel() 

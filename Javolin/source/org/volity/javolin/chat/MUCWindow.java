@@ -205,6 +205,14 @@ public class MUCWindow extends JFrame implements PacketListener
             getWidth() - 100));
     }
 
+    /*
+     * Returns the name of the MUC room.
+     */
+    public String getRoom() 
+    {
+        return mMucObject.getRoom();
+    }
+
     /**
      * Updates the list of users in the MUC.
      */

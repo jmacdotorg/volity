@@ -571,6 +571,14 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
+     * Return the MUC JID (as a string) of the table.
+     */
+    public String getRoom()
+    {
+        return mGameTable.getRoom();
+    }
+
+    /**
      * Gets the game token translator belonging to the table.
      *
      * @return   The TranslateToken belonging to the table.

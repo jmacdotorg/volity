@@ -77,6 +77,9 @@ public class MakeTableWindow
      *   void succeed(TableWindow win);
      *   void fail();
      *
+     * In the case of succeed, the window may be a newly-created TableWindow or
+     * one that previously existed.
+     *
      * Whichever method is called will be called in the Swing UI thread.
      * Implementations of these methods must be fast -- if they block, the app
      * will lag.
@@ -169,6 +172,20 @@ public class MakeTableWindow
         }
 
         // Join an existing table.
+
+        // Stage 0: check to see if we're already connected to a MUC of this
+        // name. If so, we're done.
+
+        for (Iterator it = mApp.getTableWindows(); it.hasNext(); ) {
+            TableWindow win = (TableWindow)it.next();
+            if (mTableID.equals(win.getRoom())) {
+                // We are. Bring up the existing window, and exit.
+                callbackAlreadyConnected(win);
+                win.show();
+                return;
+            }
+        }
+
 
         // Stage 1: check to see if the MUC exists.
 
@@ -599,6 +616,14 @@ public class MakeTableWindow
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
         if (mCallback != null)
             mCallback.fail();
+    }
+
+    private void callbackAlreadyConnected(TableWindow win) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+        assert (mTableWindow == null);
+        assert (win != null);
+        if (mCallback != null)
+            mCallback.succeed(win);
     }
 
     private void callbackSucceed() {
