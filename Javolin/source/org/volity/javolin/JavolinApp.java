@@ -55,8 +55,14 @@ public class JavolinApp extends JFrame
 
     private final static String NODENAME = "MainAppWin";
 
+    private final static String ADDUSER_LABEL = "Add";
+    private final static String DELETEUSER_LABEL = "Delete";
+    private final static String CHAT_LABEL = "Chat";
     private final static ImageIcon CONNECTED_ICON;
     private final static ImageIcon DISCONNECTED_ICON;
+    private final static ImageIcon ADDUSER_ICON;
+    private final static ImageIcon DELETEUSER_ICON;
+    private final static ImageIcon CHAT_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache(PlatformWrapper.isRunningOnMac());
@@ -95,6 +101,11 @@ public class JavolinApp extends JFrame
             new ImageIcon(JavolinApp.class.getResource("Connected_Icon.png"));
         DISCONNECTED_ICON =
             new ImageIcon(JavolinApp.class.getResource("Disconnected_Icon.png"));
+        ADDUSER_ICON =
+            new ImageIcon(JavolinApp.class.getResource("AddUser_ButIcon.png"));
+        DELETEUSER_ICON = 
+            new ImageIcon(JavolinApp.class.getResource("DeleteUser_ButIcon.png"));
+        CHAT_ICON = new ImageIcon(JavolinApp.class.getResource("Chat_ButIcon.png"));
     }
 
     /**
@@ -795,6 +806,7 @@ public class JavolinApp extends JFrame
      */
     private void doAddUserBut()
     {
+        //### if we have a "from" user selected, prefill it into the dialog box
         AddUserDialog addUserDlg = new AddUserDialog(this, mConnection.getRoster());
         addUserDlg.show();
     }
@@ -1136,21 +1148,17 @@ public class JavolinApp extends JFrame
         toolbar.setFloatable(false);
         cPane.add(toolbar, BorderLayout.NORTH);
 
-        ImageIcon image =
-            new ImageIcon(getClass().getResource("AddUser_ButIcon.png"));
-        mAddUserBut = new JButton(image);
-        mAddUserBut.setToolTipText("Add user");
+        mAddUserBut = new JButton(ADDUSER_LABEL, ADDUSER_ICON);
+        mAddUserBut.setToolTipText("Add new user");
         mAddUserBut.addActionListener(this);
         toolbar.add(mAddUserBut);
 
-        image = new ImageIcon(getClass().getResource("DeleteUser_ButIcon.png"));
-        mDelUserBut = new JButton(image);
+        mDelUserBut = new JButton(DELETEUSER_LABEL, DELETEUSER_ICON);
         mDelUserBut.setToolTipText("Delete user");
         mDelUserBut.addActionListener(this);
         toolbar.add(mDelUserBut);
 
-        image = new ImageIcon(getClass().getResource("Chat_ButIcon.png"));
-        mChatBut = new JButton(image);
+        mChatBut = new JButton(CHAT_LABEL, CHAT_ICON);
         mChatBut.setToolTipText("Chat with user");
         mChatBut.addActionListener(this);
         toolbar.add(mChatBut);
