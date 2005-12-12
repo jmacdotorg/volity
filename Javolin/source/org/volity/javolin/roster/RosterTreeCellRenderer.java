@@ -20,6 +20,7 @@ package org.volity.javolin.roster;
 import java.awt.*;
 import javax.swing.*;
 import javax.swing.tree.*;
+import org.jivesoftware.smack.packet.RosterPacket;
 
 /**
  * Custom tree item renderer for displaying a Jabber user in the roster tree.
@@ -29,6 +30,7 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
     private final static ImageIcon AVAILABLE_ICON;
     private final static ImageIcon VOL_AVAILABLE_ICON;
     private final static ImageIcon UNAVAILABLE_ICON;
+    private final static ImageIcon REVERSE_ICON;
     private final static ImageIcon BUSY_ICON;
     private final static ImageIcon VOL_BUSY_ICON;
 
@@ -40,6 +42,8 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
             "VolAvail_TreeIcon.png"));
         UNAVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Unavail_TreeIcon.png"));
+        REVERSE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
+            "Reverse_TreeIcon.png"));
         BUSY_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Busy_TreeIcon.png"));
         VOL_BUSY_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
@@ -71,7 +75,9 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
         {
             RosterTreeItem userItem = (RosterTreeItem)(theNode.getUserObject());
 
-            // Set the user icon
+            // Set the user icon. Yes, this is a long and ugly conditional
+            // tree.
+
             if (userItem.isAvailable())
             {
                 if (userItem.isVolityClient())
@@ -99,7 +105,14 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
             }
             else
             {
-                setIcon(UNAVAILABLE_ICON);
+                if (userItem.getSubType() == RosterPacket.ItemType.FROM)
+                {
+                    setIcon(REVERSE_ICON);
+                }
+                else 
+                {
+                    setIcon(UNAVAILABLE_ICON);
+                }
             }
         }
         return this;

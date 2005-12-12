@@ -78,7 +78,7 @@ public class PrefsDialog extends JFrame
     private static PrefsDialog solePrefsDialog = null;
 
     /*
-     * Map of node (String) to listeners (List of Runnables).
+     * Map of node (String) to listeners (List of ChangeListeners).
      */
     private static Map changeListeners = new HashMap();
 
@@ -96,13 +96,14 @@ public class PrefsDialog extends JFrame
     /**
      * Notify listeners of changes in a particular group of preferences.
      */
-    private static void noticeChange(String node) {
+    private static void noticeChange(String node, Object source) {
         List listeners = (List)changeListeners.get(node);
         if (listeners != null) {
+            ChangeEvent ev = new ChangeEvent(source);
             for (Iterator it = listeners.iterator(); it.hasNext(); ) {
-                Runnable listener = (Runnable)it.next();
-                System.out.println("### change " + node + ": " + listener.toString());
-                listener.run();
+                ChangeListener listener = (ChangeListener)it.next();
+                System.out.println("### change " + node + ": " + source.toString() + " : " + listener.toString());
+                listener.stateChanged(ev);
             }
         }
     }
@@ -112,7 +113,7 @@ public class PrefsDialog extends JFrame
      *
      * The listener will be called in the Swing thread.
      */
-    public static void addListener(String node, Runnable listener) {
+    public static void addListener(String node, ChangeListener listener) {
         List listeners = (List)changeListeners.get(node);
         if (listeners == null) {
             listeners = new ArrayList();
@@ -124,7 +125,7 @@ public class PrefsDialog extends JFrame
     /**
      * Remove a listener for changes in a particular group of preferences.
      */
-    public static void removeListener(String node, Runnable listener) {
+    public static void removeListener(String node, ChangeListener listener) {
         List listeners = (List)changeListeners.get(node);
         if (listeners != null) {
             listeners.remove(listener);
@@ -196,7 +197,7 @@ public class PrefsDialog extends JFrame
                     prefRosterShowOffline = mRosterShowOffline.isSelected();
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(ROSTER_DISPLAY_OPTIONS);
                     prefs.putBoolean(ROSTERSHOWOFFLINE_KEY, prefRosterShowOffline);
-                    noticeChange(ROSTER_DISPLAY_OPTIONS);
+                    noticeChange(ROSTER_DISPLAY_OPTIONS, ROSTERSHOWOFFLINE_KEY);
                 }
             });
 
@@ -205,7 +206,7 @@ public class PrefsDialog extends JFrame
                     prefRosterShowReverse = mRosterShowReverse.isSelected();
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(ROSTER_DISPLAY_OPTIONS);
                     prefs.putBoolean(ROSTERSHOWREVERSE_KEY, prefRosterShowReverse);
-                    noticeChange(ROSTER_DISPLAY_OPTIONS);
+                    noticeChange(ROSTER_DISPLAY_OPTIONS, ROSTERSHOWREVERSE_KEY);
                 }
             });
 
@@ -214,7 +215,7 @@ public class PrefsDialog extends JFrame
                     prefRosterNotifySubscriptions = mRosterNotifySubscriptions.isSelected();
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(ROSTER_DISPLAY_OPTIONS);
                     prefs.putBoolean(ROSTERNOTIFYSUBSCRIPTIONS_KEY, prefRosterNotifySubscriptions);
-                    noticeChange(ROSTER_DISPLAY_OPTIONS);
+                    noticeChange(ROSTER_DISPLAY_OPTIONS, ROSTERNOTIFYSUBSCRIPTIONS_KEY);
                 }
             });
 
@@ -225,7 +226,7 @@ public class PrefsDialog extends JFrame
                         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(CHAT_COLOR_OPTIONS);
                         prefs.putInt(CHATNAMESHADE_KEY, prefChatNameShade);
                         updateChatSampleText();
-                        noticeChange(CHAT_COLOR_OPTIONS);
+                        noticeChange(CHAT_COLOR_OPTIONS, CHATNAMESHADE_KEY);
                     }
                 }
             });
@@ -237,7 +238,7 @@ public class PrefsDialog extends JFrame
                         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(CHAT_COLOR_OPTIONS);
                         prefs.putInt(CHATBODYSHADE_KEY, prefChatBodyShade);
                         updateChatSampleText();
-                        noticeChange(CHAT_COLOR_OPTIONS);
+                        noticeChange(CHAT_COLOR_OPTIONS, CHATBODYSHADE_KEY);
                     }
                 }
             });

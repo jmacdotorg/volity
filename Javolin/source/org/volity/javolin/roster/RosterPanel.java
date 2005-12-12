@@ -30,6 +30,7 @@ import org.jivesoftware.smack.RosterListener;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.RosterPacket;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.CapPacketExtension;
 import org.volity.javolin.CapPresenceFactory;
@@ -45,7 +46,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     private List mRosterPanelListeners;
     private Roster mRoster;
 
-    private Runnable mPrefsChangeListener;
+    private ChangeListener mPrefsChangeListener;
 
     /**
      * Constructor.
@@ -80,8 +81,8 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                 }
             });
 
-        mPrefsChangeListener = new Runnable() {
-                public void run() {
+        mPrefsChangeListener = new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
                     repopulate();
                 }
             };
@@ -194,7 +195,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
         boolean showoffline = PrefsDialog.getRosterShowOffline();
-
+        boolean showfroms = PrefsDialog.getRosterShowReverse();
 
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode)(mTreeModel.getRoot());
 
@@ -215,6 +216,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         if (mRoster != null)
         {
             List unavailUsers = new Vector();
+            List fromUsers = new Vector();
             Iterator usersIter = mRoster.getEntries();
 
             MutableTreeNode newNode = null;
@@ -232,30 +234,55 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
 
                 newNode = new DefaultMutableTreeNode(item);
 
-                // Remember node if it's the one to select after populating, and the item
-                // will be visible in the tree
-                if (((selUserId != null) && (item.getId().equals(selUserId))) &&
-                    (item.isAvailable() || showoffline))
+                RosterPacket.ItemType subtype = entry.getType();
+                boolean isavail = item.isAvailable();
+
+                // Do we not display this one?
+                if (subtype == RosterPacket.ItemType.NONE)
+                    continue;
+                if (subtype == RosterPacket.ItemType.FROM) {
+                    if (!showfroms) 
+                        continue;
+                }
+                else {
+                    // Don't check availability for FROM users
+                    if (!isavail && !showoffline)
+                        continue;
+                }
+
+                // Remember node if it's the one to select after populating
+                if (selUserId != null && item.getId().equals(selUserId))
                 {
                     nodeToSelect = newNode;
                 }
 
-                if (item.isAvailable())
+                if (subtype == RosterPacket.ItemType.FROM)
                 {
-                    // Add available users to tree
-                    rootNode.add(newNode);
+                    // Save "from" users to List to add later
+                    fromUsers.add(newNode);
                 }
-                else if (showoffline)
+                else if (!isavail)
                 {
                     // Save unavailable users to List to add later
                     unavailUsers.add(newNode);
                 }
+                else
+                {
+                    // Add available, subscribed users to tree now
+                    rootNode.add(newNode);
+                }
             }
 
-            // Add unavailable users to tree
+            // Add unavailable users to tree, after all the others
             for (int n = 0; n < unavailUsers.size(); n++)
             {
                 rootNode.add((MutableTreeNode)unavailUsers.get(n));
+            }
+
+            // Add reverse-sub users to tree, after all the others
+            for (int n = 0; n < fromUsers.size(); n++)
+            {
+                rootNode.add((MutableTreeNode)fromUsers.get(n));
             }
         }
 

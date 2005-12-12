@@ -29,6 +29,7 @@ public class RosterTreeItem
     private String mNickname;
     private Presence.Type mPresType = Presence.Type.UNAVAILABLE;
     private Presence.Mode mPresMode = Presence.Mode.AVAILABLE;
+    private RosterPacket.ItemType mSubType = RosterPacket.ItemType.NONE;
     private boolean mVolityClient = false;
     private String mMessage;
 
@@ -41,6 +42,7 @@ public class RosterTreeItem
     public RosterTreeItem(RosterEntry entry, Presence presence, boolean isVolityClient)
     {
         mID = entry.getUser();
+        mSubType = entry.getType();
 
         mNickname = entry.getName();
         if (mNickname == null)
@@ -120,6 +122,14 @@ public class RosterTreeItem
     {
         return (mPresMode != Presence.Mode.AVAILABLE) &&
             (mPresMode != Presence.Mode.CHAT);
+    }
+
+    /**
+     * Get the subscription type (FROM/TO/BOTH/NONE) of the user.
+     */
+    public RosterPacket.ItemType getSubType() 
+    {
+        return mSubType;
     }
 
     /**

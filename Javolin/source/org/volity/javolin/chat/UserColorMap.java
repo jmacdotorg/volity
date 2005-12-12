@@ -19,6 +19,8 @@ package org.volity.javolin.chat;
 
 import java.awt.*;
 import java.util.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import org.volity.javolin.PrefsDialog;
 
 /**
@@ -38,7 +40,7 @@ public class UserColorMap
     private static final float VALUE_LIMIT = 0.4f;
 
     private Map mHueMap;
-    private Runnable mChangeListener;
+    private ChangeListener mChangeListener;
     
     // These values are used for calculating the next hue
     private int mHueNumerator = 0;
@@ -51,8 +53,8 @@ public class UserColorMap
     public UserColorMap()
     {
         mHueMap = new Hashtable();
-        mChangeListener = new Runnable() {
-                public void run() {
+        mChangeListener = new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
                     clearCachedColors();
                 }
             };

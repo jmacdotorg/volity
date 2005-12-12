@@ -3,6 +3,8 @@ package org.volity.javolin.game;
 import java.awt.*;
 import java.util.*;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.SimpleAttributeSet;
 import org.volity.client.*;
 import org.volity.javolin.ErrorWrapper;
@@ -31,7 +33,7 @@ public class SeatChart
     Map mSeatPanels;        // maps String IDs to SeatPanel objects
     SeatPanel mUnseatPanel; // for unseated players
 
-    Runnable mColorChangeListener;
+    ChangeListener mColorChangeListener;
 
     /**
      * @param table the GameTable to watch. (The SeatChart sets itself up as a
@@ -67,8 +69,8 @@ public class SeatChart
 
         mTable.addStatusListener(this);
 
-        mColorChangeListener = new Runnable() {
-                public void run() {
+        mColorChangeListener = new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
                     // redraw seat panels -- italicization may have changed
                     for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
                         Seat seat = (Seat)it.next();

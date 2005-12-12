@@ -23,6 +23,8 @@ import java.text.*;
 import java.util.*;
 import java.util.prefs.*;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.text.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -59,7 +61,7 @@ public class MUCWindow extends JFrame implements PacketListener
     private XMPPConnection mConnection;
     private MultiUserChat mMucObject;
 
-    private Runnable mColorChangeListener;
+    private ChangeListener mColorChangeListener;
 
     /**
      * Constructor.
@@ -128,8 +130,8 @@ public class MUCWindow extends JFrame implements PacketListener
                 }
             });
 
-        mColorChangeListener = new Runnable() {
-                public void run() {
+        mColorChangeListener = new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
                     updateUserList();
                 }
             };
