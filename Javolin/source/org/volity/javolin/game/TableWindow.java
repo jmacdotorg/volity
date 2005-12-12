@@ -501,6 +501,12 @@ public class TableWindow extends JFrame implements PacketListener
             mGameTable.leave();
             mGameTable = null;
         }
+
+        if (mSeatChart != null)
+            mSeatChart.dispose();
+
+        if (mUserColorMap != null)
+            mUserColorMap.dispose();
     }
 
     /**
@@ -728,7 +734,7 @@ public class TableWindow extends JFrame implements PacketListener
         // Append received message
         boolean hasNick = ((nickname != null) && (!nickname.equals("")));
 
-        String nickText = hasNick ? nickname + ":" : "***";
+        String nickText = hasNick ? (nickname + ":") : "***";
 
         Color nameColor =
             hasNick ? mUserColorMap.getUserNameColor(nickname) : Color.BLACK;

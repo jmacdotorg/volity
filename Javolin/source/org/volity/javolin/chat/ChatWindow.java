@@ -127,6 +127,7 @@ public class ChatWindow extends JFrame implements PacketListener
                 {
                     // Leave the chat room when the window is closed
                     saveWindowState();
+                    mUserColorMap.dispose();
                 }
 
                 public void windowOpened(WindowEvent we)

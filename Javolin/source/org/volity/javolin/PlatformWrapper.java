@@ -74,7 +74,7 @@ public class PlatformWrapper
 
     /**
      * Test whether the application framework comes with an application menu,
-     * containing About and Quit menu options.
+     * containing About, Preferences, and Quit menu options.
      *
      * Currently returns true only on Mac OS X.
      */
@@ -88,7 +88,9 @@ public class PlatformWrapper
      *
      * @param doAbout a Runnable which performs the About menu option. (Null
      *        does the default action, which is to display a boring About 
-     *        box that just said "Java".)
+     *        box that just says "Java".)
+     * @param doPreferences a Runnable which performs the Preferences menu 
+     *        option. (Null does the default action, which is nothing.)
      * @param doQuit a Runnable which performs the Quit menu option. (Null
      *        does the default action, which is to shut down the app
      *        immediately.)
@@ -97,6 +99,7 @@ public class PlatformWrapper
      */
     public static boolean setApplicationMenuHandlers(
         Runnable doAbout,
+        Runnable doPreferences,
         Runnable doQuit,
         JavolinApp.RunnableFile doFile) {
 
@@ -111,6 +114,12 @@ public class PlatformWrapper
                 Method methGet = classApplication.getMethod(
                     "getApplication", null);
                 Object app = methGet.invoke(null, null);
+
+                // app.setEnabledPreferencesMenu(true);
+                Method methEnabledPreferencesMenu = classApplication.getMethod(
+                    "setEnabledPreferencesMenu", new Class[] { Boolean.TYPE });
+                methEnabledPreferencesMenu.invoke(app, new Object[] { new Boolean(true)});
+
                 Class[] classls = new Class[] { intApplicationListener };
                 Method methAdd = classApplication.getMethod(
                     "addApplicationListener", classls);
@@ -118,7 +127,7 @@ public class PlatformWrapper
                 // listener = new ApplicationListener() { ... };
                 Class[] interfaces = new Class[] { intApplicationListener };
                 InvocationHandler handler = new AppListenerInvocationHandler(
-                    doAbout, doQuit, doFile);
+                    doAbout, doPreferences, doQuit, doFile);
                 Class proxyClass = Proxy.getProxyClass(
                     intApplicationListener.getClassLoader(), 
                     interfaces);
@@ -153,16 +162,18 @@ public class PlatformWrapper
         implements InvocationHandler 
     {
         Runnable mDoAbout;
+        Runnable mDoPreferences;
         Runnable mDoQuit;
         JavolinApp.RunnableFile mDoFile;
         Class classApplicationEvent;
         Method methEventSetHandled;
         Method methEventGetFilename;
 
-        AppListenerInvocationHandler(Runnable doAbout, Runnable doQuit,
-            JavolinApp.RunnableFile doFile)
+        AppListenerInvocationHandler(Runnable doAbout, Runnable doPreferences,
+            Runnable doQuit, JavolinApp.RunnableFile doFile)
             throws ClassNotFoundException, NoSuchMethodException {
             mDoAbout = doAbout;
+            mDoPreferences = doPreferences;
             mDoQuit = doQuit;
             mDoFile = doFile;
 
@@ -185,6 +196,12 @@ public class PlatformWrapper
                     mDoAbout.run();
                 }
             }
+            if (methName.equals("handlePreferences")) {
+                if (mDoPreferences != null) {
+                    setEventHandled(ev, true);
+                    mDoPreferences.run();
+                }
+            }
             else if (methName.equals("handleQuit")) {
                 /* The Quit event is backwards; you do setHandled(false) if
                  * you're doing the work, setHandled(true) if you want the
@@ -205,7 +222,6 @@ public class PlatformWrapper
             }
             else {
                 // handleOpenApplication
-                // handlePreferences
                 // handlePrintFile
                 // handleReOpenApplication
             }

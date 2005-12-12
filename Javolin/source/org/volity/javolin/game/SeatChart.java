@@ -6,6 +6,7 @@ import javax.swing.*;
 import javax.swing.text.SimpleAttributeSet;
 import org.volity.client.*;
 import org.volity.javolin.ErrorWrapper;
+import org.volity.javolin.PrefsDialog;
 import org.volity.javolin.chat.UserColorMap;
 
 /**
@@ -29,6 +30,8 @@ public class SeatChart
 
     Map mSeatPanels;        // maps String IDs to SeatPanel objects
     SeatPanel mUnseatPanel; // for unseated players
+
+    Runnable mColorChangeListener;
 
     /**
      * @param table the GameTable to watch. (The SeatChart sets itself up as a
@@ -63,6 +66,26 @@ public class SeatChart
         }
 
         mTable.addStatusListener(this);
+
+        mColorChangeListener = new Runnable() {
+                public void run() {
+                    // redraw seat panels -- italicization may have changed
+                    for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
+                        Seat seat = (Seat)it.next();
+                        adjustOnePanel(seat);
+                    }
+                    adjustOnePanel((Seat)null);
+                }
+            };
+        PrefsDialog.addListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+            mColorChangeListener);
+    }
+
+    /** Clean up this component. */
+    public void dispose() {
+        mTable.removeStatusListener(this);
+        PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+            mColorChangeListener);
     }
 
     /** Return the UI component that displays the chart. */

@@ -59,6 +59,8 @@ public class MUCWindow extends JFrame implements PacketListener
     private XMPPConnection mConnection;
     private MultiUserChat mMucObject;
 
+    private Runnable mColorChangeListener;
+
     /**
      * Constructor.
      *
@@ -114,6 +116,9 @@ public class MUCWindow extends JFrame implements PacketListener
                     // Leave the chat room when the window is closed
                     saveWindowState();
                     mMucObject.leave();
+                    mUserColorMap.dispose();
+                    PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+                        mColorChangeListener);
                 }
 
                 public void windowOpened(WindowEvent we)
@@ -122,6 +127,14 @@ public class MUCWindow extends JFrame implements PacketListener
                     mInputText.requestFocusInWindow();
                 }
             });
+
+        mColorChangeListener = new Runnable() {
+                public void run() {
+                    updateUserList();
+                }
+            };
+        PrefsDialog.addListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+            mColorChangeListener);
 
         // Register as message listener.
         mMucObject.addMessageListener(this);

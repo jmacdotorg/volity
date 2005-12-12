@@ -19,6 +19,7 @@ package org.volity.javolin.chat;
 
 import java.awt.*;
 import java.util.*;
+import org.volity.javolin.PrefsDialog;
 
 /**
  * Maps chat users to colors for message text. This allows each user to have a
@@ -33,13 +34,11 @@ public class UserColorMap
 {
     /* A maximum value (in the "HSV" sense) for text colors. Values higher than
      * this are hard to read on a light background.
-     *
-     * XXX People (I speak for myself) are going to want this to be a
-     * preference setting. In fact, two preferences settings (title and body).
      */
     private static final float VALUE_LIMIT = 0.4f;
 
     private Map mHueMap;
+    private Runnable mChangeListener;
     
     // These values are used for calculating the next hue
     private int mHueNumerator = 0;
@@ -52,6 +51,22 @@ public class UserColorMap
     public UserColorMap()
     {
         mHueMap = new Hashtable();
+        mChangeListener = new Runnable() {
+                public void run() {
+                    clearCachedColors();
+                }
+            };
+        PrefsDialog.addListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+            mChangeListener);
+    }
+
+    /**
+     * Finalizer. Call this when you no longer need the UserColorMap.
+     */
+    public void dispose() 
+    {
+        PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+            mChangeListener);
     }
 
     /**
@@ -60,6 +75,7 @@ public class UserColorMap
      */
     private class ColorEntry 
     {
+        Color mBaseColor;
         Color mTitleColor;
         Color mBodyColor;
 
@@ -82,8 +98,9 @@ public class UserColorMap
                 col = new Color(arr[0] * bright, arr[1] * bright, arr[2] * bright);
             }
 
-            mTitleColor = col;
-            mBodyColor = col.darker();
+            mBaseColor = col;
+            mTitleColor = null;
+            mBodyColor = null;
         }
 
         /**
@@ -92,8 +109,9 @@ public class UserColorMap
          */
         public ColorEntry(Color col)
         {
-            mTitleColor = col;
-            mBodyColor = col.darker();
+            mBaseColor = col;
+            mTitleColor = null;
+            mBodyColor = null;
         }
     }
 
@@ -230,6 +248,14 @@ public class UserColorMap
         mHueMap.put(nick, ent);
     }
 
+    private void clearCachedColors() {
+        for (Iterator it = mHueMap.values().iterator(); it.hasNext(); ) {
+            ColorEntry ent = (ColorEntry)it.next();
+            ent.mTitleColor = null;
+            ent.mBodyColor = null;
+        }
+    }
+
     /**
      * Gets name tag color associated with the given user. If there is no color
      * associated with this user, the next available color will be assigned to it.
@@ -240,6 +266,10 @@ public class UserColorMap
     public Color getUserNameColor(String user)
     {
         ColorEntry ent = getUserEntry(user);
+        if (ent.mTitleColor == null) {
+            ent.mTitleColor = PrefsDialog.transformColor(ent.mBaseColor,
+                PrefsDialog.getChatNameShade());
+        }
         return ent.mTitleColor;
     }
 
@@ -253,6 +283,10 @@ public class UserColorMap
     public Color getUserTextColor(String user)
     {
         ColorEntry ent = getUserEntry(user);
+        if (ent.mBodyColor == null) {
+            ent.mBodyColor = PrefsDialog.transformColor(ent.mBaseColor,
+                PrefsDialog.getChatBodyShade());
+        }
         return ent.mBodyColor;
     }
 
@@ -267,6 +301,10 @@ public class UserColorMap
     public Color getUserNameColor(String user, String nick)
     {
         ColorEntry ent = getUserEntry(user, nick);
+        if (ent.mTitleColor == null) {
+            ent.mTitleColor = PrefsDialog.transformColor(ent.mBaseColor,
+                PrefsDialog.getChatNameShade());
+        }
         return ent.mTitleColor;
     }
 
@@ -281,6 +319,10 @@ public class UserColorMap
     public Color getUserTextColor(String user, String nick)
     {
         ColorEntry ent = getUserEntry(user, nick);
+        if (ent.mBodyColor == null) {
+            ent.mBodyColor = PrefsDialog.transformColor(ent.mBaseColor,
+                PrefsDialog.getChatBodyShade());
+        }
         return ent.mBodyColor;
     }
 

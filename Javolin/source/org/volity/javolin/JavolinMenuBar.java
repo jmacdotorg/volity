@@ -31,6 +31,7 @@ public class JavolinMenuBar extends JMenuBar
     private static List menuBarList = new ArrayList();
 
     private final static String MENUCMD_ABOUT = "About Javolin...";
+    private final static String MENUCMD_PREFERENCES = "Preferences...";
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";
     private final static String MENUCMD_QUIT = "Exit";
@@ -48,6 +49,7 @@ public class JavolinMenuBar extends JMenuBar
 
     private WindowMenu mWindowMenu;
     private JMenuItem mAboutMenuItem;
+    private JMenuItem mPreferencesMenuItem;
     private JMenuItem mConnectMenuItem;
     private JMenuItem mQuitMenuItem;
     private JMenuItem mNewTableAtMenuItem;
@@ -123,6 +125,14 @@ public class JavolinMenuBar extends JMenuBar
         fileMenu.add(mConnectMenuItem);
 
         fileMenu.addSeparator();
+
+        if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
+            // Only needed if there isn't a built-in Preferences menu
+            mPreferencesMenuItem = new JMenuItem(MENUCMD_PREFERENCES);
+            mPreferencesMenuItem.addActionListener(this);
+            setPlatformMnemonic(mPreferencesMenuItem, KeyEvent.VK_P);
+            fileMenu.add(mPreferencesMenuItem);
+        }
 
         // This one is for debugging, and should be removed for a final
         // release. Well, hidden, anyway.
@@ -295,6 +305,9 @@ public class JavolinMenuBar extends JMenuBar
 
         if (e.getSource() == mAboutMenuItem) {
             mApplication.doAbout();
+        }
+        else if (e.getSource() == mPreferencesMenuItem) {
+            mApplication.doPreferences();
         }
         else if (e.getSource() == mConnectMenuItem) {
             mApplication.doConnectDisconnect();

@@ -54,12 +54,9 @@ public class JavolinApp extends JFrame
     private final static String APPVERSION = "0.1.2";
 
     private final static String NODENAME = "MainAppWin";
-    private final static String SHOW_OFFLINE_USERS_KEY = "ShowOfflineUsers";
 
     private final static ImageIcon CONNECTED_ICON;
     private final static ImageIcon DISCONNECTED_ICON;
-    private final static ImageIcon SHOW_UNAVAIL_ICON;
-    private final static ImageIcon HIDE_UNAVAIL_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache(PlatformWrapper.isRunningOnMac());
@@ -73,7 +70,6 @@ public class JavolinApp extends JFrame
         org.volity.client.protocols.volresp.Handler.setResourcePrefs(sGameResourcePrefs);
     }
 
-    private JButton mShowHideUnavailBut;
     private JButton mAddUserBut;
     private JButton mDelUserBut;
     private JButton mChatBut;
@@ -92,14 +88,9 @@ public class JavolinApp extends JFrame
     List mTableWindows;
     List mChatWindows;
     private Map mUserChatWinMap;
-    private boolean mShowUnavailUsers;
 
     static
     {
-        SHOW_UNAVAIL_ICON =
-            new ImageIcon(JavolinApp.class.getResource("ShowUnavail_ButIcon.png"));
-        HIDE_UNAVAIL_ICON =
-            new ImageIcon(JavolinApp.class.getResource("HideUnavail_ButIcon.png"));
         CONNECTED_ICON =
             new ImageIcon(JavolinApp.class.getResource("Connected_Icon.png"));
         DISCONNECTED_ICON =
@@ -120,6 +111,8 @@ public class JavolinApp extends JFrame
         mChatWindows = new ArrayList();
         mUserChatWinMap = new Hashtable();
 
+        PrefsDialog.loadPreferences();
+
         setTitle(APPNAME + " Roster");
         buildUI();
 
@@ -133,6 +126,9 @@ public class JavolinApp extends JFrame
                     public void run() { doAbout(); }
                 },
                 new Runnable() {
+                    public void run() { doPreferences(); }
+                },
+                new Runnable() {
                     public void run() { doQuit(); }
                 },
                 new RunnableFile() {
@@ -140,10 +136,6 @@ public class JavolinApp extends JFrame
                 });
         }
 
-        // Set roster to show/hide unavailable users based on prefs
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
-        mShowUnavailUsers = prefs.getBoolean(SHOW_OFFLINE_USERS_KEY, true);
-        mRosterPanel.setShowUnavailableUsers(mShowUnavailUsers);
         updateToolBarButtons();
 
         // Add self as listener for RosterPanel events
@@ -363,11 +355,7 @@ public class JavolinApp extends JFrame
      */
     public void actionPerformed(ActionEvent e)
     {
-        if (e.getSource() == mShowHideUnavailBut)
-        {
-            doShowHideUnavailBut();
-        }
-        else if ((e.getSource() == mAddUserBut) || (e.getSource() == mAddUserContextItem))
+        if ((e.getSource() == mAddUserBut) || (e.getSource() == mAddUserContextItem))
         {
             doAddUserBut();
         }
@@ -387,6 +375,15 @@ public class JavolinApp extends JFrame
     void doAbout()
     {
         AboutBox box = AboutBox.getSoleAboutBox();
+        box.show();        
+    }
+
+    /**
+     * Handle the Preferences menu item
+     */
+    void doPreferences()
+    {
+        PrefsDialog box = PrefsDialog.getSolePrefsDialog(this);
         box.show();        
     }
 
@@ -794,20 +791,6 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * Handler for Show/Hide Unavailable Users button.
-     */
-    private void doShowHideUnavailBut()
-    {
-        mShowUnavailUsers = !mShowUnavailUsers;
-
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
-        prefs.putBoolean(SHOW_OFFLINE_USERS_KEY, mShowUnavailUsers);
-
-        mRosterPanel.setShowUnavailableUsers(mShowUnavailUsers);
-        updateToolBarButtons();
-    }
-
-    /**
      * Handler for the Add User button.
      */
     private void doAddUserBut()
@@ -898,18 +881,6 @@ public class JavolinApp extends JFrame
     private void updateToolBarButtons()
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        // Toggle icon and tool tip text of show/hide unavailable users button
-        if (mShowUnavailUsers)
-        {
-            mShowHideUnavailBut.setIcon(HIDE_UNAVAIL_ICON);
-            mShowHideUnavailBut.setToolTipText("Hide offline users");
-        }
-        else
-        {
-            mShowHideUnavailBut.setIcon(SHOW_UNAVAIL_ICON);
-            mShowHideUnavailBut.setToolTipText("Show offline users");
-        }
 
         // Enable/disable appropriate buttons
         RosterTreeItem selectedUser = mRosterPanel.getSelectedRosterItem();
@@ -1164,10 +1135,6 @@ public class JavolinApp extends JFrame
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         cPane.add(toolbar, BorderLayout.NORTH);
-
-        mShowHideUnavailBut = new JButton(HIDE_UNAVAIL_ICON);
-        mShowHideUnavailBut.addActionListener(this);
-        toolbar.add(mShowHideUnavailBut);
 
         ImageIcon image =
             new ImageIcon(getClass().getResource("AddUser_ButIcon.png"));

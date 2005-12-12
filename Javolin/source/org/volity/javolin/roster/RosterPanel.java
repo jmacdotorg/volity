@@ -33,6 +33,7 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.CapPacketExtension;
 import org.volity.javolin.CapPresenceFactory;
+import org.volity.javolin.PrefsDialog;
 
 /**
  * JPanel subclass which contains the roster list and related controls.
@@ -42,8 +43,9 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     private JTree mTree;
     private DefaultTreeModel mTreeModel;
     private List mRosterPanelListeners;
-    private boolean mShowUnavailUsers;
     private Roster mRoster;
+
+    private Runnable mPrefsChangeListener;
 
     /**
      * Constructor.
@@ -77,6 +79,14 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                     }
                 }
             });
+
+        mPrefsChangeListener = new Runnable() {
+                public void run() {
+                    repopulate();
+                }
+            };
+        PrefsDialog.addListener(PrefsDialog.ROSTER_DISPLAY_OPTIONS,
+            mPrefsChangeListener);
     }
 
     /**
@@ -183,6 +193,9 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
+        boolean showoffline = PrefsDialog.getRosterShowOffline();
+
+
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode)(mTreeModel.getRoot());
 
         // Save selected user ID so we can reselect the node for that user after
@@ -222,7 +235,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                 // Remember node if it's the one to select after populating, and the item
                 // will be visible in the tree
                 if (((selUserId != null) && (item.getId().equals(selUserId))) &&
-                    (item.isAvailable() || mShowUnavailUsers))
+                    (item.isAvailable() || showoffline))
                 {
                     nodeToSelect = newNode;
                 }
@@ -232,7 +245,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                     // Add available users to tree
                     rootNode.add(newNode);
                 }
-                else if (mShowUnavailUsers)
+                else if (showoffline)
                 {
                     // Save unavailable users to List to add later
                     unavailUsers.add(newNode);
@@ -274,17 +287,6 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         }
 
         return retVal;
-    }
-
-    /**
-     * Sets whether to display users that are unavailable.
-     *
-     * @param show  true to show unavailable users, false to hide them.
-     */
-    public void setShowUnavailableUsers(boolean show)
-    {
-        mShowUnavailUsers = show;
-        repopulate();
     }
 
     /**
