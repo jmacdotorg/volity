@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.prefs.*;
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.filter.*;
@@ -48,7 +50,7 @@ import org.volity.javolin.roster.*;
  */
 public class JavolinApp extends JFrame 
     implements ActionListener, ConnectionListener,
-               RosterPanelListener, PacketListener, InvitationListener
+               RosterPanelListener, InvitationListener
 {
     private final static String APPNAME = "Javolin";
     private final static String APPVERSION = "0.1.2";
@@ -176,6 +178,15 @@ public class JavolinApp extends JFrame
                 public void componentResized(ComponentEvent e)
                 {
                     mSizePosSaver.saveSizeAndPosition();
+                }
+            });
+
+        PrefsDialog.addListener(PrefsDialog.ROSTER_DISPLAY_OPTIONS,
+            new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
+                    if (ev.getSource() == PrefsDialog.ROSTERNOTIFYSUBSCRIPTIONS_KEY) {
+                        updateSubscriptionPolicy();
+                    }
                 }
             });
 
@@ -441,10 +452,45 @@ public class JavolinApp extends JFrame
         if (mConnection != null)
         {
             mConnection.addConnectionListener(this);
+            updateSubscriptionPolicy();
+
+            PacketFilter filter;
+            PacketListener listener;
 
             // Listen for incoming chat messages
-            PacketFilter filter = new MessageTypeFilter(Message.Type.CHAT);
-            mConnection.addPacketListener(this, filter);
+            filter = new MessageTypeFilter(Message.Type.CHAT);
+            listener = new PacketListener() {
+                    public void processPacket(final Packet packet) {
+                        // Invoke into the Swing thread.
+                        SwingUtilities.invokeLater(new Runnable() {
+                                public void run() {
+                                    if (packet instanceof Message)
+                                        receiveMessage((Message)packet);
+                                }
+                            });
+                    }
+                };
+            mConnection.addPacketListener(listener, filter);
+
+            // Listen for incoming presence-subscription messages
+            filter = new PacketFilter() {
+                    public boolean accept(Packet packet) {
+                        return (packet instanceof Presence 
+                            && ((Presence)packet).getType() == Presence.Type.SUBSCRIBE);
+                    }
+                };
+            listener = new PacketListener() {
+                    public void processPacket(final Packet packet) {
+                        // Invoke into the Swing thread.
+                        SwingUtilities.invokeLater(new Runnable() {
+                                public void run() {
+                                    if (packet instanceof Presence)
+                                        receiveSubscribeRequest((Presence)packet);
+                                }
+                            });
+                    }
+                };
+            mConnection.addPacketListener(listener, filter);
         }
 
         // Assign the roster to the RosterPanel
@@ -1068,36 +1114,84 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * PacketListener interface method implementation. Handles incoming chat messages.
-     *
-     * Called outside Swing thread!
-     *
-     * @param packet  The packet received.
+     * Handles incoming chat messages.
      */
-    public void processPacket(final Packet packet)
+    public void receiveMessage(Message message)
     {
-        // Invoke into the Swing thread.
-        SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    if (packet instanceof Message)
-                    {
-                        Message message = (Message)packet;
-                        String remoteId = StringUtils.parseBareAddress(
-                            message.getFrom());
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-                        // If there is not already a chat window for the
-                        // current user, create one and give it the message.
-                        ChatWindow chatWin = getChatWindowForUser(remoteId);
+        String remoteId = StringUtils.parseBareAddress(message.getFrom());
 
-                        if (chatWin == null)
-                        {
-                            chatWithUser(remoteId);
-                            chatWin = getChatWindowForUser(remoteId);
-                            chatWin.processPacket(message);
-                        }
-                    }
-                }
-            });
+        // If there is not already a chat window for the current user,
+        // create one and give it the message.
+        ChatWindow chatWin = getChatWindowForUser(remoteId);
+
+        if (chatWin == null)
+        {
+            chatWithUser(remoteId);
+            chatWin = getChatWindowForUser(remoteId);
+            chatWin.processPacket(message);
+        }
+    }
+
+    /**
+     * Handles incoming requests-to-put-on-roster.
+     */
+    public void receiveSubscribeRequest(Presence presence) {
+        if (!PrefsDialog.getRosterNotifySubscriptions()) {
+            // Roster will autoaccept
+            return;
+        }
+
+        String jid = presence.getFrom();
+
+        String[] options = { "Permit", "Permit and Add", "Refuse" };
+        int res = JOptionPane.showOptionDialog(this,
+            "The user " + jid + "\n"
+            +"wishes to add you to his or her buddy list.\n"
+            +"Do you want to permit this? If so, do you also\n"
+            +"want to add this user to yours?",
+            getAppName() + ": Request",
+            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+            null,
+            options, options[0]);
+
+        if (res == 0) {
+            Presence response = mConnection.createPresence(Presence.Type.SUBSCRIBED);
+            response.setTo(jid);
+            mConnection.sendPacket(response);
+        }
+        else if (res == 2) {
+            Presence response = mConnection.createPresence(Presence.Type.UNSUBSCRIBED);
+            response.setTo(jid);
+            mConnection.sendPacket(response);
+        }
+        else {
+            Presence response = mConnection.createPresence(Presence.Type.SUBSCRIBED);
+            response.setTo(jid);
+            mConnection.sendPacket(response);
+            try {
+                mConnection.getRoster().createEntry(jid, 
+                    StringUtils.parseResource(jid), null);
+            }
+            catch (XMPPException ex) {
+                new ErrorWrapper(ex);
+                JOptionPane.showMessageDialog(this,
+                    ex.toString(),
+                    JavolinApp.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    protected void updateSubscriptionPolicy() {
+        if (mConnection != null) {
+            Roster roster = mConnection.getRoster();
+            if (PrefsDialog.getRosterNotifySubscriptions())
+                roster.setSubscriptionMode(Roster.SUBSCRIPTION_MANUAL);
+            else
+                roster.setSubscriptionMode(Roster.SUBSCRIPTION_ACCEPT_ALL);
+        }
     }
 
     /**

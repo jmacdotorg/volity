@@ -25,11 +25,11 @@ public class PrefsDialog extends JFrame
     public final static String ROSTER_DISPLAY_OPTIONS = "RosterPrefs";
 
     /* Keys within the various top-level nodes. */
-    private final static String CHATNAMESHADE_KEY = "NameShade";
-    private final static String CHATBODYSHADE_KEY = "BodyShade";
-    private final static String ROSTERSHOWOFFLINE_KEY = "ShowOffline";
-    private final static String ROSTERSHOWREVERSE_KEY = "ShowReverse";
-    private final static String ROSTERNOTIFYSUBSCRIPTIONS_KEY = "NotifySubscriptions";
+    public final static String CHATNAMESHADE_KEY = "NameShade";
+    public final static String CHATBODYSHADE_KEY = "BodyShade";
+    public final static String ROSTERSHOWOFFLINE_KEY = "ShowOffline";
+    public final static String ROSTERSHOWREVERSE_KEY = "ShowReverse";
+    public final static String ROSTERNOTIFYSUBSCRIPTIONS_KEY = "NotifySubscriptions";
 
     private final static int MARGIN = 12; // Space to window edge
     private final static int GAP = 4; // Space between controls
@@ -102,7 +102,6 @@ public class PrefsDialog extends JFrame
             ChangeEvent ev = new ChangeEvent(source);
             for (Iterator it = listeners.iterator(); it.hasNext(); ) {
                 ChangeListener listener = (ChangeListener)it.next();
-                System.out.println("### change " + node + ": " + source.toString() + " : " + listener.toString());
                 listener.stateChanged(ev);
             }
         }
