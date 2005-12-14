@@ -25,6 +25,7 @@ import org.mozilla.javascript.JavaScriptException;
 public class SVGCanvas extends JSVGCanvas 
     implements InterpreterFactory
 {
+    URL uiDocument;
     XMPPConnection connection;
     GameTable table;
     TranslateToken translator;
@@ -64,6 +65,7 @@ public class SVGCanvas extends JSVGCanvas
 
         super();
 
+        this.uiDocument = uiDocument;
         this.connection = connection;
         this.messageHandler = messageHandler;
         this.errorHandler = errorHandler;
@@ -178,7 +180,7 @@ public class SVGCanvas extends JSVGCanvas
 
   class SVGUI extends GameUI {
     SVGUI() {
-      super(connection, SVGCanvas.this.translator, 
+      super(uiDocument, connection, SVGCanvas.this.translator, 
         SVGCanvas.this.messageHandler, SVGCanvas.this.errorHandler);
     }
 

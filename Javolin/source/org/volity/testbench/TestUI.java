@@ -1,9 +1,12 @@
 package org.volity.testbench;
 
 import java.io.*;
+import java.net.URL;
 import java.util.*;
 import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.mozilla.javascript.*;
+import org.volity.client.Audio;
+import org.volity.client.GameUI;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
 
@@ -21,12 +24,14 @@ public abstract class TestUI
         public abstract void print(String msg);
     }
 
-    public interface ErrorHandler {
+    public static abstract class ErrorHandler implements GameUI.ErrorHandler {
         /**
-         * Report a command error.
+         * Report a command error. This is an abstract class because it
+         * "extends" the GameUI ErrorHandler interface.
          */
         public abstract void error(Throwable e);
         public abstract void error(Throwable e, String prefix);
+        public void error(Exception e) { error((Throwable)e); }
     }
 
     public interface Completion {
@@ -76,7 +81,7 @@ public abstract class TestUI
             context.setWrapFactory(rpcWrapFactory);
             try {
                 Object ret = method.call(context, scope, game, params.toArray());
-                if (ret instanceof Undefined) {
+                if (ret == null || ret instanceof Undefined) {
                     // function returned void, but RPC result has to be non-void
                     ret = Boolean.TRUE;
                 }
@@ -235,23 +240,7 @@ public abstract class TestUI
         }
     }
 
-    /** A simple way to define a function object without using reflection. */
-    abstract class Callback extends ScriptableObject implements Function {
-        // Inherited from ScriptableObject.
-        public String getClassName() { return "Function"; }
-        // Inherited from Function.
-        public Object call(Context cx, Scriptable scope, Scriptable thisObj,
-            Object[] args) {
-            return run(args);
-        }
-        // Inherited from Function.
-        public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
-            throw new RuntimeException("Not a constructor.");
-        }
-        /** Run the callback. */
-        public abstract Object run(Object[] args);
-    }
-
+    URL baseURL;
     TranslateToken translator;
     ErrorHandler errorHandler;
     ErrorHandler parentErrorHandler;
@@ -265,10 +254,12 @@ public abstract class TestUI
 
     Map seatObjects = new HashMap();
 
-    public TestUI(TranslateToken translator,
+    public TestUI(URL baseURL,
+        TranslateToken translator,
         MessageHandler messageHandler,
         ErrorHandler parentErrorHandler) {
 
+        this.baseURL = baseURL;
         this.translator = translator;
         this.messageHandler = messageHandler;
         this.parentErrorHandler = parentErrorHandler;
@@ -383,7 +374,7 @@ public abstract class TestUI
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("volity", scope, volity = context.newObject(scope));
             scope.put("info", scope, info = new Info());
-            scope.put("rpc", scope, new Callback() {
+            scope.put("rpc", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
                         try {
                             messageHandler.print("sent RPC: " + prettifyParams(args));
@@ -396,7 +387,7 @@ public abstract class TestUI
                         }
                     }
                 });
-            scope.put("literalmessage", scope, new Callback() {
+            scope.put("literalmessage", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
                         try {
                             if (args.length != 1) {
@@ -410,7 +401,7 @@ public abstract class TestUI
                         }
                     }
                 });
-            scope.put("localize", scope, new Callback() {
+            scope.put("localize", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
                         try {
                             if (args.length == 0)
@@ -423,7 +414,7 @@ public abstract class TestUI
                         }
                     }
                 });
-            scope.put("message", scope, new Callback() {
+            scope.put("message", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
                         try {
                             if (args.length == 0)
@@ -437,11 +428,14 @@ public abstract class TestUI
                         }
                     }
                 });
-            scope.put("seatmark", scope, new Callback() {
+            scope.put("seatmark", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
                         return null;
                     }
                 });
+            scope.put("audio", scope, 
+                GameUI.UIAudio.makeCallableProperty(this, baseURL, 
+                    errorHandler));
         } catch (JavaScriptException e) {
             errorHandler.error(e);
         } finally {
@@ -460,6 +454,10 @@ public abstract class TestUI
      */
     public void setCurrentSeat(String seatId) {
         currentSeat = seatId;
+    }
+
+    public void stopAllSound() {
+        Audio.stopGroup(this);
     }
 
     /**
@@ -614,8 +612,8 @@ public abstract class TestUI
             return getSeatById(currentSeat);
         }
         public String getNickname() { return "XXX-nickname"; }
-        public void setNickname(String nickname) throws Exception {
-            throw new Exception("Cannot change nickname in testbench");
+        public void setNickname(String nickname) {
+            throw new RuntimeException("Cannot change nickname in testbench");
         }
         public Object getAllseats() throws JavaScriptException {
             List seatlist = getDebugInfo().getSeatList();
@@ -662,4 +660,5 @@ public abstract class TestUI
             return ls;
         }
     }
+
 }

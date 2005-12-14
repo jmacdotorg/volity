@@ -1,7 +1,6 @@
 package org.volity.client;
 
 import java.io.*;
-import java.lang.reflect.*;
 import java.net.URL;
 import java.util.*;
 import org.jivesoftware.smack.XMPPConnection;
@@ -10,6 +9,7 @@ import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
+import org.volity.client.Audio;
 import org.volity.client.TranslateToken;
 import org.volity.jabber.*;
 
@@ -31,9 +31,11 @@ public class GameUI implements RPCHandler, PacketFilter {
    *        (will display problems out-of-band -- e.g., a dialog box)
    * @throws IllegalStateException if the connection has not been authenticated
    */
-  public GameUI(XMPPConnection connection, TranslateToken translator,
+  public GameUI(URL baseURL, 
+    XMPPConnection connection, TranslateToken translator,
     MessageHandler messageHandler, ErrorHandler errorHandler) {
 
+    this.baseURL = baseURL;
     this.translator = translator;
     this.errorHandler = errorHandler;
     this.messageHandler = messageHandler;
@@ -45,6 +47,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     responder.start();
   }
 
+  URL baseURL;
   TranslateToken translator;
   ErrorHandler errorHandler;
   MessageHandler messageHandler;
@@ -79,6 +82,7 @@ public class GameUI implements RPCHandler, PacketFilter {
    * Call this when the user interface (e.g., the window) closes.
    */
   public void stop() {
+    Audio.stopGroup(this);
     responder.stop();
   }
 
@@ -164,6 +168,9 @@ public class GameUI implements RPCHandler, PacketFilter {
             return null;
           }
         });
+      scope.put("audio", scope, 
+        UIAudio.makeCallableProperty(this, baseURL, 
+            errorHandler));
     } catch (JavaScriptException e) {
       errorHandler.error(e);
     } finally {
@@ -322,6 +329,175 @@ public class GameUI implements RPCHandler, PacketFilter {
     }
   }
 
+    /**
+     * UIAudio is an ECMA wrapper for Audio objects. It provides the properties
+     * that the UI code uses to manipulate the audio.
+     *
+     * (This is used by Testbench as well as Javolin. That's why it's a static
+     * class.)
+     */
+    public static class UIAudio extends ScriptableObject {
+        {
+            try {
+                defineProperty("url", UIAudio.class, PERMANENT);
+                defineProperty("loop", UIAudio.class, PERMANENT);
+                defineProperty("alt", UIAudio.class, PERMANENT);
+                defineProperty("play", UIAudio.class, PERMANENT);
+            } catch (PropertyException ex) {
+                throw new RuntimeException(ex.toString());
+            }
+        }
+
+        /**
+         * Create a script object which will serve as the factory for audio
+         * objects.
+         *
+         * The object returned by makeCallableProperty should be inserted into
+         * the ECMAScript scope, under the name "audio". When the UI calls this
+         * object (with one or two arguments), an audio object will be created
+         * and returned.
+         *
+         * @param owner the GameUI (or TestUI) which will own these audio
+         * objects. (We need to know the owner in order to kill all sounds when
+         * closing a window.)
+         * @param baseURL the URL of the UI document. (We need to know this in
+         * order to parse relative URLs for sound resources.)
+         * @param errorHandler a service to drop errors into.
+         */
+        public static ScriptableObject makeCallableProperty(final Object owner,
+            final URL baseURL, final ErrorHandler errorHandler) {
+            return new Callback() {
+                    public Object run(Object[] args) {
+                        try {
+                            if (args.length < 1)
+                                throw new Exception("audio() requires at least one argument");
+                            URL url = new URL(baseURL, args[0].toString());
+
+                            // Get the alt tag, if provided
+                            String alt = "";
+                            if (args.length >= 2) {
+                                Object altval = args[1];
+                                if (altval != null && !(altval instanceof Undefined))
+                                    alt = altval.toString();
+                            }
+
+                            Audio audio = new Audio(owner, url, alt);
+                            return new UIAudio(audio, errorHandler);
+                        } catch (Exception ex) {
+                            errorHandler.error(ex);
+                            return null;
+                        }
+                    }
+                };  
+        }
+
+        protected Audio audio;
+        protected ErrorHandler errorHandler;
+
+        /**
+         * The constructor. Do not call this directly; go through
+         * makeCallableProperty.
+         */
+        protected UIAudio(Audio audio, ErrorHandler errorHandler) {
+            this.audio = audio;
+            this.errorHandler = errorHandler;
+        }
+
+        public String getClassName() { return "Audio"; }
+        public Object getDefaultValue(Class typeHint) { 
+            return audio.getURL().toString();
+        }
+
+        public Object getUrl() {
+            return audio.getURL().toString();
+        }
+        public void setUrl(Object val) {
+            throw new RuntimeException("audio.url is immutable");
+        }
+
+        public Object getAlt() {
+            return audio.getAlt();
+        }
+        public void setAlt(Object val) {
+            if (val == null || val instanceof Undefined)
+                val = "";
+            audio.setAlt(val.toString());
+        }
+
+        public Object getLoop() {
+            int loop = audio.getLoop();
+            if (loop == Audio.LOOP_CONTINUOUSLY)
+                return Boolean.TRUE;
+            if (loop == 1)
+                return Boolean.FALSE;
+            return new Integer(loop);
+        }
+        public void setLoop(Object val) {
+            int loop;
+
+            if (val == null || val instanceof Undefined)
+                loop = 1;
+            else if (val == Boolean.TRUE)
+                loop = Audio.LOOP_CONTINUOUSLY;
+            else if (val == Boolean.FALSE)
+                loop = 1;
+            else if (val instanceof Integer)
+                loop = ((Integer)val).intValue();
+            else {
+                loop = (int)Double.parseDouble(val.toString());
+            }
+
+            audio.setLoop(loop);
+        }
+
+        public Object getPlay() {
+            return new Callback() {
+                    public Object run(Object[] args) {
+                        try {
+                            Audio.Instance ain = audio.play();
+                            return new UIAudioInstance(ain);
+                        } catch (Exception ex) {
+                            errorHandler.error(ex);
+                            return null;
+                        }
+                    }
+                };
+        }
+    }
+
+    /**
+     * UIAudioInstance is an ECMA wrapper for Audio.Instance objects.
+     */
+    static class UIAudioInstance extends ScriptableObject {
+        {
+            try {
+                defineProperty("stop", UIAudioInstance.class, PERMANENT);
+            } catch (PropertyException ex) {
+                throw new RuntimeException(ex.toString());
+            }
+        }
+
+        protected Audio.Instance instance;
+
+        public UIAudioInstance(Audio.Instance instance) {
+            this.instance = instance;
+        }
+
+        public String getClassName() { return "AudioInstance"; }
+        public Object getDefaultValue(Class typeHint) { 
+            return toString();
+        }
+
+        public Object getStop() {
+            return new Callback() {
+                    public Object run(Object[] args) {
+                        instance.stop();
+                        return null;
+                    }
+                };
+        }
+    }
+
   /**
    * @param table the table where the game will be played
    */
@@ -385,7 +561,7 @@ public class GameUI implements RPCHandler, PacketFilter {
 
     callUIMethod((Function) method, params, new Completion() {
       public void result(Object obj) {
-        if (obj instanceof Undefined) {
+        if (obj == null || obj instanceof Undefined) {
           // function returned null/void, but RPC result has to be non-void
           obj = Boolean.TRUE;
         }
@@ -460,7 +636,7 @@ public class GameUI implements RPCHandler, PacketFilter {
    * In particular, RPC arrays and structs are List objects and Map
    * objects, respectively, and this turns them both into Scriptables.
    */
-  class RPCWrapFactory extends WrapFactory {
+  static class RPCWrapFactory extends WrapFactory {
     public Object wrap(Context cs, Scriptable scope,
                        Object obj, Class staticType)
     {
@@ -599,9 +775,10 @@ public class GameUI implements RPCHandler, PacketFilter {
   }
 
   /** A simple way to define a function object without using reflection. */
-  abstract class Callback extends ScriptableObject implements Function {
+  public static abstract class Callback extends ScriptableObject implements Function {
     // Inherited from ScriptableObject.
     public String getClassName() { return "Function"; }
+    public Object getDefaultValue(Class typeHint) { return "Function"; }
     // Inherited from Function.
     public Object call(Context cx, Scriptable scope, Scriptable thisObj,
                        Object[] args) {

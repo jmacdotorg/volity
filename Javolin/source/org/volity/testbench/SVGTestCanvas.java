@@ -84,6 +84,7 @@ public class SVGTestCanvas extends JSVGCanvas
      * the SVG file from disk.
      */
     public void reloadUI(DebugInfo debugInfo) {
+        ui.stopAllSound();
         this.debugInfo = debugInfo;
         setURI(uiDocument.toString());
     }
@@ -137,7 +138,7 @@ public class SVGTestCanvas extends JSVGCanvas
         class TestUIInterpreter extends RhinoInterpreter {
             TestUIInterpreter() {
                 super(documentURL);
-                ui = new SVGUI();
+                ui = new SVGUI(documentURL);
                 // Will need the security domain to execute debug scripts.
                 ui.setSecurityDomain(rhinoClassLoader);
                 ui.initGameObjects(getGlobalObject());
@@ -160,8 +161,9 @@ public class SVGTestCanvas extends JSVGCanvas
     public TestUI getUI() { return ui; }
 
     class SVGUI extends TestUI {
-        SVGUI() {
-            super(SVGTestCanvas.this.translator, 
+        SVGUI(URL baseurl) {
+            super(baseurl,
+                SVGTestCanvas.this.translator, 
                 SVGTestCanvas.this.messageHandler,
                 SVGTestCanvas.this.errorHandler);
         }
