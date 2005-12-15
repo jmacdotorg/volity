@@ -472,116 +472,129 @@ sub jabber_presence {
   $self->logger->debug("Got some presence.\n");
   my ($node) = @_;
   if (my $x = $node->get_tag('x', [xmlns=>"http://jabber.org/protocol/muc#user"])) {
-    # Aha, someone has entered the game MUC.
-    # Figure out who it's talking about.
-    my $new_person_jid;
-    # JID is always in an item tag, since the MUC is either non-anonymous
-    # or semi-anonymous, so the moderator (that's me) will have access to
-    # their full JIDs.
-    return unless $x->get_tag('item');
-    $new_person_jid = $x->get_tag('item')->attr('jid');
-    my $kernel = $self->kernel;
-    if (not(defined($new_person_jid)) or $new_person_jid eq $self->jid) {
-      # If there's no JID for this user, that means that the MUC hasn't
-      # been configured yet, and _that_ means that the user is me!
-      # I must have just created it. Well, then.
-      $self->logger->debug("Configuring the new MUC...\n");
-
-      # Request a MUC configuration form. The muc_creation method will
-      # handle it when it comes in.
-      $self->send_query({
-	  query_ns => "http://jabber.org/protocol/muc#owner",
-	  type => "get",
-	  to => $self->muc_jid,
-	  id => 'muc-configuration',
-      });
-
-    } else {
-      # All right, some other yahoo has changed presence.
-      # Note in my list of potential players, depending upon whether
-      # they're coming or going.
-      $self->logger->debug("Looks like a player just joined.\n");
-      my ($nick) = $node->attr('from') =~ /\/(.*)$/;
-      if (defined($node->attr('type')) && ($node->attr('type') eq 'unavailable')) {
-	# Someone's left.
-	my $player = $self->look_up_player_with_jid($new_person_jid);
-	unless ($player) {
-	    # Uh... never mind, then.
-	    return;
-	}
-	$self->logger->debug("Looks like $nick just left the table.");
-	if ($self->game->is_active) {
-	    # They bolted from an active game!
-	    $player->is_missing(1);
-	    # Check to see if that seat is now abandoned.
-	    my $seat = $player->seat;
-	    unless ($seat->is_under_control) {
-		# The seat is uncontrolled!
-		# Grumble at the table.
-		# XXX No 18n.
-		if ($self->game->is_abandoned) {
-		    # Holy crap, _everyone_ has left! Bastards.
-		    # All right, we'll wait for someone to come back.
-		    my $deadline = time + $self->internal_timeout;
-		    until ((time >= $deadline) or (not($self->game->is_abandoned))) {
-			$self->kernel->run_one_timeslice;
-		    }
-		    if ($self->game->is_abandoned) {
-			# OK, give up waiting.
-			$self->suspend_game;
-		    }
-		}
-	    }
-	} else {
-	    # They left during game config? We'll just forget about them.
-	    # If this player was seated, we'll stand them first.
-	    # That way everyone gets zapped with the right status updates.
-	    if ($player->seat) {
-		$self->stand_player($player);
-	    }
-	    # Now just forget about this person.
-	    $self->remove_player_with_jid($new_person_jid);
-	    # Remove this player from the nickanme lookup hash.
-	    delete($self->{nicks}{$nick});
-	    # If the last non-bot player has left, leaving us alone, disconnect.
-	    if ($self->non_bot_check) {
-		$self->logger->debug("But there are still humans here, so I'll keep the table open.");
-	    } else {
-		$self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
-		if ($self->game->is_afoot) {
-		    $self->logger->debug("But first, I'm sending a game record.");
-		    $self->end_game;
-		}
-		$self->stop;
-	    }
-	}
-    } else {
-	my $player;
-	# See if this is a known player, rejoining the table.
-	if ($player = $self->look_up_player_with_jid($new_person_jid)) {
-	    if ($player->is_missing) {
-		$self->logger->debug("$new_person_jid has rejoined the table.");
-		# Mark him as no longer MIA.
-		$player->is_missing(0);
-	    } else {
-		$self->logger->error("Weird... $new_person_jid has rejoined the table, but I don't seem to remember them leaving.");
-	    }
-	} else {
-	    # OK, this player is new to us.
-	    $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
-	    # Also store this player's nickname, for later lookups.
-	    $self->logger->debug( "Storing $new_person_jid, under $nick");
-
-#	    # Tell this newcomer about the current table configuration.
-#	    if (my @required_seat_ids = @{$self->game_class->required_seat_ids}) {
-#		$player->required_seat_list;
-#	    }
-#	    $player->seat_list;
-	}
-#	# Whoever it is, blast the newcomer with full game state.
-#	$player->receive_game_state;
+      # Aha, someone has entered the game MUC.
+      # Figure out who it's talking about.
+      my $new_person_jid;
+      # JID is always in an item tag, since the MUC is either non-anonymous
+      # or semi-anonymous, so the moderator (that's me) will have access to
+      # their full JIDs.
+      return unless $x->get_tag('item');
+      $new_person_jid = $x->get_tag('item')->attr('jid');
+      my $kernel = $self->kernel;
+      if (not(defined($new_person_jid)) or $new_person_jid eq $self->jid) {
+	  # If there's no JID for this user, that means that the MUC hasn't
+	  # been configured yet, and _that_ means that the user is me!
+	  # I must have just created it. Well, then.
+	  $self->logger->debug("Configuring the new MUC...\n");
+	  
+	  # Request a MUC configuration form. The muc_creation method will
+	  # handle it when it comes in.
+	  $self->send_query({
+	      query_ns => "http://jabber.org/protocol/muc#owner",
+	      type => "get",
+	      to => $self->muc_jid,
+	      id => 'muc-configuration',
+	  });
+	  
+      } else {
+	  # All right, some other yahoo has changed presence.
+	  # Note in my list of potential players, depending upon whether
+	  # they're coming or going.
+	  $self->logger->debug("Looks like a player just joined.\n");
+	  my ($nick) = $node->attr('from') =~ /\/(.*)$/;
+	  if (defined($node->attr('type')) && ($node->attr('type') eq 'unavailable')) {
+	      # Someone's left.
+	      my $player = $self->look_up_player_with_jid($new_person_jid);
+	      unless ($player) {
+		  # Uh... never mind, then.
+		  return;
+	      }
+	      $self->logger->debug("Looks like $nick just left the table.");
+	      if ($self->game->is_active) {
+		  # They bolted from an active game!
+		  $player->is_missing(1);
+		  # Check to see if that seat is now abandoned.
+		  my $seat = $player->seat;
+		  unless ($seat->is_under_control) {
+		      # The seat is uncontrolled!
+		      # Grumble at the table.
+		      # XXX No 18n.
+		      if ($self->game->is_abandoned) {
+			  # Holy crap, _everyone_ has left! Bastards.
+			  # All right, we'll wait for someone to come back.
+			  my $deadline = time + $self->internal_timeout;
+			  until ((time >= $deadline) or (not($self->game->is_abandoned))) {
+			      $self->kernel->run_one_timeslice;
+			  }
+			  if ($self->game->is_abandoned) {
+			      # OK, give up waiting.
+			      $self->suspend_game;
+			  }
+		      }
+		  }
+	      } else {
+		  # They left during game config? We'll just forget about them.
+		  # If this player was seated, we'll stand them first.
+		  # That way everyone gets zapped with the right status updates.
+		  if ($player->seat) {
+		      $self->stand_player($player);
+		  }
+		  # Now just forget about this person.
+		  $self->remove_player_with_jid($new_person_jid);
+		  # Remove this player from the nickanme lookup hash.
+		  delete($self->{nicks}{$nick});
+		  # If the last non-bot player has left, leaving us alone, disconnect.
+		  if ($self->non_bot_check) {
+		      $self->logger->debug("But there are still humans here, so I'll keep the table open.");
+		  } else {
+		      $self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
+		      if ($self->game->is_afoot) {
+			  $self->logger->debug("But first, I'm sending a game record.");
+			  $self->end_game;
+		      }
+		      $self->stop;
+		  }
+	      }
+	  } else {
+	      my $player;
+	      # See if this is a known player, rejoining the table.
+	      my $rejoined = 0;
+	      if (my @players = $self->look_up_players_with_basic_jid($new_person_jid)) {
+		  for my $player (@players) {
+		      if ($player->is_missing) {
+			  $self->logger->debug("$new_person_jid has rejoined the table.");
+			  # Mark him as no longer MIA.
+			  $player->is_missing(0);
+			  
+			  # The player's resource may have changed, so reflect this.
+			  delete($self->{players}->{$player->jid});
+			  $player->jid($new_person_jid);
+			  $self->{players}->{$new_person_jid} = $player;
+			  
+			  # Tell all the players where this player is, seat-wise.
+			  if (my $seat = $player->seat) {
+			      for my $other_player (grep ($_ ne $player, $self->players)) {
+				  $other_player->player_sat($player, $seat);
+			      }
+			  }
+			  
+			  
+			  $rejoined = 1;
+			  last;
+		      }
+		  }
+	      }
+	
+	      if (not($rejoined)) {
+		  # OK, this player is new to us.
+		  $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
+		  # Also store this player's nickname, for later lookups.
+		  $self->logger->debug( "Storing $new_person_jid, under $nick");
+		  
+	      }
+	  }
+  
       }
-    }
   }
 }
 
@@ -744,6 +757,19 @@ sub look_up_player_with_jid {
 #      $self->logger->debug("Right, then; doing a lookup on $jid instead.");
   }
   return $self->{players}{$jid};
+}
+
+# look_up_players_with_basic_jid:
+# As above, except takes a basic JID as an argument, and returns a list
+# of all players who have that basic JID, regardless of their full JID's
+# resource part.
+# For convenience, if you pass it a JID with a resource string attached
+# anyway, it ignores it.
+sub look_up_players_with_basic_jid {
+    my $self = shift;
+    my ($jid) = @_;
+    $jid =~ s|\/.*$||;
+    return grep($_->basic_jid eq $jid, $self->players);
 }
 
 # look_up_jid_with_nickname:
