@@ -5,8 +5,6 @@ import java.net.URL;
 import java.util.*;
 import javax.sound.sampled.*;
 
-//### http://www.javazoom.net/mp3spi/mp3spi.html
-
 /**
  * A handler for Volity client audio.
  *
@@ -147,6 +145,29 @@ public class Audio
     }
 
     /**
+     * Decide whether we should decode a particular audio format. If it's good
+     * to play as is, return null. If it needs to be decoded, return the format
+     * to decode to.
+     */
+    protected static AudioFormat decodingFormat(AudioFormat informat) {
+        // Probably I should be doing an "isSupported" query of some sort?
+        // As opposed to matching against hardwired encodings.
+
+        if (informat.getEncoding() == AudioFormat.Encoding.PCM_SIGNED
+            || informat.getEncoding() == AudioFormat.Encoding.PCM_UNSIGNED) {
+            return null;
+        }
+
+        int samplesize = informat.getSampleSizeInBits();
+        if (samplesize <= 0)
+            samplesize = 16;
+
+        AudioFormat res = new AudioFormat(informat.getSampleRate(),
+            samplesize, informat.getChannels(), true, informat.isBigEndian());
+        return res;
+    }
+
+    /**
      * An audio instance object. One of these is created every time a sound
      * begins playing.
      */
@@ -156,6 +177,8 @@ public class Audio
         protected int mLoop;
 
         protected Clip mClip;
+        protected AudioInputStream mStream;
+        protected AudioInputStream mOrigStream;
 
         protected Instance() {
             // Make local copies of these values, since the Audio fields can
@@ -187,9 +210,22 @@ public class Audio
          */
         protected void start()
             throws UnsupportedAudioFileException, IOException, LineUnavailableException  {
-            AudioInputStream stream = AudioSystem.getAudioInputStream(mURL);
+            mStream = AudioSystem.getAudioInputStream(mURL);
+            mOrigStream = null;
 
-            Line.Info lineinfo = new DataLine.Info(Clip.class, stream.getFormat());
+            AudioFormat origformat = mStream.getFormat();
+            AudioFormat finalformat = decodingFormat(origformat);
+            if (finalformat == null) {
+                finalformat = origformat;
+            }
+            else {
+                mOrigStream = mStream;
+                mStream = null;
+                mStream = AudioSystem.getAudioInputStream(finalformat,
+                    mOrigStream);
+            }
+
+            Line.Info lineinfo = new DataLine.Info(Clip.class, finalformat);
             mClip = (Clip)sMixer.getLine(lineinfo);
 
             /* As soon as the Instance finishes, or is stopped, it is closed
@@ -206,10 +242,21 @@ public class Audio
                             // Always close when the Clip stops.
                             mClip.close();
                             mClip = null;
+                            try {
+                                if (mStream != null) {
+                                    mStream.close();
+                                    mStream = null;
+                                }
+                                if (mOrigStream != null) {
+                                    mOrigStream.close();
+                                    mOrigStream = null;
+                                }
+                            }
+                            catch (IOException ex) { }
                         }
                     }
                 });
-            mClip.open(stream);
+            mClip.open(mStream);
 
             // Add this to the table of live Clips.
             synchronized (sLiveClips) {
