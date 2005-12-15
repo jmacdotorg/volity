@@ -1308,8 +1308,6 @@ sub handle_ready_player_request {
 }
 
 # handle_stand_request: The caller wants the named player to vacate its seat.
-# For the time being, we will always allow this, even when the two JIDs
-# involved don't match (which is certainly acceptable input).
 sub handle_stand_request {
     my $self = shift;
     my ($from_jid, $rpc_id, @args) = @_;
@@ -1351,6 +1349,10 @@ sub handle_sit_request {
     my ($sitting_jid, $seat_id) = @args;
     unless ($sitting_jid) {
 	$self->send_rpc_fault($from_jid, $rpc_id, 604, "Missing JID parameter.");
+	return;
+    }
+    if ($self->game->is_active) {
+	$self->send_rpc_fault ($from_jid, $rpc_id, 609, "The game is active.");
 	return;
     }
     $self->logger->debug("$from_jid wants $sitting_jid to sit.");
