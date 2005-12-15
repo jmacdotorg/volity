@@ -254,7 +254,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         buildUI();
 
-        setSize(500, 600);
+        setSize(600, 600);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         restoreWindowState();
 
@@ -625,7 +625,7 @@ public class TableWindow extends JFrame implements PacketListener
         mBoardSplitter.setDividerLocation(prefs.getInt(BOARD_SPLIT_POS,
             getHeight() - 200));
         mUserListSplitter.setDividerLocation(prefs.getInt(USERLIST_SPLIT_POS,
-            getWidth() - 100));
+            getWidth() - 140));
     }
 
     /**
