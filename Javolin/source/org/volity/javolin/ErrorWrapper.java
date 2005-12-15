@@ -16,7 +16,11 @@ public class ErrorWrapper
      * Get the ErrorWrapper that was most recently created.
      */
     public static ErrorWrapper getLastError() {
-        return lastError;
+        ErrorWrapper err;
+        synchronized (lastError) {
+            err = lastError;
+        }
+        return err;
     }
 
     private Throwable mError;
@@ -55,7 +59,9 @@ public class ErrorWrapper
         mDate = new Date();
 
         System.out.println("Detected exception: " + ex.toString());
-        lastError = this;
+        synchronized (lastError) {
+            lastError = this;
+        }
     }
 
     /** Get the timestamp of the error. */
