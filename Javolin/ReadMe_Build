@@ -58,13 +58,13 @@ Name: Smack (modified version in Volity CVS)
 Home page: http://www.jivesoftware.org/smack/
 Version: 2.0.0-v-1
 Download: https://sourceforge.net/project/showfiles.php?group_id=91751 (the smack-volity package)
-Lib file(s): smack.jar, smackx.jar
+Lib files: smack.jar, smackx.jar
 ---
 Name: Rhino
 Home page: http://www.mozilla.org/rhino/
 Version: 1.5R5
 Download: ftp://ftp.mozilla.org/pub/mozilla.org/js/rhino1_5R5.zip
-Lib file(s): js.jar
+Lib file: js.jar
 ---
 Name: Batik
 Home page: http://xml.apache.org/batik/
@@ -77,7 +77,7 @@ Download: svn checkout -r 333250 http://svn.apache.org/repos/asf/xmlgraphics/bat
     (Set JAVA_HOME so that $JAVA_HOME/bin/java points to your java runtime.
     The line above is correct for MacOSX.)
     % sh build.sh all-jar
-Lib file(s): batik-all.jar, xerces_2_5_0.jar, xml-apis-dom3.jar
+Lib files: batik-all.jar, xerces_2_5_0.jar, xml-apis-dom3.jar
     (After building, batik-all.jar will be in the batik-1.6/lib directory; 
     xerces_2_5_0.jar and xml-apis-dom3.jar are in the lib directory.)
 Comments: If you were building the previous version of Javolin, be sure to
@@ -100,4 +100,11 @@ Lib files: core-renderer.jar, cssparser-0-9-4-fs.jar
 Comments: You might want to delete the "System.out.println()" call from 
     line 185 of src/java/org/xhtmlrenderer/util/Configuration.java. It is
     unsightly.
-
+---
+Name: MP3SPI
+Home page: http://www.javazoom.net/mp3spi/mp3spi.html
+Version: 1.9.4
+Download: http://www.javazoom.net/mp3spi/sources/mp3spi1.9.4.tar.gz
+Lib files: mp3spi1.9.4.jar, jl1.0.jar, tritonus_share.jar
+    (mp3spi1.9.4.jar is at the top level of the distribution; jl1.0.jar 
+    and tritonus_share.jar are in the lib directory.)
