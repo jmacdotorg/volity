@@ -205,6 +205,8 @@ public class TableWindow extends JFrame implements PacketListener
          * (with messageHandler). Anything else is printed as an ugly exception
          * string, but the user can hit "Show Last Error" to see the whole
          * thing.
+         *
+         * Thread-safe.
          */
         GameUI.ErrorHandler errorHandler = new GameUI.ErrorHandler() {
                 public void error(Exception ex) {

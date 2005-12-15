@@ -10,6 +10,7 @@ import java.util.prefs.*;
 import javax.swing.*;
 import org.apache.batik.bridge.*;
 import org.apache.batik.util.gui.JErrorPane;
+import org.volity.client.GameUI;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
@@ -157,7 +158,7 @@ public class TestbenchApp extends JFrame
         mUIDir = uiDir;
         mTranslator = new TranslateToken(UIFileCache.findFileCaseless(uiDir, "locale"));
 
-        TestUI.MessageHandler messageHandler = new TestUI.MessageHandler() {
+        GameUI.MessageHandler messageHandler = new GameUI.MessageHandler() {
                 public void print(String msg) {
                     writeMessageText(msg);
                 }

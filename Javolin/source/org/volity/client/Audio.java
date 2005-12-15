@@ -20,6 +20,9 @@ public class Audio
     protected static boolean sInitialized = false;
     protected static Mixer sMixer = null;
 
+    protected static boolean sPlayAudio = true;
+    protected static boolean sShowAltTags = false;
+
     /**
      * It is necessary to track all open Clips, so that we can shut them down
      * en masse when a game window closes. The sLiveClips table maps each owner
@@ -38,26 +41,54 @@ public class Audio
         sMixer = AudioSystem.getMixer(null);
     }
 
+    /**
+     * Set a global "play audio" preference.
+     */
+    public static void setPlayAudio(boolean val) {
+        if (val && !sPlayAudio) {
+            // unmute
+            sPlayAudio = true;
+            setAllSoundsMute(!sPlayAudio);
+        }
+
+        if (!val && sPlayAudio) {
+            // mute
+            sPlayAudio = false;
+            setAllSoundsMute(!sPlayAudio);
+        }
+    }
+
+    /**
+     * Set a global "show alt tags" preference.
+     */
+    public static void setShowAltTags(boolean val) {
+        sShowAltTags = val;
+    }
+
     // Import this constant for our convenience
     public static final int LOOP_CONTINUOUSLY = Clip.LOOP_CONTINUOUSLY;
 
     protected Object mOwner;
+    protected GameUI.MessageHandler mMessageHandler;
     protected URL mURL;
     protected String mAltTag;
     protected int mLoop = 1;
 
-    public Audio(Object owner, URL url) 
+    public Audio(Object owner, URL url,
+        GameUI.MessageHandler messageHandler) 
         throws UnsupportedAudioFileException, IOException, 
                LineUnavailableException {
-        this(owner, url, "");
+        this(owner, url, "", messageHandler);
     }
 
-    public Audio(Object owner, URL url, String alt) 
+    public Audio(Object owner, URL url, String alt,
+        GameUI.MessageHandler messageHandler) 
         throws UnsupportedAudioFileException, IOException,
                LineUnavailableException {
         setupAudio();
 
         mOwner = owner;
+        mMessageHandler = messageHandler;
         mURL = url;
         setAlt(alt);
 
@@ -145,6 +176,23 @@ public class Audio
     }
 
     /**
+     * Mute or unmute every open Clip.
+     */
+    protected static void setAllSoundsMute(boolean val) {
+        synchronized (sLiveClips) {
+            Iterator siter = sLiveClips.values().iterator();
+            while (siter.hasNext()) {
+                Set set = (Set)siter.next();
+                for (Iterator iter = set.iterator(); iter.hasNext(); ) {
+                    Clip clip = (Clip)iter.next();
+                    BooleanControl mute = (BooleanControl)clip.getControl(BooleanControl.Type.MUTE);
+                    mute.setValue(val);
+                }
+            }
+        }        
+    }
+
+    /**
      * Decide whether we should decode a particular audio format. If it's good
      * to play as is, return null. If it needs to be decoded, return the format
      * to decode to.
@@ -210,6 +258,18 @@ public class Audio
          */
         protected void start()
             throws UnsupportedAudioFileException, IOException, LineUnavailableException  {
+            if (sShowAltTags) {
+                String val = mAltTag;
+                if (val.equals(""))
+                    val = "sound";
+                if (mLoop == LOOP_CONTINUOUSLY)
+                    val = val + ", repeated forever";
+                else if (mLoop > 1)
+                    val = val + ", repeated " + String.valueOf(mLoop) + " times";
+                //### not localized!
+                mMessageHandler.print("[sound: " + val + "]");
+            }
+
             mStream = AudioSystem.getAudioInputStream(mURL);
             mOrigStream = null;
 
@@ -232,6 +292,8 @@ public class Audio
              * and discarded. */
             mClip.addLineListener(new LineListener() {
                     public void update(LineEvent ev) {
+                        // Called outside Swing thread!
+
                         if (ev.getType() == LineEvent.Type.STOP) {
                             // Remove from the table of live Clips.
                             synchronized (sLiveClips) {
@@ -256,7 +318,14 @@ public class Audio
                         }
                     }
                 });
+
             mClip.open(mStream);
+
+            // If sound is off, we'll start it playing, but muted.
+            if (!sPlayAudio) {
+                BooleanControl mute = (BooleanControl)mClip.getControl(BooleanControl.Type.MUTE);
+                mute.setValue(true);
+            }
 
             // Add this to the table of live Clips.
             synchronized (sLiveClips) {

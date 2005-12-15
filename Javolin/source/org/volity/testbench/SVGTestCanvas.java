@@ -20,6 +20,7 @@ import org.apache.batik.util.RunnableQueue;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
+import org.volity.client.GameUI;
 import org.volity.client.TranslateToken;
 
 /**
@@ -31,13 +32,13 @@ public class SVGTestCanvas extends JSVGCanvas
     URL uiDocument;
     DebugInfo debugInfo;
     TranslateToken translator;
-    TestUI.MessageHandler messageHandler;
+    GameUI.MessageHandler messageHandler;
     TestUI.ErrorHandler errorHandler;
 
     public SVGTestCanvas(URL uiDocument,
         DebugInfo debugInfo,
         TranslateToken translator,
-        TestUI.MessageHandler messageHandler,
+        GameUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
 
         super();

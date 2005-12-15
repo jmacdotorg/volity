@@ -171,7 +171,7 @@ public class GameUI implements RPCHandler, PacketFilter {
                 });
             scope.put("audio", scope, 
                 UIAudio.makeCallableProperty(this, baseURL, 
-                    errorHandler));
+                    messageHandler, errorHandler));
         } catch (JavaScriptException e) {
             errorHandler.error(e);
         } finally {
@@ -366,7 +366,9 @@ public class GameUI implements RPCHandler, PacketFilter {
          * @param errorHandler a service to drop errors into.
          */
         public static ScriptableObject makeCallableProperty(final Object owner,
-            final URL baseURL, final ErrorHandler errorHandler) {
+            final URL baseURL, 
+            final MessageHandler messageHandler,
+            final ErrorHandler errorHandler) {
             return new Callback() {
                     public Object run(Object[] args) {
                         try {
@@ -382,7 +384,7 @@ public class GameUI implements RPCHandler, PacketFilter {
                                     alt = altval.toString();
                             }
 
-                            Audio audio = new Audio(owner, url, alt);
+                            Audio audio = new Audio(owner, url, alt, messageHandler);
                             return new UIAudio(audio, errorHandler);
                         } catch (Exception ex) {
                             errorHandler.error(ex);

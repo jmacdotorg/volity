@@ -9,6 +9,7 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.*;
+import org.volity.client.Audio;
 
 /**
  * The Preferences box. Do not instantiate this directly; call
@@ -23,6 +24,7 @@ public class PrefsDialog extends JFrame
      * the notification system, so they're publicly readable. */
     public final static String CHAT_COLOR_OPTIONS = "ChatPrefs";
     public final static String ROSTER_DISPLAY_OPTIONS = "RosterPrefs";
+    public final static String SOUND_OPTIONS = "SoundPrefs";
 
     /* Keys within the various top-level nodes. */
     public final static String CHATNAMESHADE_KEY = "NameShade";
@@ -30,6 +32,8 @@ public class PrefsDialog extends JFrame
     public final static String ROSTERSHOWOFFLINE_KEY = "ShowOffline";
     public final static String ROSTERSHOWREVERSE_KEY = "ShowReverse";
     public final static String ROSTERNOTIFYSUBSCRIPTIONS_KEY = "NotifySubscriptions";
+    public final static String SOUNDPLAYAUDIO_KEY = "PlayAudio";
+    public final static String SOUNDSHOWALTTAGS_KEY = "ShowAltTags";
 
     private final static int MARGIN = 12; // Space to window edge
     private final static int GAP = 4; // Space between controls
@@ -54,7 +58,13 @@ public class PrefsDialog extends JFrame
     private static boolean prefRosterShowOffline;
     private static boolean prefRosterShowReverse;
     private static boolean prefRosterNotifySubscriptions;
+    private static boolean prefSoundPlayAudio;
+    private static boolean prefSoundShowAltTags;
 
+    /**
+     * Load the initial preference state. This should be called exactly once,
+     * at app startup time.
+     */
     public static void loadPreferences() {
         Preferences prefs;
 
@@ -66,6 +76,28 @@ public class PrefsDialog extends JFrame
         prefRosterShowOffline = prefs.getBoolean(ROSTERSHOWOFFLINE_KEY, true);
         prefRosterShowReverse = prefs.getBoolean(ROSTERSHOWREVERSE_KEY, false);
         prefRosterNotifySubscriptions = prefs.getBoolean(ROSTERNOTIFYSUBSCRIPTIONS_KEY, true);
+
+        prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(SOUND_OPTIONS);
+        prefSoundPlayAudio = prefs.getBoolean(SOUNDPLAYAUDIO_KEY, true);
+        prefSoundShowAltTags = prefs.getBoolean(SOUNDSHOWALTTAGS_KEY, false);
+
+        /* The audio preferences are used by a client library, rather than
+         * being grabbed by another part of Javolin. So we set up the initial
+         * values and the listener now. */
+        Audio.setPlayAudio(prefSoundPlayAudio);
+        Audio.setShowAltTags(prefSoundShowAltTags);
+
+        PrefsDialog.addListener(PrefsDialog.SOUND_OPTIONS,
+            new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
+                    String key = (String)ev.getSource();
+                    if (key == SOUNDPLAYAUDIO_KEY)
+                        Audio.setPlayAudio(prefSoundPlayAudio);
+                    if (key == SOUNDSHOWALTTAGS_KEY)
+                        Audio.setShowAltTags(prefSoundShowAltTags);
+                }
+            });
+
     }
 
     public static int getChatBodyShade() { return prefChatBodyShade; }
@@ -134,6 +166,8 @@ public class PrefsDialog extends JFrame
     private final static String LABEL_ROSTERSHOWOFFLINE = "Display offline buddies";
     private final static String LABEL_ROSTERSHOWREVERSE = "Display people whose roster you are on";
     private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
+    private final static String LABEL_SOUNDPLAYAUDIO = "Play audio effects";
+    private final static String LABEL_SOUNDSHOWALTTAGS = "Print text equivalents for audio effects";
 
     private JavolinApp mOwner;
     private SizeAndPositionSaver mSizePosSaver;
@@ -145,6 +179,8 @@ public class PrefsDialog extends JFrame
     private JSlider mChatBodyShade;
     private JSlider mChatNameShade;
     private JTextPane mChatSampleText;
+    private JCheckBox mSoundPlayAudio;
+    private JCheckBox mSoundShowAltTags;
 
     private PrefsDialog(JavolinApp owner) 
     {
@@ -242,6 +278,24 @@ public class PrefsDialog extends JFrame
                 }
             });
 
+        mSoundPlayAudio.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundPlayAudio = mSoundPlayAudio.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDPLAYAUDIO_KEY, prefSoundPlayAudio);
+                    noticeChange(SOUND_OPTIONS, SOUNDPLAYAUDIO_KEY);
+                }
+            });
+
+        mSoundShowAltTags.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundShowAltTags = mSoundShowAltTags.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDSHOWALTTAGS_KEY, prefSoundShowAltTags);
+                    noticeChange(SOUND_OPTIONS, SOUNDSHOWALTTAGS_KEY);
+                }
+            });
+
         show();
     }
 
@@ -299,8 +353,8 @@ public class PrefsDialog extends JFrame
      * change.)
      */
     private void updateChatSampleText() {
-        Color roscol = new Color(1.0f, 0.0f, 0.0f);
-        Color guilcol = new Color(0.0f, 0.681f, 0.0f);
+        Color roscol = new Color(0.0f, 0.681f, 0.0f);
+        Color guilcol = new Color(1.0f, 0.0f, 0.0f);
         Color rosbodycol = transformColor(roscol, prefChatBodyShade);
         Color rosnamecol = transformColor(roscol, prefChatNameShade);
         Color guilbodycol = transformColor(guilcol, prefChatBodyShade);
@@ -509,6 +563,47 @@ public class PrefsDialog extends JFrame
             pane.add(label, c);
 
             mTabPane.addTab("Chat", pane);
+        }
+
+        {
+            JPanel pane = new JPanel(new GridBagLayout());
+            
+            int row = 0;
+            
+            mSoundPlayAudio = new JCheckBox(LABEL_SOUNDPLAYAUDIO, prefSoundPlayAudio);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(mSoundPlayAudio, c);
+
+            mSoundShowAltTags = new JCheckBox(LABEL_SOUNDSHOWALTTAGS, prefSoundShowAltTags);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
+            pane.add(mSoundShowAltTags, c);
+
+            // Blank stretchy spacer
+            label = new JLabel(" ");
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 1;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(label, c);
+
+            mTabPane.addTab("Sound", pane);
         }
 
 

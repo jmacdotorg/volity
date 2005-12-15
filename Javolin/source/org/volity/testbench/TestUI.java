@@ -17,13 +17,6 @@ import org.volity.client.TranslateToken;
  */
 public abstract class TestUI 
 {
-    public interface MessageHandler {
-        /**
-         * Report a status or game-response message.
-         */
-        public abstract void print(String msg);
-    }
-
     public static abstract class ErrorHandler implements GameUI.ErrorHandler {
         /**
          * Report a command error. This is an abstract class because it
@@ -244,7 +237,7 @@ public abstract class TestUI
     TranslateToken translator;
     ErrorHandler errorHandler;
     ErrorHandler parentErrorHandler;
-    MessageHandler messageHandler;
+    GameUI.MessageHandler messageHandler;
     Object securityDomain; 
 
     String currentSeat;
@@ -256,7 +249,7 @@ public abstract class TestUI
 
     public TestUI(URL baseURL,
         TranslateToken translator,
-        MessageHandler messageHandler,
+        GameUI.MessageHandler messageHandler,
         ErrorHandler parentErrorHandler) {
 
         this.baseURL = baseURL;
@@ -435,7 +428,7 @@ public abstract class TestUI
                 });
             scope.put("audio", scope, 
                 GameUI.UIAudio.makeCallableProperty(this, baseURL, 
-                    errorHandler));
+                    messageHandler, errorHandler));
         } catch (JavaScriptException e) {
             errorHandler.error(e);
         } finally {

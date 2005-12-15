@@ -6,6 +6,7 @@ import java.util.*;
 import java.util.List;
 import java.util.prefs.*;
 import javax.swing.*;
+import org.volity.client.GameUI;
 
 public class TestMessagePane
     implements SVGTestCanvas.UIListener
@@ -20,9 +21,9 @@ public class TestMessagePane
     private List history;
     private int historyPos;
 
-    private TestUI.MessageHandler messageHandler;
+    private GameUI.MessageHandler messageHandler;
 
-    public TestMessagePane(TestUI.MessageHandler inMessageHandler, TestButtonBar buttonBar) {
+    public TestMessagePane(GameUI.MessageHandler inMessageHandler, TestButtonBar buttonBar) {
         messageHandler = inMessageHandler;
         mButtonBar = buttonBar;
 

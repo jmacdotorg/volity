@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.regex.*;
 import javax.swing.*;
 import org.mozilla.javascript.*;
+import org.volity.client.GameUI;
 
 /**
  * UI component for Testbench's toolbar. This contains "Start Game" and "End
@@ -18,7 +19,7 @@ import org.mozilla.javascript.*;
 public class TestButtonBar
     implements ActionListener, SVGTestCanvas.UIListener
 {
-    TestUI.MessageHandler messageHandler;
+    GameUI.MessageHandler messageHandler;
     TestUI.ErrorHandler errorHandler;
     TestUI testUI;
     DebugInfo mDebugInfo;
@@ -31,7 +32,7 @@ public class TestButtonBar
     Map mFields = new Hashtable();
 
     public TestButtonBar(DebugInfo info,
-        TestUI.MessageHandler messageHandler,
+        GameUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
 
         this.messageHandler = messageHandler;
