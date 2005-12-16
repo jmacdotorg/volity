@@ -18,6 +18,8 @@
 package org.volity.javolin.game;
 
 import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
@@ -394,6 +396,33 @@ public class TableWindow extends JFrame implements PacketListener
                     catch (Exception ex) {
                         new ErrorWrapper(ex);
                         writeMessageText(ex.toString());
+                    }
+                }
+            });
+
+        new DropTarget(mSeatButton, DnDConstants.ACTION_MOVE,
+            new DropTargetAdapter() {
+                public void dragEnter(DropTargetDragEvent dtde) {
+                    mSeatButton.setSelected(true);
+                }
+                public void dragExit(DropTargetEvent dte) {
+                    mSeatButton.setSelected(false);
+                }
+                public void drop(DropTargetDropEvent ev) {
+                    mSeatButton.setSelected(false);
+                    try {
+                        Transferable transfer = ev.getTransferable();
+                        if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
+                            ev.acceptDrop(DnDConstants.ACTION_MOVE);
+                            JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
+                            mSeatChart.requestSeatChange(obj.getJID(), mSeatChart.ANY_SEAT);
+                            ev.dropComplete(true);
+                            return;
+                        }
+                        ev.rejectDrop();
+                    }
+                    catch (Exception ex) {
+                        ev.rejectDrop();
                     }
                 }
             });

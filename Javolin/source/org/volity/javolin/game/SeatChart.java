@@ -24,6 +24,8 @@ import org.volity.javolin.chat.UserColorMap;
 public class SeatChart 
     implements StatusListener
 {
+    public final static String ANY_SEAT = "";
+
     GameTable mTable;
     JPanel mPanel;
     UserColorMap mUserColorMap;
@@ -232,7 +234,8 @@ public class SeatChart
      * converted to Player/Seat objects).
      *
      * @param jid the player who is to sit/stand.
-     * @param seatid the seat to sit in (or null to stand).
+     * @param seatid the seat to sit in (or null to stand, or ANY_SEAT to sit
+     *    anywhere).
      */
     protected void requestSeatChange(String jid, String seatid) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
@@ -247,6 +250,9 @@ public class SeatChart
         try {
             if (seatid == null) {
                 mTable.getReferee().stand(player);
+            }
+            else if (seatid == ANY_SEAT) {
+                mTable.getReferee().sit(player);
             }
             else {
                 seat = mTable.getSeat(seatid);

@@ -230,7 +230,7 @@ public class SeatPanel extends JPanel
                         dragSource.createDefaultDragGestureRecognizer(
                             label, 
                             DnDConstants.ACTION_MOVE, 
-                            new DragSourceThing(label, this, player.getJID()));
+                            new DragSourceThing(label, player.getJID()));
                 }
             }
         }
@@ -281,9 +281,9 @@ public class SeatPanel extends JPanel
         String mJID;
         boolean mWasOpaque;
 
-        public DragSourceThing(JComponent obj, SeatPanel source, String jid) {
+        public DragSourceThing(JComponent obj, String jid) {
+            mSourcePanel = SeatPanel.this;
             mComponent = obj;
-            mSourcePanel = source;
             mJID = jid;
         }
 
