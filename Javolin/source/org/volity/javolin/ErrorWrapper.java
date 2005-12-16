@@ -10,6 +10,7 @@ import java.util.Date;
  */
 public class ErrorWrapper
 {
+    private static Object lastErrorLock = new Object();
     private static ErrorWrapper lastError = null;
 
     /** 
@@ -17,7 +18,7 @@ public class ErrorWrapper
      */
     public static ErrorWrapper getLastError() {
         ErrorWrapper err;
-        synchronized (lastError) {
+        synchronized (lastErrorLock) {
             err = lastError;
         }
         return err;
@@ -59,7 +60,7 @@ public class ErrorWrapper
         mDate = new Date();
 
         System.out.println("Detected exception: " + ex.toString());
-        synchronized (lastError) {
+        synchronized (lastErrorLock) {
             lastError = this;
         }
     }
