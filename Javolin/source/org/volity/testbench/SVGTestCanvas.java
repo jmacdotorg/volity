@@ -13,6 +13,7 @@ import org.apache.batik.script.Interpreter;
 import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
 import org.apache.batik.script.rhino.RhinoInterpreter;
+import org.apache.batik.script.rhino.svg12.SVG12RhinoInterpreter;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
@@ -127,28 +128,43 @@ public class SVGTestCanvas extends JSVGCanvas
 
     // Inherited from InterpreterFactory.
     public Interpreter createInterpreter(final URL documentURL, boolean isSVG12) {
-        /* To accept SVG12 documents, we'd need to create an
-         * SVG12RhinoInterpreter subclass instead of a RhinoInterpreter
-         * subclass. */
-        assert (!isSVG12);
-
         // We need to add our game objects to the interpreter's global
         // object, but RhinoInterpreter.getGlobalObject is protected, so
         // we have to make a subclass.  And it can't be anonymous because
         // we need to override the constructor.
-        class TestUIInterpreter extends RhinoInterpreter {
-            TestUIInterpreter() {
-                super(documentURL);
-                ui = new SVGUI(documentURL);
-                // Will need the security domain to execute debug scripts.
-                ui.setSecurityDomain(rhinoClassLoader);
-                ui.initGameObjects(getGlobalObject());
-                for (Iterator it = listeners.iterator(); it.hasNext(); ) {
-                    ((UIListener) it.next()).newUI(ui);
+
+        if (!isSVG12) {
+            class TestUIInterpreter extends RhinoInterpreter {
+                TestUIInterpreter() {
+                    super(documentURL);
+                    ui = new SVGUI(documentURL);
+                    // Will need the security domain to execute debug scripts.
+                    ui.setSecurityDomain(rhinoClassLoader);
+                    ui.initGameObjects(getGlobalObject());
+                    for (Iterator it = listeners.iterator(); it.hasNext(); ) {
+                        ((UIListener) it.next()).newUI(ui);
+                    }
                 }
             }
+            interpreter = new TestUIInterpreter();
         }
-        return interpreter = new TestUIInterpreter();
+        else {
+            class TestUI12Interpreter extends SVG12RhinoInterpreter {
+                TestUI12Interpreter() {
+                    super(documentURL);
+                    ui = new SVGUI(documentURL);
+                    // Will need the security domain to execute debug scripts.
+                    ui.setSecurityDomain(rhinoClassLoader);
+                    ui.initGameObjects(getGlobalObject());
+                    for (Iterator it = listeners.iterator(); it.hasNext(); ) {
+                        ((UIListener) it.next()).newUI(ui);
+                    }
+                }
+            }
+            interpreter = new TestUI12Interpreter();
+        }
+
+        return interpreter;
     }
   
     // Inherited from InterpreterFactory.
