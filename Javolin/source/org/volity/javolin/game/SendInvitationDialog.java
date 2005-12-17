@@ -1,11 +1,16 @@
 package org.volity.javolin.game;
 
 import java.awt.*;
+import java.awt.datatransfer.*;
 import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.Reader;
 import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.*;
+import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.GameTable;
+import org.volity.client.JIDTransfer;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
 import org.volity.jabber.JIDUtils;
@@ -27,7 +32,15 @@ public class SendInvitationDialog extends BaseDialog
     private JButton mCancelButton;
     private JButton mInviteButton;
 
-    public SendInvitationDialog(TableWindow owner, GameTable gameTable) {
+    /**
+     * The recipient may be the (bare) JID of someone to invite. The dialog
+     * will appear with that JID in the "to" field.
+     *
+     * If recipient is null, the dialog will appear showing the last person you
+     * invited (on the theory that you play with that person a lot).
+     */
+    public SendInvitationDialog(TableWindow owner, GameTable gameTable,
+        String recipient) {
         super(owner, "Invite A Player", false, NODENAME);
 
         mOwner = owner;
@@ -37,11 +50,15 @@ public class SendInvitationDialog extends BaseDialog
         setResizable(false);
         pack();
 
+        mUserIdField.setTransferHandler(new JIDFieldTransferHandler());
+
         // Restore saved window position
         mSizePosSaver.restoreSizeAndPosition();
 
         // Restore default field values
         restoreFieldValues();
+        if (recipient != null)
+            mUserIdField.setText(recipient);
 
         mCancelButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
@@ -102,6 +119,15 @@ public class SendInvitationDialog extends BaseDialog
             RosterPanel rpanel = app.getRosterPanel();
             if (rpanel == null)
                 return;
+
+            String selfbarejid = StringUtils.parseBareAddress(mGameTable.getConnection().getUser());
+            if (jid.equals(selfbarejid)) {
+                JOptionPane.showMessageDialog(this, 
+                    "You are already at this table.",
+                    app.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             if (!rpanel.isUserOnRoster(jid)) {
                 int res = JOptionPane.showConfirmDialog(this,
@@ -226,6 +252,60 @@ public class SendInvitationDialog extends BaseDialog
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
         mUserIdField.setText(prefs.get(USERID_KEY, ""));
+    }
+
+    /**
+     * This class handles dropping JIDs (and regular text) into a JTextField.
+     * It may wind up being useful for other dialogs, in which case I'll move
+     * it to a separate class.
+     */
+    private static class JIDFieldTransferHandler extends TransferHandler {
+        public boolean canImport(JComponent comp, DataFlavor[] flavors) {
+            for (int ix=0; ix<flavors.length; ix++) {
+                DataFlavor flavor = flavors[ix];
+                if (flavor == JIDTransfer.JIDFlavor)
+                    return true;
+                if (flavor.isFlavorTextType())
+                    return true;
+            }
+            return false;
+        }
+        public boolean importData(JComponent comp, Transferable transfer) {
+            try {
+                JTextField field = (JTextField)comp;
+
+                if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
+                    JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
+                    String jid = obj.getJID();
+                    jid = StringUtils.parseBareAddress(jid);
+                    field.setText(jid);
+                    return true;
+                }
+
+                DataFlavor flavor = DataFlavor.selectBestTextFlavor(transfer.getTransferDataFlavors());
+                if (flavor != null) {
+                    String val = "";
+
+                    Reader reader = flavor.getReaderForText(transfer);
+                    BufferedReader bufreader = new BufferedReader(reader);
+                    String line = bufreader.readLine();
+                    while (line != null) {
+                        val = val+line;
+                        line = bufreader.readLine();
+                    }
+                    bufreader.close();
+                    reader.close();
+                    field.getDocument().insertString(field.getCaretPosition(), val, null);
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex) {
+                new ErrorWrapper(ex);
+                return false;
+            }
+        }
     }
 
     /**

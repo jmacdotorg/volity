@@ -18,6 +18,8 @@
 package org.volity.javolin.roster;
 
 import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
@@ -33,6 +35,7 @@ import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.RosterPacket;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.CapPacketExtension;
+import org.volity.client.JIDTransfer;
 import org.volity.javolin.CapPresenceFactory;
 import org.volity.javolin.PrefsDialog;
 
@@ -41,6 +44,8 @@ import org.volity.javolin.PrefsDialog;
  */
 public class RosterPanel extends JPanel implements RosterListener, TreeSelectionListener
 {
+    static DragSource dragSource = DragSource.getDefaultDragSource();
+
     private JTree mTree;
     private DefaultTreeModel mTreeModel;
     private List mRosterPanelListeners;
@@ -379,10 +384,16 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
      */
     public boolean isUserOnRoster(String user)
     {
-        if (mRoster.getEntry(user) != null)
+        RosterEntry entry = mRoster.getEntry(user);
+        if (entry != null) {
+            RosterPacket.ItemType subtype = entry.getType();
+            if (subtype == RosterPacket.ItemType.NONE)
+                return false;
+            if (subtype == RosterPacket.ItemType.FROM)
+                return false;
             return true;
-        else
-            return false;
+        }
+        return false;
     }
 
     /**
@@ -461,6 +472,31 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                     maybeShowPopup(e);
                 }
             });
+
+        dragSource.createDefaultDragGestureRecognizer(
+            mTree, 
+            DnDConstants.ACTION_COPY, 
+            new DragSourceThing());
+    }
+
+    private class DragSourceThing 
+        implements DragGestureListener {
+        public void dragGestureRecognized(DragGestureEvent ev) {
+            Point origin = ev.getDragOrigin();
+            TreePath path = mTree.getPathForLocation(origin.x, origin.y);
+            if (path == null)
+                return;
+            
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode)path.getLastPathComponent();
+            if (!(node.getUserObject() instanceof RosterTreeItem))
+                return;
+            RosterTreeItem item = (RosterTreeItem)node.getUserObject();
+
+            Transferable transfer = new JIDTransfer(item.getId());
+            dragSource.startDrag(ev, DragSource.DefaultMoveDrop, transfer,
+                new DragSourceAdapter() {
+                });
+        }
     }
 
     /**

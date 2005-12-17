@@ -327,7 +327,7 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (e.getSource() == mInvitePlayerMenuItem) {
             if (mTableWindow != null)
-                mTableWindow.doInviteDialog();
+                mTableWindow.doInviteDialog(null);
         }
         else if (e.getSource() == mInviteBotMenuItem) {
             if (mTableWindow != null)

@@ -356,7 +356,34 @@ public class TableWindow extends JFrame implements PacketListener
 
         mInviteButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    doInviteDialog();
+                    doInviteDialog(null);
+                }
+            });
+
+        new DropTarget(mInviteButton, DnDConstants.ACTION_MOVE,
+            new DropTargetAdapter() {
+                public void dragEnter(DropTargetDragEvent dtde) {
+                    mInviteButton.setSelected(true);
+                }
+                public void dragExit(DropTargetEvent dte) {
+                    mInviteButton.setSelected(false);
+                }
+                public void drop(DropTargetDropEvent ev) {
+                    mInviteButton.setSelected(false);
+                    try {
+                        Transferable transfer = ev.getTransferable();
+                        if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
+                            ev.acceptDrop(DnDConstants.ACTION_MOVE);
+                            JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
+                            doInviteDialog(obj.getJID());
+                            ev.dropComplete(true);
+                            return;
+                        }
+                        ev.rejectDrop();
+                    }
+                    catch (Exception ex) {
+                        ev.rejectDrop();
+                    }
                 }
             });
 
@@ -825,10 +852,30 @@ public class TableWindow extends JFrame implements PacketListener
     /**
      * Bring up an invite dialog. There can be multiple of these at a time,
      * even for the same game.
+     *
+     * If recipient is null, start an empty dialog. If not null, check to see
+     * if the given JID is already present in the game. If it is not, start a
+     * dialog with the bare form of the JID.
      */
-    public void doInviteDialog() {
+    public void doInviteDialog(String recipient) {
+        if (recipient != null) {
+            recipient = StringUtils.parseBareAddress(recipient);
+
+            Iterator iter = mGameTable.getPlayers();
+            while (iter.hasNext()) {
+                Player player = (Player)iter.next();
+                String jid = StringUtils.parseBareAddress(player.getJID());
+                if (recipient.equals(jid))
+                    return;
+            }
+        }
+
+        /* The recipient is now a bare address, not present at the table. Or
+         * else it's null.
+         */
+
         SendInvitationDialog box =
-            new SendInvitationDialog(TableWindow.this, mGameTable);
+            new SendInvitationDialog(TableWindow.this, mGameTable, recipient);
         box.show();
     }
 
