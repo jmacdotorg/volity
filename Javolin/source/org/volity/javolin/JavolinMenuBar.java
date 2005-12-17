@@ -103,20 +103,11 @@ public class JavolinMenuBar extends JMenuBar
         // Platform independent accelerator key
         int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
+        JMenu helpMenu = null;
+
         // File menu
         JMenu fileMenu = new JMenu("File");
         setPlatformMnemonic(fileMenu, KeyEvent.VK_F);
-
-        if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
-            // Only needed if there isn't a built-in About menu
-
-            mAboutMenuItem = new JMenuItem(MENUCMD_ABOUT);
-            mAboutMenuItem.addActionListener(this);
-            setPlatformMnemonic(mAboutMenuItem, KeyEvent.VK_A);
-            fileMenu.add(mAboutMenuItem);
-
-            fileMenu.addSeparator();
-        }
 
         mConnectMenuItem = new JMenuItem(MENUCMD_CONNECT);
         mConnectMenuItem.addActionListener(this);
@@ -206,10 +197,27 @@ public class JavolinMenuBar extends JMenuBar
         // Window menu
         mWindowMenu = new WindowMenu();
 
+        // Help menu
+        if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
+            // Only needed if there isn't a built-in About menu
+
+            helpMenu = new JMenu("Help");
+            
+            mAboutMenuItem = new JMenuItem(MENUCMD_ABOUT);
+            mAboutMenuItem.addActionListener(this);
+            setPlatformMnemonic(mAboutMenuItem, KeyEvent.VK_A);
+            helpMenu.add(mAboutMenuItem);
+        }
+
+
+        // Put all the menus in place.
         add(fileMenu);
         add(chatMenu);
         add(gameMenu);
         add(mWindowMenu);
+        if (helpMenu != null)
+            add(helpMenu);
+
 
         // Update everything to the current app state
         updateMenuItems();
