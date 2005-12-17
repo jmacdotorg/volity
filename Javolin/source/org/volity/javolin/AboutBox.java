@@ -23,8 +23,10 @@ public class AboutBox extends JFrame
         "von Laudermann. Licensed under the Apache License,\n"        +
         "Version 2.0. See Javolin web site for details.\n\n"          +
         "Javolin is built with the Batik SVG toolkit (apache.org),\n" +
-        "the Rhino JavaScript engine (mozilla.org), and the\n"        +
-        "Smack XMPP toolkit (jivesoftware.org).";
+        "the Rhino JavaScript engine (mozilla.org), the Flying\n"     +
+        "Saucer XHTML toolkit (xhtmlrenderer.dev.java.net), the\n"    +
+        "MP3SPI MP3 library (javazoom.net), and the Smack\n"          +
+        "XMPP toolkit (jivesoftware.org).";
 
     static Icon VOLITY_LOGO =
         new ImageIcon(AboutBox.class.getResource("VolityLogo-200.png"));
