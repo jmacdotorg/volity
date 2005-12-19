@@ -105,6 +105,7 @@ public class TableWindow extends JFrame implements PacketListener
     private String mNickname;
     private URL mUIUrl;
     private TranslateToken mTranslator;
+    private GameUI.MessageHandler mMessageHandler;
 
     private boolean mGameTableStarted = false;
     private boolean mGameViewportStarted = false;
@@ -186,7 +187,7 @@ public class TableWindow extends JFrame implements PacketListener
          * window. However, we don't know that they'll call it in the Swing
          * thread. So, we'll make a thread-safe wrapper for
          * writeMessageText. */
-        final GameUI.MessageHandler messageHandler = new GameUI.MessageHandler() {
+        mMessageHandler = new GameUI.MessageHandler() {
                 public void print(final String msg)
                 {
                     if (SwingUtilities.isEventDispatchThread()) {
@@ -201,6 +202,8 @@ public class TableWindow extends JFrame implements PacketListener
                         });
                 }
             };
+
+        final GameUI.MessageHandler messageHandler = mMessageHandler;
 
         /* Some components also want a callback in which they can dump an
          * arbitrary exception. TokenFailures simply get translated and printed
@@ -522,6 +525,7 @@ public class TableWindow extends JFrame implements PacketListener
         mLoadingComponent = null;
 
         Referee referee = mGameTable.getReferee();
+        referee.setMessageHandler(mMessageHandler);
 
         // Begin the flood of seating/config info.
         try

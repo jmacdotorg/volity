@@ -10,6 +10,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.*;
 import org.volity.client.Audio;
+import org.volity.client.RPCDispatcherDebug;
+import org.volity.client.Referee;
 
 /**
  * The Preferences box. Do not instantiate this directly; call
@@ -25,6 +27,7 @@ public class PrefsDialog extends JFrame
     public final static String CHAT_COLOR_OPTIONS = "ChatPrefs";
     public final static String ROSTER_DISPLAY_OPTIONS = "RosterPrefs";
     public final static String SOUND_OPTIONS = "SoundPrefs";
+    public final static String DEBUG_OPTIONS = "DebugPrefs";
 
     /* Keys within the various top-level nodes. */
     public final static String CHATNAMESHADE_KEY = "NameShade";
@@ -34,6 +37,7 @@ public class PrefsDialog extends JFrame
     public final static String ROSTERNOTIFYSUBSCRIPTIONS_KEY = "NotifySubscriptions";
     public final static String SOUNDPLAYAUDIO_KEY = "PlayAudio";
     public final static String SOUNDSHOWALTTAGS_KEY = "ShowAltTags";
+    public final static String DEBUGSHOWRPCS_KEY = "ShowRPCs";
 
     private final static int MARGIN = 12; // Space to window edge
     private final static int GAP = 4; // Space between controls
@@ -60,6 +64,7 @@ public class PrefsDialog extends JFrame
     private static boolean prefRosterNotifySubscriptions;
     private static boolean prefSoundPlayAudio;
     private static boolean prefSoundShowAltTags;
+    private static boolean prefDebugShowRPCs;
 
     /**
      * Load the initial preference state. This should be called exactly once,
@@ -81,6 +86,9 @@ public class PrefsDialog extends JFrame
         prefSoundPlayAudio = prefs.getBoolean(SOUNDPLAYAUDIO_KEY, true);
         prefSoundShowAltTags = prefs.getBoolean(SOUNDSHOWALTTAGS_KEY, false);
 
+        prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(DEBUG_OPTIONS);
+        prefDebugShowRPCs = prefs.getBoolean(DEBUGSHOWRPCS_KEY, false);
+
         /* The audio preferences are used by a client library, rather than
          * being grabbed by another part of Javolin. So we set up the initial
          * values and the listener now. */
@@ -98,6 +106,17 @@ public class PrefsDialog extends JFrame
                 }
             });
 
+        /* Same goes for the debug prefs. */
+        RPCDispatcherDebug.setDebugOutput(prefDebugShowRPCs);
+        Referee.setDebugOutput(prefDebugShowRPCs);
+
+        PrefsDialog.addListener(PrefsDialog.DEBUG_OPTIONS,
+            new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
+                    RPCDispatcherDebug.setDebugOutput(prefDebugShowRPCs);
+                    Referee.setDebugOutput(prefDebugShowRPCs);
+                }
+            });
     }
 
     public static int getChatBodyShade() { return prefChatBodyShade; }
@@ -168,6 +187,7 @@ public class PrefsDialog extends JFrame
     private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
     private final static String LABEL_SOUNDPLAYAUDIO = "Play audio effects";
     private final static String LABEL_SOUNDSHOWALTTAGS = "Print text equivalents for audio effects";
+    private final static String LABEL_DEBUGSHOWRPCS = "Print all RPCs";
 
     private JavolinApp mOwner;
     private SizeAndPositionSaver mSizePosSaver;
@@ -181,6 +201,7 @@ public class PrefsDialog extends JFrame
     private JTextPane mChatSampleText;
     private JCheckBox mSoundPlayAudio;
     private JCheckBox mSoundShowAltTags;
+    private JCheckBox mDebugShowRPCs;
 
     private PrefsDialog(JavolinApp owner) 
     {
@@ -293,6 +314,15 @@ public class PrefsDialog extends JFrame
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
                     prefs.putBoolean(SOUNDSHOWALTTAGS_KEY, prefSoundShowAltTags);
                     noticeChange(SOUND_OPTIONS, SOUNDSHOWALTTAGS_KEY);
+                }
+            });
+
+        mDebugShowRPCs.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefDebugShowRPCs = mDebugShowRPCs.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(DEBUG_OPTIONS);
+                    prefs.putBoolean(DEBUGSHOWRPCS_KEY, prefDebugShowRPCs);
+                    noticeChange(DEBUG_OPTIONS, DEBUGSHOWRPCS_KEY);
                 }
             });
 
@@ -604,6 +634,36 @@ public class PrefsDialog extends JFrame
             pane.add(label, c);
 
             mTabPane.addTab("Sound", pane);
+        }
+
+        {
+            JPanel pane = new JPanel(new GridBagLayout());
+            
+            int row = 0;
+            
+            mDebugShowRPCs = new JCheckBox(LABEL_DEBUGSHOWRPCS, prefDebugShowRPCs);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(mDebugShowRPCs, c);
+
+            // Blank stretchy spacer
+            label = new JLabel(" ");
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 1;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(label, c);
+
+            mTabPane.addTab("Debug", pane);
         }
 
 

@@ -40,7 +40,7 @@ public class GameUI implements RPCHandler, PacketFilter {
         this.translator = translator;
         this.errorHandler = errorHandler;
         this.messageHandler = messageHandler;
-        RPCDispatcher dispatcher = new RPCDispatcher();
+        RPCDispatcher dispatcher = new RPCDispatcherDebug(messageHandler);
         dispatcher.setHandler("game", this);
         VolityHandler volityHandler = new VolityHandler(this);
         dispatcher.setHandler("volity", volityHandler);

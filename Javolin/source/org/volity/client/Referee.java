@@ -8,10 +8,22 @@ import org.volity.client.TokenFailure;
 import org.volity.client.TokenRequester;
 import org.volity.jabber.RPCException;
 
-/** A Jabber-RPC connection to a Volity game referee. */
+/**
+ * A Jabber-RPC connection to a Volity game referee.
+ */
 public class Referee extends TokenRequester {
+  protected static boolean debugFlag = false;
+
+  /**
+   * Set whether debugging output is active.
+   */
+  public static void setDebugOutput(boolean flag) {
+    debugFlag = flag;
+  }
+
 
   GameTable mTable;
+  GameUI.MessageHandler messageHandler;
 
   /**
    * @param table the game table where the game will be played
@@ -21,6 +33,27 @@ public class Referee extends TokenRequester {
     super(table.getConnection(), jid);
     mTable = table;
   }  
+
+  /**
+   * Customize the invoke methods in TokenRequester. (They all funnel into this
+   * version.) The customization is to print debug output (if desired).
+   */
+  public Object invokeTimeout(String methodName, List params, int timeout)
+    throws XMPPException, RPCException, TokenFailure {
+    if (debugFlag) {
+      String msg = RPCDispatcherDebug.buildCallString("send", methodName, params);
+      messageHandler.print(msg);
+    }
+    return super.invokeTimeout(methodName, params, timeout);
+  }
+
+  /**
+   * This is a grody hack to get a messageHandler into the referee. It's only
+   * needed for debug RPC output.
+   */
+  public void setMessageHandler(GameUI.MessageHandler messageHandler) {
+    this.messageHandler = messageHandler;
+  }
 
   /**
    * Ask the referee to invite a player to this game.

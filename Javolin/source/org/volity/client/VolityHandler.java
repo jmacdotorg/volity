@@ -34,7 +34,6 @@ public class VolityHandler implements RPCHandler {
     // Inherited from RPCHandler.
     public void handleRPC(String methodName, List params, 
         RPCResponseHandler k) {
-        System.out.println("handleRPC: " + methodName + " " + params.toString());
 
         GameTable table = gameUI.table;
 

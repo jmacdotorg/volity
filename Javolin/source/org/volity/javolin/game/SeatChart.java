@@ -224,6 +224,7 @@ public class SeatChart
         }
         else {
             panel = (SeatPanel)mSeatPanels.get(seat.getID());
+            //### null pointer here
             panel.adjustNames(seat.getPlayers());
         }
     }
