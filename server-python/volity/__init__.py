@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.1:
+Fixed a bug where a rejoining player in a seat would not cause player_sat 
+    announcements to go out.
+
 - 1.5.0:
 Accept a player back into the game even if he reconnects with a different
     JID resource. We still permit a player to play against himself with

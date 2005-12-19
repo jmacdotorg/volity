@@ -910,6 +910,8 @@ class Referee(volent.VolEntity):
                     unicode(player))
                 player.live = True
                 player.aware = False
+                if (player.seat):
+                    self.queueaction(self.reportsit, player, player.seat)
                 
             return
 
