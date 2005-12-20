@@ -532,23 +532,39 @@ public abstract class TestUI
                 break;
             }
 
-            //### This doesn't work right in the non-simple case -- sorry.
-
-            buf.append("[");
-            for (int ix=0; ix<ids.length; ix++) {
-                if (ix > 0)
-                    buf.append(", ");
-                Object id = ids[ix];
-                Object val = arr.get(ix, arr);
-                if (!simple) {
+            if (simple) {
+                buf.append("[");
+                for (int ix=0; ix<ids.length; ix++) {
+                    if (ix > 0)
+                        buf.append(", ");
+                    Object id = ids[ix];
+                    Object val = arr.get(ix, arr);
+                    prettifyParam(buf, val);
+                }
+                buf.append("]");
+            }
+            else {
+                boolean printedany = false;
+                buf.append("{");
+                for (int ix=0; ix<ids.length; ix++) {
+                    Object id = ids[ix];
+                    Object val;
+                    if (id instanceof Integer)
+                        val = arr.get(((Integer)id).intValue(), arr);
+                    else
+                        val = arr.get(id.toString(), arr);
+                    if (val == null || val instanceof Undefined)
+                        continue;
+                    if (printedany)
+                        buf.append(", ");
+                    printedany = true;
                     prettifyParam(buf, id);
                     buf.append(": ");
+                    prettifyParam(buf, val);
                 }
-                prettifyParam(buf, val);
+                buf.append("}");
             }
-            buf.append("]");
         }
-        //### and whatever struct maps to
         else {
             buf.append(obj.toString());
         }
