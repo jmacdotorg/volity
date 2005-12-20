@@ -6,6 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /** A remote procedure call packet conforming to JEP-0009 (Jabber-RPC). */
+//### This kind of string-appending really should be converted to a
+//### StringBuffer.
 public abstract class RPC extends IQ {
   public static final String elementName = "query", namespace = "jabber:iq:rpc";
 
@@ -38,33 +40,35 @@ public abstract class RPC extends IQ {
       xml += "<int>" + v + "</int>";
     else if (v instanceof Boolean)
       xml += "<boolean>" + (((Boolean) v).booleanValue() ? "1" : "0") +
-	"</boolean>";
+        "</boolean>";
     else if (v instanceof String)
       xml += "<string>" + StringUtils.escapeForXML((String) v) + "</string>";
     else if (v instanceof Date)
       xml += "<dateTime.iso8601>" + 
-	date.format((Date) v) + "</dateTime.iso8601>";
+        date.format((Date) v) + "</dateTime.iso8601>";
     else if (v instanceof byte[])
       xml += "<base64>" + StringUtils.encodeBase64((byte[]) v) + "</base64>";
     else if (v instanceof Map) {
       xml += "<struct>";
       for (Iterator it = ((Map) v).entrySet().iterator(); it.hasNext();) {
-	Map.Entry entry = (Map.Entry) it.next();
-	xml += "<member>";
-	xml += "<name>" + StringUtils.escapeForXML(entry.getKey().toString()) +
-	  "</name>";
-	xml += getValueXML(entry.getValue());
-	xml += "</member>";
+        Map.Entry entry = (Map.Entry) it.next();
+        xml += "<member>";
+        xml += "<name>" + StringUtils.escapeForXML(entry.getKey().toString()) +
+          "</name>";
+        xml += getValueXML(entry.getValue());
+        xml += "</member>";
       }
       xml += "</struct>";
     } else if (v instanceof Collection) {
       xml += "<array>";
+      xml += "<data>";
       for (Iterator it = ((Collection) v).iterator(); it.hasNext();)
-	xml += "<data>" + getValueXML(it.next()) + "</data>";
+        xml += getValueXML(it.next());
+      xml += "</data>";
       xml += "</array>";
     } else
-      throw new RuntimeException("Don't know how to serialize " + v.getClass() +
-				 " to Jabber-RPC.");
+      throw new RuntimeException("Don't know how to serialize " 
+        + v.getClass() + " to Jabber-RPC.");
     return xml + "</value>";
   }
 
