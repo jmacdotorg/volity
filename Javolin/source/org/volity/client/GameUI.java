@@ -57,6 +57,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     GameTable table;
     RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
     private Boolean callInProgress = Boolean.FALSE;
+    private Object callInProgressLock = new Object();
     Map seatObjects = new HashMap();
     
     public interface ErrorHandler {
@@ -615,7 +616,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     {
         try {
             Context context = Context.enter();
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 if (callInProgress == Boolean.TRUE)
                     throw new AssertionError("Tried to run two ECMAScript calls at the same time");
                 callInProgress = Boolean.TRUE;
@@ -633,7 +634,7 @@ public class GameUI implements RPCHandler, PacketFilter {
                     callback.error(ex);
             }
         } finally {
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 callInProgress = Boolean.FALSE;
             }
             Context.exit();

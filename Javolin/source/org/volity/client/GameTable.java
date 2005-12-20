@@ -223,7 +223,7 @@ public class GameTable extends MultiUserChat
     {
         Iterator iter;
         synchronized (readyListeners) {
-            // Clone listener list for unsynched use
+            // Clone listener list for unsynched use ### wrong!
             iter = new ArrayList(readyListeners).iterator();
         }
         while (iter.hasNext())

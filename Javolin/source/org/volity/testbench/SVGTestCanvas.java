@@ -201,7 +201,7 @@ public class SVGTestCanvas extends JSVGCanvas
                     // it needs to be a special subclass of Context.
                     public void run() {
                         try {
-                            interpreter.enterContext();
+                            Context context = interpreter.enterContext();
                             SVGUI.super.loadString(uiScript, scriptLabel);
                         }
                         finally {
@@ -224,7 +224,7 @@ public class SVGTestCanvas extends JSVGCanvas
                     // it needs to be a special subclass of Context.
                     public void run() {
                         try {
-                            interpreter.enterContext();
+                            Context context = interpreter.enterContext();
                             SVGUI.super.callUIMethod(method, params, callback);
                         }
                         finally {

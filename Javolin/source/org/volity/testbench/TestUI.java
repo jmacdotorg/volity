@@ -65,7 +65,7 @@ public abstract class TestUI
     {
         try {
             Context context = Context.enter();
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 if (callInProgress == Boolean.TRUE)
                     throw new AssertionError("Tried to run two ECMAScript calls at the same time");
                 callInProgress = Boolean.TRUE;
@@ -87,7 +87,7 @@ public abstract class TestUI
                     callback.error(ex);
             }
         } finally {
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 callInProgress = Boolean.FALSE;
             }
             Context.exit();
@@ -244,6 +244,7 @@ public abstract class TestUI
     Scriptable scope, game, info, volity;
     RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
     private Boolean callInProgress = Boolean.FALSE;
+    private Object callInProgressLock = new Object();
 
     Map seatObjects = new HashMap();
 
@@ -290,7 +291,7 @@ public abstract class TestUI
         try {
             if (scope == null) initGameObjects();
             Context context = Context.enter();
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 if (callInProgress == Boolean.TRUE)
                     throw new AssertionError("Tried to run two ECMAScript calls at the same time");
                 callInProgress = Boolean.TRUE;
@@ -299,7 +300,7 @@ public abstract class TestUI
             context.evaluateReader(scope, new FileReader(uiScript),
                 uiScript.getName(), 1, null);
         } finally {
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 callInProgress = Boolean.FALSE;
             }
             Context.exit();
@@ -314,7 +315,7 @@ public abstract class TestUI
         try {
             if (scope == null) initGameObjects();
             Context context = Context.enter();
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 if (callInProgress == Boolean.TRUE)
                     throw new AssertionError("Tried to run two ECMAScript calls at the same time");
                 callInProgress = Boolean.TRUE;
@@ -327,7 +328,7 @@ public abstract class TestUI
             errorHandler.error(ex, scriptLabel + " failed");
         }
         finally {
-            synchronized (callInProgress) {
+            synchronized (callInProgressLock) {
                 callInProgress = Boolean.FALSE;
             }
             Context.exit();
