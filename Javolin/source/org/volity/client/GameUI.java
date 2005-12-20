@@ -55,7 +55,6 @@ public class GameUI implements RPCHandler, PacketFilter {
     RPCResponder responder;
     Scriptable scope, game, volity, info;
     GameTable table;
-    RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
     private Boolean callInProgress = Boolean.FALSE;
     private Object callInProgressLock = new Object();
     Map seatObjects = new HashMap();
@@ -625,7 +624,15 @@ public class GameUI implements RPCHandler, PacketFilter {
                 callInProgress = Boolean.TRUE;
             }
 
-            context.setWrapFactory(rpcWrapFactory);
+            /* If we haven't already, put an RPCWrapFactory around whatever
+             * WrapFactory exists on the context. (We don't want to give up the
+             * BatikWrapFactory which exists on Batik contexts.) */
+            WrapFactory wrapper = context.getWrapFactory();
+            if (!(wrapper instanceof RPCWrapFactory)) {
+                wrapper = new RPCWrapFactory(wrapper);
+                context.setWrapFactory(wrapper);
+            }
+
             try {
                 Object ret = method.call(context, scope, game, 
                     params.toArray());
@@ -648,8 +655,22 @@ public class GameUI implements RPCHandler, PacketFilter {
      * A factory for wrapping RPC data types into JavaScript objects.
      * In particular, RPC arrays and structs are List objects and Map
      * objects, respectively, and this turns them both into Scriptables.
+     *
+     * This class is intended to wrap (in a different sense!) around an
+     * existing WrapFactory. This lets us do data wrapping on Lists and Maps,
+     * without breaking the BatikWrapFactory that's already in place on Batik
+     * contexts.
      */
-    static class RPCWrapFactory extends WrapFactory {
+    static public class RPCWrapFactory extends WrapFactory {
+        WrapFactory innerWrapper;
+
+        public RPCWrapFactory(WrapFactory innerWrapper) {
+            super();
+            if (innerWrapper == null)
+                throw new NullPointerException("RPCWrapFactory must wrap a non-null factory!");
+            this.innerWrapper = innerWrapper;
+        }
+
         public Object wrap(Context cs, Scriptable scope,
             Object obj, Class staticType)
         {
@@ -782,7 +803,7 @@ public class GameUI implements RPCHandler, PacketFilter {
                         }
                     };
             } else {
-                return super.wrap(cs, scope, obj, staticType);
+                return innerWrapper.wrap(cs, scope, obj, staticType);
             }
         }
     }

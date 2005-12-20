@@ -71,7 +71,15 @@ public abstract class TestUI
                 callInProgress = Boolean.TRUE;
             }
 
-            context.setWrapFactory(rpcWrapFactory);
+            /* If we haven't already, put an RPCWrapFactory around whatever
+             * WrapFactory exists on the context. (We don't want to give up the
+             * BatikWrapFactory which exists on Batik contexts.) */
+            WrapFactory wrapper = context.getWrapFactory();
+            if (!(wrapper instanceof GameUI.RPCWrapFactory)) {
+                wrapper = new GameUI.RPCWrapFactory(wrapper);
+                context.setWrapFactory(wrapper);
+            }
+
             try {
                 Object ret = method.call(context, scope, game, params.toArray());
                 if (ret == null || ret instanceof Undefined) {
@@ -94,145 +102,6 @@ public abstract class TestUI
         }
     }
 
-    /**
-     * A factory for wrapping RPC data types into JavaScript objects.
-     * In particular, RPC arrays and structs are List objects and Map
-     * objects, respectively, and this turns them both into Scriptables.
-     */
-    class RPCWrapFactory extends WrapFactory {
-        public Object wrap(Context cs, Scriptable scope,
-            Object obj, Class staticType)
-        {
-            if (obj != null && obj instanceof List) {
-                final List list = (List) obj;
-                return new Scriptable() {
-                        public boolean has(int index, Scriptable start) {
-                            return index >= 0 && index < list.size();
-                        }
-                        public Object get(int index, Scriptable start) {
-                            return list.get(index);
-                        }
-                        public void put(int index, Scriptable start, Object value) {
-                            list.set(index, value);
-                        }
-                        public void delete(int index) {
-                            list.remove(index);
-                        }
-                        public Object[] getIds() {
-                            Object[] ids = new Object[list.size()];
-                            for (int i = 0; i < ids.length; i++)
-                                ids[i] = new Integer(i);
-                            return ids;
-                        }
-
-                        // Not really sure what to do with all these...
-                        public String getClassName() {
-                            return list.getClass().getName();
-                        }
-                        public Object getDefaultValue(Class hint) {
-                            if (hint == null || hint == String.class)
-                                return list.toString();
-                            if (hint == Boolean.class)
-                                return Boolean.TRUE;
-                            if (hint == Number.class)
-                                return new Double(Double.NaN);
-                            return this;
-                        }
-                        public boolean hasInstance(Scriptable instance) {
-                            return false;
-                        }
-                        public boolean has(String name, Scriptable start) {
-                            return false;
-                        }
-                        public Object get(String name, Scriptable start) {
-                            return NOT_FOUND;
-                        }
-                        public void put(String name, Scriptable start, Object value) {
-                            // ignore
-                        }
-                        public void delete(String name) {
-                            // ignore
-                        }
-                        public Scriptable getParentScope() {
-                            return null;
-                        }
-                        public void setParentScope(Scriptable parent) {
-                            // ignore
-                        }
-                        public Scriptable getPrototype() {
-                            return null;
-                        }
-                        public void setPrototype(Scriptable prototype) {
-                            // ignore;
-                        }
-                    };
-            } else if (obj != null && obj instanceof Map) {
-                final Map map = (Map) obj;
-                return new Scriptable() {
-                        public boolean has(String name, Scriptable start) {
-                            return map.containsKey(name);
-                        }
-                        public Object get(String name, Scriptable start) {
-                            return map.get(name);
-                        }
-                        public void put(String name, Scriptable start, Object value) {
-                            map.put(name, value);
-                        }
-                        public void delete(String name) {
-                            map.remove(name);
-                        }
-
-                        public Object[] getIds() {
-                            return map.keySet().toArray();
-                        }
-
-                        // Not really sure what to do with all these...
-                        public String getClassName() {
-                            return map.getClass().getName();
-                        }
-                        public Object getDefaultValue(Class hint) {
-                            if (hint == null || hint == String.class)
-                                return map.toString();
-                            if (hint == Boolean.class)
-                                return Boolean.TRUE;
-                            if (hint == Number.class)
-                                return new Double(Double.NaN);
-                            return this;
-                        }
-                        public boolean hasInstance(Scriptable instance) {
-                            return false;
-                        }
-                        public boolean has(int index, Scriptable start) {
-                            return false;
-                        }
-                        public Object get(int index, Scriptable start) {
-                            return NOT_FOUND;
-                        }
-                        public void put(int index, Scriptable start, Object value) {
-                            // ignore
-                        }
-                        public void delete(int index) {
-                            // ignore
-                        }
-                        public Scriptable getParentScope() {
-                            return null;
-                        }
-                        public void setParentScope(Scriptable parent) {
-                            // ignore
-                        }
-                        public Scriptable getPrototype() {
-                            return null;
-                        }
-                        public void setPrototype(Scriptable prototype) {
-                            // ignore;
-                        }
-                    };
-            } else {
-                return super.wrap(cs, scope, obj, staticType);
-            }
-        }
-    }
-
     URL baseURL;
     TranslateToken translator;
     ErrorHandler errorHandler;
@@ -242,7 +111,6 @@ public abstract class TestUI
 
     String currentSeat;
     Scriptable scope, game, info, volity;
-    RPCWrapFactory rpcWrapFactory = new RPCWrapFactory();
     private Boolean callInProgress = Boolean.FALSE;
     private Object callInProgressLock = new Object();
 
