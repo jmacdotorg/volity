@@ -85,12 +85,14 @@ public class RPCDispatcherDebug extends RPCDispatcher {
         }
 
         if (obj instanceof List) {
+            buf.append("[");
             List ls = (List)obj;
             for (int ix=0; ix<ls.size(); ix++) {
                 if (ix != 0)
                     buf.append(", ");
                 buildParamString(buf, ls.get(ix));
             }
+            buf.append("]");
             return;
         }
 
@@ -104,7 +106,7 @@ public class RPCDispatcherDebug extends RPCDispatcher {
                     first = false;
                 else
                     buf.append(", ");
-                buf.append(ent.getKey().toString());
+                buildParamString(buf, ent.getKey());
                 buf.append(": ");
                 buildParamString(buf, ent.getValue());
             }
