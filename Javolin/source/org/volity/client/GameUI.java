@@ -105,7 +105,9 @@ public class GameUI implements RPCHandler, PacketFilter {
     public ScriptableObject initGameObjects(ScriptableObject scope) {
         try {
             Context context = Context.enter();
-            if (scope == null) scope = context.initStandardObjects();
+            if (scope == null) {
+                scope = context.initStandardObjects();
+            }
             this.scope = scope;
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("volity", scope, volity = context.newObject(scope));
@@ -114,6 +116,7 @@ public class GameUI implements RPCHandler, PacketFilter {
                     public Object run(Object[] args) {
                         try {
                             List params = Arrays.asList(args).subList(1, args.length);
+                            params = unwrapRPCTypes(params);
                             return table.getReferee().invoke("game." + args[0], params);
                         } catch (Exception e) {
                             errorHandler.error(e);
@@ -519,7 +522,8 @@ public class GameUI implements RPCHandler, PacketFilter {
     public void load(File uiScript) throws IOException, JavaScriptException {
         try {
             if (scope == null) initGameObjects();
-            Context.enter().evaluateReader(scope, new FileReader(uiScript),
+            Context context = Context.enter();
+            context.evaluateReader(scope, new FileReader(uiScript),
                 uiScript.getName(), 1, null);
         } finally {
             Context.exit();
@@ -776,6 +780,77 @@ public class GameUI implements RPCHandler, PacketFilter {
             } else {
                 return super.wrap(cs, scope, obj, staticType);
             }
+        }
+    }
+
+    public static List unwrapRPCTypes(List params) 
+        throws BadRPCTypeException {
+        // Might as well special-case this
+        if (params.size() == 0)
+            return params;
+
+        List result = new ArrayList();
+
+        for (int ix=0; ix<params.size(); ix++) {
+            Object val = params.get(ix);
+            result.add(unwrapRPCValue(val));
+        }
+
+        return result;
+    }
+
+    public static Object unwrapRPCValue(Object obj)
+    throws BadRPCTypeException {
+        if (obj instanceof String)
+            return obj;
+        if (obj instanceof Number)
+            return obj;
+        
+        if (obj instanceof NativeArray) {
+            NativeArray arr = (NativeArray)obj;
+            Object[] ids = arr.getIds();
+
+            boolean simple = true;
+            for (int ix=0; ix<ids.length; ix++) {
+                Object id = ids[ix];
+                if (id instanceof Number && ((Number)id).doubleValue() == ix)
+                    continue;
+                simple = false;
+                break;
+            }
+
+            if (simple) {
+                List result = new ArrayList();
+                for (int ix=0; ix<ids.length; ix++) {
+                    Object id = ids[ix];
+                    Object val = arr.get(ix, arr);
+                    result.add(unwrapRPCValue(val));
+                }
+                return result;
+            }
+            else {
+                Map result = new HashMap();
+                for (int ix=0; ix<ids.length; ix++) {
+                    Object id = ids[ix];
+                    Object val;
+                    if (id instanceof Integer)
+                        val = arr.get(((Integer)id).intValue(), arr);
+                    else
+                        val = arr.get(id.toString(), arr);
+                    if (val == null || val instanceof Undefined)
+                        continue;
+                    result.put(id, val);
+                }
+                return result;
+            }
+        }
+
+        throw new BadRPCTypeException("cannot send object " + obj);
+    }
+
+    public static class BadRPCTypeException extends Exception {
+        public BadRPCTypeException(String val) {
+            super(val);
         }
     }
 
