@@ -387,7 +387,10 @@ public abstract class TestUI
                             if (args.length != 1) {
                                 throw new Exception("message() requires one argument");
                             }
-                            messageHandler.print(args[0].toString());
+                            if (args[0] == null)
+                                messageHandler.print("null");
+                            else
+                                messageHandler.print(args[0].toString());
                             return null;
                         } catch (Exception e) {
                             errorHandler.error(e);
