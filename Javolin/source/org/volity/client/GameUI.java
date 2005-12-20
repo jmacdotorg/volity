@@ -803,6 +803,8 @@ public class GameUI implements RPCHandler, PacketFilter {
     throws BadRPCTypeException {
         if (obj instanceof String)
             return obj;
+        if (obj instanceof Boolean)
+            return obj;
         if (obj instanceof Number)
             return obj;
         
