@@ -17,6 +17,7 @@ import org.apache.batik.script.rhino.svg12.SVG12RhinoInterpreter;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
+import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
 import org.apache.batik.util.RunnableQueue;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -42,7 +43,7 @@ public class SVGTestCanvas extends JSVGCanvas
         GameUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
 
-        super();
+        super(new SVGUserAgentJavolin(messageHandler), true, true);
 
         this.uiDocument = uiDocument;
         this.debugInfo = debugInfo;
@@ -61,8 +62,27 @@ public class SVGTestCanvas extends JSVGCanvas
     }
 
     /**
+     * A custom SVGUserAgent class.
+     */
+    protected static class SVGUserAgentJavolin extends SVGUserAgentGUIAdapter {
+        protected GameUI.MessageHandler messageHandler;
+        public SVGUserAgentJavolin(GameUI.MessageHandler messageHandler) {
+            super(null);
+            this.messageHandler = messageHandler;
+        }
+        public String getDefaultFontFamily() {
+            // Copied from AbstractJSVGComponent
+            return "Arial, Helvetica, sans-serif";
+        }
+        public void openLink(String uri, boolean newc) {
+            messageHandler.print("Clicked hyperlink: " + uri);
+        }
+    }
+
+    /**
      * Override the creation of a UserAgent. This lets us customize the
-     * handling of SVG errors.
+     * handling of SVG errors. (Possibly this could be subsumed into the
+     * SVGUserAgent class, but I haven't done it.)
      */
     protected UserAgent createUserAgent() {
         /**

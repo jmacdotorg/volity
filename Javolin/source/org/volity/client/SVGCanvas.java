@@ -17,6 +17,7 @@ import org.apache.batik.script.rhino.svg12.SVG12RhinoInterpreter;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.gvt.GVTTreeRendererAdapter;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
+import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
 import org.apache.batik.util.RunnableQueue;
 import org.jivesoftware.smack.XMPPConnection;
 import org.mozilla.javascript.Context;
@@ -32,6 +33,7 @@ public class SVGCanvas extends JSVGCanvas
     TranslateToken translator;
     GameUI.MessageHandler messageHandler;
     GameUI.ErrorHandler errorHandler;
+    LinkHandler linkHandler;
 
     SVGUI ui;
     RhinoInterpreter interpreter;
@@ -47,9 +49,10 @@ public class SVGCanvas extends JSVGCanvas
     public SVGCanvas(GameTable table, URL uiDocument,
         TranslateToken translator,
         GameUI.MessageHandler messageHandler, 
-        GameUI.ErrorHandler errorHandler) {
+        GameUI.ErrorHandler errorHandler,
+        LinkHandler linkHandler) {
         this(table.getConnection(), uiDocument, translator,
-            messageHandler, errorHandler);
+            messageHandler, errorHandler, linkHandler);
         this.table = table;
     }
     
@@ -62,14 +65,16 @@ public class SVGCanvas extends JSVGCanvas
     public SVGCanvas(XMPPConnection connection, URL uiDocument,
         TranslateToken translator,
         GameUI.MessageHandler messageHandler,
-        GameUI.ErrorHandler errorHandler) {
+        GameUI.ErrorHandler errorHandler,
+        LinkHandler linkHandler) {
 
-        super();
+        super(new SVGUserAgentJavolin(linkHandler), true, true);
 
         this.uiDocument = uiDocument;
         this.connection = connection;
         this.messageHandler = messageHandler;
         this.errorHandler = errorHandler;
+        this.linkHandler = linkHandler;
         this.translator = translator;
         setDocumentState(ALWAYS_DYNAMIC);
         setURI(uiDocument.toString());
@@ -79,10 +84,31 @@ public class SVGCanvas extends JSVGCanvas
                 }
             });
     }
+
+    public interface LinkHandler {
+        public abstract void link(String uri);
+    }
   
+    protected static class SVGUserAgentJavolin extends SVGUserAgentGUIAdapter {
+        protected LinkHandler linkHandler;
+        public SVGUserAgentJavolin(LinkHandler linkHandler) {
+            super(null);
+            this.linkHandler = linkHandler;
+        }
+        public String getDefaultFontFamily() {
+            // Copied from AbstractJSVGComponent
+            return "Arial, Helvetica, sans-serif";
+        }
+        public void openLink(String uri, boolean newc) {
+            if (linkHandler != null)
+                linkHandler.link(uri);
+        }
+    }
+
     /**
      * Override the creation of a UserAgent. This lets us customize the
-     * handling of SVG errors.
+     * handling of SVG errors. (Possibly this could be subsumed into the
+     * SVGUserAgent class, but I haven't done it.)
      */
     protected UserAgent createUserAgent() {
         /**

@@ -229,9 +229,20 @@ public class TableWindow extends JFrame implements PacketListener
                 }
             };
 
+        SVGCanvas.LinkHandler linkHandler = new SVGCanvas.LinkHandler() {
+                public void link(String uri) {
+                    if (PlatformWrapper.launchURLAvailable()) {
+                        PlatformWrapper.launchURL(uri);
+                    }
+                    else {
+                        messageHandler.print("Visit this website: " + uri);
+                    }
+                }
+            };
+
         // Create the SVG object.
         mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
-            messageHandler, errorHandler);
+            messageHandler, errorHandler, linkHandler);
 
         mGameViewport.addUpdateManagerListener(
             new UpdateManagerAdapter()
