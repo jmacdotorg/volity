@@ -497,7 +497,11 @@ public class TableWindow extends JFrame implements PacketListener
      * created, and the MUC must be joined. Conveniently, these happen in
      * parallel. So the listener for *each* op calls this function. The
      * function checks to make sure that *both* flags are set before it starts
-     * work (and it also checks to make sure it's never run before).
+     * work.
+     *
+     * The function also checks to make sure it only runs once -- or rather,
+     * only once per UI initialization. (The "reload UI" command resets the
+     * switch.)
      */
     private void tryFinishInit()
     {
@@ -510,7 +514,7 @@ public class TableWindow extends JFrame implements PacketListener
         }
         if (mGameStartFinished) 
         {
-            // Should only do this once.
+            // Should only do this once per UI initialization.
             return;
         }
         mGameStartFinished = true;
@@ -519,11 +523,13 @@ public class TableWindow extends JFrame implements PacketListener
         mGameViewport.forceRedraw();
 
         // Remove loading component, since it's no longer needed
-        ((CardLayout)mGameViewWrapper.getLayout()).removeLayoutComponent(
-            mLoadingComponent);
+        if (mLoadingComponent != null) {
+            ((CardLayout)mGameViewWrapper.getLayout()).removeLayoutComponent(
+                mLoadingComponent);
+            mLoadingComponent = null;
+        }
 
-        mLoadingComponent = null;
-
+        // Put a message service in the referee (only used for debug output)
         Referee referee = mGameTable.getReferee();
         referee.setMessageHandler(mMessageHandler);
 
@@ -686,6 +692,24 @@ public class TableWindow extends JFrame implements PacketListener
             getHeight() - 200));
         mUserListSplitter.setDividerLocation(prefs.getInt(USERLIST_SPLIT_POS,
             getWidth() - 140));
+    }
+
+    /**
+     * Reload the game UI from scratch.
+     */
+    public void doReloadUI() 
+    {
+        /* ### If we switch to a different UI, we'd need a whole new
+         * translator. Or we'd need to switch the translator to a different
+         * localedir, really, since so many components cache pointers to it. 
+         */
+        mTranslator.clearCache();
+        
+        /* Reset this switch, so that the UI update event triggers a new
+         * send_state() RPC. */
+        mGameStartFinished = false;
+
+        mGameViewport.reloadUI();
     }
 
     /**

@@ -38,6 +38,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
     private final static String MENUCMD_GAME_INFO = "Game Info...";
+    private final static String MENUCMD_RELOAD_UI = "Reload Interface";
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
@@ -57,6 +58,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mJoinMucMenuItem;
     private JMenuItem mShowLastErrorMenuItem;
     private JMenuItem mGameInfoMenuItem;
+    private JMenuItem mReloadUIMenuItem;
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
     private JMenuItem mGameFinderMenuItem;
@@ -193,6 +195,13 @@ public class JavolinMenuBar extends JMenuBar
         if (mTableWindow == null) 
             mInviteBotMenuItem.setEnabled(false);
         gameMenu.add(mInviteBotMenuItem);
+
+        mReloadUIMenuItem = new JMenuItem(MENUCMD_RELOAD_UI);
+        mReloadUIMenuItem.addActionListener(this);
+        setPlatformMnemonic(mReloadUIMenuItem, KeyEvent.VK_R);
+        if (mTableWindow == null) 
+            mReloadUIMenuItem.setEnabled(false);
+        gameMenu.add(mReloadUIMenuItem);
 
         // Window menu
         mWindowMenu = new WindowMenu();
@@ -332,6 +341,10 @@ public class JavolinMenuBar extends JMenuBar
         else if (e.getSource() == mGameInfoMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doInfoDialog();
+        }
+        else if (e.getSource() == mReloadUIMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doReloadUI();
         }
         else if (e.getSource() == mInvitePlayerMenuItem) {
             if (mTableWindow != null)

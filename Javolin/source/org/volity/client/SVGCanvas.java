@@ -102,6 +102,16 @@ public class SVGCanvas extends JSVGCanvas
     }
 
     /**
+     * Kludge (or maybe it's just a clever way) to force the canvas to reload
+     * the SVG file from disk.
+     */
+    public void reloadUI() {
+        if (ui != null)
+            ui.stop();
+        setURI(uiDocument.toString());
+    }
+
+    /**
      * Kludge to force the component to redraw itself.
      *
      * This was necessary due to bugs in the original Batik 1.6 release. These

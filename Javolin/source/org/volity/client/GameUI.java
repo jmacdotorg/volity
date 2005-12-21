@@ -79,8 +79,10 @@ public class GameUI implements RPCHandler, PacketFilter {
     }
 
     /**
-     * Disconnect the RPC handler and cease work. 
-     * Call this when the user interface (e.g., the window) closes.
+     * Disconnect the RPC handler and cease work. Call this when the user
+     * interface (e.g., the window) closes. You should also call it before
+     * reloading or changing the UI, because that triggers the creation of a
+     * new UI.
      */
     public void stop() {
         Audio.stopGroup(this);

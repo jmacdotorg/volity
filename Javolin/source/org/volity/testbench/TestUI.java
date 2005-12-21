@@ -321,6 +321,9 @@ public abstract class TestUI
         currentSeat = seatId;
     }
 
+    /**
+     * Cut off any playing sounds which have this UI for an owner.
+     */
     public void stopAllSound() {
         Audio.stopGroup(this);
     }

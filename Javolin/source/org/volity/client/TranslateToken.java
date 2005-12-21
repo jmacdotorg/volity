@@ -415,14 +415,19 @@ public class TranslateToken {
     }
 
     /**
-     * Clear the cached tables we loaded from the UI package. This has no value
-     * in Javolin, but it's useful in Testbench when we reload changes.
+     * Clear the cached tables we loaded from the UI package. This is useful in
+     * Testbench when we reload changes. We also do it in Javolin when we
+     * reload the UI.
      */
     public void clearCache() {
         tableCacheGame.clear();
         tableCacheUi.clear();
         tableCacheSeat.clear();
     }
+
+    /* ### also have changeLocaleDir() method? It would have to clear the
+     * cache, of course. It would also have to deal with switching to or from a
+     * null locale dir. ### */
 
     /**
      * Parse an XML token translation table, and store its entries into
