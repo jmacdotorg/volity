@@ -313,6 +313,22 @@ public class TableWindow extends JFrame implements PacketListener
          */
         mGameTable.setQueuedMessageListener(this);
 
+        // Notify the player if the referee crashes.
+        mGameTable.addShutdownListener(new GameTable.ReadyListener() {
+                public void ready() {
+                    // Called outside Swing thread!
+                    // Invoke into the Swing thread.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                JOptionPane.showMessageDialog(TableWindow.this,
+                                    "The referee has shut down unexpectedly.",
+                                    JavolinApp.getAppName() + ": Error",
+                                    JOptionPane.ERROR_MESSAGE);
+                            }
+                        });
+                }
+            });
+        
         // We need a StatusListener to adjust button states when this player
         // stands, sits, etc.
         mGameTable.addStatusListener(new DefaultStatusListener() {

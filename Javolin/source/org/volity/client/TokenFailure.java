@@ -1,5 +1,6 @@
 package org.volity.client;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,6 +13,12 @@ import java.util.List;
  * @author Andrew Plotkin (erkyrath@eblong.com)
  */
 public class TokenFailure extends Exception {
+
+    public TokenFailure(String singletoken) {
+        this.tokenlist = new ArrayList();
+        tokenlist.add(singletoken);
+    }
+
     public TokenFailure(List tokenlist) {
         this.tokenlist = tokenlist;
     }

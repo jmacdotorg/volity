@@ -50,6 +50,7 @@ public class GameTable extends MultiUserChat
     protected boolean mInitialJoined = false;
     protected List statusListeners = new ArrayList();
     protected List readyListeners = new ArrayList();
+    protected List shutdownListeners = new ArrayList();
 
     protected XMPPConnection mConnection;
     protected Referee mReferee;
@@ -183,6 +184,9 @@ public class GameTable extends MultiUserChat
      * allows a listener to be notified when the GameTable has successfully
      * joined the MUC and located the referee.
      *
+     * This is also used for addShutdownListener / removeShutdownListener,
+     * because why make life complicated.
+     *
      * Note: the listener is notified on a Smack listener thread! Do not
      * do UI work in your invitationReceived() method.
      */
@@ -208,6 +212,20 @@ public class GameTable extends MultiUserChat
         }
     }
 
+    /** Add a table-joined listener. */
+    public void addShutdownListener(ReadyListener listener) {
+        synchronized (shutdownListeners) {
+            shutdownListeners.add(listener);
+        }
+    }
+    
+    /** Remove a table-joined listener. */
+    public void removeShutdownListener(ReadyListener listener) {
+        synchronized (shutdownListeners) {
+            shutdownListeners.remove(listener);
+        }
+    }
+
     /**
      * Notify all listeners that have registered for notification of
      * MUC-joinedness.
@@ -223,8 +241,32 @@ public class GameTable extends MultiUserChat
     {
         Iterator iter;
         synchronized (readyListeners) {
-            // Clone listener list for unsynched use ### wrong!
+            // Clone listener list for unsynched use
             iter = new ArrayList(readyListeners).iterator();
+        }
+        while (iter.hasNext())
+        {
+            ((ReadyListener)iter.next()).ready();
+        }
+    }
+
+    /**
+     * Notify all listeners that have registered for notification of
+     * MUC-joinedness.
+     *
+     * May be called outside Swing thread! May call listeners outside Swing
+     * thread!
+     *
+     * (Actually, clever people will note that this is called *in* the Swing
+     * thread, thanks to the DiscoBackground class. But let's not rely on
+     * that implementation detail.)
+     */
+    private void fireShutdownListeners()
+    {
+        Iterator iter;
+        synchronized (shutdownListeners) {
+            // Clone listener list for unsynched use
+            iter = new ArrayList(shutdownListeners).iterator();
         }
         while (iter.hasNext())
         {
@@ -313,13 +355,15 @@ public class GameTable extends MultiUserChat
                 if (gonePlayers == null)
                     gonePlayers = new ArrayList();
                 gonePlayers.add(player);
-                if (player.isReferee()) {
-                    // Oh dear. We've lost our referee.
-                    mReferee = null;
-                    // XXX notify somebody?
+
+                if (player.isReferee() || player.isSelf()) {
+                    /* If the player's own self vanishes, it means the MUC has
+                     * gone away. If the referee vanishes, it's just as bad.
+                     * Either way, the game is dead. Mark the referee object
+                     * accordingly, so we don't send any more stuff to it. */
+                    mReferee.setCrashed();
+                    fireShutdownListeners();
                 }
-                // XXX if player.isSelf(), then the whole MUC is gone. Should
-                // react the same way to that as to a referee lossage.
             }
         }
         for (Iterator it = occupantMap.entrySet().iterator(); it.hasNext(); ) {

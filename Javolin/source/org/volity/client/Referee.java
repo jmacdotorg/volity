@@ -24,6 +24,7 @@ public class Referee extends TokenRequester {
 
   GameTable mTable;
   GameUI.MessageHandler messageHandler;
+  boolean mCrashed;
 
   /**
    * @param table the game table where the game will be played
@@ -32,19 +33,33 @@ public class Referee extends TokenRequester {
   Referee(GameTable table, String jid) {
     super(table.getConnection(), jid);
     mTable = table;
+    mCrashed = false;
   }  
 
   /**
    * Customize the invoke methods in TokenRequester. (They all funnel into this
-   * version.) The customization is to print debug output (if desired).
+   * version.) The customization is to print debug output (if desired). Also,
+   * if the game is dead, return a token error instead of risking a Jabber 404.
    */
   public Object invokeTimeout(String methodName, List params, int timeout)
     throws XMPPException, RPCException, TokenFailure {
+    if (mCrashed)
+      throw new TokenFailure("volity.referee_not_ready");
     if (debugFlag) {
       String msg = RPCDispatcherDebug.buildCallString("send", methodName, params);
       messageHandler.print(msg);
     }
     return super.invokeTimeout(methodName, params, timeout);
+  }
+
+  /**
+   * The client can notice in several ways that the game has crashed. (For
+   * example, it might see the referee withdraw from the MUC, or it might see
+   * the MUC close down entirely.) When this happens, we want to set a flag
+   * which prevents further messages from going out to the ref.
+   */
+  public void setCrashed() {
+    mCrashed = true;
   }
 
   /**
