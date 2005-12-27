@@ -76,7 +76,9 @@ public class TestButtonBar
                 tmpmsg = "player in seat \"" + seatid + "\"";
             writeMessageText("Starting game (" + tmpmsg + ")");
 
-            Object method = testUI.game.get("START", testUI.scope);
+            Object method = testUI.volity.get("start_game", testUI.scope);
+            if (method == Scriptable.NOT_FOUND)
+                method = testUI.game.get("START", testUI.scope);
             List params = new ArrayList(0);
             try {
                 if (method != Scriptable.NOT_FOUND) {
@@ -84,14 +86,16 @@ public class TestButtonBar
                 }
             }
             catch (Exception ex) {
-                errorHandler.error(ex, "game.START failed");
+                errorHandler.error(ex, "volity.start_game failed");
             }
         }
         else if (ev.getSource() == mEndGameBut) {
             //### track "ref" state
             writeMessageText("Ending game");
 
-            Object method = testUI.game.get("END", testUI.scope);
+            Object method = testUI.volity.get("end_game", testUI.scope);
+            if (method == Scriptable.NOT_FOUND)
+                method = testUI.game.get("END", testUI.scope);
             List params = new ArrayList(0);
             try {
                 if (method != Scriptable.NOT_FOUND) {
