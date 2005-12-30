@@ -102,6 +102,11 @@ L<Volity::Bot>.
 
 The version number of the Volity protocol that this server supports.
 
+=item visible
+
+Whether or not this parlor is visble to Volity's game finder. Set to 1
+if it is, or 0 if it should go unlisted.
+
 =back
 
 =head1 OTHER METHODS
@@ -131,7 +136,7 @@ you will be sad.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version visible);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -328,7 +333,7 @@ sub handle_disco_info_request {
 	$field->values(@values);
 	push (@fields, $field);
     }
-    foreach (qw(contact_email contact_jid volity_version)) {
+    foreach (qw(contact_email contact_jid volity_version visible)) {
 	my $field_name;
 	my $value;
 	$value = $self->$_;
