@@ -11,7 +11,7 @@ use Getopt::Std;
 use Volity::GameRecord;
 
 my %opts;
-getopts('u:p:h:r:g:o:b:l:m:B:f:c:v:j:', \%opts);
+getopts('u:p:h:r:g:o:b:l:m:B:f:c:v:j:V:', \%opts);
 
 foreach ('user', 'host', 'password',) {
   unless (defined($opts{substr($_, 0, 1)})) {
@@ -72,6 +72,7 @@ my $server = Volity::Server->new(
 				  volity_version=>$opts{v} || '1.0',
 				  contact_email=>$opts{c},
 				  contact_jid=>$opts{j},
+				  visible=>defined($opts{V})? $opts{V} : 1,
 				}
 				);
 
@@ -228,6 +229,13 @@ modules available to the server. They will be invoked through Perl's
 C<require()> function, so they must each be visible to @INC.
 
 B<Default>: None, and no bots will be available to the server.
+
+=item V
+
+Whether or not this parlor is visble to Volity's game finder. Set to 1
+if it is, or 0 if it should go unlisted.
+
+B<Default>: 1
 
 =back
 
