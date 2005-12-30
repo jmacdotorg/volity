@@ -171,6 +171,7 @@ class Parlor(volent.VolEntity):
         self.startuptime = time.time()
         self.activitytime = None
         self.refereesstarted = 0
+        self.visibility = config.getbool('visible', True)
 
         self.actors = {}
         
@@ -196,6 +197,11 @@ class Parlor(volent.VolEntity):
         if (config.get('contact-jid')):
             form.addfield('contact-jid', config.get('contact-jid'))
         form.addfield('volity-version', volent.volityversion)
+        if (self.visibility):
+            val = '1'
+        else:
+            val = '0'
+        form.addfield('visible', val)
         info.setextendedinfo(form)
 
         # assumes resource didn't change

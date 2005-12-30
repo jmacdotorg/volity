@@ -194,7 +194,7 @@ class Referee(volent.VolEntity):
 
         self.language = 'en'
         self.recordgames = True
-        self.showtable = True
+        self.showtable = self.parlor.visibility
         self.killgame = False
 
         # Set up the RPC replier.
@@ -223,8 +223,9 @@ class Referee(volent.VolEntity):
         if (self.game.defaultrecordgames != None):
             self.recordgames = bool(self.game.defaultrecordgames)
         if (self.game.defaultshowtable != None):
-            self.showtable = bool(self.game.defaultshowtable)
-        ### let parlor config override these?
+            if (not bool(self.game.defaultshowtable)):
+                self.showtable = False
+        ### let parlor config override these? More?
 
         # Set up the disco replier.
 

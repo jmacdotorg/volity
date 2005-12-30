@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.2:
+Added a "visible" argument to the parlor configuration, which controls both
+    the parlor-level and game-level visibility flag.
+
 - 1.5.1:
 Fixed a bug where a rejoining player in a seat would not cause player_sat 
     announcements to go out.

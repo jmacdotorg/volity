@@ -127,6 +127,8 @@ set the --contact-jid option.
       identity which is operating this parlor
   --contact-email=EMAIL, [contact-email]
       identity which is operating this parlor
+  --visible=BOOL, [visible]
+      whether the parlor should be listed in game directories (default: true)
   --muc=HOST, [muchost]
       service for multi-user conferencing (default: conference.volity.net)
   --bookkeeper=JID, [bookkeeper]
@@ -193,6 +195,9 @@ popt.add_option('--contact-jid',
 popt.add_option('--contact-email',
     action='store', type='string', dest='contactemail', metavar='EMAIL',
     help='identity which is operating this parlor')
+popt.add_option('--visible',
+    action='store', type='string', dest='visible', metavar='BOOLEAN',
+    help='whether the parlor should be listed in game directories (default: true)')
 popt.add_option('--muc',
     action='store', type='string', dest='muchost', metavar='HOST',
     help='service for multi-user conferencing (default: conference.volity.net)')
@@ -228,6 +233,7 @@ argmap['jid'] = opts.jid
 argmap['jid-resource'] = opts.jidresource
 argmap['contact-jid'] = opts.contactjid
 argmap['contact-email'] = opts.contactemail
+argmap['visible'] = opts.visible
 argmap['game'] = opts.game
 argmap['bot'] = opts.bot
 argmap['password'] = opts.password

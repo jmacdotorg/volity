@@ -99,7 +99,7 @@ class ConfigFile:
 
         Get an entry from the config file (or the command-line arguments,
         or an environment variable). If the entry cannot be found by any
-        means, this returns None.
+        means, this returns None. (Unless another default is specified.)
         
         *argmap* entries override environment variables override config file
         lines.
@@ -115,6 +115,28 @@ class ConfigFile:
         if (val != None):
             return val
         return default
+
+    def getbool(self, key, default=False):
+        """getbool(key, default=False) -> bool
+
+        Get an entry from the config file (or the command-line arguments,
+        or an environment variable). If the entry cannot be found by any
+        means, this returns False. (Unless another default is specified.)
+        
+        *argmap* entries override environment variables override config file
+        lines. Boolean values of the form 't', 'true', 'y', 'yes', and '1'
+        are all recognized.
+        """
+
+        val = self.get(key, None)
+        if (val == None):
+            return default
+        if (not val):
+            return False
+        val = val.lower()
+        if (val[0] in 'nf0'):
+            return False
+        return True
 
     def has_key(self, key):
         """has_key(key) -> bool
