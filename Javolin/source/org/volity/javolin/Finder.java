@@ -181,7 +181,9 @@ public class Finder extends JFrame
         }
 
         private void setupListeners() {
-            addMouseListener(new FinderLinkListener(this));
+            LinkListener linkListener = new FinderLinkListener(this);
+            addMouseListener(linkListener);
+            addMouseMotionListener(linkListener);
         }
     }
 
