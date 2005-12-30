@@ -24,6 +24,7 @@ import java.util.prefs.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.volity.client.CapPacketExtension;
 
@@ -32,11 +33,15 @@ import org.volity.client.CapPacketExtension;
  */
 public class ConnectDialog extends BaseDialog implements ActionListener
 {
+    private final static String DEFAULT_HOST = "volity.net";
+
+
     private final static String NODENAME = "ConnectDialog";
-    private final static String HOSTNAME_KEY = "HostName";
-    private final static String USERNAME_KEY = "UserName";
+    private final static String JID_KEY = "JID";
     private final static String EMAIL_KEY = "Email";
     private final static String FULLNAME_KEY = "FullName";
+
+    //### When we can register accounts on the web site, change this text.
 
     private final static String HELP_TEXT_CONNECT = 
         "If you are new to Volity, select this option."       +
@@ -50,8 +55,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
     private static String staticResourceString = null;
 
-    private JTextField mHostNameField;
-    private JTextField mUserNameField;
+    private JTextField mJIDField;
     private JPasswordField mPasswordField;
     private JButton mCancelButton;
     private JButton mConnectButton;
@@ -95,13 +99,9 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         restoreFieldValues();
 
         // Set focus to first blank field
-        if (mHostNameField.getText().equals(""))
+        if (mJIDField.getText().equals(""))
         {
-            mHostNameField.requestFocusInWindow();
-        }
-        else if (mUserNameField.getText().equals(""))
-        {
-            mUserNameField.requestFocusInWindow();
+            mJIDField.requestFocusInWindow();
         }
         else
         {
@@ -150,16 +150,39 @@ public class ConnectDialog extends BaseDialog implements ActionListener
      */
     private void doConnect()
     {
-        // Make sure at least the first two fields are nonempty.
+        // Make sure the first field is nonempty.
         // (The password *could* be the empty string.)
-        if (mHostNameField.getText().equals("")) {
-            mHostNameField.requestFocusInWindow();
+
+        if (mJIDField.getText().equals("")
+            || mJIDField.getText().startsWith("/")) {
+            mJIDField.requestFocusInWindow();
             return;
         }
-        if (mUserNameField.getText().equals("")) {
-            mUserNameField.requestFocusInWindow();
+
+        String jid = mJIDField.getText();
+        String jidresource = StringUtils.parseResource(jid);
+        String jidhost = StringUtils.parseServer(jid);
+        String jidname = StringUtils.parseName(jid);
+
+        /* Due to the JID structure, if the user typed no "@" then we wind up
+         * with a jidhost and no jidname. */
+
+        if (jidhost.equals("")) {
+            mJIDField.requestFocusInWindow();
             return;
         }
+
+        if (jidname.equals("")) {
+            jidname = jidhost;
+            jidhost = DEFAULT_HOST;
+            jid = jidname + "@" + jidhost;
+            if (!jidresource.equals(""))
+                jid += ("/" + jidresource);
+            mJIDField.setText(jid);
+        }
+
+        if (jidresource.equals(""))
+            jidresource = getJIDResource();
 
         // Store field values in preferences
         saveFieldValues();
@@ -167,13 +190,13 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         // Connect
         try
         {
-            mConnection = new XMPPConnection(mHostNameField.getText());
+            mConnection = new XMPPConnection(jidhost);
             mConnection.setPresenceFactory(new CapPresenceFactory());
             ServiceDiscoveryManager.getInstanceFor(mConnection).addFeature(CapPacketExtension.NAMESPACE);
 
-            mConnection.login(mUserNameField.getText(),
+            mConnection.login(jidname,
                 new String(mPasswordField.getPassword()), 
-                getJIDResource());
+                jidresource);
 
             dispose();
         }
@@ -190,12 +213,12 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                 case 502:
                 case 504:
                     message = "Could not connect to Jabber host " +
-                        mHostNameField.getText() + ".";
+                        jidhost + ".";
                     break;
                 case 401:
                     message = "Unable to log into Jabber host " +
-                        mHostNameField.getText() +
-                        ".\nMake sure your user name and password are correct.";
+                        jidhost +
+                        ".\nMake sure your Volity ID and password are correct.";
                     break;
                 }
             }
@@ -219,14 +242,11 @@ public class ConnectDialog extends BaseDialog implements ActionListener
      */
     private void doRegister()
     {
-        // Make sure the first four fields are nonempty. We frown upon
+        // Make sure the first three fields are nonempty. We frown upon
         // people who set up empty passwords.
-        if (mHostNameField.getText().equals("")) {
-            mHostNameField.requestFocusInWindow();
-            return;
-        }
-        if (mUserNameField.getText().equals("")) {
-            mUserNameField.requestFocusInWindow();
+        if (mJIDField.getText().equals("")
+            || mJIDField.getText().startsWith("/")) {
+            mJIDField.requestFocusInWindow();
             return;
         }
         if (mPasswordField.getPassword().length == 0) {
@@ -237,6 +257,31 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             mPasswordAgainField.requestFocusInWindow();
             return;
         }
+
+        String jid = mJIDField.getText();
+        String jidresource = StringUtils.parseResource(jid);
+        String jidhost = StringUtils.parseServer(jid);
+        String jidname = StringUtils.parseName(jid);
+
+        /* Due to the JID structure, if the user typed no "@" then we wind up
+         * with a jidhost and no jidname. */
+
+        if (jidhost.equals("")) {
+            mJIDField.requestFocusInWindow();
+            return;
+        }
+
+        if (jidname.equals("")) {
+            jidname = jidhost;
+            jidhost = DEFAULT_HOST;
+            jid = jidname + "@" + jidhost;
+            if (!jidresource.equals(""))
+                jid += ("/" + jidresource);
+            mJIDField.setText(jid);
+        }
+
+        if (jidresource.equals(""))
+            jidresource = getJIDResource();
 
         /* Theoretically you're supposed to call getPassword(), keep the result
          * in an array, and zero out the array after you use it. But Smack
@@ -257,7 +302,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         saveFieldValues();
 
         try {
-            mConnection = new XMPPConnection(mHostNameField.getText());
+            mConnection = new XMPPConnection(jidhost);
             mConnection.setPresenceFactory(new CapPresenceFactory());
             ServiceDiscoveryManager.getInstanceFor(mConnection).addFeature(CapPacketExtension.NAMESPACE);
 
@@ -269,7 +314,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                     "register an account through this client.",
                     JavolinApp.getAppName() + ": Error", 
                     JOptionPane.ERROR_MESSAGE);
-                mHostNameField.requestFocusInWindow();
+                mJIDField.requestFocusInWindow();
                 mConnection.close();
                 mConnection = null;
                 return;                
@@ -307,7 +352,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                     otherFields + ")",
                     JavolinApp.getAppName() + ": Error", 
                     JOptionPane.ERROR_MESSAGE);
-                mHostNameField.requestFocusInWindow();
+                mJIDField.requestFocusInWindow();
                 mConnection.close();
                 mConnection = null;
                 return;                
@@ -340,17 +385,17 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             // Try creating the account!
 
             Map attr = new HashMap();
-            attr.put("username", mUserNameField.getText());
+            attr.put("username", jidname);
             attr.put("password", password);
             if (!mEmailField.getText().equals(""))
                 attr.put("email", mEmailField.getText());
             if (!mFullNameField.getText().equals(""))
                 attr.put("name", mFullNameField.getText());
 
-            manager.createAccount(mUserNameField.getText(), password, attr);
+            manager.createAccount(jidname, password, attr);
 
-            mConnection.login(mUserNameField.getText(), password, 
-                getJIDResource());
+            mConnection.login(jidname, password, 
+                jidresource);
 
             dispose();
         }
@@ -367,7 +412,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                 case 502:
                 case 504:
                     message = "Could not connect to Jabber host " +
-                        mHostNameField.getText() + ".";
+                        jidhost + ".";
                     break;
                 case 409:
                     message = "An account with that name already " +
@@ -399,8 +444,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        prefs.put(HOSTNAME_KEY, mHostNameField.getText());
-        prefs.put(USERNAME_KEY, mUserNameField.getText());
+        prefs.put(JID_KEY, mJIDField.getText());
         prefs.put(EMAIL_KEY, mEmailField.getText());
         prefs.put(FULLNAME_KEY, mFullNameField.getText());
     }
@@ -413,8 +457,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        mHostNameField.setText(prefs.get(HOSTNAME_KEY, "volity.net"));
-        mUserNameField.setText(prefs.get(USERNAME_KEY, ""));
+        mJIDField.setText(prefs.get(JID_KEY, ""));
         mEmailField.setText(prefs.get(EMAIL_KEY, ""));
         mFullNameField.setText(prefs.get(FULLNAME_KEY, ""));
     }
@@ -427,7 +470,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        String val = prefs.get(USERNAME_KEY, "");
+        String val = prefs.get(JID_KEY, "");
         return (val.equals(""));
     }
 
@@ -497,8 +540,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         int gridY = 0;
 
-        // Add host label
-        JLabel someLabel = new JLabel("Host:");
+        // Add JID label
+        JLabel someLabel = new JLabel("Volity ID:");
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -506,31 +549,13 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         c.anchor = GridBagConstraints.WEST;
         getContentPane().add(someLabel, c);
 
-        // Add host field
-        mHostNameField = new JTextField(15);
+        // Add JID field
+        mJIDField = new JTextField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
         c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
-        getContentPane().add(mHostNameField, c);
-        gridY++;
-
-        // Add user name label
-        someLabel = new JLabel("User name:");
-        c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = gridY;
-        c.insets = new Insets(SPACING, MARGIN, 0, 0);
-        c.anchor = GridBagConstraints.WEST;
-        getContentPane().add(someLabel, c);
-
-        // Add user name field
-        mUserNameField = new JTextField(15);
-        c = new GridBagConstraints();
-        c.gridx = 1;
-        c.gridy = gridY;
-        c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
-        getContentPane().add(mUserNameField, c);
+        getContentPane().add(mJIDField, c);
         gridY++;
 
         // Add password label
@@ -543,7 +568,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         getContentPane().add(someLabel, c);
 
         // Add password field
-        mPasswordField = new JPasswordField(15);
+        mPasswordField = new JPasswordField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
@@ -561,7 +586,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         getContentPane().add(mPasswordAgainLabel, c);
 
         // Add repeat-password field
-        mPasswordAgainField = new JPasswordField(15);
+        mPasswordAgainField = new JPasswordField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
@@ -570,7 +595,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Register checkbox
-        mRegisterCheck = new JCheckBox("Register a new Jabber account",
+        mRegisterCheck = new JCheckBox("Register a new account",
             mShowRegistration);
         mRegisterCheck.addActionListener(this);
         c = new GridBagConstraints();
@@ -611,7 +636,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         getContentPane().add(mFullNameLabel, c);
 
         // Add fullname address field
-        mFullNameField = new JTextField(15);
+        mFullNameField = new JTextField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;
@@ -629,7 +654,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         getContentPane().add(mEmailLabel, c);
 
         // Add email address field
-        mEmailField = new JTextField(15);
+        mEmailField = new JTextField(20);
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = gridY;

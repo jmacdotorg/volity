@@ -16,6 +16,8 @@ import org.xhtmlrenderer.swing.LinkListener;
 
 public class Finder extends JFrame
 {
+    private final static String FINDER_URL = "http://www.volity.net/gamefinder/";
+
     private final static String NODENAME = "FinderWin";
 
     private static Finder soleFinder = null;
@@ -189,7 +191,7 @@ public class Finder extends JFrame
         cPane.setLayout(new BorderLayout());
         
         mDisplay = new XHTMLFinder();
-        mDisplay.setDocument("http://www.volity.net/gamefinder/");
+        mDisplay.setDocument(FINDER_URL);
         cPane.add(new JScrollPane(mDisplay), BorderLayout.CENTER);
 
         // Necessary for all windows, for Mac support
