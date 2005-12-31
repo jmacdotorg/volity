@@ -231,10 +231,9 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                 Presence packet = mRoster.getPresence(entry.getUser());
 
                 // Is this user logged on via a Volity player client?
-                List ls = listVolityClientResources(entry.getUser());
-                boolean flag = (ls != null && !ls.isEmpty());
+                String role = getVolityClientRole(entry.getUser());
 
-                RosterTreeItem item = new RosterTreeItem(entry, packet, flag);
+                RosterTreeItem item = new RosterTreeItem(entry, packet, role);
 
                 newNode = new DefaultMutableTreeNode(item);
 
@@ -277,16 +276,22 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                         RosterPacket.ItemType type2 = it2.getSubType();
                         boolean isavail1 = it1.isAvailable();
                         boolean isavail2 = it2.isAvailable();
+                        String role1 = it1.getVolityRole();
+                        String role2 = it2.getVolityRole();
 
                         int grp1 = 1;
                         if (type1 == RosterPacket.ItemType.FROM)
-                            grp1 = 3;
+                            grp1 = 4;
                         else if (!isavail1)
+                            grp1 = 3;
+                        else if (role1 == CapPresenceFactory.VOLITY_ROLE_PARLOR)
                             grp1 = 2;
                         int grp2 = 1;
                         if (type2 == RosterPacket.ItemType.FROM)
-                            grp2 = 3;
+                            grp2 = 4;
                         else if (!isavail2)
+                            grp2 = 3;
+                        else if (role2 == CapPresenceFactory.VOLITY_ROLE_PARLOR)
                             grp2 = 2;
 
                         if (grp1 != grp2)
@@ -424,7 +429,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     }
 
     /**
-     * Return a list of the resources of the given user which are Volity
+     * Return a list of the resources of the given user which are Volity player
      * clients. (A list of full JID strings.) If the user is present but not
      * with a Volity client, this returns an empty list. If the user is
      * offline, or not on your roster, this returns null.
@@ -447,7 +452,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             {
                 CapPacketExtension extp = (CapPacketExtension)ext;
                 if (extp.getNode().equals(CapPresenceFactory.VOLITY_NODE_URI)
-                    && extp.hasExtString("player")) 
+                    && extp.hasExtString(CapPresenceFactory.VOLITY_ROLE_PLAYER)) 
                 {
                     // Whew. It's a Volity client.
                     ls.add(packet.getFrom());
@@ -456,6 +461,45 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         }
 
         return ls;
+    }
+
+    /**
+     * Determine what sort of Volity entity the given user is. The result will
+     * be one of the constants from CapPresenceFactory: VOLITY_ROLE_PLAYER,
+     * etc.
+     *
+     * If the user is logged on more than once, this only finds one of his
+     * roles. If the user is logged on but not with a Volity client, this
+     * returns VOLITY_ROLE_NONE. If the user is offline, or not on your roster,
+     * this returns null.
+     */
+    public String getVolityClientRole(String user) {
+        Iterator iter = mRoster.getPresences(user);
+        if (iter == null)
+            return null;
+
+        String[] roles = CapPresenceFactory.VOLITY_ROLES;
+
+        while (iter.hasNext())
+        {
+            Presence packet = (Presence)iter.next();
+            PacketExtension ext = packet.getExtension(CapPacketExtension.NAME,
+                CapPacketExtension.NAMESPACE);
+            if (ext != null && ext instanceof CapPacketExtension) 
+            {
+                CapPacketExtension extp = (CapPacketExtension)ext;
+                if (extp.getNode().equals(CapPresenceFactory.VOLITY_NODE_URI)) 
+                {
+                    for (int ix=0; ix<roles.length; ix++) 
+                    {
+                        if (extp.hasExtString(roles[ix]))
+                            return roles[ix];
+                    }
+                }
+            }
+        }
+
+        return CapPresenceFactory.VOLITY_ROLE_NONE;
     }
 
     /**

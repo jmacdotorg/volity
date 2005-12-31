@@ -13,8 +13,19 @@ import org.volity.client.CapPacketExtension;
 public class CapPresenceFactory extends DefaultPresenceFactory
 {
     public static final String VOLITY_NODE_URI = "http://volity.org/protocol/caps";
-    public static final String VOLITY_EXT = "player";
     public static final String VOLITY_VERSION = "1.0";
+
+    public static final String VOLITY_ROLE_NONE    = "";
+    public static final String VOLITY_ROLE_BOOKKEEPER = "bookkeeper";
+    public static final String VOLITY_ROLE_PARLOR  = "parlor";
+    public static final String VOLITY_ROLE_REFEREE = "referee";
+    public static final String VOLITY_ROLE_PLAYER  = "player";
+    public static final String VOLITY_ROLE_BOT     = "bot";
+
+    public static final String[] VOLITY_ROLES = {
+        VOLITY_ROLE_BOOKKEEPER, VOLITY_ROLE_PARLOR, VOLITY_ROLE_REFEREE,
+        VOLITY_ROLE_PLAYER, VOLITY_ROLE_BOT
+    };
 
     public Presence create(Presence.Type type, String status, int priority, Presence.Mode mode) {
         return new CapPresence(type, status, priority, mode);
@@ -29,14 +40,14 @@ public class CapPresenceFactory extends DefaultPresenceFactory
             super(type);
             if (type != Type.UNAVAILABLE)
                 addExtension(new CapPacketExtension(VOLITY_NODE_URI,
-                                 VOLITY_VERSION, VOLITY_EXT));
+                                 VOLITY_VERSION, VOLITY_ROLE_PLAYER));
         }
 
         public CapPresence(Type type, String status, int priority, Mode mode) {
             super(type, status, priority, mode);
             if (type != Type.UNAVAILABLE)
                 addExtension(new CapPacketExtension(VOLITY_NODE_URI,
-                                 VOLITY_VERSION, VOLITY_EXT));
+                                 VOLITY_VERSION, VOLITY_ROLE_PLAYER));
         }
 
     }

@@ -30,16 +30,20 @@ public class RosterTreeItem
     private Presence.Type mPresType = Presence.Type.UNAVAILABLE;
     private Presence.Mode mPresMode = Presence.Mode.AVAILABLE;
     private RosterPacket.ItemType mSubType = RosterPacket.ItemType.NONE;
-    private boolean mVolityClient = false;
+    private String mVolityRole = null;
     private String mMessage;
 
     /**
-     * Constructor.
+     * Constructor. The role argument is one of the constants from
+     * CapPresenceFactory: VOLITY_ROLE_PLAYER, VOLITY_ROLE_REFEREE, etc. If the
+     * user is logged on, but not with a Volity client, this is
+     * VOLITY_ROLE_NONE. If the user is not logged on, it is null.
      *
      * @param entry     A RosterEntry for the user.
      * @param presence  The user's presence descriptor. Can be null.
+     * @param role      The Volity client role.
      */
-    public RosterTreeItem(RosterEntry entry, Presence presence, boolean isVolityClient)
+    public RosterTreeItem(RosterEntry entry, Presence presence, String role)
     {
         mID = entry.getUser();
         mSubType = entry.getType();
@@ -50,7 +54,7 @@ public class RosterTreeItem
             mNickname = "";
         }
 
-        mVolityClient = isVolityClient;
+        mVolityRole = role;
 
         if (presence != null)
         {
@@ -133,13 +137,13 @@ public class RosterTreeItem
     }
 
     /**
-     * Tells whether the user is logged on via a Volity client. (On at least
-     * one resource.)
-     *
-     * @return  True if the user is logged on via a Volity client.
+     * Tells whether the user is logged on via a Volity client, and in what
+     * role. If the user is logged on with multiple clients, this returns the
+     * Volity one. If there are multiple Volity roles, it just shows one of
+     * them.
      */
-    public boolean isVolityClient()
+    public String getVolityRole()
     {
-        return mVolityClient;
+        return mVolityRole;
     }
 }

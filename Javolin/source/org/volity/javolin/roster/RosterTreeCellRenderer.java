@@ -21,6 +21,7 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.tree.*;
 import org.jivesoftware.smack.packet.RosterPacket;
+import org.volity.javolin.CapPresenceFactory;
 
 /**
  * Custom tree item renderer for displaying a Jabber user in the roster tree.
@@ -29,6 +30,7 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
 {
     private final static ImageIcon AVAILABLE_ICON;
     private final static ImageIcon VOL_AVAILABLE_ICON;
+    private final static ImageIcon PAR_AVAILABLE_ICON;
     private final static ImageIcon UNAVAILABLE_ICON;
     private final static ImageIcon REVERSE_ICON;
     private final static ImageIcon BUSY_ICON;
@@ -40,6 +42,8 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
             "Avail_TreeIcon.png"));
         VOL_AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "VolAvail_TreeIcon.png"));
+        PAR_AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
+            "ParAvail_TreeIcon.png"));
         UNAVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Unavail_TreeIcon.png"));
         REVERSE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
@@ -80,7 +84,11 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
 
             if (userItem.isAvailable())
             {
-                if (userItem.isVolityClient())
+                if (userItem.getVolityRole() == CapPresenceFactory.VOLITY_ROLE_PARLOR)
+                {
+                    setIcon(PAR_AVAILABLE_ICON);
+                }
+                else if (userItem.getVolityRole() == CapPresenceFactory.VOLITY_ROLE_PLAYER)
                 {
                     if (userItem.isBusy())
                     {

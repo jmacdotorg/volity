@@ -218,7 +218,7 @@ public class JavolinApp extends JFrame
         ServiceDiscoveryManager.setIdentityType("player");
         Form discoForm = new Form("result");
         FormField fld = new FormField("volity-role");
-        fld.addValue("player");
+        fld.addValue(CapPresenceFactory.VOLITY_ROLE_PLAYER);
         discoForm.addField(fld);
         ServiceDiscoveryManager.setIdentityExtension(discoForm);
 
