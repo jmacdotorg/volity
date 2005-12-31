@@ -220,8 +220,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         // Populate the tree if the roster is not null
         if (mRoster != null)
         {
-            List unavailUsers = new Vector();
-            List fromUsers = new Vector();
+            List userList = new ArrayList();
             Iterator usersIter = mRoster.getEntries();
 
             MutableTreeNode newNode = null;
@@ -261,34 +260,46 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
                     nodeToSelect = newNode;
                 }
 
-                if (subtype == RosterPacket.ItemType.FROM)
-                {
-                    // Save "from" users to List to add later
-                    fromUsers.add(newNode);
-                }
-                else if (!isavail)
-                {
-                    // Save unavailable users to List to add later
-                    unavailUsers.add(newNode);
-                }
-                else
-                {
-                    // Add available, subscribed users to tree now
-                    rootNode.add(newNode);
-                }
+                userList.add(newNode);
             }
 
-            // Add unavailable users to tree, after all the others
-            for (int n = 0; n < unavailUsers.size(); n++)
-            {
-                rootNode.add((MutableTreeNode)unavailUsers.get(n));
-            }
+            Object[] userArr = userList.toArray();
+            Arrays.sort(userArr, new Comparator() {
+                    public int compare(Object o1, Object o2) {
+                        DefaultMutableTreeNode n1 = (DefaultMutableTreeNode)o1;
+                        DefaultMutableTreeNode n2 = (DefaultMutableTreeNode)o2;
+                        RosterTreeItem it1 = (RosterTreeItem)n1.getUserObject();
+                        RosterTreeItem it2 = (RosterTreeItem)n2.getUserObject();
+                        if (it1 == it2)
+                            return 0;
 
-            // Add reverse-sub users to tree, after all the others
-            for (int n = 0; n < fromUsers.size(); n++)
-            {
-                rootNode.add((MutableTreeNode)fromUsers.get(n));
-            }
+                        RosterPacket.ItemType type1 = it1.getSubType();
+                        RosterPacket.ItemType type2 = it2.getSubType();
+                        boolean isavail1 = it1.isAvailable();
+                        boolean isavail2 = it2.isAvailable();
+
+                        int grp1 = 1;
+                        if (type1 == RosterPacket.ItemType.FROM)
+                            grp1 = 3;
+                        else if (!isavail1)
+                            grp1 = 2;
+                        int grp2 = 1;
+                        if (type2 == RosterPacket.ItemType.FROM)
+                            grp2 = 3;
+                        else if (!isavail2)
+                            grp2 = 2;
+
+                        if (grp1 != grp2)
+                            return grp1-grp2;
+
+                        String id1 = it1.getId();
+                        String id2 = it2.getId();
+                        return id1.compareTo(id2);
+                    }
+                });
+
+            for (int ix=0; ix<userArr.length; ix++)
+                rootNode.add((MutableTreeNode)userArr[ix]);
         }
 
         // Ensure the tree redraws
