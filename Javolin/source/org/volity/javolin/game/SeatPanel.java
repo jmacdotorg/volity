@@ -8,6 +8,7 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import org.volity.client.*;
+import org.volity.javolin.MultiIcon;
 
 /**
  * UI component which displays the box for a single seat. (Or the borderless
@@ -26,15 +27,23 @@ public class SeatPanel extends JPanel
     static protected Font fontName = new Font("SansSerif", Font.PLAIN, 12);
     static protected Font fontNameUnready = new Font("SansSerif", Font.ITALIC, 12);
 
-    static protected ImageIcon ICON_BLANK = 
+    static protected Icon ICON_BLANK = 
         new ImageIcon(SeatPanel.class.getResource("Blank_TreeIcon.png"));
-    static protected ImageIcon ICON_READY = 
+    static protected Icon ICON_READY = 
         new ImageIcon(SeatPanel.class.getResource("Ready_TreeIcon.png"));
-    static protected ImageIcon ICON_SEATED = 
+    static protected Icon ICON_SEATED = 
         new ImageIcon(SeatPanel.class.getResource("Seated_TreeIcon.png"));
-    static protected ImageIcon ICON_STANDING = 
+    static protected Icon ICON_STANDING = 
         new ImageIcon(SeatPanel.class.getResource("Standing_TreeIcon.png"));
+    static protected Icon ICON_SELF = 
+        new ImageIcon(SeatPanel.class.getResource("Self_TreeIcon.png"));
 
+    static protected Icon ICON_READY_SELF = 
+        new MultiIcon(ICON_READY, ICON_SELF);
+    static protected Icon ICON_SEATED_SELF = 
+        new MultiIcon(ICON_SEATED, ICON_SELF);
+    static protected Icon ICON_STANDING_SELF = 
+        new MultiIcon(ICON_STANDING, ICON_SELF);
 
     SeatChart mChart;
     String mID;
@@ -162,7 +171,11 @@ public class SeatPanel extends JPanel
         boolean gameIsActive = 
             (mChart.mTable.getRefereeState() == GameTable.STATE_ACTIVE);
 
+        boolean isSelf = false;
+        Color selfColor = null;
+
         GridBagConstraints c;
+        JLabel seatlabel = null;
         JLabel label;
         int row = 0;
 
@@ -171,8 +184,8 @@ public class SeatPanel extends JPanel
             id = mChart.getTranslator().translateSeatID(mID);
             if (id == null)
                 id = mID;
-            label = new JLabel(id, SwingConstants.LEFT);
-            label.setFont(fontTitle);
+            seatlabel = new JLabel(id, SwingConstants.LEFT);
+            seatlabel.setFont(fontTitle);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -181,7 +194,7 @@ public class SeatPanel extends JPanel
             c.ipady = 0;
             c.fill = GridBagConstraints.HORIZONTAL;
             c.anchor = GridBagConstraints.NORTHWEST;
-            add(label, c);
+            add(seatlabel, c);
         }
         
         int count = 0;
@@ -197,17 +210,33 @@ public class SeatPanel extends JPanel
                     font = fontNameUnready;
 
                 Icon icon;
-                if (mIsObserver) 
-                    icon = ICON_STANDING;
-                else if (player.isReady())
-                    icon = ICON_READY;
-                else
-                    icon = ICON_SEATED;
+
+                if (player.isSelf()) {
+                    if (mIsObserver) 
+                        icon = ICON_STANDING_SELF;
+                    else if (player.isReady())
+                        icon = ICON_READY_SELF;
+                    else
+                        icon = ICON_SEATED_SELF;
+                }
+                else {
+                    if (mIsObserver) 
+                        icon = ICON_STANDING;
+                    else if (player.isReady())
+                        icon = ICON_READY;
+                    else
+                        icon = ICON_SEATED;
+                }
 
                 if (player.isReferee()) {
                     mChart.mUserColorMap.setUserColor(player.getJID(), player.getNick(), Color.GRAY);
                 }
                 Color col = mChart.mUserColorMap.getUserNameColor(player.getJID(), player.getNick());
+
+                if (player.isSelf()) {
+                    isSelf = true;
+                    selfColor = col;
+                }
 
                 label = new JLabel(player.getNick(), icon, SwingConstants.LEFT);
                 label.setFont(font);
@@ -269,6 +298,10 @@ public class SeatPanel extends JPanel
             c.fill = GridBagConstraints.BOTH;
             c.anchor = GridBagConstraints.NORTHWEST;
             add(label, c);
+        }
+
+        if (isSelf && seatlabel != null) {
+            seatlabel.setForeground(selfColor);
         }
 
         revalidate();
