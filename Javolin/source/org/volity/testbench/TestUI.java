@@ -17,6 +17,11 @@ import org.volity.client.TranslateToken;
  */
 public abstract class TestUI 
 {
+    /**
+     * This describes the API version implemented in this file.
+     */
+    public static final int UI_VERSION = 3;
+
     public static abstract class ErrorHandler implements GameUI.ErrorHandler {
         /**
          * Report a command error. This is an abstract class because it
@@ -470,6 +475,7 @@ public abstract class TestUI
     class Info extends ScriptableObject {
         {
             try {
+                defineProperty("version", Info.class, PERMANENT);
                 defineProperty("state", Info.class, PERMANENT);
                 defineProperty("recovery", Info.class, PERMANENT);
                 defineProperty("nickname", Info.class, PERMANENT);
@@ -484,6 +490,9 @@ public abstract class TestUI
         public String getClassName() { return "Info"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
+        public Integer getVersion() {
+            return new Integer(UI_VERSION);
+        }
         public String getState() {
             return null; //### track "ref" state
         }

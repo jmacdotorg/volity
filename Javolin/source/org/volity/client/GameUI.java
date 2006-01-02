@@ -17,6 +17,12 @@ import org.volity.jabber.*;
  * A game user interface.
  */
 public class GameUI implements RPCHandler, PacketFilter {
+
+    /**
+     * This describes the API version implemented in this file.
+     */
+    public static final int UI_VERSION = 3;
+
     /**
      * (The arguments here are slightly redundant -- we could implement the
      * FailureToken-grabbing part of errorHandler in this class using
@@ -248,6 +254,7 @@ public class GameUI implements RPCHandler, PacketFilter {
     public class Info extends ScriptableObject {
         {
             try {
+                defineProperty("version", Info.class, PERMANENT);
                 defineProperty("state", Info.class, PERMANENT);
                 defineProperty("recovery", Info.class, PERMANENT);
                 defineProperty("nickname", Info.class, PERMANENT);
@@ -262,6 +269,9 @@ public class GameUI implements RPCHandler, PacketFilter {
         public String getClassName() { return "Info"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
+        public Integer getVersion() {
+            return new Integer(UI_VERSION);
+        }
         public String getState() {
             int val = table.getRefereeState();
             return table.refereeStateToString(val);
