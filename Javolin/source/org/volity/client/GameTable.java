@@ -23,12 +23,16 @@ import org.jivesoftware.smackx.packet.DiscoverInfo;
  *
  * Everything in this class is triggered by Smack packet listeners. The
  * PacketListener interface notes that all listening is done in the same
- * thread. That makes this class simpler (no worries about synchonization), but
- * it also means that if this code takes a long time, packet reception will
+ * thread. That makes this class simpler (no worries about synchronization),
+ * but it also means that if this code takes a long time, packet reception will
  * lag.
  *
  * Since all the listeners to this code are UI elements, which invoke the Swing
  * thread, I think we're okay.
+ *
+ * Except when I say "no worries about synchronization", what I actually mean
+ * is "I haven't tried to do this right". One day there will be solid syncing
+ * on all the data.
  */
 public class GameTable extends MultiUserChat 
 {
@@ -43,10 +47,24 @@ public class GameTable extends MultiUserChat
     public final static int STATE_ACTIVE    = 2;
     public final static int STATE_SUSPENDED = 3;
 
+    /**
+     * Constants for seat marks.
+     */
+    public final static String MARK_NONE  = null;
+    public final static String MARK_TURN  = "turn";
+    public final static String MARK_WIN   = "win";
+    public final static String MARK_FIRST = "first";
+    public final static String MARK_OTHER = "other";
+    public final static String[] MARKS = { 
+        MARK_TURN, MARK_WIN, MARK_FIRST, MARK_OTHER 
+    };
+
     protected List mPlayers = new ArrayList();
     protected Player mSelfPlayer = null;
     protected Map mSeatsById = new HashMap();
     protected List mSeats = new ArrayList();
+    protected Map mSeatMarks = new HashMap();
+    protected Object mSeatMarksLock = new Object();
     protected boolean mInitialJoined = false;
     protected List statusListeners = new ArrayList();
     protected List readyListeners = new ArrayList();
@@ -702,6 +720,79 @@ public class GameTable extends MultiUserChat
     }
 
     /**
+     * Get the map of (String) seat ids to (String) MARK_ constants. An
+     * unmarked seat will not be in the map.
+     *
+     * We solve sync issues by making sure that setSeatMarks does not alter a
+     * Map in play -- it replaces it with a new map.
+     */
+    public Map getSeatMarks() {
+        Map map;
+        synchronized (mSeatMarksLock) {
+            map = mSeatMarks;
+        }
+        return map;
+    }
+
+    /**
+     * React to the UI changing the seat markings. This one method is *not*
+     * called from a Smack thread, which leaves us with some sync issues.
+     *
+     * We solve sync issues by making sure that setSeatMarks does not alter a
+     * Map in play -- it replaces it with a new map.
+     *
+     * The argument is a map from (String) seat ids to (String) mark names.
+     * Neither will be null. Some may be unrecognizable, though.
+     *
+     * @param map the map. This is kept and modified by the method, so don't
+     * fool around with it after you pass it in.
+     */
+    public void setSeatMarks(Map map) {
+        List changed = new ArrayList();
+        Map oldmap;
+
+        // Copy as a feeble figlist of thread-safety.
+        List seats = new ArrayList(mSeats);
+        
+        synchronized (mSeatMarksLock) {
+            oldmap = mSeatMarks;
+        }
+
+        for (int ix=0; ix<seats.size(); ix++) {
+            Seat seat = (Seat)(seats.get(ix));
+            String id = seat.getID();
+
+            String oldmark = (String)oldmap.get(id);
+            String val = (String)map.get(id);
+            String newmark = null;
+
+            if (val != null) {
+                for (int jx=0; jx<MARKS.length; jx++) {
+                    if (MARKS[jx].equals(val)) {
+                        newmark = MARKS[jx];
+                        break;
+                    }
+                }
+                if (newmark == null)
+                    newmark = MARK_OTHER;
+                map.put(id, newmark);
+            }
+
+            if (oldmark != newmark) {
+                changed.add(seat);
+            }
+        }
+
+        if (changed.size() == 0)
+            return;
+
+        synchronized (mSeatMarksLock) {
+            mSeatMarks = map;
+        }
+        fireStatusListeners_seatMarksChanged(changed);
+    }
+
+    /**
      * React to a player becoming ready or unready.
      * @param jid the player's JID.
      * @param flag is the player now ready?
@@ -857,6 +948,13 @@ public class GameTable extends MultiUserChat
         }
     }
 
+    private void fireStatusListeners_seatMarksChanged(List seats)
+    {
+        for (Iterator iter = statusListeners.iterator(); iter.hasNext(); ) {
+            ((StatusListener)iter.next()).seatMarksChanged(seats);
+        }
+    }
+
     /***** IteratorFilter and friends *****/
 
     /**
@@ -867,7 +965,7 @@ public class GameTable extends MultiUserChat
      * an Iterator that wraps an existing Iterator, and only lets the matching
      * objects show through.
      */
-    public abstract class IteratorFilter implements Iterator {
+    public abstract static class IteratorFilter implements Iterator {
         Iterator mBaseIterator;
         Object nextObject;
 

@@ -2,6 +2,7 @@ package org.volity.javolin.game;
 
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -304,6 +305,19 @@ public class SeatChart
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     checkPanelVisibility();
+                }
+            });
+    }
+
+    public void seatMarksChanged(final List seats) {
+        // Called outside Swing thread!
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    for (int ix=0; ix<seats.size(); ix++) {
+                        Seat seat = (Seat)(seats.get(ix));
+                        adjustOnePanel(seat);
+                    }
                 }
             });
     }

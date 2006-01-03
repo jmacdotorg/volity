@@ -180,7 +180,14 @@ public class GameUI implements RPCHandler, PacketFilter {
                 });
             scope.put("seatmark", scope, new Callback() {
                     public Object run(Object[] args) {
-                        return null;
+                        try {
+                            Map map = parseSeatMarkArgs(args);
+                            table.setSeatMarks(map);
+                            return null;
+                        } catch (Exception ex) {
+                            errorHandler.error(ex);
+                            return null;
+                        }
                     }
                 });
             scope.put("audio", scope, 
@@ -223,6 +230,69 @@ public class GameUI implements RPCHandler, PacketFilter {
             ls.add(obj);
         }
         return ls;
+    }
+
+    /**
+     * Parse the various allowable arguments to a seatmeak() call. Return a Map
+     * (mapping String seatids to String mark names). Some keys may be invalid
+     * seat IDs, and some values may be invalid mark names, but neither will be
+     * null.
+     */
+    public static Map parseSeatMarkArgs(Object[] args) {
+        Map map = new HashMap();
+
+        if (args.length == 0)
+            return map;
+
+        if (args.length > 1)
+            throw new IllegalArgumentException("seatmark must have zero or one arguments");
+
+        Object arg = args[0];
+
+        if (arg != null && arg instanceof NativeArray) {
+            NativeArray arr = (NativeArray)arg;
+            Object[] ids = arr.getIds();
+            for (int ix=0; ix<ids.length; ix++) {
+                Object id = ids[ix];
+                Object val;
+                if (id instanceof Integer)
+                    val = arr.get(((Integer)id).intValue(), arr);
+                else
+                    val = arr.get(id.toString(), arr);
+
+                if (id == null || (id instanceof Undefined))
+                    throw new IllegalArgumentException("seatmark map keys may not be null.");
+                if (id instanceof ScriptableObject) {
+                    id = ((ScriptableObject)id).getDefaultValue(String.class);
+                }
+                if (!(id instanceof String)) 
+                    throw new IllegalArgumentException("seatmark map keys must be convertible to strings");
+
+                if (val == null || (val instanceof Undefined))
+                    continue;
+                if (!(val instanceof String))
+                    throw new IllegalArgumentException("seatmark map values must be strings or null");
+                if (val.equals(""))
+                    continue;
+
+                map.put(id, val);
+            }
+
+            return map;
+        }
+
+        if (arg != null && arg instanceof String) {
+            map.put(arg, "turn");
+            return map;
+        }
+        if (arg != null && arg instanceof ScriptableObject) {
+            Object val = ((ScriptableObject)arg).getDefaultValue(String.class);
+            if (val instanceof String) {
+                map.put((String)val, "turn");
+                return map;
+            }
+        }
+        throw new IllegalArgumentException("seatmark must take no argument, a string, or an associative array.");
     }
 
     /**

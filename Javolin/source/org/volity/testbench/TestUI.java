@@ -300,7 +300,29 @@ public abstract class TestUI
                 });
             scope.put("seatmark", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
-                        return null;
+                        try {
+                            Map map = GameUI.parseSeatMarkArgs(args);
+                            String msg = "[Seat mark change: ";
+                            int count = 0;
+                            for (Iterator it = map.entrySet().iterator();
+                                 it.hasNext(); ) {
+                                Map.Entry ent = (Map.Entry)it.next();
+                                if (count > 0)
+                                    msg = msg + ", ";
+                                msg = msg + ent.getKey().toString();
+                                msg = msg + ": ";
+                                msg = msg + ent.getValue().toString();
+                                count++;
+                            }
+                            if (count == 0)
+                                msg = msg + "(none)";
+                            msg = msg + "]";
+                            messageHandler.print(msg);
+                            return null;
+                        } catch (Exception ex) {
+                            errorHandler.error(ex);
+                            return null;
+                        }
                     }
                 });
             scope.put("audio", scope, 

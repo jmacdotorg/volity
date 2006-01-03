@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	viewBox="0 0 100 150" >
+
+
+<linearGradient id="gradient">
+  <stop offset= "0%" stop-color="#141" />
+  <stop offset="10%" stop-color="#141" />
+  <stop offset="45%" stop-color="#585" />
+  <stop offset="80%" stop-color="#141" />
+  <stop offset="100%" stop-color="#141" />
+</linearGradient>
+
+
+<path d="M 50 25
+	L 15 50
+	L 15 55
+	L 35 65
+	L 27 125
+	L 73 125
+	L 65 65
+	L 85 55
+	L 85 50
+	z"
+	fill="url(#gradient)" stroke="#040" stroke-width="11" />
+
+</svg>

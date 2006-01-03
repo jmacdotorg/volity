@@ -1,5 +1,7 @@
 package org.volity.client;
 
+import java.util.List;
+
 /**
  * A listener for player status change events.
  *
@@ -11,6 +13,7 @@ public interface StatusListener
 
     public void seatListKnown();
     public void requiredSeatsChanged();
+    public void seatMarksChanged(List seats);
 
     public void playerJoined(Player player);
     public void playerLeft(Player player);

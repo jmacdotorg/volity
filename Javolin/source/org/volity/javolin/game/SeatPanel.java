@@ -45,6 +45,17 @@ public class SeatPanel extends JPanel
     static protected Icon ICON_STANDING_SELF = 
         new MultiIcon(ICON_STANDING, ICON_SELF);
 
+    static protected Icon ICON_MARK_NONE = 
+        new ImageIcon(SeatPanel.class.getResource("Blank_SeatIcon.png"));
+    static protected Icon ICON_MARK_TURN = 
+        new ImageIcon(SeatPanel.class.getResource("Turn_SeatIcon.png"));
+    static protected Icon ICON_MARK_WIN = 
+        new ImageIcon(SeatPanel.class.getResource("Win_SeatIcon.png"));
+    static protected Icon ICON_MARK_FIRST = 
+        new ImageIcon(SeatPanel.class.getResource("First_SeatIcon.png"));
+    static protected Icon ICON_MARK_OTHER = 
+        new ImageIcon(SeatPanel.class.getResource("Other_SeatIcon.png"));
+
     SeatChart mChart;
     String mID;
     boolean mIsObserver;
@@ -154,6 +165,20 @@ public class SeatPanel extends JPanel
             });
     }
 
+    protected static Icon getIconForMark(String mark) {
+        if (mark == GameTable.MARK_NONE)
+            return ICON_MARK_NONE;
+        if (mark == GameTable.MARK_TURN)
+            return ICON_MARK_TURN;
+        if (mark == GameTable.MARK_WIN)
+            return ICON_MARK_WIN;
+        if (mark == GameTable.MARK_FIRST)
+            return ICON_MARK_FIRST;
+        if (mark == GameTable.MARK_OTHER)
+            return ICON_MARK_OTHER;
+        return ICON_MARK_NONE;
+    }
+
     /**
      * Clear out this panel and rebuild it.
      *
@@ -170,6 +195,8 @@ public class SeatPanel extends JPanel
 
         boolean gameIsActive = 
             (mChart.mTable.getRefereeState() == GameTable.STATE_ACTIVE);
+        String mark = (String)(mChart.mTable.getSeatMarks().get(mID));
+        Icon markIcon = getIconForMark(mark);
 
         boolean isSelf = false;
         Color selfColor = null;
@@ -302,6 +329,21 @@ public class SeatPanel extends JPanel
 
         if (isSelf && seatlabel != null) {
             seatlabel.setForeground(selfColor);
+        }
+
+        // The mark icon (real seat panels only)
+
+        if (!mIsObserver) {
+            label = new JLabel(markIcon);
+            c = new GridBagConstraints();
+            c.gridx = 1;
+            c.gridy = 0;
+            c.gridheight = GridBagConstraints.REMAINDER;
+            c.weightx = 0;
+            c.weighty = 1;
+            c.fill = GridBagConstraints.VERTICAL;
+            c.anchor = GridBagConstraints.CENTER;
+            add(label, c);
         }
 
         revalidate();

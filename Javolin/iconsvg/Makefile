@@ -14,6 +14,8 @@ roster_treeicons: Avail_TreeIcon.png Unavail_TreeIcon.png Reverse_TreeIcon.png B
 
 seating_treeicons: Standing_TreeIcon.png Seated_TreeIcon.png Ready_TreeIcon.png Self_TreeIcon.png
 
+mark_seaticons: Turn_SeatIcon.png Win_SeatIcon.png First_SeatIcon.png Other_SeatIcon.png Blank_SeatIcon.png
+
 coloricons: Green_0_ColorIcon.png Green_1_ColorIcon.png Green_2_ColorIcon.png Green_3_ColorIcon.png Green_4_ColorIcon.png
 
 Ready_ButIcon.png: ready-button.svg
@@ -63,6 +65,21 @@ Ready_TreeIcon.png: ready-treeicon.svg
 
 Self_TreeIcon.png: self-treeicon.svg
 	$(SVGTOPNG) self-treeicon.svg -a 0,0,100,100 -w 12 -h 12 -d Self_TreeIcon.png
+
+Blank_SeatIcon.png: turn-seaticon.svg
+	$(SVGTOPNG) blank.svg -a 0,0,100,150 -w 16 -h 24 -d Blank_SeatIcon.png
+
+Turn_SeatIcon.png: turn-seaticon.svg
+	$(SVGTOPNG) turn-seaticon.svg -a 0,0,100,150 -w 16 -h 24 -d Turn_SeatIcon.png
+
+Win_SeatIcon.png: win-seaticon.svg
+	$(SVGTOPNG) win-seaticon.svg -a 0,0,100,150 -w 16 -h 24 -d Win_SeatIcon.png
+
+First_SeatIcon.png: first-seaticon.svg
+	$(SVGTOPNG) first-seaticon.svg -a 0,0,100,150 -w 16 -h 24 -d First_SeatIcon.png
+
+Other_SeatIcon.png: other-seaticon.svg
+	$(SVGTOPNG) other-seaticon.svg -a 0,0,100,150 -w 16 -h 24 -d Other_SeatIcon.png
 
 Green_0_ColorIcon.png: green-0-coloricon.svg
 	$(SVGTOPNG) green-0-coloricon.svg -a 0,0,100,100 -w 16 -h 16 -d Green_0_ColorIcon.png

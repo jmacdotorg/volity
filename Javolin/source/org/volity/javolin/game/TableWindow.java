@@ -718,7 +718,7 @@ public class TableWindow extends JFrame implements PacketListener
         mBoardSplitter.setDividerLocation(prefs.getInt(BOARD_SPLIT_POS,
             getHeight() - 200));
         mUserListSplitter.setDividerLocation(prefs.getInt(USERLIST_SPLIT_POS,
-            getWidth() - 140));
+            getWidth() - 156));
     }
 
     /**
