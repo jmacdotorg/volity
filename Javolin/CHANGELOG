@@ -1,0 +1,18 @@
+This is a high-level list of Javolin changes. For a detailed view, see the
+CVS repository.
+
+* the present
+
+The seatmark() UI function works. A UI can place a mark on any (or all)
+seats, to indicate whose turn it is (or whatever).
+
+Your name is marked in the seating display (by a black dot). Your current
+seat is also marked (by having the seat name in the same highlight color
+as your name).
+
+The UI can read info.version to determine what UI functions and fields are
+available. (Current version is 3.)
+
+* release 0.2.2
+
+Changelog begins.
