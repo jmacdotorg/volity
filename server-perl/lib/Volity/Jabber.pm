@@ -501,6 +501,15 @@ sub jabber_iq {
   }
 }
 
+# error_with_node: convenience method that, given an XML node object and
+# a string, sticks an error in the logger and also dumps the node as a
+# string into it.
+sub error_with_node {
+    my $self = shift;
+    my ($node, $error_message) = @_;
+    $self->logger->error($error_message . "\nThe XML node in question was:\n" . $node->to_str);
+}
+
 # massage_rpc_numbers: Fixes Bug #1372065.
 # Basically, if a <double> looks, walks and talks like an <int>, then
 # an <int> it shall become.
@@ -718,7 +727,8 @@ sub handle_query_element_ns {
     my $method;
     my $type = $node->attr('type');
     unless (defined($type)) {
-      croak("No type attribute defined in query's parent node! Gak!");
+      $self->error_with_node($node, "No type attribute defined in query's parent node! Gak!");
+      return;
     }
     $method = $self->query_handlers->{$query_ns}->{$type};
     if (defined($method)) {
@@ -735,7 +745,7 @@ sub handle_query_element_ns {
       return;
     }
   } else {
-    croak("handle_query_element_ns called with a non-iq element. It was a $element_type.");
+    $self->error_with_node($node, "handle_query_element_ns called with a non-iq element. It was a $element_type.");
   }
 }
     
@@ -1193,7 +1203,8 @@ sub update_roster {
   my $item = $iq->get_tag('query')->get_tag('item');
   my $roster = $self->roster;
   unless (defined($roster)) {
-    croak("Uh oh, got a roster-modification result from the server, but I don't have a roster set. This is bizarre. Good night.");
+    $self->error_with_node($iq, "Uh oh, got a roster-modification result from the server, but I don't have a roster set. This is bizarre.");
+    return;
   }
   my $item_hash = {};
   foreach (qw(jid name subscription)) {
