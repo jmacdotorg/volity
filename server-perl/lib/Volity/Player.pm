@@ -173,6 +173,16 @@ sub basic_jid {
   return undef;
 }
 
+# seat: override the default accessor to always return a scalar (or undef).
+sub seat {
+    my $self = shift;
+    if (@_) {
+	$self->{seat} = $_[0];
+    }
+    return $self->{seat};
+}
+
+
 =item call_ui_function ($function, @args)
 
 Sends the RPC request "game.$function(@args)" from the referee to the
