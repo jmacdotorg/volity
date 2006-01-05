@@ -3,6 +3,10 @@ package org.volity.javolin;
 import java.io.File;
 import java.lang.reflect.*;
 
+//### http://browserlauncher.sourceforge.net/
+//### http://support.microsoft.com/default.aspx?scid=kb;en-us;283225
+//### http://www.centerkey.com/java/browser/myapp/BareBonesBrowserLaunch.java
+
 /**
  * A collection of static functions which bundle up platform-specific
  * operations. This is broken out as a separate class because it's a lot of

@@ -276,21 +276,39 @@ public class JavolinMenuBar extends JMenuBar
         /* Include the main (roster) window in the menu. */
         mWindowMenu.add(mApplication);
 
+        boolean divided = false;
+
         // All the game table windows.
         for (it = mApplication.mTableWindows.iterator(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
+            if (!divided) {
+                mWindowMenu.addSeparator();
+                divided = true;
+            }
             mWindowMenu.add(win);
         }
+
+        divided = false;
 
         // All the MUC windows.
         for (it = mApplication.mMucWindows.iterator(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
+            if (!divided) {
+                mWindowMenu.addSeparator();
+                divided = true;
+            }
             mWindowMenu.add(win);
         }
+
+        divided = false;
 
         // All the one-to-one chat windows.
         for (it = mApplication.mChatWindows.iterator(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
+            if (!divided) {
+                mWindowMenu.addSeparator();
+                divided = true;
+            }
             mWindowMenu.add(win);
         }
     }
