@@ -44,7 +44,7 @@ public class Finder extends JFrame
         setTitle(JavolinApp.getAppName() + " Game Finder");
         buildUI();
 
-        setSize(400, 400);
+        setSize(650, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
 
