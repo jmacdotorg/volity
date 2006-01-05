@@ -104,7 +104,7 @@ sub handle_rpc_request {
 }
 
 # This presence handler takes care of auto-approving all subscription
-# requests. Volity servers are very social like that.
+# requests. Volity parlors are very social like that.
 sub jabber_presence {
   my $self = shift;
   my ($presence) = @_;		# POE::Filter::XML::Node object
@@ -208,15 +208,15 @@ sub handle_disco_items_request {
 	} elsif (my $ruleset = $self->get_ruleset_with_uri($nodes[0])) {
 	    my $ruleset_uri = $ruleset->uri;
 	    if ($nodes[1]) {
-		if ($nodes[1] eq 'servers') {
-		    my @servers = Volity::Info::Server->search({
+		if ($nodes[1] eq 'parlors') {
+		    my @parlors = Volity::Info::Server->search({
 			ruleset_id=>$ruleset->id,
 		    });
-		    for my $server (@servers) {
+		    for my $parlor (@parlors) {
 			push (@items, Volity::Jabber::Disco::Item->new({
-			    jid=>$server->jid . "/volity",
-#			    jid=>$server->jid . "/testing",
-			    name=>$server->jid,
+			    jid=>$parlor->jid . "/volity",
+#			    jid=>$parlor->jid . "/testing",
+			    name=>$parlor->jid,
 			}),
 			      );
 		    }
@@ -257,8 +257,8 @@ sub handle_disco_items_request {
 		push (@items, 
 		      Volity::Jabber::Disco::Item->new({
 			  jid=>$self->jid,
-			  node=>"$ruleset_uri|servers",
-			  name=>"List of servers for this game",
+			  node=>"$ruleset_uri|parlors",
+			  name=>"List of parlors for this game",
 		      }),
 		      Volity::Jabber::Disco::Item->new({
 			  jid=>$self->jid,
@@ -303,11 +303,11 @@ sub get_ruleset_with_uri {
     return $ruleset;
 }
 	
-sub get_server_with_jid {
+sub get_parlor_with_jid {
     my $self = shift;
     my ($jid) = @_;
-    my ($server) = Volity::Info::Server->search({jid=>$jid});
-    return $server;
+    my ($parlor) = Volity::Info::Server->search({jid=>$jid});
+    return $parlor;
 }
 
 ####################
@@ -324,7 +324,7 @@ sub get_server_with_jid {
 
 # record_game: (That's 'record' as a verb, here.) Accept a game record and
 # a signature as args. Use the sig to confirm that the record came from
-# the server, and then store the record in the DB.
+# the parlor, and then store the record in the DB.
 sub _rpc_record_game {
   my $self = shift;
   my ($sender_jid, $game_record_hashref) = @_;
@@ -353,10 +353,10 @@ sub store_record_in_db {
   my $self = shift;
   my ($game_record) = @_;
   use Data::Dumper; warn Dumper($game_record);
-  my ($server) = Volity::Info::Server->search({jid=>$game_record->parlor});
-  unless ($server) {
+  my ($parlor) = Volity::Info::Server->search({jid=>$game_record->parlor});
+  unless ($parlor) {
       $self->logger->warn("Bizarre... got a record with parlor JID " . $game_record->parlor . ", but couldn't get a parlor object from the DB from it. No record stored.");
-      return (608=>"Internal error: Failed to fetch the parlor with JID " . $game_record->server . " from internal database. No record stored.");
+      return (608=>"Internal error: Failed to fetch the parlor with JID " . $game_record->parlor . " from internal database. No record stored.");
   }
   my ($ruleset) = Volity::Info::Ruleset->search({uri=>$game_record->game_uri});
   unless ($ruleset) {
@@ -372,7 +372,7 @@ sub store_record_in_db {
   } else {
     $game = Volity::Info::Game->create({start_time=>$game_record->start_time || undef,
 					end_time=>$game_record->end_time || undef,
-					server_id=>$server->id,
+					server_id=>$parlor->id,
 					ruleset_id=>$ruleset->id,
 #					signature=>$game_record->signature,
 				       });
@@ -562,10 +562,10 @@ sub fetch_game_records_for_player {
   return @game_records;
 }
 
-sub _rpc_get_game_records_for_player_and_server {
+sub _rpc_get_game_records_for_player_and_parlor {
   my $self = shift;
-  my ($sender_jid, $player_jid, $server_jid) = @_;
-  my @game_records = $self->fetch_game_records_for_player($player_jid, {SERVER_JID=>$server_jid});
+  my ($sender_jid, $player_jid, $parlor_jid) = @_;
+  my @game_records = $self->fetch_game_records_for_player($player_jid, {SERVER_JID=>$parlor_jid});
 #  $self->send_rpc_response($sender_jid, $rpc_id_attr,
 #			   [map($_->render_as_hashref, @game_records)]);
 }
@@ -584,10 +584,10 @@ sub _rpc_get_all_totals_for_player_and_game {
 #  $self->send_rpc_response($sender, $rpc_id, \%totals);
 }
 
-sub _rpc_get_all_totals_for_player_and_server {
+sub _rpc_get_all_totals_for_player_and_parlor {
   my $self = shift;
-  my ($sender, $player_jid, $server_jid) = @_;
-  my %totals = $self->fetch_totals_for_player($player_jid, {SERVER_JID=>$server_jid});
+  my ($sender, $player_jid, $parlor_jid) = @_;
+  my %totals = $self->fetch_totals_for_player($player_jid, {SERVER_JID=>$parlor_jid});
 #  $self->send_rpc_response($sender, $rpc_id, \%totals);
 }
   
