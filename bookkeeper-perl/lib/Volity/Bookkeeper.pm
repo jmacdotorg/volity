@@ -20,10 +20,11 @@ package Volity::Bookkeeper;
 
 use warnings;
 use strict;
+use Data::Dumper;
 
 use base qw(Volity::Jabber);
 
-our $VERSION = '0.5.2';
+our $VERSION = '0.5.3';
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
@@ -152,6 +153,7 @@ sub handle_disco_info_request {
 	} elsif (my $ruleset = $self->get_ruleset_with_uri($nodes[0])) {
 	    $fields{description} = [$ruleset->description];
 	    $fields{name} = [$ruleset->name];
+	    $fields{uri} = [$ruleset->uri];
 	}
     } else {
 	$identity->name('the volity.net bookkeeper');
@@ -398,6 +400,10 @@ sub store_record_in_db {
       # Get the DB object for this seat.
       # To do this, we have to get the player objects first.
       my @players;
+      unless (ref($seat_description) eq "ARRAY") {
+	  $self->logger->error("I just got a bad game record which didn't do the right things with seats.\nHere it is:\n" . Dumper($game_record));
+	  return;
+      }
       for my $player_jid (@$seat_description) {
 	  my ($player) = Volity::Info::Player->find_or_create({jid=>$player_jid});
 	  push (@players, $player);
