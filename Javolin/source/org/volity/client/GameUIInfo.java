@@ -43,6 +43,8 @@ public class GameUIInfo {
   public List getClientTypes() {
     List types = new ArrayList();
     FormField field = form.getField("client-type");
+    if (field == null)
+      return types;
     for (Iterator it = field.getValues(); it.hasNext();)
       try {
         types.add(new URI((String) it.next()));
@@ -57,6 +59,8 @@ public class GameUIInfo {
   public List getLanguages() {
     List langs = new ArrayList();
     FormField field = form.getField("languages");
+    if (field == null)
+      return langs;
     for (Iterator it = field.getValues(); it.hasNext();)
       langs.add(it.next());
     return langs;
@@ -73,7 +77,10 @@ public class GameUIInfo {
    * Get the reputation ranking of this game UI.
    */
   public int getReputation() {
-    return Integer.parseInt(getValue("reputation"));
+    String val = getValue("reputation");
+    if (val == null)
+      return 0;
+    return Integer.parseInt(val);
   }
 
   /**
@@ -115,7 +122,10 @@ public class GameUIInfo {
    * @param name a field variable name
    */
   protected String getValue(String name) {
-    return form.getField(name).getValues().next().toString();
+    FormField field = form.getField(name);
+    if (field == null)
+      return null;
+    return field.getValues().next().toString();
   }
 
   /**

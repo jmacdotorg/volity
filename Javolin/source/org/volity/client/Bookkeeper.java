@@ -96,6 +96,10 @@ public class Bookkeeper {
         String name = item.getName();
         DiscoverInfo info = discoMan.discoverInfo(jid, location.toString());
         Form form = Form.getFormFrom(info);
+        if (form.getField("ruleset") == null) {
+          // This URL wasn't really queryable -- skip it.
+          continue;
+        }
         gameUIs.add(new GameUIInfo(name, location, form));
       } catch (MalformedURLException e) { }
     }
