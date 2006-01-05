@@ -731,6 +731,10 @@ public class TableWindow extends JFrame implements PacketListener
          * localedir, really, since so many components cache pointers to it. 
          */
         mTranslator.clearCache();
+
+        /* Clear the seat marks, so that the new UI gets a blank mark slate.
+         */
+        mGameTable.setSeatMarks(new HashMap());
         
         /* Reset this switch, so that the UI update event triggers a new
          * send_state() RPC. */
