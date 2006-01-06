@@ -3,6 +3,12 @@ CVS repository.
 
 * the present
 
+The Finder window will launch any URLs that don't start with
+"http://{www.}volity.net/gamefinder" to the user's external browser.
+Launching URLs may now work on Windows, too, although I haven't tested it.
+(URLs can be launched from the About window, the Finder, or any UI SVG
+code that has a hyperlink.)
+
 The seatmark() UI function works. A UI can place a mark on any (or all)
 seats, to indicate whose turn it is (or whatever).
 

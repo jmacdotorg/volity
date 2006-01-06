@@ -122,12 +122,28 @@ public class Finder extends JFrame
                 url = new URL(urlstr);
                 CommandStub stub = (CommandStub)url.getContent(arrayCommandStub);
                 if (stub != null) {
+                    // If it's a CommandStub, execute it.
                     mOwner.doOpenFile(stub);
                     return;
                 }
 
-                // If there's no CommandStub content, fall through.
-                super.linkClicked(uri);
+                // If it's an internal URL, fall through.
+                if (url.getProtocol().equals("http")
+                    && (url.getHost().equals("www.volity.net") 
+                        || url.getHost().equals("volity.net"))
+                    && url.getPath().startsWith("/gamefinder")) {
+                    super.linkClicked(uri);
+                    return;
+                }
+
+                // Otherwise, kick it to the external browser.
+                boolean res = PlatformWrapper.launchURL(urlstr);
+                if (!res) {
+                    JOptionPane.showMessageDialog(Finder.this,
+                        "Unable to launch URL:\n" + urlstr,
+                        JavolinApp.getAppName() + ": Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
                 return;
             }
             catch (MalformedURLException ex) {

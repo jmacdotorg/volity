@@ -15,10 +15,18 @@ import java.lang.reflect.*;
 public class PlatformWrapper 
 {
     private static boolean isMac;
+    private static boolean isWin;
 
     static {
         // Cache this.
         isMac = isRunningOnMac();
+
+        isWin = false;
+        String osName = System.getProperty("os.name");
+        if (osName.startsWith("Windows"))
+            isWin = true;
+
+        assert (!(isMac && isWin));
     }
 
     /**
@@ -41,10 +49,10 @@ public class PlatformWrapper
      * Test whether we have the capability to send a URL to the user's default
      * browser.
      *
-     * Currently returns true only on Mac OS X.
+     * Currently returns true on Mac OS X and Windows.
      */
     public static boolean launchURLAvailable() {
-        return isMac;
+        return (isMac || isWin);
     }
 
     /**
@@ -64,6 +72,17 @@ public class PlatformWrapper
                 Object[] argls = new Object[] { url };
                 meth.invoke(null, argls);
 
+                return true;
+            }
+            catch (Exception ex) {
+                new ErrorWrapper(ex);
+                return false;
+            }
+        }
+
+        if (isWin) {
+            try {
+                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + url);
                 return true;
             }
             catch (Exception ex) {
