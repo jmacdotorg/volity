@@ -166,6 +166,7 @@ sub initialize {
 	  die "Failed to require game class $game_class: $@";
       }
   }
+  $self->{referees} = [];
   return $self;
 }
 
@@ -267,18 +268,24 @@ sub add_referee {
   my $self = shift;
   my ($referee) = @_;
   croak("You must provide a referee object with the add_referee() method") unless $referee->isa("Volity::Referee");
-  if (defined($self->{referees})) {
-    push (@{$self->{referees}}, $referee);
-  } else {
-    $self->{referees} = [$referee];
-  }
+  push (@{$self->{referees}}, $referee);
+  return $referee;
 }
 
 sub remove_referee {
   my $self = shift;
   my ($referee) = @_;
-  $self->referees(grep($_ ne $referee, $self->referees));
+#  $self->referees(grep($_ ne $referee, @{$self->{referees}}));
+  my @new_referees;
+  for (my $i = 0; $i <= $self->referees - 1; $i++) {
+      if ($self->{referees}->[$i] eq $referee) {
+	  splice(@{$self->{referees}}, $i, 1);
+	  return;
+      }
+  }   
+  $self->logger->error("I was asked to remove the referee with jid " . $referee->jid . " but I can't find it!!");
 }
+
 
 sub new_referee_resource {
   my $self = shift;
@@ -387,8 +394,8 @@ sub handle_disco_items_request {
 	    # Get a list of referees with open games, and return
 	    # pointers to them.
 	    my @open_referees = grep(
-		not($_->is_hidden),
-		$self->referees
+				     $_->isa("Volity::Referee") && not($_->is_hidden),
+				     @{$self->{referees}},
 	    );
 	    $self->logger->debug("I am returning " . @open_referees . " referee nodes.");
 	    foreach (@open_referees) {
