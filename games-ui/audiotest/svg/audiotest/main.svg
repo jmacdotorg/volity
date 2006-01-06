@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+text {
+	font-size: 2.6;
+	font-family: Helvetica;
+	text-anchor: middle;
+}
+]]>
+</style>
+
+</defs>
+
+<script type="text/ecmascript">
+<![CDATA[
+
+literalmessage("Welcome to Audiotest, running on a client with UI API version " + info.version);
+
+crow1_audio = audio('crow1.aiff', 'crow one');
+crow2_audio = audio('crow2.aiff', 'crow two');
+crow3_audio = audio('crow3.aiff', 'crow three');
+crow4_audio = audio('crow4.aiff', 'crow four');
+tweedle_audio = audio('tweedle-tune.aiff', 'electrotweedle');
+cork_audio = audio('cork-pop.aiff', 'cork pop');
+background_audio = audio('background.mp3', 'percussion music');
+
+background_audio.loop = true;
+
+tweedle_instance = null;
+
+play_tweedle = function() {
+  tweedle_instance = tweedle_audio.play();
+}
+
+stop_tweedle = function() {
+  if (tweedle_instance)
+    tweedle_instance.stop();
+}
+
+cork_instance = null;
+
+play_cork = function(count) {
+  if (cork_instance)
+    cork_instance.stop();
+
+  cork_audio.loop = count;
+  cork_instance = cork_audio.play();
+}
+
+stop_cork = function() {
+  if (cork_instance)
+    cork_instance.stop();
+}
+
+music_instance = null;
+
+start_background_music = function() {
+  if (!music_instance)
+    music_instance = background_audio.play();
+}
+
+stop_background_music = function() {
+  if (music_instance) {
+    music_instance.stop();
+    music_instance = null;
+  }
+}
+
+// ]]>
+</script>
+
+<g transform="translate(20,10)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#F88" stroke="#800" stroke-width="0.5"
+		onclick="crow1_audio.play()" />
+	<text x="0" y="1.0" pointer-events="none">Crow 1</text>
+</g>
+
+<g transform="translate(32,10)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#F88" stroke="#800" stroke-width="0.5"
+		onclick="crow2_audio.play()" />
+	<text x="0" y="1.0" pointer-events="none">Crow 2</text>
+</g>
+
+<g transform="translate(44,10)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#F88" stroke="#800" stroke-width="0.5"
+		onclick="crow3_audio.play()" />
+	<text x="0" y="1.0" pointer-events="none">Crow 3</text>
+</g>
+
+<g transform="translate(56,10)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#F88" stroke="#800" stroke-width="0.5"
+		onclick="crow4_audio.play()" />
+	<text x="0" y="1.0" pointer-events="none">Crow 4</text>
+</g>
+
+<g transform="translate(25,20)">
+	<rect x="-10" y="-2" width="20" height="4"
+		fill="#99F" stroke="#00C" stroke-width="0.5"
+		onclick="play_tweedle()" />
+	<text x="0" y="1.0" pointer-events="none">Electrotweedle</text>
+</g>
+
+<g transform="translate(45,20)">
+	<ellipse rx="6" ry="2.2"
+		fill="#99F" stroke="#00C" stroke-width="0.33"
+		onclick="stop_tweedle()" />
+	<text x="0" y="1.0" pointer-events="none">(stop)</text>
+</g>
+
+<g transform="translate(25,30)">
+	<rect x="-11" y="-2" width="22" height="4"
+		fill="#C9C" stroke="#408" stroke-width="0.5"
+		onclick="start_background_music()" />
+	<text x="0" y="1.0" pointer-events="none">Percussion Music</text>
+</g>
+
+<g transform="translate(45,30)">
+	<ellipse rx="6" ry="2.2"
+		fill="#C9C" stroke="#408" stroke-width="0.33"
+		onclick="stop_background_music()" />
+	<text x="0" y="1.0" pointer-events="none">(stop)</text>
+</g>
+
+<g transform="translate(20,40)">
+	<rect x="-8" y="-2" width="16" height="4"
+		fill="#8D8" />
+	<text x="0" y="1.0" pointer-events="none">Cork pops</text>
+
+	<g transform="translate(15,0)">
+	<rect x="-2" y="-2" width="4" height="4"
+		fill="#8D8" stroke="#080" stroke-width="0.5"
+		onclick="play_cork(1)" />
+	<text x="0" y="1.0" pointer-events="none">1</text>
+	</g>
+
+	<g transform="translate(21,0)">
+	<rect x="-2" y="-2" width="4" height="4"
+		fill="#8D8" stroke="#080" stroke-width="0.5"
+		onclick="play_cork(2)" />
+	<text x="0" y="1.0" pointer-events="none">2</text>
+	</g>
+
+	<g transform="translate(27,0)">
+	<rect x="-2" y="-2" width="4" height="4"
+		fill="#8D8" stroke="#080" stroke-width="0.5"
+		onclick="play_cork(3)" />
+	<text x="0" y="1.0" pointer-events="none">3</text>
+	</g>
+
+	<g transform="translate(36,0)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#8D8" stroke="#080" stroke-width="0.5"
+		onclick="play_cork(true)" />
+	<text x="0" y="1.0" pointer-events="none">forever</text>
+	</g>
+
+	<g transform="translate(50,0)">
+	<ellipse rx="6" ry="2.2"
+		fill="#8D8" stroke="#080" stroke-width="0.33"
+		onclick="stop_cork()" />
+	<text x="0" y="1.0" pointer-events="none">(stop)</text>
+	</g>
+
+</g>
+
+</svg>

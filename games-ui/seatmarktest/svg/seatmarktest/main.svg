@@ -1,0 +1,181 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+
+
+
+
+<script type="text/ecmascript">
+<![CDATA[
+
+function unmark_all() {
+  seatmark();
+}
+
+function mark_one(seat) {
+  seatmark(seat);
+}
+
+function mark_north(mark) {
+  var arr = [];
+  arr['north'] = mark;
+  seatmark(arr);
+}
+
+function mark_current_win() {
+  var arr = [];
+  if (info.seat)
+    arr[info.seat] = 'win';
+  seatmark(arr);
+}
+
+function mark_fancy() {
+  var arr = [];
+  arr['north'] = 'turn';
+  arr['south'] = 'win';
+  arr['east'] = 'first';
+  seatmark(arr);
+}
+
+function mark_fancy_2() {
+  var arr = [];
+  arr['south'] = 'win';
+  arr['east'] = 'other';
+  arr['west'] = 'turn';
+  seatmark(arr);
+}
+
+// ]]>
+</script>
+
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+text {
+	font-size: 2.6;
+	font-family: Helvetica;
+	text-anchor: middle;
+}
+]]>
+</style>
+
+</defs>
+
+<g transform="translate(20,10)">
+	<rect x="-7" y="-2" width="14" height="4"
+		fill="#F88" stroke="#800" stroke-width="0.5"
+		onclick="unmark_all()" />
+	<text x="0" y="1.0" pointer-events="none">Unmark all</text>
+</g>
+
+<g transform="translate(10,20)">
+	<text x="0" y="1.0" pointer-events="none">Turn:</text>
+</g>
+
+<g transform="translate(20,20)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#8C8" stroke="#060" stroke-width="0.5"
+		onclick="mark_one('north')" />
+	<text x="0" y="1.0" pointer-events="none">North</text>
+</g>
+
+<g transform="translate(31,20)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#8C8" stroke="#060" stroke-width="0.5"
+		onclick="mark_one('south')" />
+	<text x="0" y="1.0" pointer-events="none">South</text>
+</g>
+
+<g transform="translate(42,20)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#8C8" stroke="#060" stroke-width="0.5"
+		onclick="mark_one('east')" />
+	<text x="0" y="1.0" pointer-events="none">East</text>
+</g>
+
+<g transform="translate(53,20)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#8C8" stroke="#060" stroke-width="0.5"
+		onclick="mark_one('west')" />
+	<text x="0" y="1.0" pointer-events="none">West</text>
+</g>
+
+<g transform="translate(10,30)">
+	<text x="0" y="1.0" pointer-events="none">North:</text>
+</g>
+
+<g transform="translate(20,30)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#88F" stroke="#22C" stroke-width="0.5"
+		onclick="mark_north('turn')" />
+	<text x="0" y="1.0" pointer-events="none">turn</text>
+</g>
+
+<g transform="translate(31,30)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#88F" stroke="#22C" stroke-width="0.5"
+		onclick="mark_north('win')" />
+	<text x="0" y="1.0" pointer-events="none">win</text>
+</g>
+
+<g transform="translate(42,30)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#88F" stroke="#22C" stroke-width="0.5"
+		onclick="mark_north('first')" />
+	<text x="0" y="1.0" pointer-events="none">first</text>
+</g>
+
+<g transform="translate(53,30)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#88F" stroke="#22C" stroke-width="0.5"
+		onclick="mark_north('other')" />
+	<text x="0" y="1.0" pointer-events="none">other</text>
+</g>
+
+<g transform="translate(64,30)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#88F" stroke="#22C" stroke-width="0.5"
+		onclick="mark_north('xyzzy')" />
+	<text x="0" y="1.0" pointer-events="none">xyzzy</text>
+</g>
+
+<g transform="translate(15,40)">
+	<text x="0" y="1.0" pointer-events="none">Your current seat:</text>
+</g>
+
+<g transform="translate(32,40)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#F84" stroke="#A40" stroke-width="0.5"
+		onclick="mark_current_win()" />
+	<text x="0" y="1.0" pointer-events="none">win</text>
+</g>
+
+<g transform="translate(30,50)">
+	<text x="0" y="1.0" pointer-events="none">North:turn, South:win, East:first, West:none</text>
+</g>
+
+<g transform="translate(65,50)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#C6F" stroke="#62A" stroke-width="0.5"
+		onclick="mark_fancy()" />
+	<text x="0" y="1.0" pointer-events="none">Go</text>
+</g>
+
+<g transform="translate(30,60)">
+	<text x="0" y="1.0" pointer-events="none">North:none, South:win, East:other, West:turn</text>
+</g>
+
+<g transform="translate(65,60)">
+	<rect x="-5" y="-2" width="10" height="4"
+		fill="#C6F" stroke="#62A" stroke-width="0.5"
+		onclick="mark_fancy_2()" />
+	<text x="0" y="1.0" pointer-events="none">Go</text>
+</g>
+
+
+</svg>
