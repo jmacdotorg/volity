@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>out_of_bounds</key>
+  <value>That location is off the board.</value>
+</token>
+<token>
+  <key>root_null_overlap</key>
+  <value>The root square and the null square cannot occupy the same space.</value>
+</token>
+<token>
+  <key>invalid_direction</key>
+  <value>The "direction" field is invalid.</value>
+</token>
+<token>
+  <key>invalid_size</key>
+  <value>The "size" field is invalid.</value>
+</token>
+<token>
+  <key>out_of_pieces</key>
+  <value>You have no more pieces of that size to play.</value>
+</token>
+<token>
+  <key>square_occupied</key>
+  <value>That square is already occupied.</value>
+</token>
+<token>
+  <key>no_target</key>
+  <value>Your piece must point at another piece or the root.</value>
+</token>
+<token>
+  <key>null_target</key>
+  <value>No piece may point at the null square.</value>
+</token>
+</volitytokens>

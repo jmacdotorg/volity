@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<testbench>
+
+<button name="Root Square">
+  game.set_root_square($player, $X, $Y);
+</button>
+
+<button name="Null Square">
+  game.set_null_square($player, $X, $Y);
+</button>
+
+<button name="New Turn">
+  game.turn($player);
+</button>
+
+<button name="Move">
+  game.move($player, $X, $Y, $size, $dir);
+</button>
+
+<field name="player" />
+<field name="X" type="int" />
+<field name="Y" type="int" />
+<field name="dir" type="int" />
+<field name="size" type="int" />
+
+</testbench>

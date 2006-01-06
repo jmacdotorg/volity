@@ -1,10 +1,20 @@
-This CVS module contails UI files for several Volity games. Generally,
-they're the same games whose server-side implementations (in Perl) can
-be found in the games-perl CVS module.
+This CVS module contails UI files for several Volity games. Most of these
+games are implemented (that is, their parlors are implemented) in the
+games-perl or games-python CVS modules. A couple of the UIs are solely
+intended to test client features, and do not correspond with any existing
+parlor code.
 
 As with all Volity game UI files, their principal language is
-ECMAScript (JavaScript), but they may be intended for different
-"target" clients, such as text-only or SVG.
+ECMAScript (JavaScript), but they are intended for different "target"
+clients, such as text-only or SVG. (The SVG client is much more complete
+than the text client, to date, so most of these UIs are SVG.)
 
-In some cases, support files (such as bitmapped images) are included
-along with the code.
+In some cases, support files (such as bitmapped images or sound files)
+are included along with the code.
+
+rps: Rock Paper Scissors (perl and python)
+eights: Crazy Eights (perl)
+barsoom: Two-Player Barsoomite Go (python)
+barsoom4: Four-Player Barsoomite Go (python)
+audiotest: Client audio feature test (none)
+seatmarktest: Client seat-marking feature test (none)

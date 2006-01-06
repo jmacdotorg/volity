@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>red</key>
+  <value>Red</value>
+</token>
+<token>
+  <key>blue</key>
+  <value>Blue</value>
+</token>
+<token>
+  <key>yellow</key>
+  <value>Yellow</value>
+</token>
+<token>
+  <key>green</key>
+  <value>Green</value>
+</token>
+</volitytokens>

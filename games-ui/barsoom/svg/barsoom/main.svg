@@ -1,0 +1,1260 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="-0.5 -0.5 9 8.5" preserveAspectRatio="xMidYMid" >
+
+<script type="text/ecmascript">
+<![CDATA[
+
+// barsoom-ui.zip -- an implementation of Barsoomite Go
+//     (or, Branches and Twigs and Thorns.)
+//     Game designed and implemented by Andrew Plotkin.
+// Ruleset URI: <http://eblong.com/zarf/volity/ruleset/barsoom/BarsoomGo.html>
+// Game URL:    <http://www.eblong.com/zarf/barsoom-go.html>
+
+docsvg = document.rootElement;
+piecelayer = document.getElementById("piecelayer");
+scorelayer = document.getElementById("scorelayer");
+
+whitestr = "white";
+blackstr = "black";
+svg_ns = "http://www.w3.org/2000/svg";
+xlink_ns = "http://www.w3.org/1999/xlink";
+
+afoot = false;
+ourturn = false;
+nullsquarex = 7;
+nullsquarey = 3;
+rootsquarex = 3;
+rootsquarey = 1;
+
+board = twodarray(8, 4);
+
+dragobject = null;
+dragtask = null;
+dragangle = 0;
+whitestash = new Array(0, 5, 5, 5);
+blackstash = new Array(0, 5, 5, 5);
+whitescore = 0;
+blackscore = 0;
+worksize = 0;
+workx = null;
+worky = null;
+workdir = null;
+tmppt = docsvg.createSVGPoint();
+buttontrack = null;
+
+volity.start_game = function() {
+  var ix, jx;
+
+  afoot = true;
+  seatmark();
+
+  ourturn = false;
+
+  for (ix=0; ix<8; ix++) {
+    for (jx=0; jx<4; jx++) {
+      board[ix][jx] = null;
+    }
+  }
+
+  board[nullsquarex][nullsquarey] = "--";
+  board[rootsquarex][rootsquarey] = "++";
+  
+  whitestash[1] = 5;
+  whitestash[2] = 5;
+  whitestash[3] = 5;
+  blackstash[1] = 5;
+  blackstash[2] = 5;
+  blackstash[3] = 5;
+
+  worksize = 0;
+  workx = null;
+  worky = null;
+  workdir = null;
+
+  draw_stash_count("white", 1);
+  draw_stash_count("white", 2);
+  draw_stash_count("white", 3);
+  draw_stash_count("black", 1);
+  draw_stash_count("black", 2);
+  draw_stash_count("black", 3);
+
+  clear_scorelayer();
+  clear_piecelayer();
+  adjust_okbutton("white", false);
+  adjust_okbutton("black", false);
+  adjust_winbutton("white", false);
+  adjust_winbutton("black", false);
+  adjust_turn("white", false);
+  adjust_turn("black", false);
+
+  whitescore = 0;
+  blackscore = 0;
+  adjust_score("white");
+  adjust_score("black");
+}
+
+volity.receive_state = function() {
+  var ix, jx;
+
+  for (ix=0; ix<8; ix++) {
+    for (jx=0; jx<4; jx++) {
+      board[ix][jx] = null;
+    }
+  }
+
+  whitestash[1] = 5;
+  whitestash[2] = 5;
+  whitestash[3] = 5;
+  blackstash[1] = 5;
+  blackstash[2] = 5;
+  blackstash[3] = 5;
+}
+
+volity.state_sent = function() {
+  if (info.state == 'active') {
+    afoot = true;
+    board[nullsquarex][nullsquarey] = "--";
+    board[rootsquarex][rootsquarey] = "++";
+  }
+  else {
+    afoot = false;
+  }
+}
+
+game.set_null_square = function(player, xpos, ypos) {
+  clear_scorelayer();
+  clear_piecelayer();
+  move_null_square(xpos, ypos);
+}
+
+game.set_root_square = function(player, xpos, ypos) {
+  clear_scorelayer();
+  clear_piecelayer();
+  move_root_square(xpos, ypos);
+}
+
+game.turn = function(seat) {
+  seatmark(seat);
+  if (seat == info.seat) {
+    ourturn = true;
+    adjust_turn(info.seat, true);
+  }
+  else if (info.seat != null) {
+    adjust_turn(info.seat, false);
+  }
+}
+
+game.move = function(seat, xpos, ypos, size, dir) {
+  var val, obj;
+
+  enddrag();
+  remove_workobject();
+
+  adjust_okbutton("white", false);
+  adjust_okbutton("black", false);
+
+  workx = null;
+  worky = null;
+  worksize = 0;
+  workdir = null;
+  
+  if (seat == "white")
+    whitestash[size]--;
+  else
+    blackstash[size]--;
+  draw_stash_count(seat, size);
+
+  if (seat == "white")
+    val = "w";
+  else
+    val = "b";
+  board[xpos][ypos] = val + size;
+
+  obj = document.createElementNS(svg_ns, "use");
+  obj.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+size+val);
+  val = "translate("+xpos+","+ypos+") rotate("+90*dir+")";
+  obj.setAttribute("transform", val);
+  piecelayer.appendChild(obj);
+
+  ourturn = false;
+}
+
+game.penalty = function(seat, penalty, xpos, ypos, dir) {
+  if (dir == 0)
+    ypos -= 0.5;
+  if (dir == 2)
+    ypos += 0.5;
+  if (dir == 3)
+    xpos -= 0.5;
+  if (dir == 1)
+    xpos += 0.5;
+    
+  add_penalty(seat, penalty, xpos, ypos);
+
+  if (seat == "white")
+    whitescore = whitescore + penalty;
+  else
+    blackscore = blackscore + penalty;
+  adjust_score(seat);
+}
+
+volity.end_game = function() {
+  enddrag();
+  adjust_okbutton("white", false);
+  adjust_okbutton("black", false);
+  adjust_turn("white", false);
+  adjust_turn("black", false);
+
+  if (whitescore < blackscore)
+    adjust_winbutton("white", true);
+  if (blackscore < whitescore)
+    adjust_winbutton("black", true);
+
+  afoot = false;
+  ourturn = false;
+  seatmark(); //### mark winner?
+}
+
+function send_move() {
+  if (!afoot || !ourturn)
+    return;
+  if (workx == null || worky == null || worksize == null || workdir == null)
+    return;
+  rpc("move", workx, worky, worksize, workdir);
+}
+
+function move_null_square(xpos, ypos) {
+  var obj;
+  nullsquarex = xpos;
+  nullsquarey = ypos;
+  obj = document.getElementById("nullsquareref");
+  obj.setAttribute("transform", "translate("+xpos+", "+ypos+")");
+}
+
+function move_root_square(xpos, ypos) {
+  var obj;
+  rootsquarex = xpos;
+  rootsquarey = ypos;
+  obj = document.getElementById("rootsquareref");
+  obj.setAttribute("transform", "translate("+xpos+", "+ypos+")");
+}
+
+boardrectclicklistener = new Object;
+boardrectclicklistener.handleEvent = function(ev) {
+  var obj, newpt, matrix;
+  obj = document.getElementById("boardrectclick");
+  matrix = docsvg.getCTM().inverse();
+  tmppt.x = ev.clientX;
+  tmppt.y = ev.clientY;
+  newpt = tmppt.matrixTransform(matrix);
+  newpt.x = Math.floor(newpt.x);
+  newpt.y = Math.floor(newpt.y);
+  if (newpt.x < 0 || newpt.x >= 8 || newpt.y < 0 || newpt.y >= 4) {
+    return;
+  }
+  click_board(newpt.x, newpt.y, ev);
+}
+whitestashclick1listener = new Object;
+whitestashclick1listener.handleEvent = function(ev) {
+  click_stash("white", 1, ev);
+}
+whitestashclick2listener = new Object;
+whitestashclick2listener.handleEvent = function(ev) {
+  click_stash("white", 2, ev);
+}
+whitestashclick3listener = new Object;
+whitestashclick3listener.handleEvent = function(ev) {
+  click_stash("white", 3, ev);
+}
+blackstashclick1listener = new Object;
+blackstashclick1listener.handleEvent = function(ev) {
+  click_stash("black", 1, ev);
+}
+blackstashclick2listener = new Object;
+blackstashclick2listener.handleEvent = function(ev) {
+  click_stash("black", 2, ev);
+}
+blackstashclick3listener = new Object;
+blackstashclick3listener.handleEvent = function(ev) {
+  click_stash("black", 3, ev);
+}
+
+draglistener = new Object;
+draglistener.handleEvent = function(ev) {
+  var val, newpt;
+  tmppt.x = ev.clientX;
+  tmppt.y = ev.clientY;
+  newpt = tmppt.matrixTransform(draglistener.matrix);
+  val = "translate("+newpt.x+","+newpt.y+")";
+  if (dragangle != 0)
+    val = val + " rotate("+dragangle+")";
+  dragobject.setAttribute("transform", val);
+}
+
+dragendlistener = new Object;
+dragendlistener.handleEvent = function(ev) {
+  var val, obj, matrix, newpt;
+
+  obj = document.getElementById("boardrectclick");
+  matrix = docsvg.getCTM().inverse();
+  tmppt.x = ev.clientX;
+  tmppt.y = ev.clientY;
+  newpt = tmppt.matrixTransform(matrix);
+  newpt.x = Math.floor(newpt.x);
+  newpt.y = Math.floor(newpt.y);
+  if (newpt.x < 0 || newpt.x >= 8 || newpt.y < 0 || newpt.y >= 4) {
+    newpt = null;
+  }
+
+  if (dragtask == "move") {
+    if (newpt == null) {
+      workx = null;
+      worky = null;
+      enddrag();
+      adjust_okbutton(info.seat, false);
+      return;
+    }
+
+    if (board[newpt.x][newpt.y] != null) {
+      enddrag();
+      adjust_okbutton(info.seat, false);
+      return;
+    }
+
+    showbutton = true;
+    workdir = choose_direction(newpt.x, newpt.y);
+    if (workdir == null) {
+      workdir = Math.round(dragangle / 90);
+      showbutton = false;
+    }
+    workx = newpt.x;
+    worky = newpt.y;
+    enddrag();
+
+    if (info.seat == "white")
+      val = "wo";
+    else
+      val = "bo";
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+worksize+val);
+    obj.setAttribute("id", "workobject");
+    val = "translate("+workx+","+worky+") rotate("+90*workdir+")";
+    obj.setAttribute("transform", val);
+    piecelayer.appendChild(obj);
+
+    adjust_okbutton(info.seat, showbutton);
+    return;
+  }
+
+  enddrag();
+
+  if (newpt != null) {
+    if (dragtask == "root") {
+      if (newpt.x == rootsquarex && newpt.y == rootsquarey)
+        return;
+      if (newpt.x == nullsquarex && newpt.y == nullsquarey)
+        return;
+      rpc("move_root_square", newpt.x, newpt.y);
+      dragtask = null;
+    }
+    if (dragtask == "null") {
+      if (newpt.x == rootsquarex && newpt.y == rootsquarey)
+        return;
+      if (newpt.x == nullsquarex && newpt.y == nullsquarey)
+        return;
+      rpc("move_null_square", newpt.x, newpt.y);
+      dragtask = null;
+    }
+  }
+}
+
+enddrag = function() {
+  var val;
+
+  document.removeEventListener("mousemove", draglistener, true);
+  document.removeEventListener("mouseup", dragendlistener, true);
+  draglistener.matrix = null;
+  if (dragobject != null) {
+    docsvg.removeChild(dragobject);
+    dragobject = null;
+  }
+  if (worksize > 0 && (workx == null || worky == null)) {
+    val = worksize;
+    worksize = 0;
+    draw_stash_count(info.seat, val);
+    adjust_okbutton(info.seat, false);
+  }
+}
+
+function click_board(xpos, ypos, ev) {
+  var val, newpt;
+
+  if (xpos == rootsquarex && ypos == rootsquarey && !afoot) {
+    dragtask = "root";
+    dragangle = 0;
+
+    draglistener.matrix = docsvg.getCTM().inverse();
+    tmppt.x = ev.clientX;
+    tmppt.y = ev.clientY;
+    newpt = tmppt.matrixTransform(draglistener.matrix);
+
+    dragobject = document.createElementNS(svg_ns, "use");
+    dragobject.setAttributeNS(xlink_ns, "xlink:href", "#rootoutline");
+    val = "translate("+newpt.x+","+newpt.y+")";
+    dragobject.setAttribute("transform", val);
+    dragobject.setAttribute("id", "dragobject");
+    docsvg.appendChild(dragobject);
+    
+    document.addEventListener("mousemove", draglistener, true);
+    document.addEventListener("mouseup", dragendlistener, true);
+  }
+
+  if (xpos == nullsquarex && ypos == nullsquarey && !afoot) {
+    dragtask = "null";
+    dragangle = 0;
+
+    draglistener.matrix = docsvg.getCTM().inverse();
+    tmppt.x = ev.clientX;
+    tmppt.y = ev.clientY;
+    newpt = tmppt.matrixTransform(draglistener.matrix);
+
+    dragobject = document.createElementNS(svg_ns, "use");
+    dragobject.setAttributeNS(xlink_ns, "xlink:href", "#nulloutline");
+    val = "translate("+newpt.x+","+newpt.y+")";
+    dragobject.setAttribute("transform", val);
+    dragobject.setAttribute("id", "dragobject");
+    docsvg.appendChild(dragobject);
+    
+    document.addEventListener("mousemove", draglistener, true);
+    document.addEventListener("mouseup", dragendlistener, true);
+  }
+
+  if (afoot && ourturn && xpos == workx && ypos == worky) {
+    remove_workobject();
+    adjust_okbutton(info.seat, false);
+
+    dragtask = "move";
+    dragangle = 90*workdir;
+
+    workx = null;
+    worky = null;
+    
+    draglistener.matrix = docsvg.getCTM().inverse();
+    tmppt.x = ev.clientX;
+    tmppt.y = ev.clientY;
+    newpt = tmppt.matrixTransform(draglistener.matrix);
+  
+    if (info.seat == "white")
+      val = "wo";
+    else
+      val = "bo";
+  
+    dragobject = document.createElementNS(svg_ns, "use");
+    dragobject.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+worksize+val);
+    val = "translate("+newpt.x+","+newpt.y+") rotate("+dragangle+")";
+    dragobject.setAttribute("transform", val);
+    dragobject.setAttribute("id", "dragobject");
+    docsvg.appendChild(dragobject);
+    
+    document.addEventListener("mousemove", draglistener, true);
+    document.addEventListener("mouseup", dragendlistener, true);
+  }
+}
+
+function click_stash(color, size, ev) {
+  var oldsize, val, newpt;
+
+  if (!afoot) {
+    return;
+  }
+  if (!ourturn) {
+    return;
+  }
+  if (color != info.seat) {
+    return;
+  }
+
+  oldsize = 0;
+
+  if (worksize > 0) {
+    oldsize = worksize;
+    remove_workobject();
+    adjust_okbutton(info.seat, false);
+  }
+
+  dragtask = "move";
+  dragangle = 0;
+
+  worksize = size;
+  workdir = 0;
+  workx = null;
+  worky = null;
+  draw_stash_count(info.seat, size);
+  if (oldsize > 0) {
+    draw_stash_count(info.seat, oldsize);
+  }
+
+  draglistener.matrix = docsvg.getCTM().inverse();
+  tmppt.x = ev.clientX;
+  tmppt.y = ev.clientY;
+  newpt = tmppt.matrixTransform(draglistener.matrix);
+
+  if (color == "white")
+    val = "wo";
+  else
+    val = "bo";
+
+  dragobject = document.createElementNS(svg_ns, "use");
+  dragobject.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+worksize+val);
+  dragobject.setAttribute("id", "dragobject");
+  val = "translate("+newpt.x+","+newpt.y+") rotate("+90*workdir+")";
+  dragobject.setAttribute("transform", val);
+  docsvg.appendChild(dragobject);
+  
+  document.addEventListener("mousemove", draglistener, true);
+  document.addEventListener("mouseup", dragendlistener, true);
+}
+
+function draw_stash_count(seat, size) {
+  var val;
+
+  if (seat == "white") {
+    val = whitestash[size];
+  }
+  else {
+    val = blackstash[size];
+  }
+  if (seat == info.seat) {
+    if (size == worksize)
+      val = val-1;
+  }
+  set_stash_count(seat, size, val);
+}
+
+function set_stash_count(seat, size, count) {
+  var box, ls, piece;
+
+  box = document.getElementById(seat + "stash" + size);
+  ls = box.childNodes;
+
+  piece = ls.item(9);
+  if (count > 4)
+    piece.setAttribute("visibility", "visible");
+  else
+    piece.setAttribute("visibility", "hidden");
+
+  piece = ls.item(7);
+  if (count > 3)
+    piece.setAttribute("visibility", "visible");
+  else
+    piece.setAttribute("visibility", "hidden");
+
+  piece = ls.item(5);
+  if (count > 2)
+    piece.setAttribute("visibility", "visible");
+  else
+    piece.setAttribute("visibility", "hidden");
+
+  piece = ls.item(3);
+  if (count > 1)
+    piece.setAttribute("visibility", "visible");
+  else
+    piece.setAttribute("visibility", "hidden");
+
+  piece = ls.item(1);
+  if (count > 0)
+    piece.setAttribute("visibility", "visible");
+  else
+    piece.setAttribute("visibility", "hidden");
+}
+
+function add_penalty(seat, penalty, xpos, ypos) {
+  var val, obj, objtxt;
+
+  if (seat == "white")
+    val = "w";
+  else
+    val = "b";
+  obj = document.createElementNS(svg_ns, "use");
+  obj.setAttributeNS(xlink_ns, "xlink:href", "#starburst"+val);
+  val = "translate("+xpos+","+ypos+")";
+  obj.setAttribute("transform", val);
+  scorelayer.appendChild(obj);
+
+  if (seat == "white")
+    val = "black";
+  else
+    val = "white";
+  obj = document.createElementNS(svg_ns, "text");
+  obj.setAttribute("fill", val);
+  val = "translate("+xpos+","+(ypos+0.08)+")";
+  obj.setAttribute("transform", val);
+  obj.setAttribute("class", "ScoreText");
+  obj.setAttribute("pointer-events", "none");
+  scorelayer.appendChild(obj);
+  objtxt = document.createTextNode(""+penalty);
+  obj.appendChild(objtxt);
+}
+
+function remove_workobject() {
+  var obj;
+  obj = document.getElementById("workobject");
+  if (obj != null) {
+    piecelayer.removeChild(obj);
+  }
+}
+
+function clear_piecelayer() {
+  var obj, ls;
+  ls = piecelayer.childNodes;
+  while (ls.length > 0) {
+    obj = ls.item(0);
+    piecelayer.removeChild(obj);
+  }
+}
+
+function clear_scorelayer() {
+  var obj, ls;
+  ls = scorelayer.childNodes;
+  while (ls.length > 0) {
+    obj = ls.item(0);
+    scorelayer.removeChild(obj);
+  }
+}
+
+function adjust_okbutton(color, val) {
+  var obj;
+  obj = document.getElementById("okbutton"+color);
+  if (val)
+    obj.setAttribute("visibility", "visible");
+  else
+    obj.setAttribute("visibility", "hidden");
+}
+
+function adjust_winbutton(color, val) {
+  var obj;
+  obj = document.getElementById("winbutton"+color);
+  if (val)
+    obj.setAttribute("visibility", "visible");
+  else
+    obj.setAttribute("visibility", "hidden");
+}
+
+function adjust_turn(color, val) {
+  var obj;
+  obj = document.getElementById("stashpad"+color);
+  if (val) {
+    if (color == "white")
+      obj.setAttribute("stroke", "#E8E8E8");
+    else
+      obj.setAttribute("stroke", "#181818");
+  }
+  else {
+    obj.setAttribute("stroke", "none");
+  }
+}
+
+function adjust_score(color) {
+  var val, obj, ls, subobj;
+
+  if (color == "white") {
+    obj = document.getElementById("scorefieldwhite");
+    val = whitescore;
+  }
+  else {
+    obj = document.getElementById("scorefieldblack");
+    val = blackscore;
+  }
+
+  ls = obj.childNodes;
+  while (ls.length > 0) {
+    subobj = ls.item(0);
+    obj.removeChild(subobj);
+  }
+
+  subobj = document.createTextNode(val);
+  obj.appendChild(subobj);
+}
+
+function deref_board(xpos, ypos, dir) {
+  if (dir == 0)
+    ypos--;
+  if (dir == 2)
+    ypos++;
+  if (dir == 3)
+    xpos--;
+  if (dir == 1)
+    xpos++;
+  if (xpos < 0 || xpos >= 8 || ypos < 0 || ypos >= 4)
+    return null;
+  return board[xpos][ypos];
+}
+
+function choose_direction(xpos, ypos) {
+  var val, ix, dir, qual, bestqual, ourseatchar;
+
+  ourseatchar = (info.seat+"").charAt(0);
+
+  dir = null;
+  bestqual = 0;
+  for (ix=0; ix<4; ix++) {
+    val = deref_board(xpos, ypos, ix);
+    if (val == null)
+      continue;
+    if (val == "--")
+      continue;
+    if (val == "++")
+      qual = 8;
+    else if (val.charAt(0) == ourseatchar)
+      qual = 7;
+    else 
+      qual = 4 - parseInt(val.charAt(1));
+
+    if (qual > bestqual) {
+      bestqual = qual;
+      dir = ix;
+    }
+  }
+
+  return dir;
+}
+
+function twodarray(wid, hgt) {
+  var ix, result;
+
+  result = new Array(wid);
+  for (ix=0; ix<wid; ix++) {
+    result[ix] = new Array(hgt);
+  }
+
+  return result;
+}
+
+obj = document.getElementById("boardrectclick");
+obj.addEventListener("mousedown", boardrectclicklistener, false);
+obj = document.getElementById("whitestashclick1");
+obj.addEventListener("mousedown", whitestashclick1listener, false);
+obj = document.getElementById("whitestashclick2");
+obj.addEventListener("mousedown", whitestashclick2listener, false);
+obj = document.getElementById("whitestashclick3");
+obj.addEventListener("mousedown", whitestashclick3listener, false);
+obj = document.getElementById("blackstashclick1");
+obj.addEventListener("mousedown", blackstashclick1listener, false);
+obj = document.getElementById("blackstashclick2");
+obj.addEventListener("mousedown", blackstashclick2listener, false);
+obj = document.getElementById("blackstashclick3");
+obj.addEventListener("mousedown", blackstashclick3listener, false);
+
+buttondownlistener = new Object;
+buttondownlistener.handleEvent = function(ev) {
+  var obj, id;
+  obj = ev.currentTarget;
+  buttontrack = obj;
+
+  id = obj.getAttribute("id");
+  if (id == "okbuttonwhite")
+    obj.setAttribute("class", "BoardLightClass");
+  else
+    obj.setAttribute("class", "BoardDarkClass");
+}
+
+buttonofflistener = new Object;
+buttonofflistener.handleEvent = function(ev) {
+  var obj, id;
+  if (!buttontrack)
+    return;
+  obj = buttontrack;
+  buttontrack = null;
+
+  id = obj.getAttribute("id");
+  if (id == "okbuttonwhite")
+    obj.setAttribute("class", "PieceBlack");
+  else
+    obj.setAttribute("class", "PieceWhite");
+}
+
+
+obj = document.getElementById("okbuttonwhite");
+obj.addEventListener("mousedown", buttondownlistener, false);
+obj.addEventListener("mouseup", buttonofflistener, false);
+obj.addEventListener("mouseout", buttonofflistener, false);
+obj = document.getElementById("okbuttonblack");
+obj.addEventListener("mousedown", buttondownlistener, false);
+obj.addEventListener("mouseup", buttonofflistener, false);
+obj.addEventListener("mouseout", buttonofflistener, false);
+
+obj = null;
+
+// ]]>
+</script>
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+
+.BoardDarkClass {
+	fill: #686868;
+}
+.BoardLightClass {
+	fill: #989898;
+}
+.PieceBlack {
+	fill: #E8E8E8;
+}
+.PieceWhite {
+	fill: #181818;
+}
+.PieceBlackOutline {
+	fill: #E8E8E8;
+	stroke: #181818;
+	stroke-width: 0.035;
+}
+.PieceWhiteOutline {
+	fill: #181818;
+	stroke: #E8E8E8;
+	stroke-width: 0.035;
+}
+text {
+	font-size: 0.5;
+	font-family: san-serif;
+	font-weight: bold;
+	text-anchor: middle;
+}
+.ScoreText {
+	font-size: 0.2;
+}
+
+]]>
+</style>
+
+<g id="okbutton">
+<path
+	transform="scale(0.7, 0.4)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	stroke="#808080" stroke-width="0.15" />
+<text fill="#808080"
+	x="0" y="0.15"
+	pointer-events="none"
+	>Go</text>
+</g>
+
+<g id="winbutton">
+<path
+	transform="scale(0.7, 0.4)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	stroke="#808080" stroke-width="0.15" />
+<text fill="#808080"
+	x="0" y="0.15"
+	pointer-events="none"
+	>Win</text>
+</g>
+
+<g id="stashpad"
+	transform="scale(1.5, 1.125), translate(1, 1)" >
+<path
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	fill="#808080" stroke="#808080" stroke-width="0.05" />
+<path
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	stroke-width="0.02" fill="none" />
+
+</g>
+
+<g id="boardsquare" transform="scale(0.47)">
+<path 
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	/>
+</g>
+
+<g id="rootsquare"
+	stroke-width="0.09">
+<circle cx="0.18" cy="0.18" r="0.17"
+	fill="#E8E8E8" stroke="#181818" />
+<circle cx="-0.18" cy="0.18" r="0.17" 
+	fill="#181818" stroke="#E8E8E8" />
+<circle cx="-0.18" cy="-0.18" r="0.17"
+	fill="#E8E8E8" stroke="#181818" />
+<circle cx="0.18" cy="-0.18" r="0.17" 
+	fill="#181818" stroke="#E8E8E8" />
+<path d="M 0.35 0.18 A 0.17 0.17 0 0 0 0.0598 0.0598 "
+	fill="none" stroke="#181818" />
+</g>
+
+<g id="rootoutline"
+	stroke-width="0.05">
+<circle cx="0.18" cy="0.18" r="0.17"
+	fill="none" stroke="#181818" />
+<circle cx="-0.18" cy="0.18" r="0.17" 
+	fill="none" stroke="#E8E8E8" />
+<circle cx="-0.18" cy="-0.18" r="0.17"
+	fill="none" stroke="#181818" />
+<circle cx="0.18" cy="-0.18" r="0.17" 
+	fill="none" stroke="#E8E8E8" />
+<path d="M 0.35 0.18 A 0.17 0.17 0 0 0 0.0598 0.0598 "
+	fill="none" stroke="#181818" />
+</g>
+
+<g id="nullsquare" stroke-dasharray="0.07, 0.315" 
+	fill="none" stroke-width="0.09" >
+<circle cx="0" cy="0" r="0.3"
+	stroke="#181818" />
+<circle cx="0" cy="0" r="0.3"
+	stroke="#E8E8E8" stroke-dashoffset="0.1925" />
+</g>
+
+<g id="nulloutline" stroke-dasharray="0.074667, 0.336" 
+	fill="none" stroke-width="0.05" >
+<circle cx="0" cy="0" r="0.32"
+	stroke="#181818" />
+<circle cx="0" cy="0" r="0.32"
+	stroke="#E8E8E8" stroke-dashoffset="0.1925" />
+</g>
+
+<g id="pyramid3fore">
+<path d="M 0 -0.40  L 0.33 0.35  L -0.33 0.35  z" />
+</g>
+<g id="pyramid2fore">
+<path d="M 0 -0.33  L 0.26 0.27  L -0.26 0.27  z" />
+</g>
+<g id="pyramid1fore">
+<path d="M 0 -0.26  L 0.20 0.19  L -0.20 0.19  z" />
+</g>
+<g id="pyramid3back">
+<circle cx="0.0" cy="0.25" r="0.039" />
+<circle cx="0.1" cy="0.25" r="0.039" />
+<circle cx="0.2" cy="0.25" r="0.039" />
+</g>
+<g id="pyramid2back">
+<circle cx="0.0" cy="0.17" r="0.039" />
+<circle cx="0.1" cy="0.17" r="0.039" />
+</g>
+<g id="pyramid1back">
+<circle cx="0.0" cy="0.09" r="0.039" />
+</g>
+
+<g id="pyramid3b">
+<use xlink:href="#pyramid3fore" class="PieceWhite" />
+<use xlink:href="#pyramid3back" class="PieceBlack" />
+</g>
+
+<g id="pyramid3w">
+<use xlink:href="#pyramid3fore" class="PieceBlack" />
+<use xlink:href="#pyramid3back" class="PieceWhite" />
+</g>
+
+<g id="pyramid2b">
+<use xlink:href="#pyramid2fore" class="PieceWhite" />
+<use xlink:href="#pyramid2back" class="PieceBlack" />
+</g>
+
+<g id="pyramid2w">
+<use xlink:href="#pyramid2fore" class="PieceBlack" />
+<use xlink:href="#pyramid2back" class="PieceWhite" />
+</g>
+
+<g id="pyramid1b">
+<use xlink:href="#pyramid1fore" class="PieceWhite" />
+<use xlink:href="#pyramid1back" class="PieceBlack" />
+</g>
+
+<g id="pyramid1w">
+<use xlink:href="#pyramid1fore" class="PieceBlack" />
+<use xlink:href="#pyramid1back" class="PieceWhite" />
+</g>
+
+<g id="pyramid3bo">
+<use xlink:href="#pyramid3fore" class="PieceWhiteOutline" />
+<use xlink:href="#pyramid3back" class="PieceBlack" />
+</g>
+
+<g id="pyramid3wo">
+<use xlink:href="#pyramid3fore" class="PieceBlackOutline" />
+<use xlink:href="#pyramid3back" class="PieceWhite" />
+</g>
+
+<g id="pyramid2bo">
+<use xlink:href="#pyramid2fore" class="PieceWhiteOutline" />
+<use xlink:href="#pyramid2back" class="PieceBlack" />
+</g>
+
+<g id="pyramid2wo">
+<use xlink:href="#pyramid2fore" class="PieceBlackOutline" />
+<use xlink:href="#pyramid2back" class="PieceWhite" />
+</g>
+
+<g id="pyramid1bo">
+<use xlink:href="#pyramid1fore" class="PieceWhiteOutline" />
+<use xlink:href="#pyramid1back" class="PieceBlack" />
+</g>
+
+<g id="pyramid1wo">
+<use xlink:href="#pyramid1fore" class="PieceBlackOutline" />
+<use xlink:href="#pyramid1back" class="PieceWhite" />
+</g>
+
+<g id="starburst"
+	transform="scale(1.5)">
+<circle r="0.07" />
+<path
+	d="M 0.13 0.0 L 0.045 0.0217 L 0.0811 0.1016 L 0.0111 0.0487 L -0.0289 0.1267 L -0.0312 0.0391 L -0.1171 0.0564 L -0.05 0.0 L -0.1171 -0.0564 L -0.0312 -0.0391 L -0.0289 -0.1267 L 0.0111 -0.0487 L 0.0811 -0.1016 L 0.045 -0.0217 z"
+/>
+</g>
+
+<g id="starburstb">
+<use xlink:href="#starburst" 
+	fill="#181818" stroke="none" />
+</g>
+
+<g id="starburstw">
+<use xlink:href="#starburst" 
+	fill="#E8E8E8" stroke="none" />
+</g>
+
+</defs>
+
+<rect x="-10" y="-10" width="20" height="20"
+	fill="none" stroke="none"
+	pointer-events="fill" />
+
+<rect id="boardrect"
+	x="-0.25" y="-0.25" width="8.5" height="4.5"
+	fill="#808080" stroke="white" stroke-width="0.15" />
+
+<g transform="translate(0.5, 0.5)">
+
+<use xlink:href="#boardsquare" x="0" y="0" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="1" y="0" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="2" y="0" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="3" y="0" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="4" y="0" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="5" y="0" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="6" y="0" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="7" y="0" class="BoardDarkClass" />
+
+<use xlink:href="#boardsquare" x="0" y="1" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="1" y="1" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="2" y="1" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="3" y="1" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="4" y="1" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="5" y="1" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="6" y="1" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="7" y="1" class="BoardLightClass" />
+
+<use xlink:href="#boardsquare" x="0" y="2" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="1" y="2" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="2" y="2" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="3" y="2" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="4" y="2" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="5" y="2" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="6" y="2" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="7" y="2" class="BoardDarkClass" />
+
+<use xlink:href="#boardsquare" x="0" y="3" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="1" y="3" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="2" y="3" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="3" y="3" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="4" y="3" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="5" y="3" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="6" y="3" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="7" y="3" class="BoardLightClass" />
+
+<g id="rootnulllayer">
+	<use id="nullsquareref"
+		xlink:href="#nullsquare"
+		transform="translate(7,3)" />
+	<use id="rootsquareref"
+		xlink:href="#rootsquare"
+		transform="translate(3,1)" />
+</g>
+
+<g id="piecelayer">
+</g>
+
+<g id="scorelayer">
+</g>
+
+</g>
+
+<rect id="boardrectclick"
+	x="-0.25" y="-0.25" width="8.5" height="4.5"
+	pointer-events="fill"
+	fill="none" stroke="none" />
+
+<g transform="translate(0.5, 4.5)">
+
+<use id="stashpadwhite"
+	xlink:href="#stashpad"
+	stroke="none" />
+
+<g id="whitestash1">
+<use xlink:href="#pyramid1w"
+	transform="translate(0.5, 1.7)" />
+<use xlink:href="#pyramid1w"
+	transform="translate(0.5, 1.4)" />
+<use xlink:href="#pyramid1w"
+	transform="translate(0.5, 1.1)" />
+<use xlink:href="#pyramid1w"
+	transform="translate(0.5, 0.8)" />
+<use xlink:href="#pyramid1w"
+	transform="translate(0.5, 0.5)" />
+</g>
+
+<rect id="whitestashclick1"
+	pointer-events="fill"
+	x="0.20" y="0" width="0.6" height="2.25"
+	fill="none" stroke="none" />
+
+<g id="whitestash2">
+<use xlink:href="#pyramid2w"
+	transform="translate(1.3, 1.7)" />
+<use xlink:href="#pyramid2w"
+	transform="translate(1.3, 1.4)" />
+<use xlink:href="#pyramid2w"
+	transform="translate(1.3, 1.1)" />
+<use xlink:href="#pyramid2w"
+	transform="translate(1.3, 0.8)" />
+<use xlink:href="#pyramid2w"
+	transform="translate(1.3, 0.5)" />
+</g>
+
+<rect id="whitestashclick2"
+	pointer-events="fill"
+	x="0.95" y="0" width="0.7" height="2.25"
+	fill="none" stroke="none" />
+
+<g id="whitestash3">
+<use xlink:href="#pyramid3w"
+	transform="translate(2.3, 1.7)" />
+<use xlink:href="#pyramid3w"
+	transform="translate(2.3, 1.4)" />
+<use xlink:href="#pyramid3w"
+	transform="translate(2.3, 1.1)" />
+<use xlink:href="#pyramid3w"
+	transform="translate(2.3, 0.8)" />
+<use xlink:href="#pyramid3w"
+	transform="translate(2.3, 0.5)" />
+</g>
+
+<rect id="whitestashclick3"
+	pointer-events="fill"
+	x="1.85" y="0" width="0.9" height="2.25"
+	fill="none" stroke="none" />
+
+</g>
+
+<g transform="translate(4.5, 4.5)">
+
+<use id="stashpadblack"
+	xlink:href="#stashpad"
+	stroke="none" />
+
+<g id="blackstash1">
+<use xlink:href="#pyramid1b"
+	transform="translate(2.5, 1.7)" />
+<use xlink:href="#pyramid1b"
+	transform="translate(2.5, 1.4)" />
+<use xlink:href="#pyramid1b"
+	transform="translate(2.5, 1.1)" />
+<use xlink:href="#pyramid1b"
+	transform="translate(2.5, 0.8)" />
+<use xlink:href="#pyramid1b"
+	transform="translate(2.5, 0.5)" />
+</g>
+
+<rect id="blackstashclick1"
+	pointer-events="fill"
+	x="2.20" y="0" width="0.6" height="2.25"
+	fill="none" stroke="none" />
+
+<g id="blackstash2">
+<use xlink:href="#pyramid2b"
+	transform="translate(1.7, 1.7)" />
+<use xlink:href="#pyramid2b"
+	transform="translate(1.7, 1.4)" />
+<use xlink:href="#pyramid2b"
+	transform="translate(1.7, 1.1)" />
+<use xlink:href="#pyramid2b"
+	transform="translate(1.7, 0.8)" />
+<use xlink:href="#pyramid2b"
+	transform="translate(1.7, 0.5)" />
+</g>
+
+<rect id="blackstashclick2"
+	pointer-events="fill"
+	x="1.35" y="0" width="0.7" height="2.25"
+	fill="none" stroke="none" />
+
+<g id="blackstash3">
+<use xlink:href="#pyramid3b"
+	transform="translate(0.7, 1.7)" />
+<use xlink:href="#pyramid3b"
+	transform="translate(0.7, 1.4)" />
+<use xlink:href="#pyramid3b"
+	transform="translate(0.7, 1.1)" />
+<use xlink:href="#pyramid3b"
+	transform="translate(0.7, 0.8)" />
+<use xlink:href="#pyramid3b"
+	transform="translate(0.7, 0.5)" />
+</g>
+
+<rect id="blackstashclick3"
+	pointer-events="fill"
+	x="0.25" y="0" width="0.9" height="2.25"
+	fill="none" stroke="none" />
+
+</g>
+
+<use xlink:href="#okbutton"
+	id="okbuttonwhite"
+	class="PieceBlack" visibility="hidden"
+	x="1" y="7.4"
+	onclick="send_move()" />
+
+<use xlink:href="#okbutton"
+	id="okbuttonblack"
+	class="PieceWhite" visibility="hidden"
+	x="7" y="7.4"
+	onclick="send_move()" />
+
+<use xlink:href="#winbutton"
+	id="winbuttonwhite"
+	class="PieceBlack" visibility="hidden"
+	x="1.5" y="7.4" />
+
+<use xlink:href="#winbutton"
+	id="winbuttonblack"
+	class="PieceWhite" visibility="hidden"
+	x="6.5" y="7.4" />
+
+<g
+	transform="translate(3,7.4)" >
+<path id="scoreborderwhite"
+	transform="scale(0.5, 0.3)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	fill="#808080" />
+<text id="scorefieldwhite"
+	class="PieceBlack"
+	x="0" y="0.15"
+	pointer-events="none"
+	>0</text>
+</g>
+
+<g
+	transform="translate(5,7.4)" >
+<path id="scoreborderwhite"
+	transform="scale(0.5, 0.3)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	fill="#808080" />
+<text id="scorefieldblack"
+	class="PieceWhite"
+	x="0" y="0.15"
+	pointer-events="none"
+	>0</text>
+</g>
+
+</svg>

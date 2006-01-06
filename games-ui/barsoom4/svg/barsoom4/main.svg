@@ -1,0 +1,1548 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+
+
+
+
+<script type="text/ecmascript">
+<![CDATA[
+
+// barsoom4-ui.zip -- an implementation of Barsoomite Go
+//     (or, Branches and Twigs and Thorns.)
+//     Game designed and implemented by Andrew Plotkin.
+// Ruleset URI: <http://eblong.com/zarf/volity/ruleset/barsoom/BarsoomGo4.html>
+// Game URL:    <http://www.eblong.com/zarf/barsoom-go.html>
+
+svg_ns = "http://www.w3.org/2000/svg";
+xlink_ns = "http://www.w3.org/1999/xlink";
+
+docsvg = document.rootElement;
+afoot = false;
+ourturn = false;
+dragtask = null;
+dragobject = null;
+dragangle = 0;
+stashes = null;
+scores = null;
+nulls = null;
+roots = null;
+worksize = 0;
+workx = null;
+worky = null;
+workdir = null;
+dragsize = 0;
+dragdir = null;
+
+piecelayer = null;
+penaltylayer = null;
+buttontrack = null;
+
+function initfunc() {
+  var obj;
+
+  stashes = [];
+  scores = [];
+  nulls = [ docsvg.createSVGPoint(), docsvg.createSVGPoint() ];
+  roots = [ docsvg.createSVGPoint(), docsvg.createSVGPoint() ];
+  move_null_square(0, 2, 2);
+  move_null_square(1, 5, 5);
+  move_root_square(0, 2, 5);
+  move_root_square(1, 5, 2);
+  initgamedata();
+
+  piecelayer = document.getElementById("piecelayer");
+  penaltylayer = document.getElementById("penaltylayer");
+
+  set_home_color(null);
+
+  obj = document.getElementById("okbutton");
+  obj.addEventListener("mousedown", buttondownlistener, false);
+  obj.addEventListener("mouseup", buttonofflistener, false);
+  obj.addEventListener("mouseout", buttonofflistener, false);
+
+  drag_init("dragpad");
+  drag_set_source("homestashclick1", click_stash_1);
+  drag_set_source("homestashclick2", click_stash_2);
+  drag_set_source("homestashclick3", click_stash_3);
+
+  drag_set_source("boardgrid", click_board, true);
+  drag_set_target("boardgrid", true);
+}
+
+volity.start_game = function() {
+  afoot = true;
+  initgamedata();
+  adjust_scores();
+  seatmark();
+  adjust_okbutton(false);
+
+  set_home_color(info.seat);
+
+  draw_stash_count("red", 1);
+  draw_stash_count("red", 2);
+  draw_stash_count("red", 3);
+  draw_stash_count("blue", 1);
+  draw_stash_count("blue", 2);
+  draw_stash_count("blue", 3);
+  draw_stash_count("yellow", 1);
+  draw_stash_count("yellow", 2);
+  draw_stash_count("yellow", 3);
+  draw_stash_count("green", 1);
+  draw_stash_count("green", 2);
+  draw_stash_count("green", 3);
+  draw_stash_count(null, 1);
+  draw_stash_count(null, 2);
+  draw_stash_count(null, 3);
+
+  set_work_piece();
+  remove_children(piecelayer);
+  remove_children(penaltylayer);
+}
+
+function initgamedata() {
+  ourturn = false;
+
+  workx = null;
+  worky = null;
+  worksize = 0;
+  workdir = null;
+
+  dragsize = 0;
+  dragdir = null;
+
+  stashes["red"] = [0, 5, 5, 5];
+  stashes["blue"] = [0, 5, 5, 5];
+  stashes["yellow"] = [0, 5, 5, 5];
+  stashes["green"] = [0, 5, 5, 5];
+
+  scores["red"] = 15;
+  scores["blue"] = 15;
+  scores["yellow"] = 15;
+  scores["green"] = 15;
+}
+
+volity.state_sent = function() {
+  if (info.state == 'active') {
+    afoot = true;
+    set_home_color(info.seat);
+  }
+  else {
+    afoot = false;
+  }
+}
+
+volity.end_game = function() {
+  drag_cancel();
+  set_work_piece();
+
+  adjust_okbutton(false);
+  seatmark(); //### mark winner?
+
+  afoot = false;
+  ourturn = false;
+}
+
+game.set_null_square = function(player, num, xpos, ypos) {
+  remove_children(piecelayer);
+  remove_children(penaltylayer);
+  move_null_square(num, xpos, ypos);
+}
+
+game.set_root_square = function(player, num, xpos, ypos) {
+  remove_children(piecelayer);
+  remove_children(penaltylayer);
+  move_root_square(num, xpos, ypos);
+}
+
+game.turn = function(seat) {
+  seatmark(seat);
+  if (seat == info.seat) {
+    ourturn = true;
+  }
+}
+
+game.move = function(seat, xpos, ypos, size, dir) {
+  var val, obj, loc;
+
+  drag_cancel();
+  adjust_okbutton(false);
+
+  set_work_piece();
+  
+  stashes[seat][size] -= 1;
+  draw_stash_count(seat, size);
+  if (info.seat == seat)
+    draw_stash_count(null, size);
+
+  loc = "pos_" + xpos + "x" + ypos;
+
+  obj = document.createElementNS(svg_ns, "use");
+  set_use_ref(obj, "pyramid"+size+seat);
+  obj.setAttribute("id", loc);
+  xpos += 0.5;
+  ypos += 0.5;
+  val = "translate("+xpos+","+ypos+") rotate("+90*dir+")";
+  obj.setAttribute("transform", val);
+  piecelayer.appendChild(obj);
+
+  ourturn = false;
+}
+
+game.penalty = function(seat1, penalty, seat2, bonus, xpos, ypos, dir) {
+  var obj, grp, val, xpos1, xpos2, ypos1, ypos2;
+
+  xpos += 0.5;
+  ypos += 0.5;
+
+  if (dir == 0) {
+    xpos1 = xpos-0.15;
+    ypos1 = ypos-0.5;
+    xpos2 = xpos+0.15;
+    ypos2 = ypos-0.5;
+  }
+  if (dir == 2) {
+    xpos1 = xpos+0.15;
+    ypos1 = ypos+0.5;
+    xpos2 = xpos-0.15;
+    ypos2 = ypos+0.5;
+  }
+  if (dir == 3) {
+    xpos1 = xpos-0.5;
+    ypos1 = ypos+0.15;
+    xpos2 = xpos-0.5;
+    ypos2 = ypos-0.15;
+  }
+  if (dir == 1) {
+    xpos1 = xpos+0.5;
+    ypos1 = ypos-0.15;
+    xpos2 = xpos+0.5;
+    ypos2 = ypos+0.15;
+  }
+    
+  grp = document.createElementNS(svg_ns, "g");
+  val = "translate("+xpos1+","+ypos1+")";
+  grp.setAttribute("transform", val);
+  
+  obj = document.createElementNS(svg_ns, "use");
+  set_use_ref(obj, "starburst");
+  obj.setAttribute("class", "ForeC"+seat1);
+  grp.appendChild(obj);
+
+  obj = document.createElementNS(svg_ns, "text");
+  set_text(obj, penalty);
+  obj.setAttribute("class", "PenaltyText");
+  obj.setAttribute("fill", "black");
+  obj.setAttribute("y", "0.085");
+  grp.appendChild(obj);
+
+  penaltylayer.appendChild(grp);
+
+  grp = document.createElementNS(svg_ns, "g");
+  val = "translate("+xpos2+","+ypos2+")";
+  grp.setAttribute("transform", val);
+  
+  obj = document.createElementNS(svg_ns, "use");
+  set_use_ref(obj, "starburst");
+  obj.setAttribute("class", "ForeC"+seat2);
+  grp.appendChild(obj);
+
+  obj = document.createElementNS(svg_ns, "text");
+  set_text(obj, bonus);
+  obj.setAttribute("class", "PenaltyText");
+  obj.setAttribute("fill", "white");
+  obj.setAttribute("y", "0.085");
+  grp.appendChild(obj);
+
+  penaltylayer.appendChild(grp);
+
+  scores[seat1] += penalty;
+  scores[seat2] -= bonus;
+  adjust_score(seat1);
+  adjust_score(seat2);
+}
+
+function click_stash_1(id) {
+  return click_stash(1);
+}
+function click_stash_2(id) {
+  return click_stash(2);
+}
+function click_stash_3(id) {
+  return click_stash(3);
+}
+
+function click_stash(size) {
+  var obj;
+
+  if (!afoot || !ourturn || (!info.seat))
+    return;
+
+  if (stashes[info.seat][size] <= 0)
+    return;
+
+  obj = document.getElementById("dragthingrotate");
+  obj.setAttribute("transform", "rotate(0)");
+
+  obj = document.getElementById("dragthinguse1");
+  set_use_ref(obj, "pyramid"+size+info.seat);
+  obj = document.getElementById("dragthinguse2");
+  set_use_ref(obj, "pyramid"+size+"outline");
+  set_visibility(obj, true);
+
+  set_work_piece();
+  adjust_okbutton(false);
+
+  dragsize = size;
+  dragdir = 0;
+  draw_stash_count(null, size);
+  
+  dragtask = null;
+  return [drop_piece, "dragthing"];
+}
+
+function click_board(id, xpos, ypos) {
+  var obj, dir, size;
+  
+  if (afoot) {
+    if (xpos == workx && ypos == worky && (worksize)) {
+      size = worksize;
+      dir = workdir;
+      set_work_piece();
+      adjust_okbutton(false);
+      
+      obj = document.getElementById("dragthingrotate");
+      obj.setAttribute("transform", "rotate("+dir*90+")");
+
+      obj = document.getElementById("dragthinguse1");
+      set_use_ref(obj, "pyramid"+size+info.seat);
+      obj = document.getElementById("dragthinguse2");
+      set_use_ref(obj, "pyramid"+size+"outline");
+      set_visibility(obj, true);
+
+      dragsize = size;
+      dragdir = dir;
+      draw_stash_count(null, size);
+
+      dragtask = null;
+      return [drop_piece, "dragthing"];
+    }
+  }
+
+  if (!afoot) {
+    obj = document.getElementById("dragthingrotate");
+    obj.setAttribute("transform", "rotate(0)");
+
+    obj = document.getElementById("dragthinguse2");
+    set_visibility(obj, false);
+    obj = document.getElementById("dragthinguse1");
+
+    if (xpos == nulls[0].x && ypos == nulls[0].y) {
+      set_use_ref(obj, "nulloutline");
+      dragtask = "null0";
+      return [drop_setup, "dragthing"];
+    }
+    if (xpos == nulls[1].x && ypos == nulls[1].y) {
+      set_use_ref(obj, "nulloutline");
+      dragtask = "null1";
+      return [drop_setup, "dragthing"];
+    }
+    if (xpos == roots[0].x && ypos == roots[0].y) {
+      set_use_ref(obj, "rootoutline");
+      dragtask = "root0";
+      return [drop_setup, "dragthing"];
+    }
+    if (xpos == roots[1].x && ypos == roots[1].y) {
+      set_use_ref(obj, "rootoutline");
+      dragtask = "root1";
+      return [drop_setup, "dragthing"];
+    }
+    return;
+  }
+}
+
+function drop_setup(srcid, destid, xp, yp) {
+  var task;
+
+  task = dragtask;
+  dragtask = null;
+
+  if (!destid)
+    return;
+  if (afoot)
+    return;
+  if (xp < 0 || yp < 0 || xp >= 8 || yp >= 8)
+    return;
+
+  if (xp == roots[0].x && yp == roots[0].y)
+    return;
+  if (xp == roots[1].x && yp == roots[1].y)
+    return;
+  if (xp == nulls[0].x && yp == nulls[0].y)
+    return;
+  if (xp == nulls[1].x && yp == nulls[1].y)
+    return;
+  
+  if (task == "root0")
+    rpc("move_root_square", 0, xp, yp);
+  if (task == "root1")
+    rpc("move_root_square", 1, xp, yp);
+  if (task == "null0")
+    rpc("move_null_square", 0, xp, yp);
+  if (task == "null1")
+    rpc("move_null_square", 1, xp, yp);
+}
+
+function drop_piece(srcid, destid, xp, yp) {
+  var size, val;
+
+  size = dragsize;
+  dragsize = 0;
+  adjust_okbutton(false);
+
+  if (!afoot || !ourturn || (!info.seat)
+    || destid != "boardgrid") {
+    draw_stash_count(null, size);
+    return;
+  }
+
+  val = piece_at(xp, yp);
+  if (val != "") {
+    draw_stash_count(null, size);
+    return;
+  }
+
+  val = choose_direction(xp, yp);
+  if (val == null) {
+    draw_stash_count(null, size);
+    return;
+  }
+
+  set_work_piece(xp, yp, size, val);
+  adjust_okbutton(true);
+}
+
+function click_okbutton() {
+  if (!afoot || !ourturn)
+    return;
+  if (workx == null || worky == null || worksize == null || workdir == null)
+    return;
+  rpc("move", workx, worky, worksize, workdir);
+}
+
+function set_work_piece(xpos, ypos, size, dir) {
+  var obj, grp, val;
+
+  grp = document.getElementById("workpiece");
+  if (grp) {
+    piecelayer.removeChild(grp);
+  }
+
+  if (!size || (!info.seat)) {
+    if (worksize) {
+      val = worksize;
+      workx = null;
+      worky = null;
+      worksize = 0;
+      draw_stash_count(null, val);
+    }
+    return;
+  }
+
+  workx = xpos;
+  worky = ypos;
+  worksize = size;
+  workdir = dir;
+
+  xpos += 0.5;
+  ypos += 0.5;
+
+  grp = document.createElementNS(svg_ns, "g");
+  grp.setAttribute("id", "workpiece");
+  val = "translate("+xpos+","+ypos+") rotate("+(dir*90)+")";
+  grp.setAttribute("transform", val);
+
+  obj = document.createElementNS(svg_ns, "use");
+  set_use_ref(obj, "pyramid"+size+info.seat);
+  grp.appendChild(obj);
+
+  obj = document.createElementNS(svg_ns, "use");
+  set_use_ref(obj, "pyramid"+size+"outline");
+  grp.appendChild(obj);
+
+  piecelayer.appendChild(grp);
+}
+
+function draw_stash_count(seat, size) {
+  var seatname, count;
+
+  seatname = seat;
+  if (!seat) {
+    seat = info.seat;
+    seatname = "home";
+  }
+
+  if (!seat)
+    return;
+
+  count = stashes[seat][size];
+  if (seatname == "home" && (size == worksize || size == dragsize))
+    count -= 1;
+
+  set_stash_count(seatname, size, count);
+}
+
+function move_null_square(num, xpos, ypos) {
+  var obj;
+  nulls[num].x = xpos;
+  nulls[num].y = ypos;
+  xpos += 0.5;
+  ypos += 0.5;
+  obj = document.getElementById("nullsquare"+num);
+  obj.setAttribute("transform", "translate("+xpos+", "+ypos+")");
+}
+
+function move_root_square(num, xpos, ypos) {
+  var obj;
+  roots[num].x = xpos;
+  roots[num].y = ypos;
+  xpos += 0.5;
+  ypos += 0.5;
+  obj = document.getElementById("rootsquare"+num);
+  obj.setAttribute("transform", "translate("+xpos+", "+ypos+")");
+}
+
+function adjust_okbutton(val) {
+  var obj;
+  obj = document.getElementById("okbutton");
+  set_visibility(obj, val);
+}
+
+function adjust_scores() {
+  adjust_score("red");
+  adjust_score("blue");
+  adjust_score("yellow");
+  adjust_score("green");
+}
+
+function adjust_score(seat) {
+  var val, obj;
+  val = scores[seat];
+  obj = document.getElementById("scoretext"+seat);
+  set_text(obj, val);
+}
+
+function set_stash_count(seat, size, count) {
+  var box, ls, piece;
+
+  box = document.getElementById(seat + "stash" + size);
+  ls = box.childNodes;
+
+  piece = ls.item(9);
+  set_visibility(piece, (count > 4));
+  piece = ls.item(7);
+  set_visibility(piece, (count > 3));
+  piece = ls.item(5);
+  set_visibility(piece, (count > 2));
+  piece = ls.item(3);
+  set_visibility(piece, (count > 1));
+  piece = ls.item(1);
+  set_visibility(piece, (count > 0));
+}
+
+function set_home_color(seat) {
+  var obj, box, ls, size, color;
+
+  color = null;
+
+  if (seat == "red")
+    color = "#C22";
+  else if (seat == "blue")
+    color = "#4040FF";
+  else if (seat == "yellow")
+    color = "#707000";
+  else if (seat == "green")
+    color = "#009800";
+
+  if (!color) {
+    obj = document.getElementById("homestashgroup");
+    set_visibility(obj, false);
+    return;
+  }
+
+  obj = document.getElementById("homestashgroup");
+  set_visibility(obj, true);
+
+  obj = document.getElementById("homestashpad");
+  obj.setAttribute("stroke", color);
+  obj.setAttribute("class", "BackC"+seat);
+
+  for (size=1; size<=3; size++) {
+    box = document.getElementById("homestash" + size);
+    ls = box.childNodes;
+    set_use_ref(ls.item(9), "pyramid"+size+seat);
+    set_use_ref(ls.item(7), "pyramid"+size+seat);
+    set_use_ref(ls.item(5), "pyramid"+size+seat);
+    set_use_ref(ls.item(3), "pyramid"+size+seat);
+    set_use_ref(ls.item(1), "pyramid"+size+seat);
+  }
+}
+
+function piece_at(xp, yp, dir) {
+  var loc, obj, val;
+
+  if (dir == 0)
+    yp--;
+  else if (dir == 1)
+    xp++;
+  else if (dir == 2)
+    yp++;
+  else if (dir == 3)
+    xp--;
+
+  if (xp < 0 || yp < 0 || xp >= 8 || yp >= 8)
+    return "edge";
+  
+  if (xp == nulls[0].x && yp == nulls[0].y)
+    return "null";
+  if (xp == nulls[1].x && yp == nulls[1].y)
+    return "null";
+
+  if (xp == roots[0].x && yp == roots[0].y)
+    return "root";
+  if (xp == roots[1].x && yp == roots[1].y)
+    return "root";
+
+  loc = "pos_" + xp + "x" + yp;
+  obj = document.getElementById(loc);
+  if (!obj)
+    return "";
+
+  val = obj.getAttributeNS(xlink_ns, "href");
+  if (val.substring(0,8) != "#pyramid")
+    return "???";
+  val = val.substring(8);
+  return val;
+}
+
+function choose_direction(xp, yp) {
+  var dir, qual, bestqual, ix, val;
+
+  dir = null;
+  bestqual = 0;
+
+  for (ix=0; ix<4; ix++) {
+    val = piece_at(xp, yp, ix);
+    if (val == "" || val == "edge" || val == "null")
+      continue;
+
+    if (val == "root")
+      qual = 8;
+    else if (val.substring(1) == info.seat)
+      qual = 7;
+    else
+      qual = 4 - parseInt(val.charAt(0));
+
+    if (qual > bestqual) {
+      bestqual = qual;
+      dir = ix;
+    }
+  }
+
+  return dir;
+}
+
+buttondownlistener = function(ev) {
+  var obj;
+  obj = ev.target;
+  buttontrack = obj;
+
+  obj.setAttribute("fill", "#444");
+}
+
+buttonofflistener = function(ev) {
+  var obj;
+  if (!buttontrack)
+    return;
+  obj = buttontrack;
+  buttontrack = null;
+
+  obj.setAttribute("fill", "#999");
+}
+
+function set_visibility(obj, val) {
+  if (val)
+    obj.setAttribute("visibility", "inherit");
+  else
+    obj.setAttribute("visibility", "hidden");
+}
+
+function set_use_ref(obj, ref) {
+  obj.setAttributeNS(xlink_ns, "href", "#"+ref);
+}
+
+function set_text(obj, val) {
+  var valobj;
+  remove_children(obj);
+  valobj = document.createTextNode(val);
+  obj.appendChild(valobj);
+}
+
+function remove_children(parent) {
+  var obj, ls;
+  ls = parent.childNodes;
+  while (ls.length > 0) {
+    obj = ls.item(0);
+    parent.removeChild(obj);
+  }
+}
+
+// The drag-and-drop library
+
+drag_initted = false;
+
+function drag_init(padobjid) {
+  var obj = document.getElementById(padobjid);
+  if (!obj) {
+    literalmessage("drag_init: no object with id '" + padobjid + "'");
+  }
+
+  drag_doc_svg = document.rootElement;
+  drag_listener_map = [];
+  drag_receiver_map = [];
+  drag_callback = null;
+  drag_source_id = null;
+  drag_object = null;
+  drag_pad_object = obj;
+  drag_current_matrix = null;
+  drag_tmp_pt = drag_doc_svg.createSVGPoint();
+  drag_initted = true;
+
+  drag_pad_object.setAttribute("pointer-events", "none");
+}
+
+function drag_set_source(objid, listener, usegrid) {
+  var obj;
+
+  if (!drag_initted) {
+    literalmessage("drag_set_source: drag_init() must be called first.");
+    return;
+  }
+
+  obj = document.getElementById(objid);
+  if (!obj) {
+    literalmessage("drag_set_source: no object with id '" + objid + "'");
+    return;
+  }
+
+  drag_listener_map[objid] = [listener, usegrid];
+  obj.addEventListener("mousedown", drag_mousedown_listener, false);
+}
+
+function drag_set_target(objid, usegrid) {
+  var obj;
+
+  if (!drag_initted) {
+    literalmessage("drag_set_target: drag_init() must be called first.");
+    return;
+  }
+
+  obj = document.getElementById(objid);
+  if (!obj) {
+    literalmessage("drag_set_target: no object with id '" + objid + "'");
+    return;
+  }
+
+  drag_receiver_map[objid] = [usegrid];
+}
+
+function drag_mousedown_listener(ev) {
+  var obj, objid, listener, res, newpt, val, usegrid;
+
+  obj = ev.currentTarget;
+  objid = obj.getAttribute("id");
+  if (!objid)
+    return;
+  val = drag_listener_map[objid];
+  if (!val)
+    return;
+  listener = val[0];
+  usegrid = val[1];
+  if (!listener)
+    return;
+
+  if (usegrid) {
+    matrix = obj.getScreenCTM().inverse();
+    drag_tmp_pt.x = ev.clientX;
+    drag_tmp_pt.y = ev.clientY;
+    newpt = drag_tmp_pt.matrixTransform(matrix);
+
+    newpt.x = Math.floor(newpt.x);
+    newpt.y = Math.floor(newpt.y);
+    res = listener(objid, newpt.x, newpt.y);
+  }
+  else {
+    res = listener(objid);
+  }
+  if (!res)
+    return;
+
+  drag_cancel();
+  
+  drag_object = document.getElementById(res[1]);
+  if (!drag_object) {
+    literalmessage("drag_mousedown_listener: no object with id '" + res[1] + "'");
+    return;
+  }
+
+  drag_current_matrix = drag_doc_svg.getCTM().inverse();
+  drag_tmp_pt.x = ev.clientX;
+  drag_tmp_pt.y = ev.clientY;
+  newpt = drag_tmp_pt.matrixTransform(drag_current_matrix);
+
+  val = "translate("+newpt.x+","+newpt.y+")";
+  drag_object.setAttribute("transform", val);
+  drag_object.setAttribute("visibility", "visible");
+
+  drag_pad_object.setAttribute("pointer-events", "all");
+  drag_pad_object.addEventListener("mousemove", drag_mousemove_listener, false);
+  drag_pad_object.addEventListener("mouseup", drag_mouseup_listener, false);
+
+  drag_callback = res[0];
+  drag_source_id = objid;
+}
+
+drag_mousemove_listener = function(ev) {
+  var val, newpt;
+
+  drag_tmp_pt.x = ev.clientX;
+  drag_tmp_pt.y = ev.clientY;
+  newpt = drag_tmp_pt.matrixTransform(drag_current_matrix);
+  val = "translate("+newpt.x+","+newpt.y+")";
+  drag_object.setAttribute("transform", val);
+}
+
+drag_mouseup_listener = function(ev) {
+  var rec, newpt, ls, obj, objid, matrix, val, ix;
+
+  drag_tmp_pt.x = ev.clientX;
+  drag_tmp_pt.y = ev.clientY;
+  newpt = drag_tmp_pt.matrixTransform(drag_current_matrix);
+
+  drag_cancel(true);
+
+  rec = drag_doc_svg.createSVGRect();
+  rec.x = newpt.x;
+  rec.y = newpt.y;
+  rec.width = 0.001;
+  rec.height = 0.001;
+  ls = drag_doc_svg.getIntersectionList(rec, null);
+
+  val = null;
+
+  for (ix=ls.length-1; ix>=0; ix--) {
+    obj = ls.item(ix);
+    while (obj != document) {
+      objid = obj.getAttribute("id");
+      if (objid) {
+        val = drag_receiver_map[objid];
+        if (val)
+          break;
+      }
+      obj = obj.parentNode;
+    }
+    if (val)
+      break;
+  }
+
+  if (!val) {
+    drag_callback(drag_source_id, null);
+  }
+  else if (val[0]) {
+    matrix = obj.getScreenCTM().inverse();
+    drag_tmp_pt.x = ev.clientX;
+    drag_tmp_pt.y = ev.clientY;
+    newpt = drag_tmp_pt.matrixTransform(matrix);
+
+    newpt.x = Math.floor(newpt.x);
+    newpt.y = Math.floor(newpt.y);
+    drag_callback(drag_source_id, objid, newpt.x, newpt.y);
+  }
+  else {
+    drag_callback(drag_source_id, objid);
+  }
+
+  drag_callback = null;
+  drag_source_id = null;
+}
+
+function drag_cancel(nocallback) {
+  if (drag_object) {
+    drag_object.setAttribute("visibility", "hidden");
+    drag_object = null;
+  }
+
+  drag_pad_object.setAttribute("pointer-events", "none");
+  drag_pad_object.removeEventListener("mousemove", drag_mousemove_listener, false);
+  drag_pad_object.removeEventListener("mouseup", drag_mouseup_listener, false);
+
+  if ((!nocallback) && drag_callback) {
+    drag_callback(drag_source_id, null);
+    drag_callback = null;
+  }
+}
+
+// End of drag library
+
+initfunc();
+
+// ]]>
+</script>
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+text {
+	text-anchor: middle;
+}
+.ScoreText {
+	font-size: 0.85;
+	font-weight: bold;
+}
+.PenaltyText {
+	font-size: 0.22;
+	font-weight: bold;
+}
+.GoText {
+	font-size: 0.72;
+	font-weight: bold;
+}
+.ForeCred {
+	fill: #C22;
+}
+.ForeCblue {
+	fill: #4040FF;
+}
+.ForeCyellow {
+	fill: #707000;
+}
+.ForeCgreen {
+	fill: #009800;
+}
+.BackCred {
+	fill: #CBB;
+}
+.BackCblue {
+	fill: #BBC;
+}
+.BackCyellow {
+	fill: #CCB;
+}
+.BackCgreen {
+	fill: #BCB;
+}
+]]>
+</style>
+
+<g id="rootsquare"
+	stroke-width="0.09">
+<circle cx="0.18" cy="0.18" r="0.17"
+	fill="#E99" stroke="#C22" />
+<circle cx="-0.18" cy="0.18" r="0.17" 
+	fill="#A0A0FF" stroke="#4040FF" />
+<circle cx="-0.18" cy="-0.18" r="0.17"
+	fill="#BB0" stroke="#707000" />
+<circle cx="0.18" cy="-0.18" r="0.17" 
+	fill="#60EF60" stroke="#009800" />
+<path d="M 0.35 0.18 A 0.17 0.17 0 0 0 0.0598 0.0598 "
+	fill="none" stroke="#C22" />
+</g>
+
+<g id="rootoutline"
+	stroke-width="0.05">
+<circle cx="0.18" cy="0.18" r="0.17"
+	fill="none" stroke="#181818" />
+<circle cx="-0.18" cy="0.18" r="0.17" 
+	fill="none" stroke="#686868" />
+<circle cx="-0.18" cy="-0.18" r="0.17"
+	fill="none" stroke="#181818" />
+<circle cx="0.18" cy="-0.18" r="0.17" 
+	fill="none" stroke="#686868" />
+<path d="M 0.35 0.18 A 0.17 0.17 0 0 0 0.0598 0.0598 "
+	fill="none" stroke="#181818" />
+</g>
+
+<g id="nullsquare" stroke-dasharray="0.07, 0.315" 
+	fill="none" stroke-width="0.09" >
+<circle cx="0" cy="0" r="0.3"
+	stroke="#686868" />
+<circle cx="0" cy="0" r="0.3"
+	stroke="#181818" stroke-dashoffset="0.1925" />
+</g>
+
+<g id="nulloutline" stroke-dasharray="0.074667, 0.336" 
+	fill="none" stroke-width="0.05" >
+<circle cx="0" cy="0" r="0.32"
+	stroke="#686868" />
+<circle cx="0" cy="0" r="0.32"
+	stroke="#181818" stroke-dashoffset="0.1925" />
+</g>
+
+<g id="starburst"
+	transform="scale(1.6)">
+<circle r="0.07" />
+<path
+	d="M 0.13 0.0 L 0.045 0.0217 L 0.0811 0.1016 L 0.0111 0.0487 L -0.0289 0.1267 L -0.0312 0.0391 L -0.1171 0.0564 L -0.05 0.0 L -0.1171 -0.0564 L -0.0312 -0.0391 L -0.0289 -0.1267 L 0.0111 -0.0487 L 0.0811 -0.1016 L 0.045 -0.0217 z"
+/>
+</g>
+
+<g id="pyramid3fore">
+<path d="M 0 -0.40  L 0.33 0.35  L -0.33 0.35  z" />
+</g>
+<g id="pyramid2fore">
+<path d="M 0 -0.33  L 0.26 0.27  L -0.26 0.27  z" />
+</g>
+<g id="pyramid1fore">
+<path d="M 0 -0.26  L 0.20 0.19  L -0.20 0.19  z" />
+</g>
+<g id="pyramid3back">
+<circle cx="0.0" cy="0.25" r="0.039" />
+<circle cx="0.1" cy="0.25" r="0.039" />
+<circle cx="0.2" cy="0.25" r="0.039" />
+</g>
+<g id="pyramid2back">
+<circle cx="0.0" cy="0.17" r="0.039" />
+<circle cx="0.1" cy="0.17" r="0.039" />
+</g>
+<g id="pyramid1back">
+<circle cx="0.0" cy="0.09" r="0.039" />
+</g>
+
+<g id="pyramid3outline">
+<use xlink:href="#pyramid3fore" 
+	fill="none" stroke="#222" stroke-width="0.04" />
+</g>
+
+<g id="pyramid2outline">
+<use xlink:href="#pyramid2fore" 
+	fill="none" stroke="#222" stroke-width="0.04" />
+</g>
+
+<g id="pyramid1outline">
+<use xlink:href="#pyramid1fore" 
+	fill="none" stroke="#222" stroke-width="0.04" />
+</g>
+
+
+<g id="pyramid3red">
+<use xlink:href="#pyramid3fore" fill="#C22" />
+<use xlink:href="#pyramid3back" fill="#E99" />
+</g>
+
+<g id="pyramid3blue">
+<use xlink:href="#pyramid3fore" fill="#4040FF" />
+<use xlink:href="#pyramid3back" fill="#A0A0FF" />
+</g>
+
+<g id="pyramid3yellow">
+<use xlink:href="#pyramid3fore" fill="#707000" />
+<use xlink:href="#pyramid3back" fill="#BB0" />
+</g>
+
+<g id="pyramid3green">
+<use xlink:href="#pyramid3fore" fill="#009800" />
+<use xlink:href="#pyramid3back" fill="#60EF60" />
+</g>
+
+<g id="pyramid2red">
+<use xlink:href="#pyramid2fore" fill="#C22" />
+<use xlink:href="#pyramid2back" fill="#E99" />
+</g>
+
+<g id="pyramid2blue">
+<use xlink:href="#pyramid2fore" fill="#4040FF" />
+<use xlink:href="#pyramid2back" fill="#A0A0FF" />
+</g>
+
+<g id="pyramid2yellow">
+<use xlink:href="#pyramid2fore" fill="#707000" />
+<use xlink:href="#pyramid2back" fill="#BB0" />
+</g>
+
+<g id="pyramid2green">
+<use xlink:href="#pyramid2fore" fill="#009800" />
+<use xlink:href="#pyramid2back" fill="#60EF60" />
+</g>
+
+<g id="pyramid1red">
+<use xlink:href="#pyramid1fore" fill="#C22" />
+<use xlink:href="#pyramid1back" fill="#E99" />
+</g>
+
+<g id="pyramid1blue">
+<use xlink:href="#pyramid1fore" fill="#4040FF" />
+<use xlink:href="#pyramid1back" fill="#A0A0FF" />
+</g>
+
+<g id="pyramid1yellow">
+<use xlink:href="#pyramid1fore" fill="#707000" />
+<use xlink:href="#pyramid1back" fill="#BB0" />
+</g>
+
+<g id="pyramid1green">
+<use xlink:href="#pyramid1fore" fill="#009800" />
+<use xlink:href="#pyramid1back" fill="#60EF60" />
+</g>
+
+
+<g id="stashpad"
+	transform="scale(1.5, 1.125), translate(1, 1)" >
+<path
+	d="M -1 0  C -1 -1 -1 -1 0 -1  
+	S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  
+	z" />
+
+</g>
+
+<g id="scorepad"
+	transform="scale(0.75, 0.45)" >
+<path
+	d="M -1 0  C -1 -1 -1 -1 0 -1  
+	S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  
+	z" />
+
+</g>
+
+<g id="boardsquare" transform="scale(0.47)">
+<path 
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	/>
+</g>
+
+<g id="board" >
+<rect x="-0.25" y="-0.25" width="8.5" height="8.5"
+	fill="#BFBFBF" />
+
+
+<g transform="translate(0.5,0.5)"
+	fill="#DEDEDE" >
+<use xlink:href="#boardsquare" x="0" y="0" />
+<use xlink:href="#boardsquare" x="2" y="0" />
+<use xlink:href="#boardsquare" x="4" y="0" />
+<use xlink:href="#boardsquare" x="6" y="0" />
+<use xlink:href="#boardsquare" x="1" y="1" />
+<use xlink:href="#boardsquare" x="3" y="1" />
+<use xlink:href="#boardsquare" x="5" y="1" />
+<use xlink:href="#boardsquare" x="7" y="1" />
+<use xlink:href="#boardsquare" x="0" y="2" />
+<use xlink:href="#boardsquare" x="2" y="2" />
+<use xlink:href="#boardsquare" x="4" y="2" />
+<use xlink:href="#boardsquare" x="6" y="2" />
+<use xlink:href="#boardsquare" x="1" y="3" />
+<use xlink:href="#boardsquare" x="3" y="3" />
+<use xlink:href="#boardsquare" x="5" y="3" />
+<use xlink:href="#boardsquare" x="7" y="3" />
+<use xlink:href="#boardsquare" x="0" y="4" />
+<use xlink:href="#boardsquare" x="2" y="4" />
+<use xlink:href="#boardsquare" x="4" y="4" />
+<use xlink:href="#boardsquare" x="6" y="4" />
+<use xlink:href="#boardsquare" x="1" y="5" />
+<use xlink:href="#boardsquare" x="3" y="5" />
+<use xlink:href="#boardsquare" x="5" y="5" />
+<use xlink:href="#boardsquare" x="7" y="5" />
+<use xlink:href="#boardsquare" x="0" y="6" />
+<use xlink:href="#boardsquare" x="2" y="6" />
+<use xlink:href="#boardsquare" x="4" y="6" />
+<use xlink:href="#boardsquare" x="6" y="6" />
+<use xlink:href="#boardsquare" x="1" y="7" />
+<use xlink:href="#boardsquare" x="3" y="7" />
+<use xlink:href="#boardsquare" x="5" y="7" />
+<use xlink:href="#boardsquare" x="7" y="7" />
+</g>
+
+<g transform="translate(0.5,0.5)"
+	fill="#A0A0A0" >
+<use xlink:href="#boardsquare" x="1" y="0" />
+<use xlink:href="#boardsquare" x="3" y="0" />
+<use xlink:href="#boardsquare" x="5" y="0" />
+<use xlink:href="#boardsquare" x="7" y="0" />
+<use xlink:href="#boardsquare" x="0" y="1" />
+<use xlink:href="#boardsquare" x="2" y="1" />
+<use xlink:href="#boardsquare" x="4" y="1" />
+<use xlink:href="#boardsquare" x="6" y="1" />
+<use xlink:href="#boardsquare" x="1" y="2" />
+<use xlink:href="#boardsquare" x="3" y="2" />
+<use xlink:href="#boardsquare" x="5" y="2" />
+<use xlink:href="#boardsquare" x="7" y="2" />
+<use xlink:href="#boardsquare" x="0" y="3" />
+<use xlink:href="#boardsquare" x="2" y="3" />
+<use xlink:href="#boardsquare" x="4" y="3" />
+<use xlink:href="#boardsquare" x="6" y="3" />
+<use xlink:href="#boardsquare" x="1" y="4" />
+<use xlink:href="#boardsquare" x="3" y="4" />
+<use xlink:href="#boardsquare" x="5" y="4" />
+<use xlink:href="#boardsquare" x="7" y="4" />
+<use xlink:href="#boardsquare" x="0" y="5" />
+<use xlink:href="#boardsquare" x="2" y="5" />
+<use xlink:href="#boardsquare" x="4" y="5" />
+<use xlink:href="#boardsquare" x="6" y="5" />
+<use xlink:href="#boardsquare" x="1" y="6" />
+<use xlink:href="#boardsquare" x="3" y="6" />
+<use xlink:href="#boardsquare" x="5" y="6" />
+<use xlink:href="#boardsquare" x="7" y="6" />
+<use xlink:href="#boardsquare" x="0" y="7" />
+<use xlink:href="#boardsquare" x="2" y="7" />
+<use xlink:href="#boardsquare" x="4" y="7" />
+<use xlink:href="#boardsquare" x="6" y="7" />
+</g>
+
+</g>
+
+</defs>
+
+<g id="boardgroup" >
+
+<g id="boardgrid"
+	transform="translate(3.5,3.5) scale(9)" >
+<use id="boardpic" xlink:href="#board" />
+
+<g id="rootnulllayer">
+	<use id="nullsquare0"
+		xlink:href="#nullsquare"
+		transform="translate(0,0)" />
+	<use id="rootsquare0"
+		xlink:href="#rootsquare"
+		transform="translate(0,1)" />
+	<use id="nullsquare1"
+		xlink:href="#nullsquare"
+		transform="translate(0,2)" />
+	<use id="rootsquare1"
+		xlink:href="#rootsquare"
+		transform="translate(0,3)" />
+</g>
+
+
+<g id="piecelayer" />
+<g id="penaltylayer" />
+
+</g>
+
+</g>
+
+<g id="playergroup"
+	transform="translate(78,0)" >
+
+
+<g id="redstash"
+	transform="translate(2,1) scale(6)" >
+<use id="redstashshape"
+	xlink:href="#stashpad"
+	fill="#CBB"
+	stroke="#C22" stroke-width="0.08" />
+<use xlink:href="#scorepad"
+	transform="translate(2.25,2.9)"
+	fill="#CBB" />
+<text id="scoretextred"
+	transform="translate(2.25,3.2)"
+	fill="#C22"
+	class="ScoreText">15</text>
+
+<g id="redstash1">
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 1.7)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 1.4)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 1.1)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 0.8)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 0.5)" />
+</g>
+<g id="redstash2">
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 1.7)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 1.4)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 1.1)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 0.8)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 0.5)" />
+</g>
+<g id="redstash3">
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 1.7)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 1.4)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 1.1)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 0.8)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 0.5)" />
+</g>
+</g>
+
+<g id="bluestash"
+	transform="translate(2,24) scale(6)" >
+<use id="bluestashshape"
+	 xlink:href="#stashpad"
+	fill="#BBC"
+	stroke="#4040FF" stroke-width="0.08" />
+<use xlink:href="#scorepad"
+	transform="translate(2.25,2.9)"
+	fill="#BBC" />
+<text id="scoretextblue"
+	transform="translate(2.25,3.2)"
+	fill="#4040FF"
+	class="ScoreText">15</text>
+
+<g id="bluestash1">
+<use xlink:href="#pyramid1blue"
+	transform="translate(2.5, 1.7)" />
+<use xlink:href="#pyramid1blue"
+	transform="translate(2.5, 1.4)" />
+<use xlink:href="#pyramid1blue"
+	transform="translate(2.5, 1.1)" />
+<use xlink:href="#pyramid1blue"
+	transform="translate(2.5, 0.8)" />
+<use xlink:href="#pyramid1blue"
+	transform="translate(2.5, 0.5)" />
+</g>
+<g id="bluestash2">
+<use xlink:href="#pyramid2blue"
+	transform="translate(1.7, 1.7)" />
+<use xlink:href="#pyramid2blue"
+	transform="translate(1.7, 1.4)" />
+<use xlink:href="#pyramid2blue"
+	transform="translate(1.7, 1.1)" />
+<use xlink:href="#pyramid2blue"
+	transform="translate(1.7, 0.8)" />
+<use xlink:href="#pyramid2blue"
+	transform="translate(1.7, 0.5)" />
+</g>
+<g id="bluestash3">
+<use xlink:href="#pyramid3blue"
+	transform="translate(0.7, 1.7)" />
+<use xlink:href="#pyramid3blue"
+	transform="translate(0.7, 1.4)" />
+<use xlink:href="#pyramid3blue"
+	transform="translate(0.7, 1.1)" />
+<use xlink:href="#pyramid3blue"
+	transform="translate(0.7, 0.8)" />
+<use xlink:href="#pyramid3blue"
+	transform="translate(0.7, 0.5)" />
+</g>
+</g>
+
+<g id="yellowstash"
+	transform="translate(2,47) scale(6)" >
+<use id="yellowstashshape"
+	xlink:href="#stashpad"
+	fill="#CCB"
+	stroke="#707000" stroke-width="0.08" />
+<use xlink:href="#scorepad"
+	transform="translate(2.25,2.9)"
+	fill="#CCB" />
+<text id="scoretextyellow"
+	transform="translate(2.25,3.2)"
+	fill="#707000"
+	class="ScoreText">15</text>
+
+<g id="yellowstash1">
+<use xlink:href="#pyramid1yellow"
+	transform="translate(2.5, 1.7)" />
+<use xlink:href="#pyramid1yellow"
+	transform="translate(2.5, 1.4)" />
+<use xlink:href="#pyramid1yellow"
+	transform="translate(2.5, 1.1)" />
+<use xlink:href="#pyramid1yellow"
+	transform="translate(2.5, 0.8)" />
+<use xlink:href="#pyramid1yellow"
+	transform="translate(2.5, 0.5)" />
+</g>
+<g id="yellowstash2">
+<use xlink:href="#pyramid2yellow"
+	transform="translate(1.7, 1.7)" />
+<use xlink:href="#pyramid2yellow"
+	transform="translate(1.7, 1.4)" />
+<use xlink:href="#pyramid2yellow"
+	transform="translate(1.7, 1.1)" />
+<use xlink:href="#pyramid2yellow"
+	transform="translate(1.7, 0.8)" />
+<use xlink:href="#pyramid2yellow"
+	transform="translate(1.7, 0.5)" />
+</g>
+<g id="yellowstash3">
+<use xlink:href="#pyramid3yellow"
+	transform="translate(0.7, 1.7)" />
+<use xlink:href="#pyramid3yellow"
+	transform="translate(0.7, 1.4)" />
+<use xlink:href="#pyramid3yellow"
+	transform="translate(0.7, 1.1)" />
+<use xlink:href="#pyramid3yellow"
+	transform="translate(0.7, 0.8)" />
+<use xlink:href="#pyramid3yellow"
+	transform="translate(0.7, 0.5)" />
+</g>
+</g>
+
+<g id="greenstash"
+	transform="translate(2,70) scale(6)" >
+<use id="greenstashshape"
+	xlink:href="#stashpad"
+	fill="#BCB"
+	stroke="#009800" stroke-width="0.08" />
+<use xlink:href="#scorepad"
+	transform="translate(2.25,2.9)"
+	fill="#BCB" />
+<text id="scoretextgreen"
+	transform="translate(2.25,3.2)"
+	fill="#009800"
+	class="ScoreText">15</text>
+	
+<g id="greenstash1">
+<use xlink:href="#pyramid1green"
+	transform="translate(2.5, 1.7)" />
+<use xlink:href="#pyramid1green"
+	transform="translate(2.5, 1.4)" />
+<use xlink:href="#pyramid1green"
+	transform="translate(2.5, 1.1)" />
+<use xlink:href="#pyramid1green"
+	transform="translate(2.5, 0.8)" />
+<use xlink:href="#pyramid1green"
+	transform="translate(2.5, 0.5)" />
+</g>
+<g id="greenstash2">
+<use xlink:href="#pyramid2green"
+	transform="translate(1.7, 1.7)" />
+<use xlink:href="#pyramid2green"
+	transform="translate(1.7, 1.4)" />
+<use xlink:href="#pyramid2green"
+	transform="translate(1.7, 1.1)" />
+<use xlink:href="#pyramid2green"
+	transform="translate(1.7, 0.8)" />
+<use xlink:href="#pyramid2green"
+	transform="translate(1.7, 0.5)" />
+</g>
+<g id="greenstash3">
+<use xlink:href="#pyramid3green"
+	transform="translate(0.7, 1.7)" />
+<use xlink:href="#pyramid3green"
+	transform="translate(0.7, 1.4)" />
+<use xlink:href="#pyramid3green"
+	transform="translate(0.7, 1.1)" />
+<use xlink:href="#pyramid3green"
+	transform="translate(0.7, 0.8)" />
+<use xlink:href="#pyramid3green"
+	transform="translate(0.7, 0.5)" />
+</g>
+</g>
+
+</g>
+
+<g id="selfgroup"
+	transform="translate(0,78)" >
+
+<g id="homestashgroup"
+	transform="translate(7.5,1) scale(9)" >
+
+<g id="okbutton"
+	transform="translate(4.3,0.5)"
+	onclick="click_okbutton()"
+	fill="#999" >
+<path
+	transform="scale(0.7, 0.4)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	fill="inherit" stroke="#333" stroke-width="0.15" />
+<text class="GoText"
+	fill="#222"
+	x="0" y="0.25"
+	pointer-events="none"
+	>Go</text>
+</g>
+
+<use id="homestashpad"
+	xlink:href="#stashpad"
+	stroke="#000" stroke-width="0.075"
+	fill="#BBB" />
+
+<g id="homestash1">
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 1.7)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 1.4)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 1.1)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 0.8)" />
+<use xlink:href="#pyramid1red"
+	transform="translate(2.5, 0.5)" />
+</g>
+<g id="homestash2">
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 1.7)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 1.4)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 1.1)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 0.8)" />
+<use xlink:href="#pyramid2red"
+	transform="translate(1.7, 0.5)" />
+</g>
+<g id="homestash3">
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 1.7)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 1.4)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 1.1)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 0.8)" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.7, 0.5)" />
+</g>
+
+<rect id="homestashclick1"
+	pointer-events="fill"
+	x="2.20" y="0" width="0.6" height="2.25"
+	fill="none" stroke="none" />
+<rect id="homestashclick2"
+	pointer-events="fill"
+	x="1.35" y="0" width="0.7" height="2.25"
+	fill="none" stroke="none" />
+<rect id="homestashclick3"
+	pointer-events="fill"
+	x="0.25" y="0" width="0.9" height="2.25"
+	fill="none" stroke="none" />
+
+</g>
+
+</g>
+
+<g id="dragthing"
+	transform="translate(39,39)"
+	visibility="hidden"
+	pointer-events="none" >
+<g transform="scale(9)">
+<g id="dragthingrotate"
+	transform="rotate(0)">
+<use id="dragthinguse1"
+	xlink:href="#nullsquare" />
+<use id="dragthinguse2"
+	xlink:href="#nullsquare" />
+</g>
+</g>
+</g>
+
+<circle id="dragpad"
+	r="10000" fill="none" stroke="none" />
+
+</svg>
