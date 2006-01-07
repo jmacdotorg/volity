@@ -3,6 +3,8 @@ CVS repository.
 
 * the present
 
+* release 0.2.3
+
 The Finder window will launch any URLs that don't start with
 "http://{www.}volity.net/gamefinder" to the user's external browser.
 Launching URLs may now work on Windows, too, although I haven't tested it.
