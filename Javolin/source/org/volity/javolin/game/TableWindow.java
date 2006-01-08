@@ -909,6 +909,24 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
+     * Suspend the game. If the game is not in progress, or already suspended,
+     * or if the player is not seated, this will generate a failure token
+     * message.
+     */
+    public void doSuspendTable() {
+        try {
+            mGameTable.getReferee().suspendGame();
+        }
+        catch (TokenFailure ex) {
+            writeMessageText(mTranslator.translate(ex));
+        }
+        catch (Exception ex) {
+            new ErrorWrapper(ex);
+            writeMessageText(ex.toString());
+        }
+    }
+
+    /**
      * Bring up an invite dialog. There can be multiple of these at a time,
      * even for the same game.
      *

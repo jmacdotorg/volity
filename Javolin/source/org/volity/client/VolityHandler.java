@@ -57,6 +57,9 @@ public class VolityHandler implements RPCHandler {
             if (!callUI(gameUI.volity, "end_game", params))
                 callUI(gameUI.game, "END", params);
             k.respondValue(Boolean.TRUE);
+        } else if (methodName.equals("game_has_started")) {
+            callUI(gameUI.volity, "game_has_started", params);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_ready")) {
             table.setPlayerReadiness((String)params.get(0), true);
             callUI(gameUI.volity, "player_ready", params);

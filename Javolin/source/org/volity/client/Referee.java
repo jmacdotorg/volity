@@ -116,6 +116,18 @@ public class Referee extends TokenRequester {
   }
 
   /**
+   * Ask the referee to remove a bot from this game.
+   * @throws XMPPException if an XMPP error occurs
+   * @throws RPCException if a RPC fault occurs
+   */
+  public void removeBot(String jid)
+    throws XMPPException, RPCException, TokenFailure
+  {
+    invoke("volity.remove_bot", 
+      Arrays.asList(new String[] { jid }));
+  }
+
+  /**
    * Send a text message to the referee.
    * @throws XMPPException if an XMPP error occurs
    */
@@ -233,5 +245,16 @@ public class Referee extends TokenRequester {
         }
     }
      
+    /**
+     * Ask the referee to suspend this game.
+     * @throws XMPPException if an XMPP error occurs
+     * @throws RPCException if a RPC fault occurs
+     */
+    public void suspendGame() 
+        throws XMPPException, RPCException, TokenFailure
+    {
+        invoke("volity.suspend_game");
+    }
+    
 
 }

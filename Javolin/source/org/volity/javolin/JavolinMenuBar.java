@@ -38,6 +38,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
     private final static String MENUCMD_GAME_INFO = "Game Info...";
+    private final static String MENUCMD_SUSPEND_TABLE = "Suspend Table";
     private final static String MENUCMD_RELOAD_UI = "Reload Interface";
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
@@ -58,6 +59,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mJoinMucMenuItem;
     private JMenuItem mShowLastErrorMenuItem;
     private JMenuItem mGameInfoMenuItem;
+    private JMenuItem mSuspendTableMenuItem;
     private JMenuItem mReloadUIMenuItem;
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
@@ -181,6 +183,13 @@ public class JavolinMenuBar extends JMenuBar
         if (mTableWindow == null) 
             mGameInfoMenuItem.setEnabled(false);
         gameMenu.add(mGameInfoMenuItem);
+
+        mSuspendTableMenuItem = new JMenuItem(MENUCMD_SUSPEND_TABLE);
+        mSuspendTableMenuItem.addActionListener(this);
+        setPlatformMnemonic(mSuspendTableMenuItem, KeyEvent.VK_S);
+        if (mTableWindow == null) 
+            mSuspendTableMenuItem.setEnabled(false);
+        gameMenu.add(mSuspendTableMenuItem);
 
         mInvitePlayerMenuItem = new JMenuItem(MENUCMD_INVITE_PLAYER);
         mInvitePlayerMenuItem.addActionListener(this);
@@ -359,6 +368,10 @@ public class JavolinMenuBar extends JMenuBar
         else if (e.getSource() == mGameInfoMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doInfoDialog();
+        }
+        else if (e.getSource() == mSuspendTableMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doSuspendTable();
         }
         else if (e.getSource() == mReloadUIMenuItem) {
             if (mTableWindow != null)
