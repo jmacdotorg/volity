@@ -223,11 +223,12 @@ class RPSBot(volity.bot.Bot):
     def begingame(self):
         """begingame() -> None
 
-        Game on? Make a move.
+        Game on? Seated? Make a move.
         """
-        
-        val = self.choosehand()
-        self.send('choose_hand', val)
+
+        if (self.getownseat()):
+            val = self.choosehand()
+            self.send('choose_hand', val)
 
     def resumegame(self):
         """begingame() -> None
@@ -237,9 +238,10 @@ class RPSBot(volity.bot.Bot):
         we don't care.)
         """
         
-        val = self.choosehand()
-        self.send('choose_hand', val)
-        
+        if (self.getownseat()):
+            val = self.choosehand()
+            self.send('choose_hand', val)
+
     def choosehand(self):
         """choosehand() -> str
 
