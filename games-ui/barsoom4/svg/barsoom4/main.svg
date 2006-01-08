@@ -38,7 +38,7 @@ dragsize = 0;
 dragdir = null;
 
 piecelayer = null;
-penaltylayer = null;
+bonuslayer = null;
 buttontrack = null;
 
 function initfunc() {
@@ -55,7 +55,7 @@ function initfunc() {
   initgamedata();
 
   piecelayer = document.getElementById("piecelayer");
-  penaltylayer = document.getElementById("penaltylayer");
+  bonuslayer = document.getElementById("bonuslayer");
 
   set_home_color(null);
 
@@ -100,7 +100,7 @@ volity.start_game = function() {
 
   set_work_piece();
   remove_children(piecelayer);
-  remove_children(penaltylayer);
+  remove_children(bonuslayer);
 }
 
 function initgamedata() {
@@ -140,7 +140,7 @@ volity.end_game = function() {
   set_work_piece();
 
   adjust_okbutton(false);
-  seatmark(); //### mark winner?
+  mark_winner();
 
   afoot = false;
   ourturn = false;
@@ -148,13 +148,13 @@ volity.end_game = function() {
 
 game.set_null_square = function(player, num, xpos, ypos) {
   remove_children(piecelayer);
-  remove_children(penaltylayer);
+  remove_children(bonuslayer);
   move_null_square(num, xpos, ypos);
 }
 
 game.set_root_square = function(player, num, xpos, ypos) {
   remove_children(piecelayer);
-  remove_children(penaltylayer);
+  remove_children(bonuslayer);
   move_root_square(num, xpos, ypos);
 }
 
@@ -192,7 +192,7 @@ game.move = function(seat, xpos, ypos, size, dir) {
   ourturn = false;
 }
 
-game.penalty = function(seat1, penalty, seat2, bonus, xpos, ypos, dir) {
+game.bonus = function(seat1, bonus, seat2, penalty, xpos, ypos, dir) {
   var obj, grp, val, xpos1, xpos2, ypos1, ypos2;
 
   xpos += 0.5;
@@ -229,17 +229,17 @@ game.penalty = function(seat1, penalty, seat2, bonus, xpos, ypos, dir) {
   
   obj = document.createElementNS(svg_ns, "use");
   set_use_ref(obj, "starburst");
-  obj.setAttribute("class", "ForeC"+seat1);
+  obj.setAttribute("class", "ForeC"+seat2);
   grp.appendChild(obj);
 
   obj = document.createElementNS(svg_ns, "text");
   set_text(obj, penalty);
-  obj.setAttribute("class", "PenaltyText");
+  obj.setAttribute("class", "BonusText");
   obj.setAttribute("fill", "black");
   obj.setAttribute("y", "0.085");
   grp.appendChild(obj);
 
-  penaltylayer.appendChild(grp);
+  bonuslayer.appendChild(grp);
 
   grp = document.createElementNS(svg_ns, "g");
   val = "translate("+xpos2+","+ypos2+")";
@@ -247,20 +247,20 @@ game.penalty = function(seat1, penalty, seat2, bonus, xpos, ypos, dir) {
   
   obj = document.createElementNS(svg_ns, "use");
   set_use_ref(obj, "starburst");
-  obj.setAttribute("class", "ForeC"+seat2);
+  obj.setAttribute("class", "ForeC"+seat1);
   grp.appendChild(obj);
 
   obj = document.createElementNS(svg_ns, "text");
   set_text(obj, bonus);
-  obj.setAttribute("class", "PenaltyText");
+  obj.setAttribute("class", "BonusText");
   obj.setAttribute("fill", "white");
   obj.setAttribute("y", "0.085");
   grp.appendChild(obj);
 
-  penaltylayer.appendChild(grp);
+  bonuslayer.appendChild(grp);
 
-  scores[seat1] += penalty;
-  scores[seat2] -= bonus;
+  scores[seat1] += bonus;
+  scores[seat2] -= penalty;
   adjust_score(seat1);
   adjust_score(seat2);
 }
@@ -431,6 +431,28 @@ function click_okbutton() {
   if (workx == null || worky == null || worksize == null || workdir == null)
     return;
   rpc("move", workx, worky, worksize, workdir);
+}
+
+function mark_winner() {
+  var seat, bestscore, val, arr;
+
+  bestscore = -100;
+
+  for (seat in scores) {
+    val = scores[seat];
+    if (val > bestscore)
+      bestscore = val;
+  }
+
+  arr = [];
+
+  for (seat in scores) {
+    val = scores[seat];
+    if (val == bestscore)
+      arr[seat] = "win";
+  }
+
+  seatmark(arr);
 }
 
 function set_work_piece(xpos, ypos, size, dir) {
@@ -913,7 +935,7 @@ text {
 	font-size: 0.85;
 	font-weight: bold;
 }
-.PenaltyText {
+.BonusText {
 	font-size: 0.22;
 	font-weight: bold;
 }
@@ -1227,7 +1249,7 @@ text {
 
 
 <g id="piecelayer" />
-<g id="penaltylayer" />
+<g id="bonuslayer" />
 
 </g>
 

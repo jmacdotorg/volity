@@ -183,7 +183,7 @@ game.move = function(seat, xpos, ypos, size, dir) {
   ourturn = false;
 }
 
-game.penalty = function(seat, penalty, xpos, ypos, dir) {
+game.bonus = function(seat, bonus, xpos, ypos, dir) {
   if (dir == 0)
     ypos -= 0.5;
   if (dir == 2)
@@ -193,30 +193,37 @@ game.penalty = function(seat, penalty, xpos, ypos, dir) {
   if (dir == 1)
     xpos += 0.5;
     
-  add_penalty(seat, penalty, xpos, ypos);
+  add_bonus(seat, bonus, xpos, ypos);
 
   if (seat == "white")
-    whitescore = whitescore + penalty;
+    whitescore = whitescore + bonus;
   else
-    blackscore = blackscore + penalty;
+    blackscore = blackscore + bonus;
   adjust_score(seat);
 }
 
 volity.end_game = function() {
+  var arr;
+
   enddrag();
   adjust_okbutton("white", false);
   adjust_okbutton("black", false);
   adjust_turn("white", false);
   adjust_turn("black", false);
 
-  if (whitescore < blackscore)
+  arr = [];
+  if (whitescore > blackscore) {
+    arr["white"] = "win";
     adjust_winbutton("white", true);
-  if (blackscore < whitescore)
+  }
+  if (blackscore > whitescore) {
+    arr["black"] = "win";
     adjust_winbutton("black", true);
+  }
+  seatmark(arr);
 
   afoot = false;
   ourturn = false;
-  seatmark(); //### mark winner?
 }
 
 function send_move() {
@@ -572,7 +579,7 @@ function set_stash_count(seat, size, count) {
     piece.setAttribute("visibility", "hidden");
 }
 
-function add_penalty(seat, penalty, xpos, ypos) {
+function add_bonus(seat, bonus, xpos, ypos) {
   var val, obj, objtxt;
 
   if (seat == "white")
@@ -596,7 +603,7 @@ function add_penalty(seat, penalty, xpos, ypos) {
   obj.setAttribute("class", "ScoreText");
   obj.setAttribute("pointer-events", "none");
   scorelayer.appendChild(obj);
-  objtxt = document.createTextNode(""+penalty);
+  objtxt = document.createTextNode(""+bonus);
   obj.appendChild(objtxt);
 }
 
