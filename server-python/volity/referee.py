@@ -15,7 +15,7 @@ STATE_DISRUPTED = intern('disrupted')
 STATE_ABANDONED = intern('abandoned')
 STATE_SUSPENDED = intern('suspended')
 
-CLIENT_DEFAULT_RPC_TIMEOUT = 5 ###
+CLIENT_DEFAULT_RPC_TIMEOUT = 30
 CLIENT_INVITATION_RPC_TIMEOUT = 30
 BOT_STARTUP_TIMEOUT = 60
 DEAD_CONFIG_TIMEOUT = 90
@@ -72,6 +72,7 @@ class Referee(volent.VolEntity):
     jid -- the JID by which this Referee is connected.
     conn -- the Jabber client agent.
     parlor -- the Parlor which created this Referee.
+    game -- the Game object.
     refstate -- the referee state (STATE_SETUP, etc).
     players -- dict mapping players' real JIDs to Player objects.
     playernicks -- dict mapping players' MUC nicknames to Player objects.
@@ -108,6 +109,7 @@ class Referee(volent.VolEntity):
     playerready() -- handle a player ready request.
     playerunready() -- handle a player unready request.
     playeraddbot() -- handle a player request for a new bot.
+    playerremovebot() -- handle a player request to remove a bot.
     botready() -- callback invoked when a bot is successfully
         (or unsuccessfully) created.
     playersuspend() -- handle a player game-suspend request.
@@ -328,7 +330,7 @@ class Referee(volent.VolEntity):
 
         selffunc = Referee.resolvemetharg
                 
-        if (isinstance(val, game.Seat)):
+        if (isinstance(val, game.Seat) or isinstance(val, actor.Seat)):
             return val.id
         if (isinstance(val, Player)):
             return val.jidstr
@@ -1225,6 +1227,33 @@ class Referee(volent.VolEntity):
             raise rpc.RPCFault(608, 'bot failed to start up')
         return
     
+    def playerremovebot(self, sender, jidstr):
+        """playerremovebot(sender, jid) -> None
+
+        Handle a player request to remove a bot. The *sender* is the player's
+        JID. The *jid* is the bot's JID.
+
+        This only works on bots that were added by playeraddbot. It also
+        only works on unseated bots.
+        """
+        
+        if (not self.players.has_key(jidstr)):
+            raise game.FailureToken('volity.jid_not_present',
+                game.Literal(jidstr))
+                
+        player = self.players[jidstr]
+
+        if (not player.jid.barematch(self.jid)):
+            raise game.FailureToken('volity.not_bot', game.Literal(jidstr))
+
+        act = self.parlor.actors.get(player.jid.getresource())
+        if (not act):
+            raise game.FailureToken('volity.not_bot', game.Literal(jidstr))
+
+        if (player.seat):
+            raise game.FailureToken('volity.bot_seated')
+        act.stop()
+                
     def playersuspend(self, sender=None):
         """playersuspend(sender=None) -> None
 
@@ -2321,6 +2350,7 @@ class RefVolityOpset(rpc.MethodOpset):
     rpc_ready() -- handle a player ready request.
     rpc_unready() -- handle a player unready request.
     rpc_add_bot() -- handle a player request for a new bot.
+    rpc_remove_bot() -- handle a player request to remove a bot.
     rpc_suspend_game() -- handle a player game-suspend request.
     rpc_set_language() -- handle a player request to change the table language.
     rpc_record_games() -- handle a player request to change the game-record
@@ -2346,6 +2376,7 @@ class RefVolityOpset(rpc.MethodOpset):
         self.validators['unready'] = Validator(afoot=False,
             argcount=0)
         self.validators['add_bot'] = Validator(argcount=0)
+        self.validators['remove_bot'] = Validator(args=str)
         self.validators['suspend_game'] = Validator(afoot=True,
             argcount=0, seated=True)
         self.validators['set_language'] = Validator(state=STATE_SETUP,
@@ -2396,6 +2427,9 @@ class RefVolityOpset(rpc.MethodOpset):
 
     def rpc_add_bot(self, sender, *args):
         return self.referee.playeraddbot(sender)
+    
+    def rpc_remove_bot(self, sender, *args):
+        return self.referee.playerremovebot(sender, args[0])
     
     def rpc_suspend_game(self, sender, *args):
         return self.referee.playersuspend(sender)

@@ -68,6 +68,11 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.3:
+Added a volity.remove_bot() RPC to the referee.
+Greatly improved the bot API.
+Bots will now stand up after the completion of a game.
+
 - 1.5.2:
 Added a "visible" argument to the parlor configuration, which controls both
     the parlor-level and game-level visibility flag.

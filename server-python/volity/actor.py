@@ -63,14 +63,21 @@ class Actor(volent.VolEntity):
     jid -- the JID by which this Referee is connected.
     conn -- the Jabber client agent.
     referee -- the Referee which created this Actor.
+    bot -- the Bot object.
+    refstate -- the referee state (STATE_SETUP, etc).
     parlor -- the Parlor which created that Referee.
     seat -- the Seat that the bot is sitting in, or None.
+    seats -- dict mapping seat IDs to Seat objects.
+    seatlist -- list of Seat objects in the game's order.
 
     Internal methods:
 
     beginwork() -- 'ready' state handler.
     tryjoin() -- 'tryjoin' event handler.
     endwork() -- 'end' state handler.
+    handleseatlist() -- seat list handler.
+    handlerequiredseatlist() -- required seat list handler.
+    handlereceivestate() -- state recovery handler.
     tryready() -- tell the referee that we are ready to play.
     begingame() -- game-start handler.
     endgame() -- game-end handler.
@@ -99,7 +106,11 @@ class Actor(volent.VolEntity):
 
         volent.VolEntity.__init__(self, jid, password, resource)
 
+        self.refstate = STATE_SETUP
+        self.seats = {}
+        self.seatlist = []
         self.seat = None
+        self.cooldown = False
 
         # Various Jabber handlers.
         
@@ -109,15 +120,25 @@ class Actor(volent.VolEntity):
         self.addhandler('joining', self.perform, 'tryjoin')
         self.addhandler('tryjoin', self.tryjoin)
 
+        # Set up the RPC replier.
+        
+        self.rpccli = self.conn.getservice('rpcclience')
+        
+        # Set up the RPC service
+        
+        rpcserv = self.conn.getservice('rpcservice')
+        ops = rpcserv.getopset()
+        dic = ops.getdict()
+        dic['volity'] = BotVolityOpset(self)
+        dic['admin'] = BotAdminOpset(self)
+        self.gamewrapperopset = WrapGameOpset(self, rpc.Opset())
+        dic['game'] = self.gamewrapperopset
+
         # Set up the bot instance.
 
         self.bot = botclass(self)
         assert self.bot.actor == self
 
-        # Set up the RPC replier.
-        
-        self.rpccli = self.conn.getservice('rpcclience')
-        
         # Set up the disco service
         
         disco = self.conn.getservice('discoservice')
@@ -129,16 +150,6 @@ class Actor(volent.VolEntity):
         form = jabber.dataform.DataForm()
         form.addfield('volity-role', self.volityrole)
         info.setextendedinfo(form)
-
-        # Set up the RPC service
-        
-        rpcserv = self.conn.getservice('rpcservice')
-        ops = rpcserv.getopset()
-        dic = ops.getdict()
-        dic['volity'] = BotVolityOpset(self)
-        dic['admin'] = BotAdminOpset(self)
-        self.gamewrapperopset = WrapGameOpset(self, rpc.Opset())
-        dic['game'] = self.gamewrapperopset
 
         # Set up the keepalive service
 
@@ -207,7 +218,64 @@ class Actor(volent.VolEntity):
         self.rpccli = None
         self.gamewrapperopset = None
         self.seat = None
+        self.seats = None
+        self.seatlist = None
         self.muc = None
+
+    def handleseatlist(self, ls):
+        """handleseatlist(seats) -> None
+
+        Seat list handler. This accepts the list of game seats as sent by
+        the referee. It creates Seat objects, and fills in the seats dict
+        and the seatlist array.
+        """
+        
+        if (self.seatlist):
+            # If we already have a list of seats, this should be an identical
+            # list. Let's check that, though.
+
+            if (len(ls) != len(self.seatlist)):
+                self.log.error('new set_seats list has different length from original set_seats list')
+                return
+
+            for id in ls:
+                if (not self.seats.has_key(id)):
+                    self.log.error('new set_seats list does not match original set_seats list')
+                    return
+
+            return
+
+        # Create our seats list.
+        for id in ls:
+            seat = Seat(self, id)
+            self.seats[id] = seat
+            self.seatlist.append(seat)
+        
+    def handlerequiredseatlist(self, ls):
+        """handlerequiredseatlist(seats) -> None
+
+        Required seat list handler. This marks the given seats as required,
+        and marks all other seats as optional.
+        """
+        
+        for seat in self.seatlist:
+            seat.required = (seat.id in ls)
+
+    def handlereceivestate(self, dic):
+        """handlereceivestate(dic) -> None
+
+        State-recovery handler. (Game-specific work is handled by the
+        bot's receivestate() method.)
+        """
+
+        val = dic.get('state')
+        if (val == STATE_SETUP):
+            self.refstate = STATE_SETUP
+        if (val == STATE_SUSPENDED):
+            self.refstate = STATE_SUSPENDED
+        if (val in [ STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED ]):
+            self.refstate = STATE_ACTIVE
+        self.bot.receivestate()
 
     def tryready(self):
         """tryready() -> None
@@ -217,8 +285,14 @@ class Actor(volent.VolEntity):
         of the volity.* namespace RPCs.) If we are seated, we send out a
         ready() RPC. It may fail, but if we can possibly be ready, we should
         be ready. Bots exist to play.
+
+        One exception: if we have just stood up, we block ready-sending until
+        the stand command is actually confirmed. Otherwise we could get into
+        race conditions, where we are in the process of standing up but
+        accidentally go ready anyway.
         """
-        if (self.seat):
+        
+        if (self.seat and (not self.cooldown)):
             self.queueaction(self.sendref, 'volity.ready')
 
     def begingame(self):
@@ -230,6 +304,7 @@ class Actor(volent.VolEntity):
         """
         
         self.log.info('game beginning!')
+        self.refstate = STATE_ACTIVE
         self.bot.begingame()
 
     def endgame(self):
@@ -238,7 +313,11 @@ class Actor(volent.VolEntity):
         Game-end handler. (Game-specific shutdown is handled by the bot's
         endgame() method.)
         """
+        self.refstate = STATE_SETUP
         self.bot.endgame()
+
+        self.cooldown = True
+        self.queueaction(self.sendref, 'volity.stand', self.jid)
 
     def suspendgame(self):
         """suspendgame() -> None
@@ -246,6 +325,7 @@ class Actor(volent.VolEntity):
         Game-suspension handler. (Game-specific work is handled by the
         bot's suspendgame() method.)
         """
+        self.refstate = STATE_SUSPENDED
         self.bot.suspendgame()
 
     def unsuspendgame(self):
@@ -254,6 +334,7 @@ class Actor(volent.VolEntity):
         Game-resumption handler. (Game-specific work is handled by the
         bot's unsuspendgame() method.)
         """
+        self.refstate = STATE_ACTIVE
         self.bot.unsuspendgame()
 
     def sendref(self, methname, *methargs, **keywords):
@@ -275,6 +356,9 @@ class Actor(volent.VolEntity):
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = REFEREE_DEFAULT_RPC_TIMEOUT
             
+        methargs = [ self.referee.resolvemetharg(val, self.bot.makerpcvalue)
+            for val in methargs ]
+        
         self.rpccli.send(op, self.referee.jid,
             methname, *methargs, **keywords)
 
@@ -387,8 +471,9 @@ class WrapGameOpset(rpc.WrapperOpset):
     RPC is not found, the RPC fault is blocked; instead, this just returns
     success.
 
-    The Opset also checks a few universal conditions: only the referee can
-    send RPCs, and only after the Actor is ready to receive them.
+    This Opset provides checking of argument types. The Opset also checks a
+    few universal conditions: only the referee can send RPCs, and only after
+    the Actor is ready to receive them.
     """
     
     def __init__(self, act, subopset):
@@ -418,7 +503,9 @@ class WrapGameOpset(rpc.WrapperOpset):
         """
         
         try:
-            return rpc.WrapperOpset.__call__(self, sender, callname, *callargs)
+            val = rpc.WrapperOpset.__call__(self, sender, callname, *callargs)
+            return self.referee.resolvemetharg(val,
+                self.actor.bot.makerpcvalue)
         except rpc.CallNotFound:
             # unimplemented methods are assumed to return quietly.
             return
@@ -516,14 +603,41 @@ class BotVolityOpset(rpc.MethodOpset):
                 exc_info=True)
             raise rpc.RPCFault(608, st)
 
+    def rpc_receive_state(self, sender, *args):
+        if (len(args) >= 1):
+            self.actor.handlereceivestate(args[0])
+
+    def rpc_seat_list(self, sender, *args):
+        if (len(args) >= 1):
+            self.actor.handleseatlist(args[0])
+            
+    def rpc_required_seat_list(self, sender, *args):
+        if (len(args) >= 1):
+            self.actor.handlerequiredseatlist(args[0])
+            
     def rpc_player_sat(self, sender, *args):
-        if (len(args) >= 1 and (self.actor.jid == args[0])):
-            self.actor.seat = Seat(self.actor, args[1])
+        if (len(args) >= 2):
+            jid = args[0]
+            seatid = args[1]
+            for seat in self.actor.seatlist:
+                if (jid in seat.players):
+                    seat.players.remove(jid)
+            seat = self.actor.seats.get(seatid)
+            if (seat):
+                seat.players.append(jid)
+                if (jid == self.actor.jid):
+                    self.actor.seat = seat
         self.actor.tryready()
             
     def rpc_player_stood(self, sender, *args):
-        if (len(args) >= 1 and (self.actor.jid == args[0])):
-            self.actor.seat = None
+        if (len(args) >= 1):
+            jid = args[0]
+            for seat in self.actor.seatlist:
+                if (jid in seat.players):
+                    seat.players.remove(jid)
+            if (jid == self.actor.jid):
+                self.actor.seat = None
+                self.actor.cooldown = False
         self.actor.tryready()
             
     def rpc_player_unready(self, sender, *args):
@@ -547,7 +661,6 @@ class BotVolityOpset(rpc.MethodOpset):
             
     def rpc_end_game(self, sender, *args):
         self.actor.queueaction(self.actor.endgame)
-        self.actor.tryready()
             
     def rpc_suspend_game(self, sender, *args):
         self.actor.queueaction(self.actor.suspendgame)
@@ -599,17 +712,37 @@ class BotAdminOpset(rpc.MethodOpset):
         containing these fields:
 
             referee: The JID of the bot's referee.
+            refstate: The bot's view of the referee state.
             seat: The seat ID the bot is sitting in, or ''.
+            gameseatlist: The list of seats which are involved in the current
+                game, if there is one.
         """
         
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'status: no arguments')
         dic = {}
         dic['referee'] = unicode(self.referee.jid)
+        dic['refstate'] = self.actor.refstate
         dic['seat'] = ''
         if (self.actor.seat):
             dic['seat'] = self.actor.seat.id
+        ls = self.actor.bot.getgameseatlist()
+        if (ls != None):
+            dic['gameseatlist'] = [ seat.id for seat in ls ]
 
+        return dic
+
+    def rpc_players(self, sender, *args):
+        """rpc_players() -> dict
+
+        Return the actor's view of the players in each seat.
+        """
+        
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'players: no arguments')
+        dic = {}
+        for seat in self.actor.seatlist:
+            dic[seat.id] = seat.players
         return dic
         
     def rpc_shutdown(self, sender, *args):
@@ -639,6 +772,10 @@ class Seat:
 
         self.actor = act
         self.id = id
+        self.required = False
+        self.players = []
         
 # late imports
 import bot
+from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED
+from referee import STATE_ABANDONED, STATE_SUSPENDED

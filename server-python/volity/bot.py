@@ -1,4 +1,6 @@
 import logging
+from zymb import jabber
+import zymb.jabber.rpc
 
 class Bot:
     """Bot: The implementation of the brains of a bot for a particular game.
@@ -35,6 +37,8 @@ class Bot:
     appropriate time.)
 
     getname() -- generate a name for this bot.
+    makerpcvalue() -- convert a game value to an RPC value.
+    receivestate() -- handle the beginning of a state recovery burst.
     begingame() -- handle the beginning of the game.
     endgame() -- handle the end of the game.
     suspendgame() -- handle game suspension.
@@ -43,6 +47,13 @@ class Bot:
     
     Methods your subclass calls:
 
+    getownseat() -- Return the seat this bot is sitting in.
+    getseat() -- get the Seat for a given ID.
+    getseatlist() -- get the list of Seats.
+    getgameseatlist() -- get the list of Seats which are involved in the
+        current game.
+    getstate() -- get the referee state.
+    setopset() -- set an Opset to handle incoming game.* RPCs.
     send() -- send an RPC to the referee.
     queueaction() -- schedule an action to occur "soon".
     addtimer() -- schedule an action to occur later on.
@@ -70,7 +81,8 @@ class Bot:
         If you provide an __init__() method, it should start like this:
 
             def __init__(self, act):
-                volity.bot.Bot__init__(self, act) # Parent constructor
+                volity.bot.Bot.__init__(self, act) # Parent constructor
+                self.setopset(self)      # Set up the game.* RPC handlers
                 # ... game-specific code
         """
         
@@ -93,14 +105,123 @@ class Bot:
             return self.gameclass.gamename + ' Bot'
         return 'Bot'
 
+    def makerpcvalue(self, val):
+        """makerpcvalue(val) -> val
+        Convert a game value to an RPC value. By default, the send() method
+        can only accept RPC-legal types: str, int, long, bool, float, list,
+        dict, JID, Seat, and Player. If you want to include game-specific
+        types, you will need to override this method.
+
+        This method should either convert *val* to one of the legal types
+        listed above, or return None (to use the default translation).
+
+        You do not need to interate through list or dict values. This method
+        will be called for each member in the list (as well as for the list
+        itself).
+
+        In general, this should only convert game-specific types (game
+        card instances, for example). If you mess around with the handling
+        of standard RPC types, you will probably break the standard Volity
+        RPC calls.
+
+        Default: return None.
+        """
+        pass
+
+    def getownseat(self):
+        """getownseat() -> Seat
+
+        Return the seat this bot is sitting in, or None if the bot is unseated.
+        """
+        return self.actor.seat
+
+    def getseat(self, id):
+        """getseat(id) -> Seat
+
+        Get the Seat for a given ID. If there is no Seat with ID *id*,
+        this returns None.
+        """
+        return self.actor.seats.get(id, None)
+
+    def getseatlist(self):
+        """getseatlist() -> list
+
+        Get the list of Seats. These are all the seats which can be sat
+        in (whether or not they're involved in the current game).
+        """
+        return list(self.actor.seatlist)
+
+    def getgameseatlist(self):
+        """getgameseatlist() -> list
+
+        Get the list of Seats which are involved in the current game. If
+        there is no current game, this returns None.
+        """
+        
+        if (self.actor.refstate == STATE_SETUP):
+            return None
+            
+        return [ seat for seat in self.actor.seatlist
+            if (seat.required or seat.players) ]
+
+    def getstate(self):
+        """getstate() -> str
+
+        Get the referee state. There are five possible referee states, but
+        only three of them are distinguished by bot code, so this returns
+        one of the following values:
+        
+            STATE_SETUP: The game has not yet begun.
+            STATE_ACTIVE: The game is in progress.
+            STATE_SUSPENDED: The game has been suspended, either by the
+                referee or by player request. Players may sit down, change
+                seats, or request bots to fill in seats, so that the game
+                can resume.
+
+        (These constants are constants in this module. They are actually
+        defined as lower-case strings: 'setup', 'active', etc.)
+        """
+        return self.actor.refstate
+
+    def setopset(self, gameopset):
+        """setopset(gameopset) -> None
+
+        Set an Opset to handle incoming game.* RPCs. You must call this in
+        your constructor; if you don't, all game.* RPCs will be rejected.
+
+        The *gameopset* may be an Opset object, or an object that provides
+        rpc_* methods. The easiest course is to pass the Bot instance itself:
+        
+            self.setopset(self)
+
+        If you do this, then any methods which begin with "rpc_" will be
+        callable as RPCs. For example, a method:
+
+            def rpc_win(self, sender, *args):
+                # ...
+
+        will be callable as game.win().
+        """
+        
+        if (not isinstance(gameopset, jabber.rpc.Opset)):
+            gameopset = game.ObjMethodOpset(gameopset)
+        self.actor.gamewrapperopset.setopset(gameopset)
+
     def send(self, methname, *args, **keywords):
         """send(methname, *args, **keywords) -> None
 
         Send an RPC to the referee.
 
         The *methname* is the RPC's name. (If it does not contain a period,
-        it is assumed to be in the game.* namespace.) The *args*, if present,
-        are the RPC arguments. The *keywords* may contain either or both of:
+        it is assumed to be in the game.* namespace.)
+
+        The *args*, if present, are the RPC arguments. These must be of types
+        that the RPC system understands: str, int, long, bool, float, list,
+        dict, JID, Seat, and Player. (Note that None is not a legal value.)
+        If you want to include game-specific types, you will need to override
+        the makerpcvalue() method.
+
+        The *keywords* may contain either or both of:
 
             timeout: How long to wait (in seconds) before considering the
                 RPC to have failed.
@@ -202,6 +323,15 @@ class Bot:
         """
         return self.actor.addtimer(op, *args, **dic)
 
+    def receivestate(self):
+        """receivestate() -> None
+
+        Handle the beginning of a state recovery burst.
+
+        Default: do nothing
+        """
+        pass
+
     def begingame(self):
         """begingame() -> None
 
@@ -220,8 +350,8 @@ class Bot:
 
         Conditions: can be called in active, disrupted, abandoned, or
         suspended state. (If in suspended, it means that the players voted
-        to kill the game. If in any other state, it means that you called
-        gameover() or gamecancelled().)
+        to kill the game. If in any other state, it means that the referee
+        declared the game ended.)
 
         Default: do nothing.
         """
@@ -269,6 +399,8 @@ class Bot:
 # late imports
 import game
 import actor
+from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED
+from referee import STATE_ABANDONED, STATE_SUSPENDED
 
 class NullBot(Bot):
     """NullBot: A Bot which can play every game, because it never moves.

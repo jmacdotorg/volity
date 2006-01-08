@@ -1016,6 +1016,7 @@ class Seat:
 
     Public methods:
 
+    getgame() -- get the Game that this seat is associated with.
     getplayerlist() -- get all the Players in this seat.
     getplayerhistory() -- get the (bare) JIDs of all players who have sat in
         this Seat during the current game.
@@ -1072,6 +1073,13 @@ class Seat:
         # This will fail if the referee is already running. You must
         # create all your seats at __init__ time.
         self.referee.addseat(self)
+
+    def getgame(self):
+        """getgame() -> Game
+
+        Get the Game that this seat is associated with.
+        """
+        return self.referee.game
 
     def getplayerlist(self):
         """getplayerlist() -> list
