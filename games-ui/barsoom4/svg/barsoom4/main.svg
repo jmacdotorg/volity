@@ -146,6 +146,24 @@ volity.end_game = function() {
   ourturn = false;
 }
 
+volity.suspend_game = function() {
+  seatmark();
+  drag_cancel();
+  set_work_piece();
+  ourturn = false;
+
+  adjust_okbutton(false);
+}
+
+volity.resume_game = function() {
+  set_home_color(info.seat);
+  if (info.seat) {
+    draw_stash_count(null, 1);
+    draw_stash_count(null, 2);
+    draw_stash_count(null, 3);
+  }
+}
+
 game.set_null_square = function(player, num, xpos, ypos) {
   remove_children(piecelayer);
   remove_children(bonuslayer);
@@ -651,7 +669,7 @@ function piece_at(xp, yp, dir) {
 }
 
 function choose_direction(xp, yp) {
-  var dir, qual, bestqual, ix, val;
+  var dir, qual, bestqual, ix, val, valseat;
 
   dir = null;
   bestqual = 0;
@@ -663,10 +681,13 @@ function choose_direction(xp, yp) {
 
     if (val == "root")
       qual = 8;
-    else if (val.substring(1) == info.seat)
-      qual = 7;
-    else
-      qual = 4 - parseInt(val.charAt(0));
+    else {
+      valseat = val.substring(1);
+      if (valseat == info.seat)
+        qual = 7;
+      else
+        qual = 5 - parseInt(val.charAt(0)) - (scores[valseat] * 0.01);
+    }
 
     if (qual > bestqual) {
       bestqual = qual;

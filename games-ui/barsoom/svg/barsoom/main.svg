@@ -125,6 +125,18 @@ volity.state_sent = function() {
   }
 }
 
+volity.suspend_game = function() {
+  seatmark();
+  ourturn = false;
+  adjust_turn("white", false);
+  adjust_turn("black", false);
+
+  enddrag();
+  remove_workobject();
+  adjust_okbutton("white", false);
+  adjust_okbutton("black", false);
+}
+
 game.set_null_square = function(player, xpos, ypos) {
   clear_scorelayer();
   clear_piecelayer();
