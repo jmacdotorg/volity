@@ -70,6 +70,9 @@ class BarsoomGo2(volity.game.Game):
         self.bonuses = None
         self.turn = None
     
+    def unsuspendgame(self):
+        self.sendtable('turn', self.turn)
+        
     def sendconfigstate(self, player):
         player.send('set_root_square', '', self.rootsquarex, self.rootsquarey)
         player.send('set_null_square', '', self.nullsquarex, self.nullsquarey)
@@ -249,6 +252,9 @@ class BarsoomGo4(volity.game.Game):
         self.bonuses = None
         self.turn = None
     
+    def unsuspendgame(self):
+        self.sendtable('turn', self.turn)
+        
     def sendconfigstate(self, player):
         for ix in range(2):
             (xp, yp) = self.nulls[ix]
@@ -467,8 +473,6 @@ class BarsoomBot(volity.bot.Bot):
                 mmove = self.choosemove(self.board, self.turn, ls)
                 (movexp, moveyp, movedir, movepain, movesize) = mmove
                 self.send('move', movexp, moveyp, movesize, movedir)
-
-    ### should also take a turn at unsuspend time
 
     def allmoves(self, board, turn):
         stash = board.stashes[turn.id]
