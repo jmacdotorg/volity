@@ -293,6 +293,7 @@ sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
   my $method = $$rpc_info{method};
+
   # For security's sake, we explicitly accept only a few method names.
   # In fact, the only one we care about right now is 'start_game'.
   # XXX The above statement is no longer true... and the below if-chain
@@ -1207,6 +1208,7 @@ sub handle_suspend_request {
 	return;
     }
  
+    $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
     $self->suspend_game($player);
 }
 
