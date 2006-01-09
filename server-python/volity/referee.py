@@ -1085,6 +1085,8 @@ class Referee(volent.VolEntity):
         game's seats are occupied... unless the players have voted to
         kill off the game, in which case we don't need to check anything.
 
+        We also check that at least one human is seated.
+
         Finally, if all seated players are ready, the game actually begins
         (or resumes, or is killed).
         """
@@ -1096,6 +1098,11 @@ class Referee(volent.VolEntity):
 
         if (not player.seat):
             raise game.FailureToken('volity.not_seated')
+
+        ls = [ pla for pla in self.players.values()
+            if (pla.seat and (not pla.isbot)) ]
+        if (not ls):
+            raise rpc.RPCFault(609, 'no humans are seated')
 
         if (self.refstate == STATE_SETUP):
             # To leave setup mode, we need the game to check the config.
@@ -1488,6 +1495,7 @@ class Referee(volent.VolEntity):
             seat = player.seat
             ### or the last known seat, if in suspended state
             ### or no seat?
+            self.game.sendplayer(player, 'volity.game_has_started')
             self.game.sendgamestate(player, seat)
             
         self.game.sendplayer(player, 'volity.state_sent')

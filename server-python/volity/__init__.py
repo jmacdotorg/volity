@@ -68,6 +68,12 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.4:
+Changed my mind -- bots no longer stand up after the completion of a game.
+Referees now disallow any game that has no seated humans.
+Referee sends volity.game_has_started() in the state burst if the game is
+    in progress.
+
 - 1.5.3:
 Added a volity.remove_bot() RPC to the referee.
 Greatly improved the bot API.

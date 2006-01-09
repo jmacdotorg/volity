@@ -110,7 +110,6 @@ class Actor(volent.VolEntity):
         self.seats = {}
         self.seatlist = []
         self.seat = None
-        self.cooldown = False
 
         # Various Jabber handlers.
         
@@ -292,7 +291,7 @@ class Actor(volent.VolEntity):
         accidentally go ready anyway.
         """
         
-        if (self.seat and (not self.cooldown)):
+        if (self.seat):
             self.queueaction(self.sendref, 'volity.ready')
 
     def begingame(self):
@@ -315,9 +314,6 @@ class Actor(volent.VolEntity):
         """
         self.refstate = STATE_SETUP
         self.bot.endgame()
-
-        self.cooldown = True
-        self.queueaction(self.sendref, 'volity.stand', self.jid)
 
     def suspendgame(self):
         """suspendgame() -> None
@@ -637,7 +633,6 @@ class BotVolityOpset(rpc.MethodOpset):
                     seat.players.remove(jid)
             if (jid == self.actor.jid):
                 self.actor.seat = None
-                self.actor.cooldown = False
         self.actor.tryready()
             
     def rpc_player_unready(self, sender, *args):
@@ -661,6 +656,7 @@ class BotVolityOpset(rpc.MethodOpset):
             
     def rpc_end_game(self, sender, *args):
         self.actor.queueaction(self.actor.endgame)
+        self.actor.tryready()
             
     def rpc_suspend_game(self, sender, *args):
         self.actor.queueaction(self.actor.suspendgame)
