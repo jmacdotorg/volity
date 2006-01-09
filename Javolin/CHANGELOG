@@ -3,6 +3,8 @@ CVS repository.
 
 * the present
 
+Added a "Suspend Table" menu item.
+
 * release 0.2.3
 
 The Finder window will launch any URLs that don't start with
