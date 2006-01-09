@@ -63,7 +63,7 @@ public class AboutBox extends JFrame
                     soleAboutBox = null;
                 }
                 public void windowOpened(WindowEvent ev) {
-                    // Ensure that Enter triggers the "Ok" button.
+                    // Ensure that Enter triggers the "OK" button.
                     mButton.requestFocusInWindow();
                 }
             });
@@ -75,7 +75,7 @@ public class AboutBox extends JFrame
 
         mButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    // The "Ok" button.
+                    // The "OK" button.
                     dispose();
                 }
             });
@@ -168,7 +168,7 @@ public class AboutBox extends JFrame
         c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
         cPane.add(mText, c);
 
-        mButton = new JButton("Ok");
+        mButton = new JButton("OK");
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;

@@ -66,7 +66,7 @@ public class ErrorDialog extends JFrame
                     // visible.
                     JScrollBar vertBar = mScroller.getVerticalScrollBar();
                     vertBar.setValue(vertBar.getMinimum());
-                    // Ensure that Enter triggers the "Ok" button.
+                    // Ensure that Enter triggers the "OK" button.
                     mButton.requestFocusInWindow();
                 }
             });
@@ -78,7 +78,7 @@ public class ErrorDialog extends JFrame
 
         mButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    // The "Ok" button.
+                    // The "OK" button.
                     dispose();
                 }
             });

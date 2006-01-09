@@ -42,7 +42,7 @@ public class InfoDialog extends BaseDialog
         addWindowListener(
             new WindowAdapter() {
                 public void windowOpened(WindowEvent ev) {
-                    // Ensure that Enter triggers the "Ok" button.
+                    // Ensure that Enter triggers the "OK" button.
                     mButton.requestFocusInWindow();
                 }
             });
@@ -132,7 +132,7 @@ public class InfoDialog extends BaseDialog
         adder.add(row++, "Admin Email:", mGameInfo.getParlorContactEmail());
         adder.add(row++, "Admin JID:", mGameInfo.getParlorContactJID());
 
-        mButton = new JButton("Ok");
+        mButton = new JButton("OK");
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = row++;
