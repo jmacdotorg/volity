@@ -20,6 +20,7 @@ package org.volity.javolin;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import org.jivesoftware.smack.util.StringUtils;
 
 /**
  * Base class for dialogs. Defines some layout metric constants, and adds support for
@@ -59,4 +60,56 @@ public class BaseDialog extends JDialog
                 }
             });
     }
+
+    private final static String DEFAULT_HOST = "volity.net";
+
+    /**
+     * A rather baroque utility function which happens to be useful in a lot of
+     * dialog boxes. This looks at a text field and pulls a JID out of it. If
+     * the JID lacks an "@host" part, this inserts "@volity.net". (In the
+     * field, not just in the returned value.)
+     *
+     * If the JID is entirely blank (or starts with a slash -- e.g., only has a
+     * resource string) then this returns null. The caller should not proceed,
+     * but should instead put the focus on the field and wait for better input.
+     */
+    public static String expandJIDField(JTextField field) {
+        return expandJIDField(field, DEFAULT_HOST);
+    }
+
+    /**
+     * Same as the simpler form of expandJIDField, but you can specify what
+     * default host to insert.
+     */
+    public static String expandJIDField(JTextField field, String defaultHost) {
+        String jid = field.getText().trim();
+
+        if (jid.equals("")
+            || jid.startsWith("/")) {
+            return null;
+        }
+
+        String jidresource = StringUtils.parseResource(jid);
+        String jidhost = StringUtils.parseServer(jid);
+        String jidname = StringUtils.parseName(jid);
+
+        /* Due to the JID structure, if the user typed no "@" then we wind up
+         * with a jidhost and no jidname. */
+
+        if (jidhost.equals("")) {
+            return "";
+        }
+
+        if (jidname.equals("")) {
+            jidname = jidhost;
+            jidhost = defaultHost;
+            jid = jidname + "@" + jidhost;
+            if (!jidresource.equals(""))
+                jid += ("/" + jidresource);
+            field.setText(jid);
+        }
+
+        return jid;
+    }
+
 }

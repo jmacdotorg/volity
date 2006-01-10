@@ -94,7 +94,10 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         if (mInProgress)
             return;
 
-        if (mTableIdField.getText().equals("")) {
+        String tableid = expandJIDField(mTableIdField,
+            "conference.volity.net");
+
+        if (tableid == null) {
             mTableIdField.requestFocusInWindow();
             return;
         }
@@ -112,7 +115,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
         MakeTableWindow maker = new MakeTableWindow(mOwner, mConnection, this);
-        maker.joinTable(mTableIdField.getText(), mNicknameField.getText(),
+        maker.joinTable(tableid, mNicknameField.getText(),
             new MakeTableWindow.TableWindowCallback() {
                 public void fail() {
                     mInProgress = false;

@@ -68,11 +68,12 @@ public class SendInvitationDialog extends BaseDialog
 
         mInviteButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    String jid = mUserIdField.getText();
-                    if (jid.equals("")) {
+                    String jid = expandJIDField(mUserIdField);
+                    if (jid == null) {
                         mUserIdField.requestFocusInWindow();
                         return;
                     }
+
                     String msg = mMessageField.getText().trim();
 
                     saveFieldValues();

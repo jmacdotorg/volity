@@ -101,7 +101,8 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      */
     private void doJoin()
     {
-        if (mMucIdField.getText().equals("")) {
+        String mucID = expandJIDField(mMucIdField, "conference.volity.net");
+        if (mucID == null) {
             mMucIdField.requestFocusInWindow();
             return;
         }
@@ -113,8 +114,6 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         // Store field values in preferences
         saveFieldValues();
-
-        String mucID = mMucIdField.getText();
 
         // Make sure we're not already in this MUC.
         for (Iterator it = mOwner.getMucWindows(); it.hasNext(); ) {

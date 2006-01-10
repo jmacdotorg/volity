@@ -95,7 +95,8 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         if (mInProgress)
             return;
 
-        if (mServerIdField.getText().equals("")) {
+        String serverjid = expandJIDField(mServerIdField);
+        if (serverjid == null) {
             mServerIdField.requestFocusInWindow();
             return;
         }
@@ -113,7 +114,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
         MakeTableWindow maker = new MakeTableWindow(mOwner, mConnection, this);
-        maker.newTable(mServerIdField.getText(), mNicknameField.getText(),
+        maker.newTable(serverjid, mNicknameField.getText(),
             new MakeTableWindow.TableWindowCallback() {
                 public void fail() {
                     mInProgress = false;

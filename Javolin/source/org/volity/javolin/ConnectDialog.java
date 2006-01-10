@@ -153,33 +153,15 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         // Make sure the first field is nonempty.
         // (The password *could* be the empty string.)
 
-        if (mJIDField.getText().equals("")
-            || mJIDField.getText().startsWith("/")) {
+        String jid = expandJIDField(mJIDField);
+        if (jid == null) {
             mJIDField.requestFocusInWindow();
             return;
         }
 
-        String jid = mJIDField.getText();
         String jidresource = StringUtils.parseResource(jid);
         String jidhost = StringUtils.parseServer(jid);
         String jidname = StringUtils.parseName(jid);
-
-        /* Due to the JID structure, if the user typed no "@" then we wind up
-         * with a jidhost and no jidname. */
-
-        if (jidhost.equals("")) {
-            mJIDField.requestFocusInWindow();
-            return;
-        }
-
-        if (jidname.equals("")) {
-            jidname = jidhost;
-            jidhost = DEFAULT_HOST;
-            jid = jidname + "@" + jidhost;
-            if (!jidresource.equals(""))
-                jid += ("/" + jidresource);
-            mJIDField.setText(jid);
-        }
 
         if (jidresource.equals(""))
             jidresource = getJIDResource();
