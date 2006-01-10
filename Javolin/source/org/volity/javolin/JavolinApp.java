@@ -685,10 +685,9 @@ public class JavolinApp extends JFrame
                 maker.joinTable(stub.getJID(), getDefaultNickname(), null);
             }
             else if (stub.getCommand() == CommandStub.COMMAND_JOIN_LOBBY) {
-                String mucID = stub.getJID();
-                MUCWindow win = new MUCWindow(mConnection, mucID,
-                    getDefaultNickname());
-                handleNewMucWindow(win);
+                MakeMUCWindow maker = new MakeMUCWindow(this,
+                    mConnection, this);
+                maker.joinMUC(stub.getJID(), getDefaultNickname(), null);
             }
             else {
                 throw new Exception("Unknown Volity command stub: " + stub.toString());
@@ -755,9 +754,6 @@ public class JavolinApp extends JFrame
     {
         JoinMUCDialog joinMucDlg = new JoinMUCDialog(this, mConnection);
         joinMucDlg.show();
-        MUCWindow mucWin = joinMucDlg.getMUCWindow();
-
-        handleNewMucWindow(mucWin);
     }
 
     public void handleNewMucWindow(MUCWindow mucWin)

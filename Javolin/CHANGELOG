@@ -3,6 +3,13 @@ CVS repository.
 
 * the present
 
+Regularized the Join MUC process, and made it produce much nicer error
+messages.
+
+All dialog boxes that ask you for a JID now accept a simple name ("zarf")
+instead of a JID ("zarf@volity.net"). You could also type "devchat" into
+the Join MUC dialog instead of "devchat@conference.volity.net".
+
 Added a "Suspend Table" menu item.
 
 * release 0.2.3

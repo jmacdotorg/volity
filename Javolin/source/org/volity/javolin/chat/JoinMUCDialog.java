@@ -42,6 +42,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
     private JavolinApp mOwner;
     private XMPPConnection mConnection;
     private MUCWindow mMucWindow;
+    private boolean mInProgress;
 
     /**
      * Constructor.
@@ -55,6 +56,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         mOwner = owner;
         mConnection = connection;
+        mInProgress = false;
 
         // Set up dialog
         buildUI();
@@ -66,17 +68,6 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         // Restore default field values
         restoreFieldValues();
-    }
-
-    /**
-     * Gets the MUCWindow that was created.
-     *
-     * @return   The MUCWindow for the MUC that was created and joined when the user
-     *  pressed the Join button, or null if the user pressed Cancel.
-     */
-    public MUCWindow getMUCWindow()
-    {
-        return mMucWindow;
     }
 
     /**
@@ -101,6 +92,9 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      */
     private void doJoin()
     {
+        if (mInProgress)
+            return;
+
         String mucID = expandJIDField(mMucIdField, "conference.volity.net");
         if (mucID == null) {
             mMucIdField.requestFocusInWindow();
@@ -112,37 +106,23 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
             return;
         }
 
+        mInProgress = true;
+
         // Store field values in preferences
         saveFieldValues();
 
-        // Make sure we're not already in this MUC.
-        for (Iterator it = mOwner.getMucWindows(); it.hasNext(); ) {
-            MUCWindow win = (MUCWindow)it.next();
-            if (mucID.equals(win.getRoom())) {
-                // We are. Bring up the existing window, and exit.
-                dispose();
-                win.show();
-                return;
-            }
-        }
-
-        // Create the MUCWindow
-        try
-        {
-            mMucWindow = new MUCWindow(mConnection, mucID,
-                mNicknameField.getText());
-
-            dispose();
-        }
-        catch (XMPPException ex)
-        {
-            new ErrorWrapper(ex);
-            JOptionPane.showMessageDialog(this, ex.toString(),
-                JavolinApp.getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
-
-            // Destroy MUCWindow object
-            mMucWindow = null;
-        }
+        MakeMUCWindow maker = new MakeMUCWindow(mOwner, mConnection, this);
+        maker.joinMUC(mucID, mNicknameField.getText(),
+            new MakeMUCWindow.MUCWindowCallback() {
+                public void fail() {
+                    mInProgress = false;
+                    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                }
+                public void succeed(MUCWindow win) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                    dispose();
+                }
+            });
     }
 
     /**
