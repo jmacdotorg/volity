@@ -125,7 +125,6 @@ public class ChatWindow extends JFrame implements PacketListener
             {
                 public void windowClosing(WindowEvent we)
                 {
-                    // Leave the chat room when the window is closed
                     saveWindowState();
                     mUserColorMap.dispose();
                 }
@@ -137,8 +136,12 @@ public class ChatWindow extends JFrame implements PacketListener
                 }
             });
 
-        // Register as message listener
-        mChatObject.addMessageListener(this);
+        /* We do *not* register as a message listener. The Smack Chat object is
+         * kind of a crock; there's no documented way to turn off its packet
+         * interception when we close this window. And the main JavolinApp
+         * listener is already grabbing all CHAT and NORMAL message packets, so
+         * there's no need for us to listen -- in fact, it leads to double
+         * printing in some cases. */
     }
 
     /**

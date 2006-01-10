@@ -3,6 +3,9 @@ CVS repository.
 
 * the present
 
+Possibly fixed bugs with chat messages failing to appear, or appearing
+twice.
+
 Regularized the Join MUC process, and made it produce much nicer error
 messages.
 

@@ -458,7 +458,6 @@ public class JavolinApp extends JFrame
             PacketListener listener;
 
             // Listen for incoming chat messages
-            filter = new MessageTypeFilter(Message.Type.CHAT);
             listener = new PacketListener() {
                     public void processPacket(final Packet packet) {
                         // Invoke into the Swing thread.
@@ -470,6 +469,9 @@ public class JavolinApp extends JFrame
                             });
                     }
                 };
+            filter = new MessageTypeFilter(Message.Type.CHAT);
+            mConnection.addPacketListener(listener, filter);
+            filter = new MessageTypeFilter(Message.Type.NORMAL);
             mConnection.addPacketListener(listener, filter);
 
             // Listen for incoming presence-subscription messages
@@ -793,53 +795,74 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * Activates a chat session with the specified user. If a ChatWindow exists for the
-     * user, it brings that window to the front. Otherwise, it creates a new chat window
-     * for communicating with the specified user.
+     * Activates a chat session with the specified user. If a ChatWindow exists
+     * for the user, it brings that window to the front. Otherwise, it creates
+     * a new chat window for communicating with the specified user.
      *
-     * @param userId  The Jabber ID of the user to chat with.
+     * @param userId  The Jabber ID of the user to chat with. (The resource
+     * string is ignored.)
      */
-    public void chatWithUser(String userId)
+    public ChatWindow chatWithUser(String userId)
     {
-        ChatWindow chatWin = getChatWindowForUser(userId);
+        return chatWithUser(userId, true);
+    }
+
+    /**
+     * Activates a chat session with the specified user. If a ChatWindow exists
+     * for the user, it brings that window to the front (if requested).
+     * Otherwise, it creates a new chat window for communicating with the
+     * specified user.
+     *
+     * @param userId  The Jabber ID of the user to chat with. (The resource
+     * string is ignored.)
+     * @param toFront If a window exists, move it to the front?
+     */
+    public ChatWindow chatWithUser(String userId, boolean toFront)
+    {
+        userId = StringUtils.parseBareAddress(userId);
+
+        ChatWindow chatWin = (ChatWindow)mUserChatWinMap.get(userId);
 
         if (chatWin != null)
         {
-            chatWin.toFront();
+            if (toFront)
+                chatWin.toFront();
+            return chatWin;
         }
-        else
+
+        try
         {
+            chatWin = new ChatWindow(mConnection, userId);
 
-            try
-            {
-                chatWin = new ChatWindow(mConnection, userId);
+            chatWin.show();
+            mChatWindows.add(chatWin);
+            JavolinMenuBar.notifyUpdateWindowMenu();
+            mUserChatWinMap.put(userId, chatWin);
 
-                chatWin.show();
-                mChatWindows.add(chatWin);
-                JavolinMenuBar.notifyUpdateWindowMenu();
-                mUserChatWinMap.put(userId, chatWin);
-
-                // Remove the chat window from the list, menu, and map when it closes
-                chatWin.addWindowListener(
-                    new WindowAdapter()
+            // Remove the chat window from the list, menu, and map when it closes
+            chatWin.addWindowListener(
+                new WindowAdapter()
+                {
+                    public void windowClosed(WindowEvent we)
                     {
-                        public void windowClosed(WindowEvent we)
-                        {
-                            ChatWindow win = (ChatWindow)we.getWindow();
+                        ChatWindow win = (ChatWindow)we.getWindow();
 
-                            mChatWindows.remove(win);
-                            JavolinMenuBar.notifyUpdateWindowMenu();
-                            mUserChatWinMap.remove(win.getRemoteUserId());
-                        }
-                    });
+                        mChatWindows.remove(win);
+                        JavolinMenuBar.notifyUpdateWindowMenu();
+                        mUserChatWinMap.remove(win.getRemoteUserId());
+                    }
+                });
 
-            }
-            catch (XMPPException ex)
-            {
-                new ErrorWrapper(ex);
-                JOptionPane.showMessageDialog(this, ex.toString(),
-                    getAppName() + ": Error", JOptionPane.ERROR_MESSAGE);
-            }
+            return chatWin;
+        }
+        catch (XMPPException ex)
+        {
+            new ErrorWrapper(ex);
+            JOptionPane.showMessageDialog(this, 
+                ex.toString(),
+                getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return null;
         }
     }
 
@@ -1098,34 +1121,20 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * Gets the ChatWindow handling chatting with the specified user, if any.
-     *
-     * @param userId  The ID of the remote user.
-     * @return        The ChatWindow being used to handle chat with the specified user,
-     * or null if there isn't currently one.
-     */
-    private ChatWindow getChatWindowForUser(String userId)
-    {
-        return (ChatWindow)mUserChatWinMap.get(userId);
-    }
-
-    /**
      * Handles incoming chat messages.
      */
     public void receiveMessage(Message message)
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-        String remoteId = StringUtils.parseBareAddress(message.getFrom());
+        String remoteId = message.getFrom();
 
         // If there is not already a chat window for the current user,
         // create one and give it the message.
-        ChatWindow chatWin = getChatWindowForUser(remoteId);
+        ChatWindow chatWin = chatWithUser(remoteId, false);
 
-        if (chatWin == null)
+        if (chatWin != null)
         {
-            chatWithUser(remoteId);
-            chatWin = getChatWindowForUser(remoteId);
             chatWin.processPacket(message);
         }
     }
