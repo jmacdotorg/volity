@@ -80,9 +80,15 @@ public class AddUserDialog extends BaseDialog implements ActionListener
      */
     private void doAdd()
     {
+        String jid = expandJIDField(mUserIdField);
+        if (jid == null) {
+            mUserIdField.requestFocusInWindow();
+            return;
+        }
+
         try
         {
-            mRoster.createEntry(mUserIdField.getText(), mNicknameField.getText(), null);
+            mRoster.createEntry(jid, mNicknameField.getText(), null);
             dispose();
         }
         catch (XMPPException ex)
