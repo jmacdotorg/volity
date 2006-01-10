@@ -290,6 +290,7 @@ public class ChatWindow extends JFrame implements PacketListener
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);
         mInputText.setWrapStyleWord(true);
+        mInputText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
         mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
 
         cPane.add(mChatSplitter, BorderLayout.CENTER);

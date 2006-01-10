@@ -415,6 +415,7 @@ public class MUCWindow extends JFrame implements PacketListener
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);
         mInputText.setWrapStyleWord(true);
+        mInputText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
         mChatSplitter.setBottomComponent(new JScrollPane(mInputText));
 
         // Split pane separating user list from everything else
@@ -424,6 +425,7 @@ public class MUCWindow extends JFrame implements PacketListener
         mUserListSplitter.setLeftComponent(mChatSplitter);
 
         mUserListText = new JTextPane();
+        mUserListText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
         mUserListText.setEditable(false);
         mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
 
