@@ -313,6 +313,12 @@ public class TableWindow extends JFrame implements PacketListener
          */
         mGameTable.setQueuedMessageListener(this);
 
+        /* 
+         * Handle presence messages, although we don't care about queued
+         * presence.
+         */
+        mGameTable.addParticipantListener(this);
+
         // Notify the player if the referee crashes.
         mGameTable.addShutdownListener(new GameTable.ReadyListener() {
                 public void ready() {
@@ -592,6 +598,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Leave the chat room.
         if (mGameTable != null) {
+            mGameTable.removeParticipantListener(this);
             mGameTable.removeMessageListener(TableWindow.this);
             mGameTable.leave();
             mGameTable = null;
@@ -744,7 +751,8 @@ public class TableWindow extends JFrame implements PacketListener
     }
 
     /**
-     * PacketListener interface method implementation.
+     * PacketListener interface method implementation. Used for both Message
+     * and Presence packets.
      *
      * Called outside Swing thread!
      *
@@ -755,9 +763,21 @@ public class TableWindow extends JFrame implements PacketListener
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    if (packet instanceof Message)
-                    {
+                    if (packet instanceof Message) {
                         doMessageReceived((Message)packet);
+                    }
+                    if (packet instanceof Presence) {
+                        Presence pres = (Presence)packet;
+
+                        String from = pres.getFrom();
+                        if (from != null) {
+                            String nick = StringUtils.parseResource(from);
+                            Presence.Type typ = pres.getType();
+                            if (typ == Presence.Type.AVAILABLE)
+                                writeMessageText(null, nick+" has joined the chat.");
+                            if (typ == Presence.Type.UNAVAILABLE)
+                                writeMessageText(null, nick+" has left the chat.");
+                        }
                     }
                 }
             });

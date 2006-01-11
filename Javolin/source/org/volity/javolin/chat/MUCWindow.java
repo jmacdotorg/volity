@@ -277,7 +277,18 @@ public class MUCWindow extends JFrame implements PacketListener
                     }
                     else if (packet instanceof Presence)
                     {
+                        Presence pres = (Presence)packet;
                         updateUserList();
+
+                        String from = pres.getFrom();
+                        if (from != null) {
+                            String nick = StringUtils.parseResource(from);
+                            Presence.Type typ = pres.getType();
+                            if (typ == Presence.Type.AVAILABLE)
+                                writeMessageText(null, nick+" has joined the chat.");
+                            if (typ == Presence.Type.UNAVAILABLE)
+                                writeMessageText(null, nick+" has left the chat.");
+                        }
                     }
                 }
             });
