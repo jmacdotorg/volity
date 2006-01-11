@@ -41,6 +41,8 @@ piecelayer = null;
 bonuslayer = null;
 buttontrack = null;
 
+rulesvisible = false;
+
 function initfunc() {
   var obj;
 
@@ -516,6 +518,26 @@ function set_work_piece(xpos, ypos, size, dir) {
   piecelayer.appendChild(grp);
 }
 
+function toggle_rules() {
+  var obj, showhide, grp;
+
+  rulesvisible = (!rulesvisible);
+
+  showhide = document.getElementById("showhiderules");
+  grp = document.getElementById("ruleslayer");
+
+  if (rulesvisible) {
+    set_text(showhide, "Hide");
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttributeNS(xlink_ns, "xlink:href", "#rules");
+    grp.appendChild(obj);
+  }
+  else {
+    set_text(showhide, "Show");
+    remove_children(grp);
+  }
+}
+
 function draw_stash_count(seat, size) {
   var seatname, count;
 
@@ -952,6 +974,20 @@ initfunc();
 text {
 	text-anchor: middle;
 }
+.ShowRules {
+	font-size: 0.2;
+	fill: #444;
+	font-weight: bold;
+}
+.RulesTitle {
+	font-size: 0.275;
+	font-weight: bold;
+}
+.RulesBody {
+	font-size: 0.2;
+	font-weight: normal;
+	text-anchor: start;
+}
 .ScoreText {
 	font-size: 0.85;
 	font-weight: bold;
@@ -1244,6 +1280,139 @@ text {
 </g>
 
 </g>
+
+<g id="rules" pointer-events="none"
+	transform="translate(5,15) scale(11)" >
+<rect x="0.45" y="0.3" width="7.1" height="5.55"
+	fill="none" stroke="#CCC" stroke-width="0.24" />
+<rect x="0.45" y="0.3" width="7.1" height="5.55"
+	fill="#EEE" stroke="#444" stroke-width="0.08"
+	pointer-events="all" />
+<text class="RulesTitle"
+	x="4" y="0.75">Barsoomite Go</text>
+
+<a xlink:href="http://eblong.com/zarf/barsoom-go.html">
+<rect x="3" width="2" y="0.52" height="0.3"
+	fill="none" stroke="none" pointer-events="fill" />
+</a>
+
+<text class="RulesBody"
+	x="0.8" y="1.20">
+On your turn, drag a pyramid from your stash to an empty square. You
+</text>
+<text class="RulesBody"
+	x="0.8" y="1.44">
+must play adjacent to a root, or to a
+</text>
+<text class="RulesBody"
+	x="0.8" y="1.68">
+pyramid which has already been played.
+</text>
+
+<g transform="translate(4.7,1.4) scale(0.5)" >
+<rect x="-0.05" y="-0.05" width="4.1" height="1.1"
+	fill="#BFBFBF" />
+<use xlink:href="#boardsquare" x="0.5" y="0.5" fill="#A0A0A0" />
+<use xlink:href="#boardsquare" x="1.5" y="0.5" fill="#DEDEDE" />
+<use xlink:href="#boardsquare" x="2.5" y="0.5" fill="#A0A0A0" />
+<use xlink:href="#boardsquare" x="3.5" y="0.5" fill="#DEDEDE" />
+<use xlink:href="#rootsquare" x="1.5" y="0.5" />
+<use xlink:href="#pyramid2red"
+	transform="translate(0.5,0.5) rotate(90)" />
+<use xlink:href="#pyramid3green"
+	transform="translate(2.5,0.5) rotate(-90)" />
+<use xlink:href="#pyramid1green"
+	transform="translate(3.5,0.5) rotate(-90)" />
+</g>
+
+<text class="RulesBody"
+	x="2.8" y="2.35">
+Nobody may play in, or point at, a null space.
+</text>
+
+<g transform="translate(1.1,2.05) scale(0.5)" >
+<rect x="-0.05" y="-0.05" width="3.1" height="1.1"
+	fill="#BFBFBF" />
+<use xlink:href="#boardsquare" x="0.5" y="0.5" fill="#DEDEDE" />
+<use xlink:href="#boardsquare" x="1.5" y="0.5" fill="#A0A0A0" />
+<use xlink:href="#boardsquare" x="2.5" y="0.5" fill="#DEDEDE" />
+<use xlink:href="#nullsquare" x="1.5" y="0.5" />
+<use xlink:href="#pyramid3yellow"
+	transform="translate(0.5,0.5)" />
+</g>
+
+<text class="RulesBody"
+	x="0.8" y="3.00">
+The goal is to
+<tspan font-weight="bold"> avoid pointing at the enemy. </tspan>
+Pointing at a root is
+<tspan font-weight="bold"> safe.</tspan>
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="3.24">
+Pointing at your own pieces is
+<tspan font-weight="bold"> safe. </tspan>
+When you point at any enemy
+</text>
+<text class="RulesBody"
+	x="0.8" y="3.48">
+pyramid,
+<tspan font-weight="bold"> you lose points and your opponent</tspan>
+</text>
+<text class="RulesBody"
+	x="0.8" y="3.72">
+<tspan font-weight="bold">gains points.</tspan>
+</text>
+
+
+<g transform="translate(5.2,3.4) scale(0.5)" >
+<rect x="-0.05" y="-0.05" width="2.1" height="1.1"
+	fill="#BFBFBF" />
+<use xlink:href="#boardsquare" x="0.5" y="0.5" fill="#A0A0A0" />
+<use xlink:href="#boardsquare" x="1.5" y="0.5" fill="#DEDEDE" />
+<use xlink:href="#pyramid3red"
+	transform="translate(0.5,0.5) rotate(180)" />
+<use xlink:href="#pyramid1blue"
+	transform="translate(1.5,0.5) rotate(-90)" />
+<use xlink:href="#starburst"
+	class="ForeCred"
+	transform="translate(1.0,0.35)" />
+<text fill="white" transform="translate(1.0,0.43)"
+	class="BonusText" >1</text>
+<use xlink:href="#starburst"
+	class="ForeCblue"
+	transform="translate(1.0,0.65)" />
+<text fill="black" transform="translate(1.0,0.73)"
+	class="BonusText" >3</text>
+</g>
+
+<text class="RulesBody"
+	x="0.8" y="4.20">
+His gain is the size of your pyramid, and your loss is the size of his. So
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="4.44">
+if you are forced to point at the enemy, use the smallest piece you can.
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="4.84">
+The game ends when all pieces have been played. No empty space
+</text>
+<text class="RulesBody"
+	x="0.8" y="5.08">
+will remain.
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="5.48">
+You can drag the null and root markers around before starting the game.
+</text>
+
+</g>
+
 
 </defs>
 
@@ -1568,7 +1737,30 @@ text {
 
 </g>
 
+<g transform="translate(70,7.5) scale(12)" >
+<path
+	transform="scale(0.4, 0.3)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	fill="#CCC" stroke="#808080" stroke-width="0.1"
+	onclick="toggle_rules()" />
+<text id="showhiderules"
+	y="-0.05"
+	class="ShowRules"
+	pointer-events="none"
+	>Show</text>
+<text
+	y="0.2"
+	class="ShowRules"
+	pointer-events="none"
+	>Rules</text>
 </g>
+
+
+</g>
+
+<g id="ruleslayer">
+</g>
+
 
 <g id="dragthing"
 	transform="translate(39,39)"

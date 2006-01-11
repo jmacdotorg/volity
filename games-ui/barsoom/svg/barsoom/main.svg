@@ -30,6 +30,8 @@ nullsquarey = 3;
 rootsquarex = 3;
 rootsquarey = 1;
 
+rulesvisible = false;
+
 board = twodarray(8, 4);
 
 dragobject = null;
@@ -538,6 +540,26 @@ function click_stash(color, size, ev) {
   document.addEventListener("mouseup", dragendlistener, true);
 }
 
+function toggle_rules() {
+  var obj, showhide, grp;
+
+  rulesvisible = (!rulesvisible);
+
+  showhide = document.getElementById("showhiderules");
+  grp = document.getElementById("ruleslayer");
+
+  if (rulesvisible) {
+    set_text(showhide, "Hide");
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttributeNS(xlink_ns, "xlink:href", "#rules");
+    grp.appendChild(obj);
+  }
+  else {
+    set_text(showhide, "Show");
+    remove_children(grp);
+  }
+}
+
 function draw_stash_count(seat, size) {
   var val;
 
@@ -678,7 +700,7 @@ function adjust_turn(color, val) {
 }
 
 function adjust_score(color) {
-  var val, obj, ls, subobj;
+  var val, obj;
 
   if (color == "white") {
     obj = document.getElementById("scorefieldwhite");
@@ -689,14 +711,7 @@ function adjust_score(color) {
     val = blackscore;
   }
 
-  ls = obj.childNodes;
-  while (ls.length > 0) {
-    subobj = ls.item(0);
-    obj.removeChild(subobj);
-  }
-
-  subobj = document.createTextNode(val);
-  obj.appendChild(subobj);
+  set_text(obj, val);
 }
 
 function deref_board(xpos, ypos, dir) {
@@ -740,6 +755,22 @@ function choose_direction(xpos, ypos) {
   }
 
   return dir;
+}
+
+function set_text(obj, val) {
+  var valobj;
+  remove_children(obj);
+  valobj = document.createTextNode(val);
+  obj.appendChild(valobj);
+}
+
+function remove_children(parent) {
+  var obj, ls;
+  ls = parent.childNodes;
+  while (ls.length > 0) {
+    obj = ls.item(0);
+    parent.removeChild(obj);
+  }
 }
 
 function twodarray(wid, hgt) {
@@ -816,6 +847,18 @@ obj = null;
 <style type="text/css">
 <![CDATA[
 
+.ShowRules {
+	font-size: 0.2;
+	fill: #444;
+}
+.RulesTitle {
+	font-size: 0.275;
+}
+.RulesBody {
+	font-size: 0.2;
+	font-weight: normal;
+	text-anchor: start;
+}
 .BoardDarkClass {
 	fill: #686868;
 }
@@ -1034,6 +1077,129 @@ text {
 	fill="#E8E8E8" stroke="none" />
 </g>
 
+<g id="rules" pointer-events="none"
+	transform="translate(0,1)" >
+<rect x="0.45" y="0.3" width="7.1" height="5.55"
+	fill="none" stroke="#BBB" stroke-width="0.24" />
+<rect x="0.45" y="0.3" width="7.1" height="5.55"
+	fill="#DDD" stroke="#444" stroke-width="0.08"
+	pointer-events="all" />
+<text class="RulesTitle"
+	x="4" y="0.75">Barsoomite Go</text>
+
+<a xlink:href="http://eblong.com/zarf/barsoom-go.html">
+<rect x="3" width="2" y="0.52" height="0.3"
+	fill="none" stroke="none" pointer-events="fill" />
+</a>
+
+<text class="RulesBody"
+	x="0.8" y="1.20">
+On your turn, drag a pyramid from your stash to an empty square. You
+</text>
+<text class="RulesBody"
+	x="0.8" y="1.44">
+must play adjacent to the root, or to a
+</text>
+<text class="RulesBody"
+	x="0.8" y="1.68">
+pyramid which has already been played.
+</text>
+
+<g transform="translate(4.7,1.4) scale(0.5)" >
+<rect x="0" y="0" width="4" height="1"
+	fill="#808080" />
+<use xlink:href="#boardsquare" x="0.5" y="0.5" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="1.5" y="0.5" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="2.5" y="0.5" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="3.5" y="0.5" class="BoardDarkClass" />
+<use xlink:href="#rootsquare" x="1.5" y="0.5" />
+<use xlink:href="#pyramid2b"
+	transform="translate(0.5,0.5) rotate(90)" />
+<use xlink:href="#pyramid3w"
+	transform="translate(2.5,0.5) rotate(-90)" />
+<use xlink:href="#pyramid1w"
+	transform="translate(3.5,0.5) rotate(-90)" />
+</g>
+
+<text class="RulesBody"
+	x="2.8" y="2.35">
+Nobody may play in, or point at, the null space.
+</text>
+
+<g transform="translate(1.1,2.05) scale(0.5)" >
+<rect x="0" y="0" width="3" height="1"
+	fill="#808080" />
+<use xlink:href="#boardsquare" x="0.5" y="0.5" class="BoardDarkClass" />
+<use xlink:href="#boardsquare" x="1.5" y="0.5" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="2.5" y="0.5" class="BoardDarkClass" />
+<use xlink:href="#nullsquare" x="1.5" y="0.5" />
+<use xlink:href="#pyramid3b"
+	transform="translate(0.5,0.5)" />
+</g>
+
+<text class="RulesBody"
+	x="0.8" y="3.00">
+The goal is to
+<tspan font-weight="bold"> avoid pointing at the enemy. </tspan>
+Pointing at the root is
+<tspan font-weight="bold"> safe.</tspan>
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="3.24">
+Pointing at your own pieces is
+<tspan font-weight="bold"> safe. </tspan>
+When you point at an enemy
+</text>
+<text class="RulesBody"
+	x="0.8" y="3.48">
+pyramid,
+<tspan font-weight="bold"> your opponent gains points.</tspan>
+</text>
+
+<g transform="translate(5.2,3.4) scale(0.5)" >
+<rect x="0" y="0" width="2" height="1"
+	fill="#808080" />
+<use xlink:href="#boardsquare" x="0.5" y="0.5" class="BoardLightClass" />
+<use xlink:href="#boardsquare" x="1.5" y="0.5" class="BoardDarkClass" />
+<use xlink:href="#pyramid3b"
+	transform="translate(0.5,0.5) rotate(180)" />
+<use xlink:href="#pyramid1w"
+	transform="translate(1.5,0.5) rotate(-90)" />
+<use xlink:href="#starburstb"
+	transform="translate(1.0,0.5)" />
+<text fill="white" transform="translate(1.0,0.58)"
+	class="ScoreText" >4</text>
+</g>
+
+<text class="RulesBody"
+	x="0.8" y="4.20">
+His score bonus is
+<tspan font-weight="bold"> the sum of the sizes </tspan>
+of the pyramids. So if you
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="4.44">
+are forced to point at the enemy, use the smallest piece you can.
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="4.84">
+The game ends when all pieces have been played. No empty space
+</text>
+<text class="RulesBody"
+	x="0.8" y="5.08">
+will remain.
+</text>
+
+<text class="RulesBody"
+	x="0.8" y="5.48">
+You can drag the null and root markers around before starting the game.
+</text>
+
+</g>
+
 </defs>
 
 <rect x="-10" y="-10" width="20" height="20"
@@ -1243,16 +1409,16 @@ text {
 <use xlink:href="#winbutton"
 	id="winbuttonwhite"
 	class="PieceBlack" visibility="hidden"
-	x="1.5" y="7.4" />
+	x="1.1" y="7.4" />
 
 <use xlink:href="#winbutton"
 	id="winbuttonblack"
 	class="PieceWhite" visibility="hidden"
-	x="6.5" y="7.4" />
+	x="6.9" y="7.4" />
 
 <g
-	transform="translate(3,7.4)" >
-<path id="scoreborderwhite"
+	transform="translate(2.6,7.4)" >
+<path id="scoreborderblack"
 	transform="scale(0.5, 0.3)"
 	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
 	fill="#808080" />
@@ -1264,7 +1430,7 @@ text {
 </g>
 
 <g
-	transform="translate(5,7.4)" >
+	transform="translate(5.4,7.4)" >
 <path id="scoreborderwhite"
 	transform="scale(0.5, 0.3)"
 	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
@@ -1275,5 +1441,27 @@ text {
 	pointer-events="none"
 	>0</text>
 </g>
+
+<g transform="translate(4,7.5)" >
+<path
+	transform="scale(0.4, 0.3)"
+	d="M -1 0  C -1 -1 -1 -1 0 -1  S 1 -1 1 0  S 1 1 0 1  S -1 1 -1 0  z"
+	fill="#CCC" stroke="#808080" stroke-width="0.1"
+	onclick="toggle_rules()" />
+<text id="showhiderules"
+	y="-0.05"
+	class="ShowRules"
+	pointer-events="none"
+	>Show</text>
+<text
+	y="0.2"
+	class="ShowRules"
+	pointer-events="none"
+	>Rules</text>
+</g>
+
+<g id="ruleslayer">
+</g>
+
 
 </svg>
