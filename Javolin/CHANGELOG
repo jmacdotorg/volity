@@ -3,6 +3,13 @@ CVS repository.
 
 * the present
 
+All referee RPCs are now async. This should improve the responsiveness
+of the client -- it won't freeze up when you push the "ready" or "seat"
+buttons.
+
+MUC and table window chat logs will now show "<nick> has joined/left the
+chat" messages.
+
 Possibly fixed bugs with chat messages failing to appear, or appearing
 twice.
 

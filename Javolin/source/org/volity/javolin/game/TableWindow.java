@@ -91,6 +91,8 @@ public class TableWindow extends JFrame implements PacketListener
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
 
+    private RPCBackground.Callback mDefaultCallback;
+
     private JButton mInviteButton;
     private JButton mReadyButton;
     private JButton mSeatButton;
@@ -423,42 +425,38 @@ public class TableWindow extends JFrame implements PacketListener
                 }
             });
 
-        mReadyButton.addActionListener(new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    try {
-                        if (!mGameTable.isSelfReady()) {
-                            mGameTable.getReferee().ready();
+        mDefaultCallback = new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock) {
+                    if (err != null) {
+                        if (err instanceof TokenFailure) {
+                            writeMessageText(mTranslator.translate((TokenFailure)err));
                         }
                         else {
-                            mGameTable.getReferee().unready();
+                            new ErrorWrapper(err);
+                            writeMessageText(err.toString());
                         }
                     }
-                    catch (TokenFailure ex) {
-                        writeMessageText(mTranslator.translate(ex));
+                }
+            };
+        
+        mReadyButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    if (!mGameTable.isSelfReady()) {
+                        mGameTable.getReferee().ready(mDefaultCallback, null);
                     }
-                    catch (Exception ex) {
-                        new ErrorWrapper(ex);
-                        writeMessageText(ex.toString());
+                    else {
+                        mGameTable.getReferee().unready(mDefaultCallback, null);
                     }
                 }
             });
 
         mSeatButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    try {
-                        if (!mGameTable.isSelfSeated()) {
-                            mGameTable.getReferee().sit();
-                        }
-                        else {
-                            mGameTable.getReferee().stand();
-                        }
+                    if (!mGameTable.isSelfSeated()) {
+                        mGameTable.getReferee().sit(mDefaultCallback, null);
                     }
-                    catch (TokenFailure ex) {
-                        writeMessageText(mTranslator.translate(ex));
-                    }
-                    catch (Exception ex) {
-                        new ErrorWrapper(ex);
-                        writeMessageText(ex.toString());
+                    else {
+                        mGameTable.getReferee().stand(mDefaultCallback, null);
                     }
                 }
             });
@@ -567,17 +565,7 @@ public class TableWindow extends JFrame implements PacketListener
         referee.setMessageHandler(mMessageHandler);
 
         // Begin the flood of seating/config info.
-        try
-        {
-            referee.send_state();
-        }
-        catch (TokenFailure ex) {
-            writeMessageText(mTranslator.translate(ex));
-        }
-        catch (Exception ex) {
-            new ErrorWrapper(ex);
-            writeMessageText(ex.toString());
-        }
+        referee.send_state(mDefaultCallback, null);
     }
 
     /**
@@ -934,16 +922,7 @@ public class TableWindow extends JFrame implements PacketListener
      * message.
      */
     public void doSuspendTable() {
-        try {
-            mGameTable.getReferee().suspendGame();
-        }
-        catch (TokenFailure ex) {
-            writeMessageText(mTranslator.translate(ex));
-        }
-        catch (Exception ex) {
-            new ErrorWrapper(ex);
-            writeMessageText(ex.toString());
-        }
+        mGameTable.getReferee().suspendGame(mDefaultCallback, null);
     }
 
     /**
@@ -980,16 +959,7 @@ public class TableWindow extends JFrame implements PacketListener
      * Send a request for a retainer bot.
      */
     public void doInviteBot() {
-        try {
-            mGameTable.getReferee().addBot();
-        }
-        catch (TokenFailure ex) {
-            writeMessageText(mTranslator.translate(ex));
-        }
-        catch (Exception ex) {
-            new ErrorWrapper(ex);
-            writeMessageText(ex.toString());
-        }
+        mGameTable.getReferee().addBot(mDefaultCallback, null);
     }
 
     /**
@@ -1003,14 +973,16 @@ public class TableWindow extends JFrame implements PacketListener
      * @param msg a message to include in the invites, or null.
      */
     public void sendQuietInvites(List jids, final String msg) {
+        final RPCBackground.Callback silentCallback = 
+            new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock) { }
+            };
         for (Iterator iter = jids.iterator(); iter.hasNext(); ) {
             final String jid = (String)iter.next();
             SwingWorker worker = new SwingWorker() {
                     public Object construct() {
-                        try {
-                            mGameTable.getReferee().invitePlayer(jid, msg);
-                        }
-                        catch (Exception ex) { };
+                        mGameTable.getReferee().invitePlayer(jid, msg,
+                            silentCallback, null);
                         return jid;
                     }
                 };

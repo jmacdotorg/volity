@@ -11,6 +11,7 @@ import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.GameTable;
 import org.volity.client.JIDTransfer;
+import org.volity.client.RPCBackground;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
 import org.volity.jabber.JIDUtils;
@@ -110,7 +111,7 @@ public class SendInvitationDialog extends BaseDialog
      * are "quiet".
      */
     protected void doInvitePlayer(String jid, String msg) {
-        JavolinApp app = JavolinApp.getSoleJavolinApp();
+        final JavolinApp app = JavolinApp.getSoleJavolinApp();
         if (app == null)
             return;
 
@@ -205,33 +206,38 @@ public class SendInvitationDialog extends BaseDialog
             }
         }
 
-        try {
-            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            mGameTable.getReferee().invitePlayer(jid, msg);
+        RPCBackground.Callback callback = new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock) {
+                    if (err == null) {
+                        // success; close dialog
+                        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        dispose();
+                    }
+                    else if (err instanceof TokenFailure) {
+                        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        TokenFailure ex = (TokenFailure)err;
+                        String errtext = mOwner.getTranslator().translate(ex);
+                        JOptionPane.showMessageDialog(
+                            SendInvitationDialog.this,
+                            "Unable to send invitation:\n" + errtext,
+                            app.getAppName() + ": Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                    else {
+                        new ErrorWrapper(err);
+                        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        
+                        JOptionPane.showMessageDialog(
+                            SendInvitationDialog.this, 
+                            "Unable to send invitation:\n" + err.toString(),
+                            app.getAppName() + ": Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            };
 
-            // success; close dialog
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-            dispose();
-            return;
-        }
-        catch (TokenFailure ex) {
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            String errtext = mOwner.getTranslator().translate(ex);
-            JOptionPane.showMessageDialog(this,
-                "Unable to send invitation:\n" + errtext,
-                app.getAppName() + ": Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
-        catch (Exception ex) {
-            new ErrorWrapper(ex);
-            setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-            JOptionPane.showMessageDialog(this, 
-                "Unable to send invitation:\n" + ex.toString(),
-                app.getAppName() + ": Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        mGameTable.getReferee().invitePlayer(jid, msg, callback, null);
     }
 
     /**

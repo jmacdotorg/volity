@@ -37,6 +37,7 @@ public class SeatChart
     SeatPanel mUnseatPanel; // for unseated players
 
     ChangeListener mColorChangeListener;
+    RPCBackground.Callback mDefaultCallback;
 
     /**
      * @param table the GameTable to watch. (The SeatChart sets itself up as a
@@ -70,6 +71,20 @@ public class SeatChart
             adjustOnePanel(mTable.getSeat(id));
         }
 
+        mDefaultCallback = new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock) {
+                    if (err != null) {
+                        if (err instanceof TokenFailure) {
+                            mMessageHandler.print(mTranslator.translate((TokenFailure)err));
+                        }
+                        else {
+                            new ErrorWrapper(err);
+                            mMessageHandler.print(err.toString());
+                        }
+                    }
+                }
+            };
+        
         mTable.addStatusListener(this);
 
         mColorChangeListener = new ChangeListener() {
@@ -249,27 +264,18 @@ public class SeatChart
         if (player == null)
             return;
 
-        try {
-            if (seatid == null) {
-                mTable.getReferee().stand(player);
-            }
-            else if (seatid == ANY_SEAT) {
-                mTable.getReferee().sit(player);
-            }
-            else {
-                seat = mTable.getSeat(seatid);
-                mTable.getReferee().sit(player, seat);
-            }
+        if (seatid == null) {
+            mTable.getReferee().stand(player, mDefaultCallback, null);
         }
-        catch (TokenFailure ex) {
-            mMessageHandler.print(mTranslator.translate(ex));
+        else if (seatid == ANY_SEAT) {
+            mTable.getReferee().sit(player, mDefaultCallback, null);
         }
-        catch (Exception ex) {
-            new ErrorWrapper(ex);
-            mMessageHandler.print(ex.toString());
+        else {
+            seat = mTable.getSeat(seatid);
+            mTable.getReferee().sit(player, seat, mDefaultCallback, null);
         }
     }
-
+    
     /***** Methods which implement StatusListener. *****/
 
     /* All these methods are called from outside the Swing thread. */

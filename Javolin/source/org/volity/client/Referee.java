@@ -12,248 +12,234 @@ import org.volity.jabber.RPCException;
  * A Jabber-RPC connection to a Volity game referee.
  */
 public class Referee extends TokenRequester {
-  protected static boolean debugFlag = false;
+    protected static boolean debugFlag = false;
 
-  /**
-   * Set whether debugging output is active.
-   */
-  public static void setDebugOutput(boolean flag) {
-    debugFlag = flag;
-  }
-
-
-  GameTable mTable;
-  GameUI.MessageHandler messageHandler;
-  boolean mCrashed;
-
-  /**
-   * @param table the game table where the game will be played
-   * @param jid the full JID of the referee
-   */
-  Referee(GameTable table, String jid) {
-    super(table.getConnection(), jid);
-    mTable = table;
-    mCrashed = false;
-  }  
-
-  /**
-   * Customize the invoke methods in TokenRequester. (They all funnel into this
-   * version.) The customization is to print debug output (if desired). Also,
-   * if the game is dead, return a token error instead of risking a Jabber 404.
-   */
-  public Object invokeTimeout(String methodName, List params, int timeout)
-    throws XMPPException, RPCException, TokenFailure {
-    if (mCrashed)
-      throw new TokenFailure("volity.referee_not_ready");
-    if (debugFlag) {
-      String msg = RPCDispatcherDebug.buildCallString("send", methodName, params);
-      messageHandler.print(msg);
+    /**
+     * Set whether debugging output is active.
+     */
+    public static void setDebugOutput(boolean flag) {
+        debugFlag = flag;
     }
-    return super.invokeTimeout(methodName, params, timeout);
-  }
 
-  /**
-   * The client can notice in several ways that the game has crashed. (For
-   * example, it might see the referee withdraw from the MUC, or it might see
-   * the MUC close down entirely.) When this happens, we want to set a flag
-   * which prevents further messages from going out to the ref.
-   */
-  public void setCrashed() {
-    mCrashed = true;
-  }
 
-  /**
-   * This is a grody hack to get a messageHandler into the referee. It's only
-   * needed for debug RPC output.
-   */
-  public void setMessageHandler(GameUI.MessageHandler messageHandler) {
-    this.messageHandler = messageHandler;
-  }
+    GameTable mTable;
+    GameUI.MessageHandler messageHandler;
+    boolean mCrashed;
 
-  /**
-   * Ask the referee to invite a player to this game.
-   * @param jid the JID of the player to invite
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if a RPC fault occurs
-   */
-  public void invitePlayer(String jid)
-    throws XMPPException, RPCException, TokenFailure
-  {
-    invitePlayer(jid, null);
-  }
+    /**
+     * @param table the game table where the game will be played
+     * @param jid the full JID of the referee
+     */
+    Referee(GameTable table, String jid) {
+        super(table.getConnection(), jid);
+        mTable = table;
+        mCrashed = false;
+    }  
 
-  /**
-   * Ask the referee to invite a player to this game.
-   * @param jid the JID of the player to invite
-   * @param message a text message to include with the invitation
-   *        (If null or empty, no message is sent.)
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if a RPC fault occurs
-   */
-  public void invitePlayer(String jid, String message)
-    throws XMPPException, RPCException, TokenFailure
-  {
-    List args;
-    if (message == null || message.equals(""))
-      args = Arrays.asList(new String[] { jid });
-    else
-      args = Arrays.asList(new String[] { jid, message });
+    /**
+     * Customize the invoke methods in TokenRequester. (They all funnel into
+     * this version.) The customization is to print debug output (if desired).
+     * Also, if the game is dead, return a token error instead of risking a
+     * Jabber 404.
+     */
+    public Object invokeTimeout(String methodName, List params, int timeout)
+        throws XMPPException, RPCException, TokenFailure {
+        if (mCrashed)
+            throw new TokenFailure("volity.referee_not_ready");
+        if (debugFlag) {
+            String msg = RPCDispatcherDebug.buildCallString("send", methodName, params);
+            messageHandler.print(msg);
+        }
+        return super.invokeTimeout(methodName, params, timeout);
+    }
 
-    // Allow a longer timeout than usual, since the message has to be
-    // relayed through the referee.
-    invokeTimeout("volity.invite_player", args, 90);
-  }
+    /**
+     * The client can notice in several ways that the game has crashed. (For
+     * example, it might see the referee withdraw from the MUC, or it might see
+     * the MUC close down entirely.) When this happens, we want to set a flag
+     * which prevents further messages from going out to the ref.
+     */
+    public void setCrashed() {
+        mCrashed = true;
+    }
 
-  /**
-   * Ask the referee to add a bot to this game.
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if a RPC fault occurs
-   */
-  public void addBot() 
-    throws XMPPException, RPCException, TokenFailure
-  {
-    invoke("volity.add_bot");
-  }
+    /**
+     * This is a grody hack to get a messageHandler into the referee. It's only
+     * needed for debug RPC output.
+     */
+    public void setMessageHandler(GameUI.MessageHandler messageHandler) {
+        this.messageHandler = messageHandler;
+    }
 
-  /**
-   * Ask the referee to remove a bot from this game.
-   * @throws XMPPException if an XMPP error occurs
-   * @throws RPCException if a RPC fault occurs
-   */
-  public void removeBot(String jid)
-    throws XMPPException, RPCException, TokenFailure
-  {
-    invoke("volity.remove_bot", 
-      Arrays.asList(new String[] { jid }));
-  }
+    /**
+     * Send a text message to the referee.
+     * @throws XMPPException if an XMPP error occurs
+     */
+    public void sendMessage(String message) throws XMPPException {
+        getConnection().createChat(getResponderJID()).sendMessage(message);
+    }
 
-  /**
-   * Send a text message to the referee.
-   * @throws XMPPException if an XMPP error occurs
-   */
-  public void sendMessage(String message) throws XMPPException {
-    getConnection().createChat(getResponderJID()).sendMessage(message);
-  }
+    /**
+     * Ask the referee to invite a player to this game.
+     * @param jid the JID of the player to invite
+     */
+    public void invitePlayer(String jid,
+        RPCBackground.Callback callback, Object rock)
+    {
+        invitePlayer(jid, null, callback, rock);
+    }
+
+    /**
+     * Ask the referee to invite a player to this game.
+     * @param jid the JID of the player to invite
+     * @param message a text message to include with the invitation
+     *        (If null or empty, no message is sent.)
+     */
+    public void invitePlayer(String jid, String message,
+        RPCBackground.Callback callback, Object rock)
+    {
+        List args;
+        if (message == null || message.equals(""))
+            args = Arrays.asList(new String[] { jid });
+        else
+            args = Arrays.asList(new String[] { jid, message });
+
+        // Allow a longer timeout than usual, since the message has to be
+        // relayed through the referee.
+        new RPCBackground(this, callback, 
+            "volity.invite_player", args, 90, rock);
+    }
+
+    /**
+     * Ask the referee to add a bot to this game.
+     */
+    public void addBot(RPCBackground.Callback callback, Object rock) 
+    {
+        new RPCBackground(this, callback, 
+            "volity.add_bot", rock);
+    }
+
+    /**
+     * Ask the referee to remove a bot from this game.
+     * @param jid the (real) JID of the bot to remove.
+     */
+    public void removeBot(String jid,
+        RPCBackground.Callback callback, Object rock)
+    {
+        List args = Arrays.asList(new String[] { jid });
+
+        new RPCBackground(this, callback, 
+            "volity.remove_bot", args, rock);
+    }
 
     /**
      * Tell the ref to send us all the seating and configuration information. 
      * (After the first invocation, we will receive seating/config updates
      * as they occur.)
-     *
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void send_state() throws XMPPException, RPCException, TokenFailure 
+    public void send_state(RPCBackground.Callback callback, Object rock)
     {
-        invoke("volity.send_state");
+        new RPCBackground(this, callback, 
+            "volity.send_state", rock);
     }
 
     /**
      * Tell the ref that we're playing but unready.
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void unready() throws XMPPException, RPCException, TokenFailure 
+    public void unready(RPCBackground.Callback callback, Object rock)
     {
-        invoke("volity.unready");
+        new RPCBackground(this, callback, 
+            "volity.unready", rock);
     }
 
     /**
      * Tell the ref that we're ready to play
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void ready() throws XMPPException, RPCException, TokenFailure
+    public void ready(RPCBackground.Callback callback, Object rock)
     {
-        invoke("volity.ready");
+        new RPCBackground(this, callback, 
+            "volity.ready", rock);
     }
 
     /**
      * Tell the ref that we're standing.
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void stand() throws XMPPException, RPCException, TokenFailure
+    public void stand(RPCBackground.Callback callback, Object rock)
     {
-        this.stand(mTable.getSelfPlayer());
+        this.stand(mTable.getSelfPlayer(), callback, rock);
     }
 
     /**
      * Ask the ref to cause someone to stand up.
      * @param player The player to yank from his seat.
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void stand(Player player) throws XMPPException, RPCException, TokenFailure
+    public void stand(Player player,
+        RPCBackground.Callback callback, Object rock)
     {
         String jid = player.getJID();
-        invoke("volity.stand",
-            Arrays.asList(new String[] { jid }));
+        List args = Arrays.asList(new String[] { jid });
+
+        new RPCBackground(this, callback, 
+            "volity.stand", args, rock);
     }
 
     /**
      * Tell the ref that we want to sit in any seat.
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void sit() throws XMPPException, RPCException, TokenFailure
+    public void sit(RPCBackground.Callback callback, Object rock)
     {
-        sit(mTable.getSelfPlayer(), null);
+        sit(mTable.getSelfPlayer(), null, callback, rock);
     }
 
     /**
      * Tell the ref that we want to sit in a specific seat.
      * @param seat the seat to sit in (or null for "any seat")
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void sit(Seat seat) throws XMPPException, RPCException, TokenFailure
+    public void sit(Seat seat, RPCBackground.Callback callback, Object rock)
     {
-        sit(mTable.getSelfPlayer(), seat);
+        sit(mTable.getSelfPlayer(), seat, callback, rock);
     }
 
     /**
      * Tell the ref that we want a player to sit in any seat.
      * @param player the player to move
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void sit(Player player) throws XMPPException, RPCException, TokenFailure
+    public void sit(Player player,
+        RPCBackground.Callback callback, Object rock)
     {
-        sit(player, null);
+        sit(player, null, callback, rock);
     }
 
     /**
      * Tell the ref that we want a player to sit in a specific seat.
      * @param player the player to move
      * @param seat the seat to sit in (or null for "any seat")
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void sit(Player player, Seat seat) throws XMPPException, RPCException, TokenFailure
+    public void sit(Player player, Seat seat,
+        RPCBackground.Callback callback, Object rock)
     {
         String jid = player.getJID();
+        List args;
 
         if (seat == null) {
-            invoke("volity.sit",
-                Arrays.asList(new String[] { jid }));
+            args = Arrays.asList(new String[] { jid });
         }
         else {
             String seatid = seat.getID();
-            invoke("volity.sit",
-                Arrays.asList(new String[] { jid, seatid }));
+            args = Arrays.asList(new String[] { jid, seatid });
         }
+        
+        new RPCBackground(this, callback, 
+            "volity.sit", args, rock);
     }
      
     /**
      * Ask the referee to suspend this game.
-     * @throws XMPPException if an XMPP error occurs
-     * @throws RPCException if a RPC fault occurs
      */
-    public void suspendGame() 
-        throws XMPPException, RPCException, TokenFailure
+    public void suspendGame(RPCBackground.Callback callback, Object rock) 
     {
-        invoke("volity.suspend_game");
+        new RPCBackground(this, callback, 
+            "volity.suspend_game", rock);
     }
     
 
