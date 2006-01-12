@@ -3,6 +3,9 @@ CVS repository.
 
 * the present
 
+Javolin now starts up with the Finder window open, *unless* you closed the
+Finder before shutting down last time. Yes, the Finder is slow. Sorry.
+
 All referee RPCs are now async. This should improve the responsiveness
 of the client -- it won't freeze up when you push the "ready" or "seat"
 buttons.

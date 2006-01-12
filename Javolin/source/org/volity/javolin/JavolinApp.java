@@ -229,6 +229,10 @@ public class JavolinApp extends JFrame
             CapPacketExtension.NAME, CapPacketExtension.NAMESPACE,
             new CapExtensionProvider());
 
+        // Open the Game Finder window
+        if (Finder.getFinderWanted())
+            doGetFinder();
+
         // Bring up the initial "connect" dialog box.
         doConnect();
     }

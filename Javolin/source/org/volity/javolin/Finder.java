@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.volity.client.CommandStub;
 import org.w3c.dom.Document;
@@ -19,6 +20,7 @@ public class Finder extends JFrame
     private final static String FINDER_URL = "http://www.volity.net/gamefinder/";
 
     private final static String NODENAME = "FinderWin";
+    private final static String OPENFINDER_KEY = "WantedOpen";
 
     private static Finder soleFinder = null;
 
@@ -31,6 +33,18 @@ public class Finder extends JFrame
             soleFinder = new Finder(owner);
         }
         return soleFinder;
+    }
+
+    /**
+     * Return whether the user wants the Finder window open or not. (This is
+     * based on whether the user had it open at last check -- i.e., when the
+     * app was last running.)
+     *
+     * The default is true.
+     */
+    public static boolean getFinderWanted() {
+        Preferences prefs = Preferences.userNodeForPackage(Finder.class).node(NODENAME);
+        return prefs.getBoolean(OPENFINDER_KEY, true);
     }
 
     private JavolinApp mOwner;
@@ -56,6 +70,8 @@ public class Finder extends JFrame
                 public void windowClosed(WindowEvent ev) {
                     mSizePosSaver.saveSizeAndPosition();
                     soleFinder = null;
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+                    prefs.putBoolean(OPENFINDER_KEY, false);
                 }
             });
         
@@ -75,6 +91,8 @@ public class Finder extends JFrame
             });
 
         show();
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+        prefs.putBoolean(OPENFINDER_KEY, true);
     }
 
     {
