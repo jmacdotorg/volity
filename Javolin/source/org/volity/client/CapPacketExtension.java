@@ -43,14 +43,18 @@ public class CapPacketExtension extends DefaultPacketExtension
 
     /**
      * Create a CapPacketExtension with the given node, ver, and
-     * space-delimited list of extensions. The exts string may not be null.
+     * space-delimited list of extensions. The exts string may be null,
+     * in which case there will be no extensions.
      */
     public CapPacketExtension(String node, String ver, String exts) {
         super(NAME, NAMESPACE);
 
         mNode = node;
         mVer = ver;
-        mExt = exts.split(" ");
+        if (exts == null)
+            mExt = new String[0];
+        else
+            mExt = exts.split(" ");
     }
 
     /** Return the node attribute. */
