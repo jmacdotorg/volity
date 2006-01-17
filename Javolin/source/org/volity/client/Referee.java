@@ -46,7 +46,7 @@ public class Referee extends TokenRequester {
         throws XMPPException, RPCException, TokenFailure {
         if (mCrashed)
             throw new TokenFailure("volity.referee_not_ready");
-        if (debugFlag) {
+        if (debugFlag && messageHandler != null) {
             String msg = RPCDispatcherDebug.buildCallString("send", methodName, params);
             messageHandler.print(msg);
         }
