@@ -3,6 +3,8 @@ CVS repository.
 
 * the present
 
+Lots of different alert noises. And preferences to silence them.
+
 Javolin now starts up with the Finder window open, *unless* you closed the
 Finder before shutting down last time. Yes, the Finder is slow. Sorry.
 
