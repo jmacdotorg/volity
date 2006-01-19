@@ -36,6 +36,12 @@ public class SeatChart
     Map mSeatPanels;        // maps String IDs to SeatPanel objects
     SeatPanel mUnseatPanel; // for unseated players
 
+    /* These values are tracked for audio alerts. They are updated from inside
+     * SeatPanel.
+     */
+    SeatPanel mCurrentSeat = null;
+    String mCurrentSelfMark = GameTable.MARK_NONE;
+
     ChangeListener mColorChangeListener;
     RPCBackground.Callback mDefaultCallback;
 

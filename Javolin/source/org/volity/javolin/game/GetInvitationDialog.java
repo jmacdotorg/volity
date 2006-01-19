@@ -28,6 +28,7 @@ public class GetInvitationDialog extends BaseDialog
 
     public GetInvitationDialog(JavolinApp owner, XMPPConnection connection, 
         Invitation inv) {
+        //### untether!
         super(owner, "Invitation", false, NODENAME);
 
         mInvite = inv;

@@ -284,10 +284,14 @@ public class MUCWindow extends JFrame implements PacketListener
                         if (from != null) {
                             String nick = StringUtils.parseResource(from);
                             Presence.Type typ = pres.getType();
-                            if (typ == Presence.Type.AVAILABLE)
+                            if (typ == Presence.Type.AVAILABLE) {
                                 writeMessageText(null, nick+" has joined the chat.");
-                            if (typ == Presence.Type.UNAVAILABLE)
+                                Audio.playPresenceIn();
+                            }
+                            if (typ == Presence.Type.UNAVAILABLE) {
                                 writeMessageText(null, nick+" has left the chat.");
+                                Audio.playPresenceOut();
+                            }
                         }
                     }
                 }
@@ -350,6 +354,8 @@ public class MUCWindow extends JFrame implements PacketListener
             }
 
             writeMessageText(nick, msg.getBody(), date);
+            if (ext == null)
+                Audio.playMessage();
         }
     }
 

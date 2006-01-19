@@ -63,6 +63,7 @@ public class ErrorWrapper
         synchronized (lastErrorLock) {
             lastError = this;
         }
+        Audio.playError();
     }
 
     /** Get the timestamp of the error. */

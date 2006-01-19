@@ -212,6 +212,8 @@ public class ChatWindow extends JFrame implements PacketListener
             mChatObject.sendMessage(message);
             mInputText.setText("");
             writeMessageText(mLocalId, message);
+            // Make the noise, since we won't get an incoming copy of this
+            Audio.playMessage();
         }
         catch (XMPPException ex)
         {
@@ -242,6 +244,7 @@ public class ChatWindow extends JFrame implements PacketListener
         else
         {
             writeMessageText(mRemoteNick, msg.getBody());
+            Audio.playMessage();
         }
     }
 

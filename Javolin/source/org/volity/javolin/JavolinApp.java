@@ -481,8 +481,7 @@ public class JavolinApp extends JFrame
             // Listen for incoming presence-subscription messages
             filter = new PacketFilter() {
                     public boolean accept(Packet packet) {
-                        return (packet instanceof Presence 
-                            && ((Presence)packet).getType() == Presence.Type.SUBSCRIBE);
+                        return (packet instanceof Presence);
                     }
                 };
             listener = new PacketListener() {
@@ -490,8 +489,20 @@ public class JavolinApp extends JFrame
                         // Invoke into the Swing thread.
                         SwingUtilities.invokeLater(new Runnable() {
                                 public void run() {
-                                    if (packet instanceof Presence)
-                                        receiveSubscribeRequest((Presence)packet);
+                                    // Ignore MUC presence packets
+                                    if (packet instanceof Presence
+                                        && packet.getExtension("x", "http://jabber.org/protocol/muc#user") == null) {
+                                        Presence pres = (Presence)packet;
+                                        if (pres.getType() == Presence.Type.SUBSCRIBE) {
+                                            receiveSubscribeRequest(pres);
+                                        }
+                                        else if (pres.getType() == Presence.Type.AVAILABLE) {
+                                            Audio.playBuddyIn();
+                                        }
+                                        else if (pres.getType() == Presence.Type.UNAVAILABLE) {
+                                            Audio.playBuddyOut();
+                                        }
+                                    }
                                 }
                             });
                     }
@@ -843,6 +854,8 @@ public class JavolinApp extends JFrame
             JavolinMenuBar.notifyUpdateWindowMenu();
             mUserChatWinMap.put(userId, chatWin);
 
+            Audio.playThread();
+
             // Remove the chat window from the list, menu, and map when it closes
             chatWin.addWindowListener(
                 new WindowAdapter()
@@ -1065,6 +1078,7 @@ public class JavolinApp extends JFrame
 
         GetInvitationDialog box = new GetInvitationDialog(this,
             mConnection, invitation);
+        Audio.playInvited();
         box.show();
     }
 
@@ -1149,12 +1163,16 @@ public class JavolinApp extends JFrame
     public void receiveSubscribeRequest(Presence presence) {
         if (!PrefsDialog.getRosterNotifySubscriptions()) {
             // Roster will autoaccept
+            Audio.playBuddyIn();
             return;
         }
+
+        Audio.playInvited();
 
         String jid = presence.getFrom();
 
         String[] options = { "Permit", "Permit and Add", "Refuse" };
+        //### untether!
         int res = JOptionPane.showOptionDialog(this,
             "The user " + jid + "\n"
             +"wishes to add you to his or her buddy list.\n"

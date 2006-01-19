@@ -37,9 +37,22 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.packet.DelayInformation;
 
-import org.volity.client.*;
+import org.volity.client.DefaultStatusListener;
+import org.volity.client.GameServer;
+import org.volity.client.GameTable;
+import org.volity.client.GameUI;
+import org.volity.client.JIDTransfer;
+import org.volity.client.Player;
+import org.volity.client.RPCBackground;
+import org.volity.client.Referee;
+import org.volity.client.SVGCanvas;
+import org.volity.client.Seat;
+import org.volity.client.SwingWorker;
+import org.volity.client.TokenFailure;
+import org.volity.client.TranslateToken;
 import org.volity.jabber.*;
 import org.volity.javolin.*;
+import org.volity.javolin.Audio;
 import org.volity.javolin.chat.*;
 
 /**
@@ -761,10 +774,14 @@ public class TableWindow extends JFrame implements PacketListener
                         if (from != null) {
                             String nick = StringUtils.parseResource(from);
                             Presence.Type typ = pres.getType();
-                            if (typ == Presence.Type.AVAILABLE)
+                            if (typ == Presence.Type.AVAILABLE) {
                                 writeMessageText(null, nick+" has joined the chat.");
-                            if (typ == Presence.Type.UNAVAILABLE)
+                                Audio.playPresenceIn();
+                            }
+                            if (typ == Presence.Type.UNAVAILABLE) {
                                 writeMessageText(null, nick+" has left the chat.");
+                                Audio.playPresenceOut();
+                            }
                         }
                     }
                 }
@@ -827,6 +844,8 @@ public class TableWindow extends JFrame implements PacketListener
             }
 
             writeMessageText(nick, msg.getBody(), date);
+            if (ext == null)
+                Audio.playMessage();
         }
     }
 

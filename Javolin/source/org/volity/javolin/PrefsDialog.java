@@ -37,6 +37,14 @@ public class PrefsDialog extends JFrame
     public final static String ROSTERNOTIFYSUBSCRIPTIONS_KEY = "NotifySubscriptions";
     public final static String SOUNDPLAYAUDIO_KEY = "PlayAudio";
     public final static String SOUNDSHOWALTTAGS_KEY = "ShowAltTags";
+    public final static String SOUNDUSEBUDDYSOUNDS_KEY = "UseBuddySounds";
+    public final static String SOUNDUSEINVITEDSOUND_KEY = "UseInvitedSound";
+    public final static String SOUNDUSEMARKSOUNDS_KEY = "UseMarkSounds";
+    public final static String SOUNDUSEMESSAGESOUND_KEY = "UseMessageSound";
+    public final static String SOUNDUSEPRESENCESOUNDS_KEY = "UsePresenceSounds";
+    public final static String SOUNDUSETHREADSOUND_KEY = "UseThreadSound";
+    public final static String SOUNDUSEERRORSOUND_KEY= "UseErrorSound";
+
     public final static String DEBUGSHOWRPCS_KEY = "ShowRPCs";
 
     private final static int MARGIN = 12; // Space to window edge
@@ -64,6 +72,13 @@ public class PrefsDialog extends JFrame
     private static boolean prefRosterNotifySubscriptions;
     private static boolean prefSoundPlayAudio;
     private static boolean prefSoundShowAltTags;
+    private static boolean prefSoundUseBuddySounds;
+    private static boolean prefSoundUseInvitedSound;
+    private static boolean prefSoundUseMarkSounds;
+    private static boolean prefSoundUseMessageSound;
+    private static boolean prefSoundUsePresenceSounds;
+    private static boolean prefSoundUseThreadSound;
+    private static boolean prefSoundUseErrorSound;
     private static boolean prefDebugShowRPCs;
 
     /**
@@ -85,6 +100,13 @@ public class PrefsDialog extends JFrame
         prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(SOUND_OPTIONS);
         prefSoundPlayAudio = prefs.getBoolean(SOUNDPLAYAUDIO_KEY, true);
         prefSoundShowAltTags = prefs.getBoolean(SOUNDSHOWALTTAGS_KEY, false);
+        prefSoundUseBuddySounds = prefs.getBoolean(SOUNDUSEBUDDYSOUNDS_KEY, true);
+        prefSoundUseInvitedSound = prefs.getBoolean(SOUNDUSEINVITEDSOUND_KEY, true);
+        prefSoundUseMarkSounds = prefs.getBoolean(SOUNDUSEMARKSOUNDS_KEY, true);
+        prefSoundUseMessageSound = prefs.getBoolean(SOUNDUSEMESSAGESOUND_KEY, true);
+        prefSoundUsePresenceSounds = prefs.getBoolean(SOUNDUSEPRESENCESOUNDS_KEY, true);
+        prefSoundUseThreadSound = prefs.getBoolean(SOUNDUSETHREADSOUND_KEY, true);
+        prefSoundUseErrorSound = prefs.getBoolean(SOUNDUSEERRORSOUND_KEY, true);
 
         prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(DEBUG_OPTIONS);
         prefDebugShowRPCs = prefs.getBoolean(DEBUGSHOWRPCS_KEY, false);
@@ -124,6 +146,13 @@ public class PrefsDialog extends JFrame
     public static boolean getRosterShowOffline() { return prefRosterShowOffline; }
     public static boolean getRosterShowReverse() { return prefRosterShowReverse; }
     public static boolean getRosterNotifySubscriptions() { return prefRosterNotifySubscriptions; }
+    public static boolean getSoundUseBuddySounds() { return prefSoundUseBuddySounds; }
+    public static boolean getSoundUseInvitedSound() { return prefSoundUseInvitedSound; }
+    public static boolean getSoundUseMarkSounds() { return prefSoundUseMarkSounds; }
+    public static boolean getSoundUseMessageSound() { return prefSoundUseMessageSound; }
+    public static boolean getSoundUsePresenceSounds() { return prefSoundUsePresenceSounds; }
+    public static boolean getSoundUseThreadSound() { return prefSoundUseThreadSound; }
+    public static boolean getSoundUseErrorSound() { return prefSoundUseErrorSound; }
 
     // The sole existing PrefsDialog.
     private static PrefsDialog solePrefsDialog = null;
@@ -187,6 +216,14 @@ public class PrefsDialog extends JFrame
     private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
     private final static String LABEL_SOUNDPLAYAUDIO = "Play audio effects";
     private final static String LABEL_SOUNDSHOWALTTAGS = "Print text equivalents for audio effects";
+    private final static String LABEL_SOUNDALERTGROUP = "Play alert sounds for...";
+    private final static String LABEL_SOUNDUSEBUDDYSOUNDS = "Buddies logging in and out";
+    private final static String LABEL_SOUNDUSEINVITEDSOUND = "Game invitations";
+    private final static String LABEL_SOUNDUSEMARKSOUNDS = "It's your turn";
+    private final static String LABEL_SOUNDUSEMESSAGESOUND = "Message in a chat window";
+    private final static String LABEL_SOUNDUSEPRESENCESOUNDS = "People arriving and leaving in a chat window";
+    private final static String LABEL_SOUNDUSETHREADSOUND = "New chat window";
+    private final static String LABEL_SOUNDUSEERRORSOUND = "Javolin errors";
     private final static String LABEL_DEBUGSHOWRPCS = "Print all RPCs";
 
     private JavolinApp mOwner;
@@ -201,6 +238,13 @@ public class PrefsDialog extends JFrame
     private JTextPane mChatSampleText;
     private JCheckBox mSoundPlayAudio;
     private JCheckBox mSoundShowAltTags;
+    private JCheckBox mSoundUseBuddySounds;
+    private JCheckBox mSoundUseInvitedSound;
+    private JCheckBox mSoundUseMarkSounds;
+    private JCheckBox mSoundUseMessageSound;
+    private JCheckBox mSoundUsePresenceSounds;
+    private JCheckBox mSoundUseThreadSound;
+    private JCheckBox mSoundUseErrorSound;
     private JCheckBox mDebugShowRPCs;
 
     private PrefsDialog(JavolinApp owner) 
@@ -314,6 +358,69 @@ public class PrefsDialog extends JFrame
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
                     prefs.putBoolean(SOUNDSHOWALTTAGS_KEY, prefSoundShowAltTags);
                     noticeChange(SOUND_OPTIONS, SOUNDSHOWALTTAGS_KEY);
+                }
+            });
+
+        mSoundUseBuddySounds.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUseBuddySounds = mSoundUseBuddySounds.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSEBUDDYSOUNDS_KEY, prefSoundUseBuddySounds);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSEBUDDYSOUNDS_KEY);
+                }
+            });
+
+        mSoundUseInvitedSound.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUseInvitedSound = mSoundUseInvitedSound.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSEINVITEDSOUND_KEY, prefSoundUseInvitedSound);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSEINVITEDSOUND_KEY);
+                }
+            });
+
+        mSoundUseMarkSounds.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUseMarkSounds = mSoundUseMarkSounds.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSEMARKSOUNDS_KEY, prefSoundUseMarkSounds);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSEMARKSOUNDS_KEY);
+                }
+            });
+
+        mSoundUseMessageSound.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUseMessageSound = mSoundUseMessageSound.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSEMESSAGESOUND_KEY, prefSoundUseMessageSound);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSEMESSAGESOUND_KEY);
+                }
+            });
+
+        mSoundUsePresenceSounds.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUsePresenceSounds = mSoundUsePresenceSounds.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSEPRESENCESOUNDS_KEY, prefSoundUsePresenceSounds);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSEPRESENCESOUNDS_KEY);
+                }
+            });
+
+        mSoundUseThreadSound.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUseThreadSound = mSoundUseThreadSound.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSETHREADSOUND_KEY, prefSoundUseThreadSound);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSETHREADSOUND_KEY);
+                }
+            });
+
+        mSoundUseErrorSound.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefSoundUseErrorSound = mSoundUseErrorSound.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(SOUND_OPTIONS);
+                    prefs.putBoolean(SOUNDUSEERRORSOUND_KEY, prefSoundUseErrorSound);
+                    noticeChange(SOUND_OPTIONS, SOUNDUSEERRORSOUND_KEY);
                 }
             });
 
@@ -621,6 +728,94 @@ public class PrefsDialog extends JFrame
             c.fill = GridBagConstraints.HORIZONTAL;
             c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
             pane.add(mSoundShowAltTags, c);
+
+            label = new JLabel(LABEL_SOUNDALERTGROUP);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(label, c);
+
+            mSoundUseMarkSounds = new JCheckBox(LABEL_SOUNDUSEMARKSOUNDS, prefSoundUseMarkSounds);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUseMarkSounds, c);
+
+            mSoundUseInvitedSound = new JCheckBox(LABEL_SOUNDUSEINVITEDSOUND, prefSoundUseInvitedSound);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUseInvitedSound, c);
+
+            mSoundUseThreadSound = new JCheckBox(LABEL_SOUNDUSETHREADSOUND, prefSoundUseThreadSound);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUseThreadSound, c);
+
+            mSoundUseMessageSound = new JCheckBox(LABEL_SOUNDUSEMESSAGESOUND, prefSoundUseMessageSound);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUseMessageSound, c);
+
+            mSoundUsePresenceSounds = new JCheckBox(LABEL_SOUNDUSEPRESENCESOUNDS, prefSoundUsePresenceSounds);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUsePresenceSounds, c);
+
+            mSoundUseBuddySounds = new JCheckBox(LABEL_SOUNDUSEBUDDYSOUNDS, prefSoundUseBuddySounds);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUseBuddySounds, c);
+
+            mSoundUseErrorSound = new JCheckBox(LABEL_SOUNDUSEERRORSOUND, prefSoundUseErrorSound);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mSoundUseErrorSound, c);
 
             // Blank stretchy spacer
             label = new JLabel(" ");

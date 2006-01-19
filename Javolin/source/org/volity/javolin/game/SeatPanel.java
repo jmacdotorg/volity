@@ -8,6 +8,7 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import org.volity.client.*;
+import org.volity.javolin.Audio;
 import org.volity.javolin.MultiIcon;
 
 /**
@@ -344,6 +345,26 @@ public class SeatPanel extends JPanel
             c.fill = GridBagConstraints.VERTICAL;
             c.anchor = GridBagConstraints.CENTER;
             add(label, c);
+        }
+
+        // Track where the player is
+        if (isSelf) {
+            if (mIsObserver) {
+                mChart.mCurrentSeat = null;
+                mChart.mCurrentSelfMark = GameTable.MARK_NONE;
+            }
+            else {
+                if (mChart.mCurrentSeat != this) {
+                    mChart.mCurrentSeat = this;
+                    mChart.mCurrentSelfMark = mark;
+                }
+                else {
+                    if (mChart.mCurrentSelfMark != mark) {
+                        mChart.mCurrentSelfMark = mark;
+                        Audio.playMark(mark);
+                    }
+                }
+            }
         }
 
         revalidate();

@@ -33,10 +33,11 @@
       <include name="org/volity/client/**/*.java" />
       <include name="org/volity/jabber/**/*.java" />
     </javac>
-    <!-- Copy all .png files from ${src} to ${build}-->
+    <!-- Copy all .png and .wav files from ${src} to ${build}-->
     <copy todir="${build}">
       <fileset dir="${src}">
         <include name="**/*.png"/> 
+        <include name="**/*.wav"/> 
       </fileset>
     </copy> 
   </target>
