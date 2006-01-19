@@ -133,6 +133,8 @@ detailed in L<Class::Accessor> apply here as well.
 
 =head2 Object methods
 
+=over
+
 =cut
 
 ########################

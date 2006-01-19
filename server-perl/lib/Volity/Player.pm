@@ -112,9 +112,9 @@ takes care of all this stuff.
 
 =item player_ready ( $ready_player )
 
-=item player_stood ( $standing_player )
+=item player_stood ( $standing_player, $seat )
 
-=item player_sat ( $sitting_player )
+=item player_sat ( $sitting_player, $seat )
 
 =item suspend_game ( $suspending_player )
 
