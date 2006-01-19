@@ -11,8 +11,8 @@ http://www.volity.org/docs/devguide_perl/
 
 Unfortuately, as the webpage says, it's rather outdated. Fortunately,
 this release is (I hope!) the final bugfix release before I publish
-the next version of the dev guide. I hope to have that done before
-November 2005.
+the next version of the dev guide. I hope to have that done sometime
+in 2006.
 
 For more information about Volity:
 Volity Developers' Site:
@@ -23,37 +23,28 @@ http://volity.sf.net
 
 --- PREREQUISITES ---
 
-Frivolity requires several Perl modules to work; the Build script
+Frivolity requires several Perl modules to work; the Makefile.PL
 checks for their presence on your system. All are available from CPAN.
 
 --- INSTALLATION ---
 
-This package uses the Module::Build installation style. (I'm not sure
-if it will continue to do so in future releases; it's kind of annoying
-and I'm not really getting much mileage out of it. But for now...)
+The usual incantation should suffice:
+
+ perl Makefile.PL
+ make
+ make test
+ sudo make install
 
 It will, by default, install several Perl modules into your
 site-perl location under the Volity namespace, and place a server
-script (server.pl) and a command-line client (friv) in
-/usr/local/volity/bin. If these locations do not suit you, edit Build.PL
-appropriately. (See the Module::Build manpage for instructions on
+script (volityd) and a command-line client (friv) in
+/usr/local/volity/bin. If these locations do not suit you, edit Makefile.PL
+appropriately. (See the ExtUtils::MakeMaker manpage for instructions on
 modifying this file.)
-
-Once you've set up things as you liked it (or decided you are happy
-with the defaults, which is likely), you should be able to create the
-build script like so:
-
- perl Build.PL
-
- ./Build
-
- ./Build test
 
 You'll note there's not much in the way of testing now... it just
 makes sure everything compiles. We will add some nice test suites in
 the near future.
-
- sudo ./Build install
 
 --- TESTING YOUR INSTALLATION WITH A SAMPLE GAME ---
 

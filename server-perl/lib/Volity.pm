@@ -3,7 +3,7 @@ package Volity;
 use warnings;
 use strict;
 no warnings qw( deprecated );
-our $VERSION = '0.5.1';
+our $VERSION = '0.5.2';
 
 use base qw( Class::Accessor Class::Fields );
 use fields qw( logger );
@@ -201,7 +201,7 @@ Jabber ID: jmac@volity.net
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003-2004 by Jason McIntosh.
+Copyright (c) 2003-2006 by Jason McIntosh.
 
 =cut
 

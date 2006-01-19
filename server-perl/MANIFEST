@@ -1,16 +1,19 @@
 bin/friv
 bin/volityd
-Build.PL
+Makefile.PL
+Changes
 lib/Volity.pm
+lib/Volity/Bot.pm
 lib/Volity/Game.pm
 lib/Volity/GameRecord.pm
 lib/Volity/Jabber.pm
 lib/Volity/Player.pm
 lib/Volity/Referee.pm
+lib/Volity/Seat.pm
 lib/Volity/Server.pm
-lib/Volity/Bot.pm
-t/1.t
+lib/Volity/WinnersList.pm
+inc/ExtUtils/AutoInstall.pm
 LICENSE
 MANIFEST			This list of files
 README
-Changes
+META.yml                                Module meta-data (added by MakeMaker)
