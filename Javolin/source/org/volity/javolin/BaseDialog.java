@@ -23,8 +23,11 @@ import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 
 /**
- * Base class for dialogs. Defines some layout metric constants, and adds support for
- * saving and restoring the dialog size and position in the preferences storage.
+ * Base class for dialogs. Defines some layout metric constants, and adds
+ * support for saving and restoring the dialog size and position in the
+ * preferences storage.
+ *
+ * See also BaseWindow.
  */
 public class BaseDialog extends JDialog
 {

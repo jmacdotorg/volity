@@ -320,6 +320,18 @@ public class JavolinMenuBar extends JMenuBar
             }
             mWindowMenu.add(win);
         }
+
+        divided = false;
+
+        // All the dialog windows (BaseWindow objects).
+        for (it = mApplication.mDialogWindows.iterator(); it.hasNext(); ) {
+            JFrame win = (JFrame)it.next();
+            if (!divided) {
+                mWindowMenu.addSeparator();
+                divided = true;
+            }
+            mWindowMenu.add(win);
+        }
     }
 
     /**

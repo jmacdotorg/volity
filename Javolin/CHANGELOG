@@ -3,6 +3,9 @@ CVS repository.
 
 * the present
 
+The Invitation window (when you get one, not when you send one) is now
+now a free-floating window. It appears in the Window menu, too.
+
 Lots of different alert noises. And preferences to silence them.
 
 Javolin now starts up with the Finder window open, *unless* you closed the

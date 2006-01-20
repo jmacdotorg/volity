@@ -95,6 +95,7 @@ public class JavolinApp extends JFrame
     List mMucWindows;
     List mTableWindows;
     List mChatWindows;
+    List mDialogWindows;
     private Map mUserChatWinMap;
 
     static
@@ -122,6 +123,7 @@ public class JavolinApp extends JFrame
         mMucWindows = new ArrayList();
         mTableWindows = new ArrayList();
         mChatWindows = new ArrayList();
+        mDialogWindows = new ArrayList();
         mUserChatWinMap = new Hashtable();
 
         PrefsDialog.loadPreferences();
@@ -599,6 +601,14 @@ public class JavolinApp extends JFrame
             TableWindow tableWin = (TableWindow)mTableWindows.get(0);
             tableWin.dispose();
             mTableWindows.remove(tableWin);
+        }
+
+        // Close all BaseWindow windows
+        while (mDialogWindows.size() > 0)
+        {
+            BaseWindow dialogWin = (BaseWindow)mDialogWindows.get(0);
+            dialogWin.dispose();
+            mDialogWindows.remove(dialogWin);
         }
 
         // Clear the Window menu

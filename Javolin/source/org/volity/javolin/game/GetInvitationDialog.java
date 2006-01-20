@@ -2,19 +2,25 @@ package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.Invitation;
 import org.volity.javolin.*;
 
 /**
  * Dialog box that appears when a game invitation is received.
  */
-public class GetInvitationDialog extends BaseDialog
+public class GetInvitationDialog extends BaseWindow
 {
     private final static String NODENAME = "GetInvitationDialog";
     private final static String NICKNAME_KEY = "Nickname";
+
+    private static SimpleDateFormat sTimeStampFormat = 
+        new SimpleDateFormat("hh:mm aa");
 
     boolean mInProgress;
     XMPPConnection mConnection;
@@ -28,13 +34,21 @@ public class GetInvitationDialog extends BaseDialog
 
     public GetInvitationDialog(JavolinApp owner, XMPPConnection connection, 
         Invitation inv) {
-        //### untether!
-        super(owner, "Invitation", false, NODENAME);
+        super(owner, "Invitation", NODENAME);
 
         mInvite = inv;
         mOwner = owner;
         mConnection = connection;
         mInProgress = false;
+
+        String title = "Invitation";
+        String fromjid = mInvite.getPlayerJID();
+        if (fromjid != null) {
+            fromjid = StringUtils.parseName(fromjid);
+            if (fromjid != null && fromjid.length() > 0)
+                title = title + " (from " + fromjid + ")";
+        }
+        setTitle(title);
 
         buildUI();
         setResizable(false);
@@ -134,7 +148,19 @@ public class GetInvitationDialog extends BaseDialog
 
         int row = 0;
 
-        field = new JTextField(mInvite.getPlayerJID());
+        label = new JLabel(sTimeStampFormat.format(new Date()));
+        label.setFont(new Font("SansSerif", Font.PLAIN, 9));
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row++;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.anchor = GridBagConstraints.EAST;
+        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
+        cPane.add(label, c);
+
+        msg = mInvite.getPlayerJID();
+        msg = StringUtils.parseBareAddress(msg);
+        field = new JTextField(msg);
         field.setEditable(false);
         field.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
         c = new GridBagConstraints();
@@ -142,7 +168,7 @@ public class GetInvitationDialog extends BaseDialog
         c.gridy = row++;
         c.gridwidth = GridBagConstraints.REMAINDER;
         c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
         cPane.add(field, c);
 
         String gamename = mInvite.getGameName();
@@ -251,6 +277,5 @@ public class GetInvitationDialog extends BaseDialog
         c.insets = new Insets(0, SPACING, 0, 0);
         c.anchor = GridBagConstraints.EAST;
         buttonPanel.add(mDeclineButton, c);
-
     }
 }
