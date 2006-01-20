@@ -106,7 +106,8 @@ public class SVGTestCanvas extends JSVGCanvas
      * the SVG file from disk.
      */
     public void reloadUI(DebugInfo debugInfo) {
-        ui.stopAllSound();
+        if (ui != null)
+            ui.stopAllSound();
         this.debugInfo = debugInfo;
         setURI(uiDocument.toString());
     }
