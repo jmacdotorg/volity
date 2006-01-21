@@ -518,7 +518,7 @@ sub jabber_presence {
 		  $player->is_missing(1);
 		  # Check to see if that seat is now abandoned.
 		  my $seat = $player->seat;
-		  unless ($seat->is_under_control) {
+		  if ($seat && not($seat->is_under_control)) {
 		      # The seat is uncontrolled!
 		      # Grumble at the table.
 		      # XXX No 18n.
