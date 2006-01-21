@@ -1,12 +1,26 @@
+0.5.2
+	- More bugfixes, and small tweaks to keep up with minor
+          protocol changes.
+
+	- Got rid of the Build::Install process, replacing it with
+	  ExtUtils::MakeMaker and ExtUtils::AutoInstall. Made 
+	  SpiderMonkey and other things that Friv needed optional,
+          rather than required.
+
+        - Changed the callback interface in Volity::Game for game state
+          requests. It's quietly backwards-compatible with the previous
+          interface. See that module's send_config_state_to_player and
+          send_game_state_to_player methods.
+
 0.5.1	
 
 	- Various bugfixes throughout the modules.
 
 	- Made the attemped-sexy accessors for array-based instance
-	variables in the Volity base class a little sexier.
+	  variables in the Volity base class a little sexier.
 
 	- Added Volity::WinnersList, which makes the creation of
-	end-of-game winners lists (for inclusion in game records) easier.
+	  end-of-game winners lists (for inclusion in game records) easier.
 	
 0.5.0
 
