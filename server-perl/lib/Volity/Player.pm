@@ -383,7 +383,17 @@ sub receive_game_state {
 	to=>$self->jid,
 	args=>[{state=>$self->referee->current_state}],
     });
-    $self->referee->game->send_full_state_to_player($self);
+    $self->referee->game->send_config_state_to_player($self);
+
+    if ($self->referee->game->is_afoot) {
+	$self->referee->send_rpc_request({
+	    id=>'game-has-started',
+	    methodname=>'volity.game_has_started',
+	    to=>$self->jid,
+	});
+	$self->referee->game->send_game_state_to_player($self);
+    }
+
     $self->referee->send_rpc_request({
 	id=>'state-sent',
 	methodname=>'volity.state_sent',

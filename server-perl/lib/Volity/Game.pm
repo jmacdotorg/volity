@@ -512,14 +512,28 @@ sub is_abandoned {
     }
 }
 
-# send_full_state_to_player: Blast the given player (not seat) with full
+# send_config_state_to_player: Bast the given player (not seat) with
+# config state. By default it's a no-op. Subclasses can override this.
+sub send_config_state_to_player {
+    my $self = shift;
+    my ($player)   = @_;
+    my $player_jid = $player->jid;
+    $self->logger->warn("Base class send_config_state_to_player called for $player_jid. Nothing to do.");
+}
+
+# send_game_state_to_player: Blast the given player (not seat) with
 # game state. By default it's a no-op. Subclasses should override this.
-sub send_full_state_to_player {
+sub send_game_state_to_player {
     my $self       = shift;
     my ($player)   = @_;
     my $player_jid = $player->jid;
-    $self->logger->warn(
-        "Base class send_full_state_to_player called for $player_jid. Nothing to do.");
+    # For backwards (pre-0.5.2) compatibility, see if we instead have a 
+    # "send_full_state_to_player" method instead.
+    if ($self->can("send_full_state_to_player")) {
+	return $self->send_full_state_to_player(@_);
+    } else {
+	$self->logger->warn("Base class send_full_state_to_player called for $player_jid. Nothing to do.");
+    }
 }
 
 ###################
@@ -589,15 +603,42 @@ By default, it just returns 1 without checking anything.
 Note: You I<don't> need to check required-seat occupancy; this is handled
 for you, before has_acceptable_config is called.
 
-=item send_full_state_to_player ($player)
+=item send_config_state_to_player ($player)
+
+This method should update the given player about the table's current
+game-specific configuration, probably through a series of
+C<$player->call_ui_function> calls. The argument is the Volity::Player
+object who needs to be brought up to speed.
+
+As an example, imagine that your game implements a ruleset where
+players can set a goal score before play. The referee-to-player RPC
+that anncounces this option happens to be
+C<game.goal_score($score)>. When a player joins a table running this
+game, its client will request the current state, and will ultimately
+fire the C<send_config_state_to_player($player)> method on your game
+object. So it's your responsibility to make sure that it responds by
+calling C<$player->call_ui_function("goal_score", $self->goal_score)>,
+assuming that your Game object has a field called C<goal_score> that
+holds this number.
+
+By default, does nothing. If your game doesn't have configuation
+beyond the usual sit/stand/ready stuff, then you can probably get away
+with this default.
+
+This method is not to be confused with the active game state, which is
+requested through the C<send_game_state_to_player> method, described
+below.
+
+=item send_game_state_to_player ($player)
 
 If your game is complex enough to carry a state between turns (and it
-probably is), then you'll want to define this method. It will allow players
-who are returning to the table after the game has started to learn about the
-game's current state all at once, either because they're observers wandering
-into the table or they're players returning to the table (perhaps after a
-network drop or crash on their end). It also allows bots who jump in to
-replace a vanished player to catch up on what they've missed.
+probably is), then you'll want to define this method. It will allow
+players who join the table after the game has started to learn about
+the game's current state all at once, either because they're observers
+wandering into the table or they're players returning to the table
+(perhaps after a network drop or crash on their end). It also allows
+bots who jump in to replace a vanished player to catch up on what
+they've missed.
 
 The argument is the Volity::Player object who needs to be brought up to
 speed.

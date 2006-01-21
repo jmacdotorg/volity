@@ -307,6 +307,8 @@ sub handle_rpc_request {
 	  $self->handle_ready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'add_bot') {
 	  $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      } elsif ($method eq 'remove_bot') {
+	  $self->remove_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'invite_player') {
 	  $self->invite_player($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
       } elsif ($method eq 'ready') {
@@ -956,6 +958,36 @@ sub add_bot {
   # Form sent; we're done here.
   $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
 }
+
+sub remove_bot {
+  my $self = shift;
+  my ($from_jid, $id, @args) = @_;
+  my ($bot_jid) = @args;
+  
+  # Make sure that the given JID is, in fact, that of a seated bot.
+  unless ($bot_jid) {
+      $self->send_rpc_fault($from_jid, $id, 604, "No bot JID specified.");
+      return;
+  }
+  my $bot = $self->look_up_player_with_jid($bot_jid);
+  unless ($bot) {
+      $self->send_rpc_fault($from_jid, $id, ["volity.jid_not_present"]);
+      return;
+  }
+  unless ($bot->is_bot) {
+      $self->send_rpc_fault($from_jid, $id, ["volity.not_bot"]);
+      return;
+  }
+  if ($bot->seat) {
+      $self->send_rpc_fault($from_jid, $id, ["volity.bot_seated"]);
+  }
+
+  # Having survived this obstacle course, we have determined that $bot
+  # is, in fact a bot. Whom we will now eject from the table.
+  $bot->stop;
+}
+  
+
 
 # choose_bot: Called on receipt of a form with bot choice.
 # XXX CAUTION XXXX
