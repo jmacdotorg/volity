@@ -519,12 +519,76 @@ public class MakeTableWindow
         assert (mGameTable != null);
         assert (mTableWindow == null);
 
+        URL uiUrl = null;
+
         try {
-            URL uiUrl = getUIURL(mGameServer);
+            uiUrl = getUIURL(mGameServer);
             if (uiUrl == null) {
-                throw new Exception("Unable to fetch UI URL from parlor.");
+                callbackFail();
+
+                mGameTable.leave();
+
+                JOptionPane.showMessageDialog(mParentDialog, 
+                    "Unable to fetch UI URL for this game.",
+                    JavolinApp.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        catch (XMPPException ex) 
+        {
+            new ErrorWrapper(ex);
+            callbackFail();
+
+            mGameTable.leave();
+
+            String msg = "The bookkeeper could not be found.";
+
+            // Any or all of these may be null.
+            String submsg = ex.getMessage();
+            XMPPError error = ex.getXMPPError();
+            Throwable subex = ex.getWrappedThrowable();
+
+            if (error != null && error.getCode() == 404) {
+                /* A common case: the JID was not found. */
+                msg = "No bookkeeper exists at this address.";
+                if (error.getMessage() != null)
+                    msg = msg + " (" + error.getMessage() + ")";
+                msg = msg + "\n(" + Bookkeeper.getDefaultJid() + ")";
+            }
+            else {
+                msg = "The bookkeeper could not be found";
+                if (submsg != null && subex == null && error == null)
+                    msg = msg + ": " + submsg;
+                else
+                    msg = msg + ".";
+                if (subex != null)
+                    msg = msg + "\n" + subex.toString();
+                if (error != null)
+                    msg = msg + "\nJabber error " + error.toString();
             }
 
+            JOptionPane.showMessageDialog(mParentDialog, 
+                msg,
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        catch (Exception ex)
+        {
+            new ErrorWrapper(ex);
+            callbackFail();
+
+            mGameTable.leave();
+
+            JOptionPane.showMessageDialog(mParentDialog, 
+                "Problem fetching UI from bookkeeper:\n" + ex.toString(),
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
             File dir = JavolinApp.getUIFileCache().getUIDir(uiUrl);
 
             /* Once we call the TableWindow constructor, it owns the GameTable.

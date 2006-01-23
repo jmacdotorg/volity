@@ -3,6 +3,10 @@ CVS repository.
 
 * the present
 
+You can now set a system property "org.volity.bookkeeper" to choose a
+bookkeeper to talk to. That is to say:
+    java -Dorg.volity.bookkeeper=foo@volity.net -ea -jar Javolin.jar
+
 The Invitation window (when you get one, not when you send one) is now
 a free-floating window. It appears in the Window menu, too.
 

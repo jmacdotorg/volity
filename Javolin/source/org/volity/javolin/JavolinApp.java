@@ -286,6 +286,11 @@ public class JavolinApp extends JFrame
         // Set up system properties and the like.
         PlatformWrapper.mainInitialize();
 
+        // See if someone has set an alternate bookkeeper
+        String bookkeeperJid = System.getProperty("org.volity.bookkeeper");
+        if (bookkeeperJid != null)
+            Bookkeeper.setDefaultJid(bookkeeperJid);
+
         /* Invoke into the Swing thread to create the JavolinApp.
          *
          * We do this because all our UI code is sprinkled with asserts that

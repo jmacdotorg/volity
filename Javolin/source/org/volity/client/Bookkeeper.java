@@ -8,11 +8,37 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.DiscoverItems;
+import org.volity.jabber.JIDUtils;
 
 //### asyncify all APIs
 
 /** A connection to a Volity bookkeeper. */
 public class Bookkeeper {
+
+  protected static String defaultJid = "bookkeeper@volity.net/volity";
+
+  /**
+   * Set the class's default bookkeeper JID address. (You should call
+   * this before the Jabber connection is opened.)
+   *
+   * If you don't specify a JID resource, "volity" is assumed.
+   *
+   * @param jid the JID of the bookkeeper. 
+   */
+  public static void setDefaultJid(String jid) {
+    if (!JIDUtils.hasResource(jid))
+      jid = JIDUtils.setResource(jid, "volity");
+
+    defaultJid = jid;
+  }
+
+  /**
+   * Return the address used for the bookkeeper.
+   */
+  public static String getDefaultJid() {
+    return defaultJid;
+  }
+
   /**
    * Connect to a Volity bookkeeper.
    * @param connection an authenticated connection to an XMPP server
@@ -31,7 +57,7 @@ public class Bookkeeper {
    * @throws IllegalStateException if the connection has not been authenticated
    */
   public Bookkeeper(XMPPConnection connection) {
-    this(connection, "bookkeeper@volity.net/volity");
+    this(connection, defaultJid);
   }
 
   protected XMPPConnection connection;
