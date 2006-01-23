@@ -123,9 +123,12 @@ public class GameUI implements RPCHandler, PacketFilter {
             scope.put("rpc", scope, new Callback() {
                     public Object run(Object[] args) {
                         try {
+                            String methname = args[0].toString();
+                            if (methname.indexOf('.') < 0)
+                                methname = "game."+methname;
                             List params = Arrays.asList(args).subList(1, args.length);
                             params = unwrapRPCTypes(params);
-                            return table.getReferee().invoke("game." + args[0], params);
+                            return table.getReferee().invoke(methname, params);
                         } catch (Exception e) {
                             errorHandler.error(e);
                             /* This will print TokenFailures in window log, and

@@ -391,7 +391,11 @@ public abstract class TestUI
      */
     protected String prettifyParams(Object[] args) {
         StringBuffer buf = new StringBuffer();
-        buf.append("game." + args[0]);
+
+        String methname = args[0].toString();
+        if (methname.indexOf('.') < 0)
+            methname = "game."+methname;
+        buf.append(methname);
 
         buf.append("(");
         for (int ix=1; ix<args.length; ix++) {
