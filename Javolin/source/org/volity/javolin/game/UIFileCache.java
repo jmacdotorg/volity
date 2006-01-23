@@ -378,6 +378,9 @@ public class UIFileCache
      * contains more than one subdirectory) is the final result. This may be
      * the same as the directory that was passed in to begin with.
      *
+     * Files and directories beginning with "." are ignored in the search.
+     * (This keeps MacOSX from confusing everybody with its ".DS_Store" cruft.)
+     *
      * This function is useful to search a directory created by unpacking a ZIP
      * file (or other archive). Some people create archives with the important
      * files at the top level; others create archives with everything important
@@ -393,15 +396,24 @@ public class UIFileCache
         while (true)
         {
             File[] entries = dir.listFiles();
-            if (entries.length != 1)
-            {
+
+            // Locate the sole (non-dot) entry.
+            int count = 0;
+            File loneFile = null;
+            for (int ix=0; ix<entries.length; ix++) {
+                if (!entries[ix].isHidden()) {
+                    count++;
+                    loneFile = entries[ix];
+                }
+            }
+
+            if (count != 1) {
                 break;
             }
-            if (!(entries[0].isDirectory()))
-            {
+            if (!(loneFile.isDirectory())) {
                 break;
             }
-            dir = entries[0];
+            dir = loneFile;
         }
 
         return dir;
