@@ -355,7 +355,7 @@ sub rotate_current_seat {
     # Give the seat list a rotation, then filter out eliminated seats
     # as well as seats without any registered players.
     push(@seats, shift(@seats));
-    @seats = $self->seats_in_play;
+    @seats = grep(not($_->is_eliminated) && $_->registered_player_jids, @seats);
     
     if (@seats) {
 	$self->current_seat($seats[0]);
