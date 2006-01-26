@@ -84,9 +84,9 @@ if (defined($opts{l})) {
 
 $server->bot_classes(@bot_classes);
 
-$Volity::GameRecord::gpg_bin = $opts{G};
-$Volity::GameRecord::gpg_secretkey = $opts{K};
-$Volity::GameRecord::gpg_passphrase = $opts{P};
+# $Volity::GameRecord::gpg_bin = $opts{G};
+# $Volity::GameRecord::gpg_secretkey = $opts{K};
+# $Volity::GameRecord::gpg_passphrase = $opts{P};
 $server->start;
 
 =head1 NAME
@@ -100,8 +100,7 @@ volityd -- A simple Volity game server
 # in the Volity::Bot::RPS module.
 
 volityd -u rps -p foo -h volity.net -r testing \
-        -b bookkeeper@volity.net/volity -K F763E15E \
-        -G /usr/bin/gpg -P "Big secret passphrase, whee" \
+        -b bookkeeper@volity.net/volity 
         -g Volity::Game::RPS -B Volity::Bot::RPS \
         -l /home/jmac/volity/volity_logger.conf
 
