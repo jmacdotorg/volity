@@ -1,0 +1,25 @@
+This module implements the game of Tic Tac Toe for the
+Volity game system. It is intended for use with Frivolity, the
+pure-Perl Volity game server and framework.
+
+You need to have the Volity modules already installed on your system
+in order for this module to work. At the time of this writing, Volity
+is not currently available from CPAN, but you can easily download it
+from the Volity project's website at http://volity.org .
+
+INSTALLATION
+
+The usual dance:
+
+ perl Makefile.PL
+
+ make
+
+ sudo make install
+
+Please contact me at jmac@jmac.org with any questions or comments
+about this module. Thanks!
+
+--Jason McIntosh
+January 26, 2006
+
