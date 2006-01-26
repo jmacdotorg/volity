@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-S\VG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
+  <defs>
+    <symbol id="grid-square">
+      <rect width="100" height="100" stroke="none" fill="white" id="blahbl-3" onclick="window.alert('Foo.');" />
+    </symbol>
+    <!--
+    I'm going to give the marks longer names, mostly because "x" would be
+    a potentially confusing name, especially in SVG-land.
+    -->
+    <symbol id="x-mark">
+      <line stroke="blue" stroke-width="10" x1="5" y1="5" x2="55" y2="55" stroke-linecap="round" />
+      <line stroke="blue" stroke-width="10" x1="5" y1="55" x2="55" y2="5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="o-mark">
+      <circle stroke="blue" fill="none" stroke-width="10" cx="30" cy="30" r="25" />
+    </symbol>
+  </defs>
+
+  <!-- Set up the Tic-Tac-Toe grid. -->
+  <!-- First, drop all the grid squares into place. -->
+  <use xlink:href="#grid-square" id="square-0" x="0" y="0" onclick="square_clicked(evt, 0)" />
+  <use xlink:href="#grid-square" id="square-1" x="100" y="0" onclick="square_clicked(evt, 1)" />
+  <use xlink:href="#grid-square" id="square-2" x="200" y="0" onclick="square_clicked(evt, 2)" />
+  <use xlink:href="#grid-square" id="square-3" x="0" y="100" onclick="square_clicked(evt, 3)" />
+  <use xlink:href="#grid-square" id="square-4" x="100" y="100" onclick="square_clicked(evt, 4)" />
+  <use xlink:href="#grid-square" id="square-5" x="200" y="100" onclick="square_clicked(evt, 5)" />
+  <use xlink:href="#grid-square" id="square-6" x="0" y="200" onclick="square_clicked(evt, 6)" />
+  <use xlink:href="#grid-square" id="square-7" x="100" y="200" onclick="square_clicked(evt, 7)" />
+  <use xlink:href="#grid-square" id="square-8" x="200" y="200" onclick="square_clicked(evt, 8)" />
+  <!-- Now for a few lines. -->
+  <line stroke="black" x1="0" y1="100" x2="300" y2="100" stroke-width="5" stroke-linecap="round" />
+  <line stroke="black" x1="0" y1="200" x2="300" y2="200" stroke-width="5" stroke-linecap="round" />
+  <line stroke="black" x1="100" y1="5" x2="100" y2="300" stroke-width="5" stroke-linecap="round" />
+  <line stroke="black" x1="200" y1="5" x2="200" y2="300" stroke-width="5" stroke-linecap="round" />
+
+<script type="text/ecmascript">
+    <![CDATA[
+
+var svg_ns = "http://www.w3.org/2000/svg";
+var xlink_ns = "http://www.w3.org/1999/xlink";
+
+var placed_marks = new Array;
+
+game.mark = function(seat_id, location) {
+  // Conveniently, we can fetch both the mark symbol ("X" or "O") and the
+  // grid square object we'll need based on the arguments we've been passed.
+  // This is why we gave our SVG objects the ID values that we did!
+  var mark_symbol_id = seat_id + "-mark";
+  var grid_square_id = "square-" + location;
+  var grid_square = document.getElementById(grid_square_id);
+  
+//  window.alert(grid_square);
+  // Figure out where the mark goes, based on the grid square's location.
+  // The "- 0" is just to cast the attribute values into integers.
+  var square_x = grid_square.getAttribute("x") - 0;
+  var square_y = grid_square.getAttribute("y") - 0;
+//  window.alert(square_x + ", " + square_y);
+
+  // Create the <use> element that makes the mark.
+  var mark = document.createElementNS(svg_ns, "use");
+  mark.setAttributeNS(xlink_ns, "xlink:href", "#" + mark_symbol_id );
+  mark.setAttribute("x", square_x + 20);
+  mark.setAttribute("y", square_y + 20);
+  document.firstChild.appendChild(mark);
+
+  // Add to the placed_marks array, so we can wipe it in game.START().
+  placed_marks.push(mark);
+
+}
+
+game.tie = function () {
+  window.alert ("Tie game.");
+}
+
+game.win = function(seat_id, location_1, location_2, location_3) {
+  if (seat_id == 'x') {
+     window.alert ("X wins the game!");
+  } else {
+     window.alert ("O wins the game!");
+  }
+}
+
+function square_clicked(evt, location_number) {
+  rpc("mark", location_number);
+}
+
+game.END = function() {
+//  reset();
+}
+
+game.START = function() {
+  // Clear any marks made in the last game.
+  for (mark_index in placed_marks) {
+    var mark = placed_marks[mark_index];
+    document.firstChild.removeChild(mark);
+  }
+  placed_marks = new Array;
+}
+
+// ]]>
+</script>
+</svg>
+
