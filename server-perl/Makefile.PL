@@ -5,6 +5,7 @@ use lib "inc";
 use ExtUtils::AutoInstall (
 			   -core   => [
 				       "POE"=>'',
+				       "RPC::XML"=>'',
 				       "Scalar::Util"=>'',
 				       'POE::Component::Jabber'=>'1.0',
 				       'POE::Filter::XML'=>'0.24',
@@ -38,5 +39,5 @@ WriteMakefile(
 	      VERSION_FROM => "lib/Volity.pm",
 	      DISTNAME => "Frivolity",
 	      EXE_FILES => ["bin/friv", "bin/volityd"],
-	      INSTALLSCRIPT => "/usr/local/volity/bin",
+	      INSTALLSCRIPT => "/opt/volity/bin",
 	      );
