@@ -1,3 +1,7 @@
+0.5.3
+
+	- Added our own fork of POE::Filter::XML::Node.
+
 0.5.2
 	- More bugfixes, and small tweaks to keep up with minor
           protocol changes.

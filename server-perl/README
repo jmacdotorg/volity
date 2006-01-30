@@ -26,6 +26,11 @@ http://volity.sf.net
 Frivolity requires several Perl modules to work; the Makefile.PL
 checks for their presence on your system. All are available from CPAN.
 
+Note that we include our own fork of POE::Filter::XML::Node, which
+repairs a nasty error found with the version of that (otherwise just
+fine) module that's found on CPAN. (It has an unfortunate tendency to
+render XML character data nodes of "0" as "".)
+
 --- INSTALLATION ---
 
 The usual incantation should suffice:
@@ -34,6 +39,9 @@ The usual incantation should suffice:
  make
  make test
  sudo make install
+
+You may also need to patch your machine's copy of POE::Filter::XML, as
+detailed under PREREQUISTES above.
 
 It will, by default, install several Perl modules into your
 site-perl location under the Volity namespace, and place a server
