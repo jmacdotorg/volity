@@ -3,6 +3,9 @@ CVS repository.
 
 * the present
 
+The ugly running-out-of-memory bug that afflicted Javolin is now -- I
+hope -- fixed.
+
 You can now set a system property "org.volity.bookkeeper" to choose a
 bookkeeper to talk to. That is to say:
     java -Dorg.volity.bookkeeper=foo@volity.net -ea -jar Javolin.jar
