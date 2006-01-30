@@ -31,9 +31,18 @@ public class VolityHandler implements RPCHandler {
         gameUI = ui;
     }
 
-    // Inherited from RPCHandler.
+    public void stop() {
+        gameUI = null;
+    }
+
+    // Implements RPCHandler interface.
     public void handleRPC(String methodName, List params, 
         RPCResponseHandler k) {
+
+        if (gameUI == null) {
+            k.respondFault(608, "this RPC handler is dead");
+            return;
+        }
 
         GameTable table = gameUI.table;
 
@@ -87,7 +96,6 @@ public class VolityHandler implements RPCHandler {
             callUI(gameUI.volity, "required_seat_list", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("receive_state")) {
-            System.out.println("Receiving game state.");
             table.setInStateRecovery(true);
             String foundstate = null;
             if (params.size() > 0 && (params.get(0) instanceof Map)) {
@@ -105,44 +113,38 @@ public class VolityHandler implements RPCHandler {
             callUI(gameUI.volity, "receive_state", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("state_sent")) {
-            System.out.println("Game state received.");
             callUI(gameUI.volity, "state_sent", params);
             table.setInStateRecovery(false);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("suspend_game")) {
             table.setRefereeState(GameTable.STATE_SUSPENDED);
             table.setAllPlayersUnready();
-            System.out.println("Game suspended.");
             callUI(gameUI.volity, "suspend_game", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("resume_game")) {
             table.setRefereeState(GameTable.STATE_ACTIVE);
             table.setAllPlayersUnready();
-            System.out.println("Game resumed.");
             callUI(gameUI.volity, "resume_game", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("language")) {
             table.setAllPlayersUnready();
-            System.out.println("Configuration set language.");
             callUI(gameUI.volity, "language", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("show_table")) {
             table.setAllPlayersUnready();
-            System.out.println("Configuration set show_table.");
             callUI(gameUI.volity, "show_table", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("record_games")) {
             table.setAllPlayersUnready();
-            System.out.println("Configuration set record_games.");
             callUI(gameUI.volity, "record_games", params);
             k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("kill_game")) {
             table.setAllPlayersUnready();
-            System.out.println("Configuration set kill_game.");
             callUI(gameUI.volity, "kill_game", params);
             k.respondValue(Boolean.TRUE);
         } else {
-            k.respondFault(999, "I don't know what to do about the volity RPC request " + methodName);
+            k.respondFault(603,
+                "unknown RPC request volity." + methodName);
         }
 
     }
@@ -155,6 +157,10 @@ public class VolityHandler implements RPCHandler {
      * @return Whether the method existed.
      */
     protected boolean callUI(Scriptable obj, String name, List params) {
+        if (obj == null || gameUI == null || gameUI.scope == null) {
+            return false;
+        }
+
         Object method = obj.get(name, gameUI.scope);
         if (method == null || !(method instanceof Function)) {
             // No UI method is the same as a no-op
@@ -179,6 +185,10 @@ public class VolityHandler implements RPCHandler {
      * referee code.)
      */
     protected void queryRefereeState() {
+        if (gameUI == null) {
+            return;
+        }
+
         final GameTable table = gameUI.table;
 
         DiscoBackground.Callback callback = new DiscoBackground.Callback() {

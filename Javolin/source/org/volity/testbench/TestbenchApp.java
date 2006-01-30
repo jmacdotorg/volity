@@ -257,8 +257,12 @@ public class TestbenchApp extends JFrame
     public void actionPerformed(ActionEvent ev)
     {
         Object source = ev.getSource();
-        if (source == null)
-            return;
+
+        if (source == null) {
+            // We don't want surprises; some of the menu items may be null.
+            return; 
+        }
+
         if (source == mQuitMenuItem) {
             doQuit();
         } 
@@ -369,7 +373,7 @@ public class TestbenchApp extends JFrame
         mLastExceptionMenuItem.setEnabled(false);
         fileMenu.add(mLastExceptionMenuItem);
 
-        if (true) { //###
+        if (false) {
             mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
             mMemUsageMenuItem.addActionListener(this);
             mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));

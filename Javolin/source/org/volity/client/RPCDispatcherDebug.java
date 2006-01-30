@@ -33,7 +33,7 @@ public class RPCDispatcherDebug extends RPCDispatcher {
      */
     public void handleRPC(String methodName, List params,
         RPCResponseHandler resp) {
-        if (debugFlag) {
+        if (debugFlag && messageHandler != null) {
             messageHandler.print(buildCallString("recv", methodName, params));
         }
         super.handleRPC(methodName, params, resp);

@@ -16,7 +16,7 @@ import org.volity.jabber.*;
 /**
  * A game user interface.
  */
-public class GameUI implements RPCHandler, PacketFilter {
+public class GameUI implements RPCHandler {
 
     /**
      * This describes the API version implemented in this file.
@@ -46,11 +46,12 @@ public class GameUI implements RPCHandler, PacketFilter {
         this.translator = translator;
         this.errorHandler = errorHandler;
         this.messageHandler = messageHandler;
-        RPCDispatcher dispatcher = new RPCDispatcherDebug(messageHandler);
+        this.dispatcher = new RPCDispatcherDebug(messageHandler);
         dispatcher.setHandler("game", this);
-        VolityHandler volityHandler = new VolityHandler(this);
-        dispatcher.setHandler("volity", volityHandler);
-        responder = new RPCResponder(connection, this, dispatcher);
+        dispatcherVolity = new VolityHandler(this);
+        dispatcher.setHandler("volity", dispatcherVolity);
+        filter = new GamePacketFilter(this);
+        responder = new RPCResponder(connection, filter, dispatcher);
         responder.start();
     }
 
@@ -59,6 +60,9 @@ public class GameUI implements RPCHandler, PacketFilter {
     ErrorHandler errorHandler;
     MessageHandler messageHandler;
     RPCResponder responder;
+    RPCDispatcher dispatcher;
+    VolityHandler dispatcherVolity;
+    GamePacketFilter filter;
     Scriptable scope, game, volity, info;
     GameTable table;
     private Boolean callInProgress = Boolean.FALSE;
@@ -93,6 +97,34 @@ public class GameUI implements RPCHandler, PacketFilter {
     public void stop() {
         Audio.stopGroup(this);
         responder.stop();
+
+        // Expunge our references to everything, so that garbage collection
+        // works.
+
+        dispatcher.clear();
+        dispatcherVolity.stop();
+        dispatcherVolity = null;
+
+        filter.stop();
+        filter = null;
+
+        seatObjects.clear();
+
+        if (scope != null) {
+            scope.delete("game");
+            scope.delete("volity");
+            scope.delete("info");
+            scope.delete("rpc");
+            scope.delete("literalmessage");
+            scope.delete("localize");
+            scope.delete("message");
+            scope.delete("seatmark");
+            scope.delete("audio");
+            scope = null;
+        }
+        game = null;
+        volity = null;
+        info = null;
     }
 
     /**
@@ -196,6 +228,10 @@ public class GameUI implements RPCHandler, PacketFilter {
             scope.put("audio", scope, 
                 UIAudio.makeCallableProperty(this, baseURL, 
                     messageHandler, errorHandler));
+
+            /* If you add more identifiers to scope, be sure to delete them in
+             * the stop() method. */
+
         } catch (JavaScriptException e) {
             errorHandler.error(e);
         } finally {
@@ -618,25 +654,43 @@ public class GameUI implements RPCHandler, PacketFilter {
         }
     }
 
-    // Implements PacketFilter interface.
-    public boolean accept(Packet packet) {
-        // Only accept packets from the referee at this table, because the
-        // user might be playing at multiple tables (perhaps even in
-        // multiple instances of the application).
+    protected static class GamePacketFilter implements PacketFilter {
 
-        if (table == null) return false;
-        Referee ref = table.getReferee();
-        // If the referee is missing, we should usually assume that this
-        // packet is a wayward request and ignore it.  But because filters
-        // run in a different thread from listeners (!) the referee's
-        // presence packet might still be waiting to be processed, so we
-        // are lenient here and accept this packet, with a second check in
-        // the actual listener (see RPCResponder.processPacket).  A future
-        // version of Smack may fix this, in which case the check should
-        // be made more restrictive again.
-        /* return ref != null && */
-        return ref == null ||
-            ref.getResponderJID().equals(packet.getFrom());
+        protected GameUI ui;
+
+        public GamePacketFilter(GameUI ui) {
+            this.ui = ui;
+        }
+
+        /* Shut down this filter, so it doesn't refer to the dead GameUI and it
+         * doesn't accept packets. */
+        public void stop() {
+            this.ui = null;
+        }
+
+        // Implements PacketFilter interface.
+        public boolean accept(Packet packet) {
+            /* Only accept packets from the referee at this table, because the
+             * user might be playing at multiple tables (perhaps even in
+             * multiple instances of the application).
+             */
+
+            if (ui == null || ui.table == null)
+                return false;
+
+            Referee ref = ui.table.getReferee();
+            // If the referee is missing, we should usually assume that this
+            // packet is a wayward request and ignore it. But because filters
+            // run in a different thread from listeners (!) the referee's
+            // presence packet might still be waiting to be processed, so we
+            // are lenient here and accept this packet, with a second check in
+            // the actual listener (see RPCResponder.processPacket). A future
+            // version of Smack may fix this, in which case the check should be
+            // made more restrictive again.
+            /* return ref != null && */
+            return ref == null ||
+                ref.getResponderJID().equals(packet.getFrom());
+        }
     }
 
     // Implements RPCHandler interface.

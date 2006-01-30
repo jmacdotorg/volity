@@ -44,6 +44,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
+    private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
     private final static String MENUCMD_GAME_FINDER = "Game Finder";
 
     private JavolinApp mApplication = null;
@@ -58,6 +59,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mJoinTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
     private JMenuItem mShowLastErrorMenuItem;
+    private JMenuItem mMemUsageMenuItem;
     private JMenuItem mGameInfoMenuItem;
     private JMenuItem mSuspendTableMenuItem;
     private JMenuItem mReloadUIMenuItem;
@@ -135,6 +137,14 @@ public class JavolinMenuBar extends JMenuBar
         mShowLastErrorMenuItem.addActionListener(this);
         setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
         fileMenu.add(mShowLastErrorMenuItem);
+
+        if (false) {
+            mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
+            mMemUsageMenuItem.addActionListener(this);
+            mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));
+            setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
+            fileMenu.add(mMemUsageMenuItem);
+        }
 
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
             // Only needed if there isn't a built-in Quit menu
@@ -354,56 +364,66 @@ public class JavolinMenuBar extends JMenuBar
      * @param e  The ActionEvent received.
      */
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == null) {
+        Object source = e.getSource();
+
+        if (source == null) {
             // We don't want surprises; some of the menu items may be null.
             return; 
         }
 
-        if (e.getSource() == mAboutMenuItem) {
+        if (source == mAboutMenuItem) {
             mApplication.doAbout();
         }
-        else if (e.getSource() == mPreferencesMenuItem) {
+        else if (source == mPreferencesMenuItem) {
             mApplication.doPreferences();
         }
-        else if (e.getSource() == mConnectMenuItem) {
+        else if (source == mConnectMenuItem) {
             mApplication.doConnectDisconnect();
         }
-        else if (e.getSource() == mQuitMenuItem) {
+        else if (source == mQuitMenuItem) {
             mApplication.doQuit();
         }
-        else if (e.getSource() == mNewTableAtMenuItem) {
+        else if (source == mNewTableAtMenuItem) {
             mApplication.doNewTableAt();
         }
-        else if (e.getSource() == mJoinTableAtMenuItem) {
+        else if (source == mJoinTableAtMenuItem) {
             mApplication.doJoinTableAt();
         }
-        else if (e.getSource() == mGameInfoMenuItem) {
+        else if (source == mGameInfoMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doInfoDialog();
         }
-        else if (e.getSource() == mSuspendTableMenuItem) {
+        else if (source == mSuspendTableMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doSuspendTable();
         }
-        else if (e.getSource() == mReloadUIMenuItem) {
+        else if (source == mReloadUIMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doReloadUI();
         }
-        else if (e.getSource() == mInvitePlayerMenuItem) {
+        else if (source == mInvitePlayerMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doInviteDialog(null);
         }
-        else if (e.getSource() == mInviteBotMenuItem) {
+        else if (source == mInviteBotMenuItem) {
             if (mTableWindow != null)
                 mTableWindow.doInviteBot();
         }
-        else if (e.getSource() == mJoinMucMenuItem) {
+        else if (source == mJoinMucMenuItem) {
             mApplication.doJoinMuc();
         }
-        else if (e.getSource() == mShowLastErrorMenuItem) {
+        else if (source == mShowLastErrorMenuItem) {
             mApplication.doShowLastError();
         }
-        else if (e.getSource() == mGameFinderMenuItem) {
+        else if (source == mMemUsageMenuItem) {
+            Runtime runtime = Runtime.getRuntime();
+            runtime.gc();
+            long total = runtime.totalMemory();
+            long free = runtime.freeMemory();
+            System.out.println("Memory used: " + String.valueOf(total-free)
+                               + " of " + String.valueOf(total));
+        }
+        else if (source == mGameFinderMenuItem) {
             mApplication.doGetFinder();
         }
     }

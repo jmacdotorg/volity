@@ -8,6 +8,9 @@ import java.util.*;
  * @author Doug Orleans (dougo@place.org)
  */
 public class RPCDispatcher implements RPCHandler {
+  Map handlers = new HashMap();
+  RPCHandler globalHandler = null;
+
   public RPCDispatcher() {
   }
 
@@ -18,8 +21,6 @@ public class RPCDispatcher implements RPCHandler {
   public RPCDispatcher(RPCHandler globalHandler) {
     setGlobalHandler(globalHandler);
   }
-
-  Map handlers = new HashMap();
 
   /**
    * @param name the name of a handler
@@ -39,8 +40,6 @@ public class RPCDispatcher implements RPCHandler {
     handlers.put(name, handler);
   }
 
-  RPCHandler globalHandler;
-
   /**
    * @return the handler for RPC requests whose method names have no
    *         prefix, or null if there is none
@@ -56,23 +55,31 @@ public class RPCDispatcher implements RPCHandler {
     globalHandler = handler;
   }
 
-  // Inherited from RPCHandler.
+  // Implements RPCHandler interface.
   public void handleRPC(String methodName, List params, RPCResponseHandler k) {
     int i = methodName.indexOf(".");
     if (i < 0) {
       if (globalHandler == null)
-	noSuchMethodFault(methodName, k);
+        noSuchMethodFault(methodName, k);
       else
-	globalHandler.handleRPC(methodName, params, k);
+        globalHandler.handleRPC(methodName, params, k);
     } else {
       String handlerName = methodName.substring(0, i);
       methodName = methodName.substring(i+1);
       RPCHandler handler = getHandler(handlerName);
       if (handler == null)
-	noSuchHandlerFault(handlerName, methodName, k);
+        noSuchHandlerFault(handlerName, methodName, k);
       else
-	handler.handleRPC(methodName, params, k);
+        handler.handleRPC(methodName, params, k);
     }
+  }
+
+  /**
+   * Clear all handlers.
+   */
+  public void clear() {
+    setGlobalHandler(null);
+    handlers.clear();    
   }
 
   /**
@@ -86,7 +93,7 @@ public class RPCDispatcher implements RPCHandler {
    * Send a fault response because there is no named handler.
    */
   public void noSuchHandlerFault(String handlerName, String methodName,
-				 RPCResponseHandler k)
+                                 RPCResponseHandler k)
   {
     k.respondFault(404, "No such method: " + handlerName + "." + methodName);
   }
