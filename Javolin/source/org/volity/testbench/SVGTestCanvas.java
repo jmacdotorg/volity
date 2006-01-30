@@ -54,11 +54,14 @@ public class SVGTestCanvas extends JSVGCanvas
         setDocumentState(ALWAYS_DYNAMIC);
         setURI(uiDocument.toString());
 
+        // Used to be important, when forceRedraw did something.
+        /*
         addGVTTreeRendererListener(new GVTTreeRendererAdapter() {
                 public void gvtRenderingCompleted(GVTTreeRendererEvent evt) {
                     forceRedraw();
                 }
             });
+        */
     }
 
     /**

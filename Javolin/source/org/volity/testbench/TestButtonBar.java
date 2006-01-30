@@ -31,6 +31,8 @@ public class TestButtonBar
     List mComponents = new ArrayList();
     Map mFields = new Hashtable();
 
+    List mActionListeners = new ArrayList();
+
     public TestButtonBar(DebugInfo info,
         GameUI.MessageHandler messageHandler,
         TestUI.ErrorHandler errorHandler) {
@@ -256,6 +258,11 @@ public class TestButtonBar
         }
     }
 
+    private void listenTo(AbstractButton comp) {
+        comp.addActionListener(this);
+        mActionListeners.add(comp);
+    }
+
     private final static String START_GAME_LABEL = "Start Game";
     private final static String END_GAME_LABEL = "End Game";
     private final static String UNSEATED_ITEM = "(none)";
@@ -274,6 +281,11 @@ public class TestButtonBar
             toolbar = new JPanel(new RestrictedWidthFlowLayout(FlowLayout.LEFT));
         }
         else {
+            for (int ix=0; ix<mActionListeners.size(); ix++) {
+                AbstractButton comp = (AbstractButton)mActionListeners.get(ix);
+                comp.removeActionListener(this);
+            }
+            mActionListeners.clear();
             toolbar.removeAll();
         }
 
@@ -281,11 +293,11 @@ public class TestButtonBar
         mFields.clear();
 
         mStartGameBut = new JButton(START_GAME_LABEL);
-        mStartGameBut.addActionListener(this);
+        listenTo(mStartGameBut);
         toolbar.add(mStartGameBut);
         
         mEndGameBut = new JButton(END_GAME_LABEL);
-        mEndGameBut.addActionListener(this);
+        listenTo(mEndGameBut);
         toolbar.add(mEndGameBut);
  
         List ls = mDebugInfo.getSeatList();
@@ -304,7 +316,7 @@ public class TestButtonBar
             switch (cmd.type) {
             case DebugInfo.CMD_BUTTON:
                 JButton but = new JButton(cmd.label);
-                but.addActionListener(this);
+                listenTo(but);
                 toolbar.add(but);
                 mComponents.add(but);
                 break;

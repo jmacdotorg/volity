@@ -29,6 +29,7 @@ public class TestbenchApp extends JFrame
 
     private final static String MENUCMD_QUIT = "Exit";
     private final static String MENUCMD_LASTEXCEPTION = "Show Last Exception";
+    private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
     private final static String MENUCMD_RELOAD = "Reload";
 
     private final static String LOG_SPLIT_POS = "LogSplitPos";
@@ -46,6 +47,7 @@ public class TestbenchApp extends JFrame
     private LogTextPanel mMessageText;
     private JMenuItem mReloadMenuItem;
     private JMenuItem mLastExceptionMenuItem;
+    private JMenuItem mMemUsageMenuItem;
     private JMenuItem mQuitMenuItem;
 
     private SizeAndPositionSaver mSizePosSaver;
@@ -254,17 +256,20 @@ public class TestbenchApp extends JFrame
      */
     public void actionPerformed(ActionEvent ev)
     {
-        if (ev.getSource() == mQuitMenuItem) {
+        Object source = ev.getSource();
+        if (source == null)
+            return;
+        if (source == mQuitMenuItem) {
             doQuit();
         } 
-        else if (ev.getSource() == mReloadMenuItem) {
+        else if (source == mReloadMenuItem) {
             writeMessageText("Reloading UI files...");
             mTranslator.clearCache();
             mDebugInfo = new DebugInfo(mUIDir);
             mButtonBar.reload(mDebugInfo);
             mViewport.reloadUI(mDebugInfo);
         }
-        else if (ev.getSource() == mLastExceptionMenuItem) {
+        else if (source == mLastExceptionMenuItem) {
             if (lastException instanceof Exception) {
                 JErrorPane pane = new JErrorPane(
                     (Exception)lastException, 
@@ -277,6 +282,14 @@ public class TestbenchApp extends JFrame
             else {
                 writeMessageText("Last exception was not an Exception: " + lastException.toString());
             }
+        }
+        else if (source == mMemUsageMenuItem) {
+            Runtime runtime = Runtime.getRuntime();
+            runtime.gc();
+            long total = runtime.totalMemory();
+            long free = runtime.freeMemory();
+            System.out.println("Memory used: " + String.valueOf(total-free)
+                               + " of " + String.valueOf(total));
         }
     }
 
@@ -344,17 +357,25 @@ public class TestbenchApp extends JFrame
         JMenu fileMenu = new JMenu("File");
         setPlatformMnemonic(fileMenu, KeyEvent.VK_F);
 
-        mReloadMenuItem = new JMenuItem(MENUCMD_RELOAD);
-        mReloadMenuItem.addActionListener(this);
-        mReloadMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, keyMask));
-        setPlatformMnemonic(mReloadMenuItem, KeyEvent.VK_R);
-        fileMenu.add(mReloadMenuItem);
+        if (false) {
+            mReloadMenuItem = new JMenuItem(MENUCMD_RELOAD);
+            mReloadMenuItem.addActionListener(this);
+            mReloadMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, keyMask));
+            setPlatformMnemonic(mReloadMenuItem, KeyEvent.VK_R);
+            fileMenu.add(mReloadMenuItem);
+        }
 
         mLastExceptionMenuItem = new JMenuItem(MENUCMD_LASTEXCEPTION);
         mLastExceptionMenuItem.addActionListener(this);
         setPlatformMnemonic(mLastExceptionMenuItem, KeyEvent.VK_E);
         mLastExceptionMenuItem.setEnabled(false);
         fileMenu.add(mLastExceptionMenuItem);
+
+        mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
+        mMemUsageMenuItem.addActionListener(this);
+        mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));
+        setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
+        fileMenu.add(mMemUsageMenuItem);
 
         mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
         mQuitMenuItem.addActionListener(this);

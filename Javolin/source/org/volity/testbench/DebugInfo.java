@@ -123,7 +123,7 @@ public class DebugInfo
     /**
      * Exception type for a malformed testbench.xml file.
      */
-    protected class DebugFileException extends Exception {
+    protected static class DebugFileException extends Exception {
         DebugFileException(String st) {
             super(st);
         }
