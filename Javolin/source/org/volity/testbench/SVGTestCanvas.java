@@ -110,7 +110,7 @@ public class SVGTestCanvas extends JSVGCanvas
      */
     public void reloadUI(DebugInfo debugInfo) {
         if (ui != null)
-            ui.stopAllSound();
+            ui.stop();
         this.debugInfo = debugInfo;
         setURI(uiDocument.toString());
     }

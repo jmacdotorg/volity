@@ -328,6 +328,10 @@ public abstract class TestUI
             scope.put("audio", scope, 
                 GameUI.UIAudio.makeCallableProperty(this, baseURL, 
                     messageHandler, errorHandler));
+
+            /* If you add more identifiers to scope, be sure to delete them in
+             * the stop() method. */
+
         } catch (JavaScriptException e) {
             errorHandler.error(e);
         } finally {
@@ -349,10 +353,29 @@ public abstract class TestUI
     }
 
     /**
-     * Cut off any playing sounds which have this UI for an owner.
+     * Cease work.
      */
-    public void stopAllSound() {
+    public void stop() {
+        // Cut off any playing sounds which have this UI for an owner.
         Audio.stopGroup(this);
+
+        seatObjects.clear();
+
+        if (scope != null) {
+            scope.delete("game");
+            scope.delete("volity");
+            scope.delete("info");
+            scope.delete("rpc");
+            scope.delete("literalmessage");
+            scope.delete("localize");
+            scope.delete("message");
+            scope.delete("seatmark");
+            scope.delete("audio");
+            scope = null;
+        }
+        game = null;
+        volity = null;
+        info = null;
     }
 
     /**
