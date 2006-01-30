@@ -357,13 +357,11 @@ public class TestbenchApp extends JFrame
         JMenu fileMenu = new JMenu("File");
         setPlatformMnemonic(fileMenu, KeyEvent.VK_F);
 
-        if (false) {
-            mReloadMenuItem = new JMenuItem(MENUCMD_RELOAD);
-            mReloadMenuItem.addActionListener(this);
-            mReloadMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, keyMask));
-            setPlatformMnemonic(mReloadMenuItem, KeyEvent.VK_R);
-            fileMenu.add(mReloadMenuItem);
-        }
+        mReloadMenuItem = new JMenuItem(MENUCMD_RELOAD);
+        mReloadMenuItem.addActionListener(this);
+        mReloadMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, keyMask));
+        setPlatformMnemonic(mReloadMenuItem, KeyEvent.VK_R);
+        fileMenu.add(mReloadMenuItem);
 
         mLastExceptionMenuItem = new JMenuItem(MENUCMD_LASTEXCEPTION);
         mLastExceptionMenuItem.addActionListener(this);
@@ -371,11 +369,13 @@ public class TestbenchApp extends JFrame
         mLastExceptionMenuItem.setEnabled(false);
         fileMenu.add(mLastExceptionMenuItem);
 
-        mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
-        mMemUsageMenuItem.addActionListener(this);
-        mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));
-        setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
-        fileMenu.add(mMemUsageMenuItem);
+        if (true) { //###
+            mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
+            mMemUsageMenuItem.addActionListener(this);
+            mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));
+            setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
+            fileMenu.add(mMemUsageMenuItem);
+        }
 
         mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
         mQuitMenuItem.addActionListener(this);
