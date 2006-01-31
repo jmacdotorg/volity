@@ -1,7 +1,7 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 CVS repository.
 
-* the present
+* release 0.2.4
 
 The ugly running-out-of-memory bug that afflicted Javolin is now -- I
 hope -- fixed.
