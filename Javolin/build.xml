@@ -147,6 +147,7 @@
         <include name="org/volity/testbench/" />
         <include name="org/volity/javolin/" />
         <include name="org/volity/client/" />
+        <include name="org/volity/jabber/" />
       </fileset>
       <!-- Merge all of the lib .jars into the ${jarfile} file -->
       <zipgroupfileset dir="${lib.loc}" includes="*.jar"/>
