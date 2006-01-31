@@ -1,7 +1,6 @@
 import os
 import time
 import logging
-import volent
 from zymb import sched, jabber
 from zymb.jabber import interface
 from zymb.jabber import rpc
@@ -14,6 +13,9 @@ STATE_ACTIVE    = intern('active')
 STATE_DISRUPTED = intern('disrupted')
 STATE_ABANDONED = intern('abandoned')
 STATE_SUSPENDED = intern('suspended')
+
+# slightly late import
+import volent
 
 CLIENT_DEFAULT_RPC_TIMEOUT = 30
 CLIENT_INVITATION_RPC_TIMEOUT = 30
@@ -1132,7 +1134,7 @@ class Referee(volent.VolEntity):
                     self.queueaction(self.unsuspendgame)
                 else:
                     winlist = self.parsewinners(()) # everyone ties
-                    self.queueaction(self.endgame, winners, True)
+                    self.queueaction(self.endgame, winlist, True)
             
     def playerunready(self, sender):
         """playerunready(sender) -> None
@@ -1282,7 +1284,8 @@ class Referee(volent.VolEntity):
         """
 
         # Can't invite someone who's already present!        
-        if (self.players.has_key(jidstr)):
+        player = self.players.get(jidstr, None)
+        if (player and player.live):
             raise game.FailureToken('volity.jid_present',
                 game.Literal(jidstr))
 

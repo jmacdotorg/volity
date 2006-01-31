@@ -279,6 +279,7 @@ class FailureToken(Exception):
     """
     
     def __init__(self, tok, *tokargs):
+        Exception.__init__(self)
         self.list = [ self.encode(val) for val in ((tok,) + tokargs) ]
     def __repr__(self):
         return '<FailureToken: ' + (', '.join(self.list)) + '>'

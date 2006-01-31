@@ -40,6 +40,7 @@ class Bot:
     makerpcvalue() -- convert a game value to an RPC value.
     receivestate() -- handle the beginning of a state recovery burst.
     begingame() -- handle the beginning of the game.
+    gamehasbegun() -- handle the beginning of the game.
     endgame() -- handle the end of the game.
     suspendgame() -- handle game suspension.
     unsuspendgame() -- handle game resumption.
@@ -338,6 +339,17 @@ class Bot:
         Handle the beginning of the game. Set up whatever state you need to.
 
         Conditions: called only in setup state.
+
+        Default: do nothing.
+        """
+        pass
+
+    def gamehasbegun(self):
+        """gamehasbegun() -> None
+
+        Handle the beginning of the game (as seen in a state-recovery burst).
+
+        Conditions: called during state recovery.
 
         Default: do nothing.
         """

@@ -68,6 +68,11 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.5:
+Fixed a bug where inviting a player failed if he is supposed to be seated,
+    but is not present at the table.
+Bots are now notified of the game_has_started() RPC.
+
 - 1.5.4:
 Changed my mind -- bots no longer stand up after the completion of a game.
 Referees now disallow any game that has no seated humans.

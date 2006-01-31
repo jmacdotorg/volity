@@ -80,6 +80,7 @@ class Actor(volent.VolEntity):
     handlereceivestate() -- state recovery handler.
     tryready() -- tell the referee that we are ready to play.
     begingame() -- game-start handler.
+    gamehasbegun() -- game-start handler.
     endgame() -- game-end handler.
     suspendgame() -- game-suspend handler.
     unsuspendgame() -- game-resume handler.
@@ -306,6 +307,15 @@ class Actor(volent.VolEntity):
         self.refstate = STATE_ACTIVE
         self.bot.begingame()
 
+    def gamehasbegun(self):
+        """gamehasbegun() -> None
+
+        Game-start handler. Called during state recovery if a game is in
+        progress. (Game-specific setup is handled by the bot's gamehasbegun()
+        method.)
+        """
+        self.bot.gamehasbegun()
+
     def endgame(self):
         """endgame() -> None
 
@@ -504,7 +514,7 @@ class WrapGameOpset(rpc.WrapperOpset):
                 self.actor.bot.makerpcvalue)
         except rpc.CallNotFound:
             # unimplemented methods are assumed to return quietly.
-            return
+            return None
         except rpc.RPCResponse:
             raise
         except rpc.RPCFault:
@@ -584,7 +594,7 @@ class BotVolityOpset(rpc.MethodOpset):
             return rpc.MethodOpset.__call__(self, sender, callname, *callargs)
         except rpc.CallNotFound:
             # unimplemented methods are assumed to return quietly.
-            return
+            return None
         except rpc.RPCResponse:
             raise
         except rpc.RPCFault:
@@ -653,6 +663,9 @@ class BotVolityOpset(rpc.MethodOpset):
 
     def rpc_start_game(self, sender, *args):
         self.actor.queueaction(self.actor.begingame)
+            
+    def rpc_game_has_started(self, sender, *args):
+        self.actor.queueaction(self.actor.gamehasbegun)
             
     def rpc_end_game(self, sender, *args):
         self.actor.queueaction(self.actor.endgame)
