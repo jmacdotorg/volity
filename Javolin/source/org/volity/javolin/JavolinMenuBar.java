@@ -48,6 +48,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_GAME_FINDER = "Game Finder";
 
     private JavolinApp mApplication = null;
+    private JFrame mWindow = null;
     private TableWindow mTableWindow = null;
 
     private WindowMenu mWindowMenu;
@@ -81,6 +82,7 @@ public class JavolinMenuBar extends JMenuBar
          * attached to, say, a TableWindow is whether mTableWindow is non-null.
          * (Easier to read than a constant stream of instanceof tests!)
          */
+        mWindow = win;
         if (win instanceof TableWindow)
             mTableWindow = (TableWindow)win;
 
@@ -89,14 +91,20 @@ public class JavolinMenuBar extends JMenuBar
 
         setUpAppMenus();
 
-        win.setJMenuBar(this);
+        mWindow.setJMenuBar(this);
 
-        win.addWindowListener(
+        mWindow.addWindowListener(
             new WindowAdapter() {
                 public void windowClosing(WindowEvent ev) {
                     // When the window closes, remove its menu bar from the
                     // notification list.
                     menuBarList.remove(JavolinMenuBar.this);
+                    mWindow.removeWindowListener(this);
+                    mWindow = null;
+                    mTableWindow = null;
+                    if (mWindowMenu != null) {
+                        mWindowMenu.clear();
+                    }
                 }
             });
     }
@@ -138,7 +146,7 @@ public class JavolinMenuBar extends JMenuBar
         setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
         fileMenu.add(mShowLastErrorMenuItem);
 
-        if (false) {
+        if (true) {
             mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
             mMemUsageMenuItem.addActionListener(this);
             mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));
@@ -369,6 +377,11 @@ public class JavolinMenuBar extends JMenuBar
         if (source == null) {
             // We don't want surprises; some of the menu items may be null.
             return; 
+        }
+
+        if (mWindow == null) {
+            // This menu bar is history.
+            return;
         }
 
         if (source == mAboutMenuItem) {

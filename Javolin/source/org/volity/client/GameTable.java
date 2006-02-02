@@ -9,6 +9,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.muc.DefaultParticipantStatusListener;
+import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
@@ -18,6 +19,10 @@ import org.jivesoftware.smackx.packet.DiscoverInfo;
  *
  * The GameTable acts as the client's model for the arrangement of the table --
  * the seats, the players, who is sitting where.
+ *
+ * This used to be a subclass of MultiUserChat, but that turned out to cause
+ * pain and suffering. Now it contains a MultiUserChat. This means it has a lot
+ * of wrapper methods that call into the contained object. That's okay.
  *
  * Note on threading: 
  *
@@ -34,7 +39,7 @@ import org.jivesoftware.smackx.packet.DiscoverInfo;
  * is "I haven't tried to do this right". One day there will be solid syncing
  * on all the data.
  */
-public class GameTable extends MultiUserChat 
+public class GameTable
 {
     /**
      * Constants for referee states. UNKNOWN means we haven't contacted the
@@ -59,6 +64,8 @@ public class GameTable extends MultiUserChat
         MARK_TURN, MARK_WIN, MARK_FIRST, MARK_OTHER 
     };
 
+    protected MultiUserChat mMUC = null;
+    protected boolean mAlive = true;
     protected List mPlayers = new ArrayList();
     protected Player mSelfPlayer = null;
     protected Map mSeatsById = new HashMap();
@@ -85,8 +92,9 @@ public class GameTable extends MultiUserChat
      * @param room the JID of the game table.
      */
     public GameTable(XMPPConnection connection, String room) {
-        super(connection, room);
+        mMUC = new MultiUserChat(connection, room);
         mConnection = connection;
+        mAlive = true;
 
         mParticipantListener = new PacketListener() {
                 public void processPacket(Packet packet) {
@@ -94,7 +102,7 @@ public class GameTable extends MultiUserChat
                     rescanOccupantList();
                 }
             };
-        addParticipantListener(mParticipantListener);
+        mMUC.addParticipantListener(mParticipantListener);
 
         /*
          * Rather than letting the application set a MessageListener on this
@@ -125,28 +133,108 @@ public class GameTable extends MultiUserChat
                     }
                 }
             };
-        addMessageListener(mInternalListener);
+        mMUC.addMessageListener(mInternalListener);
 
     }
 
-    /** Customization: Leave the MUC */
+    /**
+     * Join the MUC.
+     *
+     * Unlike the general MUC, the GameTable cannot rejoin once you call
+     * leave(). This code checks that condition.
+     */
+    public void join(String nickname) throws XMPPException {
+        if (!mAlive || mMUC == null) 
+            throw new XMPPException("GameTable cannot rejoin once it shuts down.");
+
+        mMUC.join(nickname);
+    }
+
+    /**
+     * Leave the MUC.
+     *
+     * Unlike the general MUC, the GameTable cannot rejoin once you call
+     * leave().
+     */
     public void leave() {
+        mAlive = false;
+
         // Turn off all our listeners.
         if (mParticipantListener != null) {
-            removeParticipantListener(mParticipantListener);
+            if (mMUC != null)
+                mMUC.removeParticipantListener(mParticipantListener);
             mParticipantListener = null;
         }
         if (mInternalListener != null) {
-            removeMessageListener(mInternalListener);
+            if (mMUC != null)
+                mMUC.removeMessageListener(mInternalListener);
             mInternalListener = null;
         }
         mExternalListener = null;
-        super.leave();
+
+        if (mReferee != null) {
+            mReferee.setCrashed();
+            mReferee = null;
+        }
+
+        if (mMUC != null) {
+            mMUC.leave();
+
+            /* It is usually a mistake to call any object's finalize() method,
+             * but I have no choice. MultiUserChat is written so that all its
+             * internal packet filters are cleaned up in the finalize() method.
+             * I need to clean those up immediately -- otherwise they hang on
+             * the XMPPConnection forever, and the MUC never gets garbage-
+             * collected.
+             *
+             * When the object *is* garbage-collected, Java will call
+             * finalize() a second time. Fortunately, MultiUserChat doesn't
+             * choke on that. */
+            try {
+                mMUC.finalize();
+            }
+            catch (Throwable ex) { }
+            mMUC = null;
+        }
     }
 
     /** Get the XMPP connection associated with this table. */
     public XMPPConnection getConnection() { 
         return mConnection; 
+    }
+
+    /**
+     * A lot of one-liner wrapper methods.
+     */
+
+    public String getRoom() {
+        if (mMUC == null)
+            return "???";
+        return mMUC.getRoom();
+    }
+    public String getNickname() {
+        if (mMUC == null)
+            return "???";
+        return mMUC.getNickname();
+    }
+    public void changeNickname(String nick)
+        throws XMPPException {
+        mMUC.changeNickname(nick); 
+    }
+    public void sendMessage(String msg)
+        throws XMPPException {
+        mMUC.sendMessage(msg); 
+    }
+    public boolean isJoined() {
+        if (mMUC == null)
+            return false;
+        return mMUC.isJoined();
+    }
+    public void addParticipantListener(PacketListener listener) {
+        mMUC.addParticipantListener(listener);
+    }
+    public void removeParticipantListener(PacketListener listener) {
+        mMUC.removeParticipantListener(listener);
     }
 
     /**
@@ -337,10 +425,10 @@ public class GameTable extends MultiUserChat
      */
     protected void rescanOccupantList() {
         Map occupantMap = new HashMap(); // maps JID to (Occupant, Presence)
-        for (Iterator it = getOccupants(); it.hasNext(); ) {
+        for (Iterator it = mMUC.getOccupants(); it.hasNext(); ) {
             String jid = (String)it.next();
-            Occupant occ = getOccupant(jid);
-            Presence pres = getOccupantPresence(jid);
+            Occupant occ = mMUC.getOccupant(jid);
+            Presence pres = mMUC.getOccupantPresence(jid);
             if (occ != null) {
                 occupantMap.put(occ.getJid(), new OccupantPresence(occ, pres));
             }
@@ -379,7 +467,8 @@ public class GameTable extends MultiUserChat
                      * gone away. If the referee vanishes, it's just as bad.
                      * Either way, the game is dead. Mark the referee object
                      * accordingly, so we don't send any more stuff to it. */
-                    mReferee.setCrashed();
+                    if (mReferee != null)
+                        mReferee.setCrashed();
                     fireShutdownListeners();
                 }
             }

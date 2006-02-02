@@ -103,8 +103,10 @@ public class TableWindow extends JFrame implements PacketListener
     private SeatChart mSeatChart;
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
-
-    private RPCBackground.Callback mDefaultCallback;
+    private GameTable.ReadyListener mTableReadyListener;
+    private GameTable.ReadyListener mTableShutdownListener;
+    private DefaultStatusListener mTableStatusListener;
+    private UpdateManagerAdapter mViewportUpdateListener;
 
     private JButton mInviteButton;
     private JButton mReadyButton;
@@ -119,8 +121,12 @@ public class TableWindow extends JFrame implements PacketListener
     private GameTable mGameTable;
     private String mNickname;
     private URL mUIUrl;
+
     private TranslateToken mTranslator;
-    private GameUI.MessageHandler mMessageHandler;
+    private TableMessageHandler mMessageHandler;
+    private TableErrorHandler mErrorHandler;
+    private TableLinkHandler mLinkHandler;
+    private TableDefaultCallback mDefaultCallback;
 
     private boolean mGameTableStarted = false;
     private boolean mGameViewportStarted = false;
@@ -202,23 +208,7 @@ public class TableWindow extends JFrame implements PacketListener
          * window. However, we don't know that they'll call it in the Swing
          * thread. So, we'll make a thread-safe wrapper for
          * writeMessageText. */
-        mMessageHandler = new GameUI.MessageHandler() {
-                public void print(final String msg)
-                {
-                    if (SwingUtilities.isEventDispatchThread()) {
-                        writeMessageText(msg);
-                        return;
-                    }
-                    // Otherwise, invoke into the Swing thread.
-                    SwingUtilities.invokeLater(new Runnable() {
-                            public void run() {
-                                writeMessageText(msg);
-                            }
-                        });
-                }
-            };
-
-        final GameUI.MessageHandler messageHandler = mMessageHandler;
+        mMessageHandler = new TableMessageHandler(this);
 
         /* Some components also want a callback in which they can dump an
          * arbitrary exception. TokenFailures simply get translated and printed
@@ -228,39 +218,20 @@ public class TableWindow extends JFrame implements PacketListener
          *
          * Thread-safe.
          */
-        GameUI.ErrorHandler errorHandler = new GameUI.ErrorHandler() {
-                public void error(Exception ex) {
-                    if (ex instanceof TokenFailure) {
-                        // No need to display the stack trace of a token failure.
-                        String msg = mTranslator.translate((TokenFailure)ex);
-                        messageHandler.print(msg);
-                        return;
-                    }
-                    // Display a one-line version of the error, and stash the
-                    // whole thing away in ErrorWrapper for debugging
-                    // commands.
-                    new ErrorWrapper(ex);
-                    messageHandler.print(ex.toString());
-                }
-            };
+        mErrorHandler = new TableErrorHandler(this, mMessageHandler);
 
-        SVGCanvas.LinkHandler linkHandler = new SVGCanvas.LinkHandler() {
-                public void link(String uri) {
-                    if (PlatformWrapper.launchURLAvailable()) {
-                        PlatformWrapper.launchURL(uri);
-                    }
-                    else {
-                        messageHandler.print("Visit this website: " + uri);
-                    }
-                }
-            };
+        /* Many RPC handlers are going to use this as a callback. */
+        mDefaultCallback = new TableDefaultCallback(mErrorHandler);
+
+        /* Finally, the SVGCanvas needs a way to handle hyperlink clicks.
+         */
+        mLinkHandler = new TableLinkHandler(mMessageHandler);
 
         // Create the SVG object.
         mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
-            messageHandler, errorHandler, linkHandler);
+            mMessageHandler, mErrorHandler, mLinkHandler);
 
-        mGameViewport.addUpdateManagerListener(
-            new UpdateManagerAdapter()
+        mViewportUpdateListener = new UpdateManagerAdapter()
             {
                 public void managerStarted(UpdateManagerEvent evt)
                 {
@@ -273,7 +244,8 @@ public class TableWindow extends JFrame implements PacketListener
                             }
                         });
                 }
-            });
+            };
+        mGameViewport.addUpdateManagerListener(mViewportUpdateListener);
 
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(nickname); // Give user first color
@@ -281,7 +253,7 @@ public class TableWindow extends JFrame implements PacketListener
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
         mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator,
-            messageHandler);
+            mMessageHandler);
 
         buildUI();
 
@@ -335,7 +307,8 @@ public class TableWindow extends JFrame implements PacketListener
         mGameTable.addParticipantListener(this);
 
         // Notify the player if the referee crashes.
-        mGameTable.addShutdownListener(new GameTable.ReadyListener() {
+        mTableShutdownListener = 
+            new GameTable.ReadyListener() {
                 public void ready() {
                     // Called outside Swing thread!
                     // Invoke into the Swing thread.
@@ -348,11 +321,12 @@ public class TableWindow extends JFrame implements PacketListener
                             }
                         });
                 }
-            });
-        
+            };
+        mGameTable.addShutdownListener(mTableShutdownListener);        
+
         // We need a StatusListener to adjust button states when this player
         // stands, sits, etc.
-        mGameTable.addStatusListener(new DefaultStatusListener() {
+        mTableStatusListener = new DefaultStatusListener() {
                 public void stateChanged(int state) {
                     // Called outside Swing thread!
                     // (We can do the string picking first, that's thread-safe)
@@ -400,8 +374,8 @@ public class TableWindow extends JFrame implements PacketListener
                             }
                         });
                 }
-            });
-
+            };
+        mGameTable.addStatusListener(mTableStatusListener);
 
         // Set up button actions.
 
@@ -438,20 +412,6 @@ public class TableWindow extends JFrame implements PacketListener
                 }
             });
 
-        mDefaultCallback = new RPCBackground.Callback() {
-                public void run(Object result, Exception err, Object rock) {
-                    if (err != null) {
-                        if (err instanceof TokenFailure) {
-                            writeMessageText(mTranslator.translate((TokenFailure)err));
-                        }
-                        else {
-                            new ErrorWrapper(err);
-                            writeMessageText(err.toString());
-                        }
-                    }
-                }
-            };
-        
         mReadyButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     if (!mGameTable.isSelfReady()) {
@@ -505,18 +465,21 @@ public class TableWindow extends JFrame implements PacketListener
         try
         {
             if (!mGameTable.isJoined()) {
-                mGameTable.addReadyListener(new GameTable.ReadyListener() {
-                        public void ready() {
-                            // Called outside Swing thread!
-                            // Invoke into the Swing thread.
-                            SwingUtilities.invokeLater(new Runnable() {
-                                    public void run() {
-                                        mGameTableStarted = true;
-                                        tryFinishInit();
-                                    }
-                                });
-                        }
-                    });
+                if (mTableReadyListener == null) {
+                    mTableReadyListener = new GameTable.ReadyListener() {
+                            public void ready() {
+                                // Called outside Swing thread!
+                                // Invoke into the Swing thread.
+                                SwingUtilities.invokeLater(new Runnable() {
+                                        public void run() {
+                                            mGameTableStarted = true;
+                                            tryFinishInit();
+                                        }
+                                    });
+                            }
+                        };
+                }
+                mGameTable.addReadyListener(mTableReadyListener);
                 mGameTable.join(mNickname);
             }
             else {
@@ -551,6 +514,11 @@ public class TableWindow extends JFrame implements PacketListener
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
+        if (mGameViewport == null)
+        {
+            // I guess the window has already been closed.
+            return;
+        }
         if (!mGameTableStarted || !mGameViewportStarted) 
         {
             // Need both operations finished.
@@ -564,7 +532,7 @@ public class TableWindow extends JFrame implements PacketListener
         mGameStartFinished = true;
 
         switchView(VIEW_GAME);
-        mGameViewport.forceRedraw();
+        //mGameViewport.forceRedraw();
 
         // Remove loading component, since it's no longer needed
         if (mLoadingComponent != null) {
@@ -594,22 +562,183 @@ public class TableWindow extends JFrame implements PacketListener
 
         // Shut down the UI.
         if (mGameViewport != null) {
+
+            if (mViewportUpdateListener != null) {
+                mGameViewport.removeUpdateManagerListener(mViewportUpdateListener);
+                mViewportUpdateListener = null;
+            }
+
             mGameViewport.stop();
+            mGameViewport = null;
         }
 
         // Leave the chat room.
         if (mGameTable != null) {
             mGameTable.removeParticipantListener(this);
-            mGameTable.removeMessageListener(TableWindow.this);
+            mGameTable.clearQueuedMessageListener();
+            if (mTableReadyListener != null) {
+                mGameTable.removeReadyListener(mTableReadyListener);
+                mTableReadyListener = null;
+            }
+            if (mTableShutdownListener != null) {
+                mGameTable.removeShutdownListener(mTableShutdownListener);
+                mTableShutdownListener = null;
+            }
+            if (mTableStatusListener != null) {
+                mGameTable.removeStatusListener(mTableStatusListener);
+                mTableStatusListener = null;
+            }
+
             mGameTable.leave();
             mGameTable = null;
         }
 
-        if (mSeatChart != null)
+        if (mSeatChart != null) {
             mSeatChart.dispose();
+            mSeatChart = null;
+        }
 
-        if (mUserColorMap != null)
+        if (mUserColorMap != null) {
             mUserColorMap.dispose();
+            mUserColorMap = null;
+        }
+
+        if (mLinkHandler != null) {
+            mLinkHandler.close();
+            mLinkHandler = null;
+        }
+        if (mDefaultCallback != null) {
+            mDefaultCallback.close();
+            mDefaultCallback = null;
+        }
+        if (mErrorHandler != null) {
+            mErrorHandler.close();
+            mErrorHandler = null;
+        }
+        if (mMessageHandler != null) {
+            mMessageHandler.close();
+            mMessageHandler = null;
+        }
+    }
+
+    /**
+     * Some classes which act as services: handling text messages, errors, or
+     * link clicks. 
+     *
+     * These are set up as static classes so that they can be severed when the
+     * table shuts down. Lots of other classes hold references on these
+     * handlers. We don't want them to be holding references on the
+     * TableWindow.
+     */
+
+    protected static class TableMessageHandler implements GameUI.MessageHandler
+    {
+        TableWindow mParent;
+
+        public TableMessageHandler(TableWindow parent) {
+            mParent = parent;
+        }
+
+        public void close() {
+            mParent = null;
+        }
+
+        public void print(final String msg) {
+            if (SwingUtilities.isEventDispatchThread()) {
+                if (mParent != null)
+                    mParent.writeMessageText(msg);
+                return;
+            }
+            // Otherwise, invoke into the Swing thread.
+            SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        if (mParent != null)
+                            mParent.writeMessageText(msg);
+                    }
+                });
+        }
+    }
+
+    protected static class TableErrorHandler implements GameUI.ErrorHandler
+    {
+        TableWindow mParent;
+        GameUI.MessageHandler mMessageHandler;
+
+        public TableErrorHandler(TableWindow parent,
+            GameUI.MessageHandler messageHandler) {
+            mParent = parent;
+            mMessageHandler = messageHandler;
+        }
+
+        public void close() {
+            mParent = null;
+            mMessageHandler = null;
+        }
+
+        public void error(Exception ex) {
+            if (ex instanceof TokenFailure && mParent != null) {
+                // No need to display the stack trace of a token failure.
+                String msg = mParent.mTranslator.translate((TokenFailure)ex);
+                if (mMessageHandler != null)
+                    mMessageHandler.print(msg);
+                return;
+            }
+
+            // Display a one-line version of the error, and stash the
+            // whole thing away in ErrorWrapper for debugging
+            // commands.
+            new ErrorWrapper(ex);
+            if (mMessageHandler != null)
+                mMessageHandler.print(ex.toString());
+        }
+    }
+
+    protected static class TableDefaultCallback implements RPCBackground.Callback
+    {
+        GameUI.ErrorHandler mErrorHandler;
+
+        public TableDefaultCallback(GameUI.ErrorHandler errorHandler) {
+            mErrorHandler = errorHandler;
+        }
+
+        public void close() {
+            mErrorHandler = null;
+        }
+
+        public void run(Object result, Exception err, Object rock) {
+            if (err != null) {
+                if (mErrorHandler != null) {
+                    mErrorHandler.error(err);
+                }
+                else {
+                    // Best we can do.
+                    new ErrorWrapper(err);
+                }
+            }
+        }
+    };
+
+    protected static class TableLinkHandler implements SVGCanvas.LinkHandler
+    {
+        GameUI.MessageHandler mMessageHandler;
+
+        public TableLinkHandler(GameUI.MessageHandler messageHandler) {
+            mMessageHandler = messageHandler;
+        }
+
+        public void close() {
+            mMessageHandler = null;
+        }
+
+        public void link(String uri) {
+            if (PlatformWrapper.launchURLAvailable()) {
+                PlatformWrapper.launchURL(uri);
+            }
+            else {
+                if (mMessageHandler != null)
+                    mMessageHandler.print("Visit this website: " + uri);
+            }
+        }
     }
 
     /**
@@ -737,6 +866,7 @@ public class TableWindow extends JFrame implements PacketListener
         /* ### If we switch to a different UI, we'd need a whole new
          * translator. Or we'd need to switch the translator to a different
          * localedir, really, since so many components cache pointers to it. 
+         * ### This also applies to a reload that recreates the cache dir.
          */
         mTranslator.clearCache();
 

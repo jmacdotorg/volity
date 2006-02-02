@@ -58,9 +58,14 @@ public class Referee extends TokenRequester {
      * example, it might see the referee withdraw from the MUC, or it might see
      * the MUC close down entirely.) When this happens, we want to set a flag
      * which prevents further messages from going out to the ref.
+     *
+     * We also call this when the TableWindow closes, because it's
+     * approximately the same situation: we want to stop sending messages out.
+     * As an added bonus, it drops the Table reference.
      */
     public void setCrashed() {
         mCrashed = true;
+        mTable = null;
     }
 
     /**
@@ -166,6 +171,10 @@ public class Referee extends TokenRequester {
      */
     public void stand(RPCBackground.Callback callback, Object rock)
     {
+        if (mTable == null) {
+            callback.run(null, new TokenFailure("volity.referee_not_ready"), rock);
+            return;
+        }
         this.stand(mTable.getSelfPlayer(), callback, rock);
     }
 
@@ -188,6 +197,10 @@ public class Referee extends TokenRequester {
      */
     public void sit(RPCBackground.Callback callback, Object rock)
     {
+        if (mTable == null) {
+            callback.run(null, new TokenFailure("volity.referee_not_ready"), rock);
+            return;
+        }
         sit(mTable.getSelfPlayer(), null, callback, rock);
     }
 
@@ -197,6 +210,10 @@ public class Referee extends TokenRequester {
      */
     public void sit(Seat seat, RPCBackground.Callback callback, Object rock)
     {
+        if (mTable == null) {
+            callback.run(null, new TokenFailure("volity.referee_not_ready"), rock);
+            return;
+        }
         sit(mTable.getSelfPlayer(), seat, callback, rock);
     }
 

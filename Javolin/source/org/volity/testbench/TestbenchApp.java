@@ -373,7 +373,7 @@ public class TestbenchApp extends JFrame
         mLastExceptionMenuItem.setEnabled(false);
         fileMenu.add(mLastExceptionMenuItem);
 
-        if (false) {
+        if (true) {
             mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
             mMemUsageMenuItem.addActionListener(this);
             mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));

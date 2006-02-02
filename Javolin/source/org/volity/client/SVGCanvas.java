@@ -89,6 +89,9 @@ public class SVGCanvas extends JSVGCanvas
         */
     }
 
+    /**
+     * Interface for a service which handles the activation of a hyperlink. 
+     */
     public interface LinkHandler {
         public abstract void link(String uri);
     }
@@ -115,20 +118,30 @@ public class SVGCanvas extends JSVGCanvas
      * SVGUserAgent class, but I haven't done it.)
      */
     protected UserAgent createUserAgent() {
-        /**
-         * Define an anonymous class which customizes the handling of SVG
-         * errors. Instead of popping up Batik's standard ugly dialog box, we
-         * pass the buck to our own handlers.
-         */
-        UserAgent agent = new JSVGCanvas.CanvasUserAgent () {
-                public void displayError(String msg) {
-                    SVGCanvas.this.messageHandler.print(msg);
-                }
-                public void displayError(Exception ex) {
-                    SVGCanvas.this.errorHandler.error(ex);
-                }
-            };
+        UserAgent agent = new UserAgentJavolin(messageHandler, errorHandler);
         return agent;
+    }
+
+    /**
+     * Define a class which customizes the handling of SVG errors. Instead of
+     * popping up Batik's standard ugly dialog box, we pass the buck to our own
+     * handlers.
+     */
+    protected class UserAgentJavolin extends JSVGCanvas.CanvasUserAgent {
+        GameUI.MessageHandler messageHandler;
+        GameUI.ErrorHandler errorHandler;
+
+        public UserAgentJavolin(GameUI.MessageHandler messageHandler,
+            GameUI.ErrorHandler errorHandler) {
+            this.messageHandler = messageHandler;
+            this.errorHandler = errorHandler;
+        }
+        public void displayError(String msg) {
+            messageHandler.print(msg);
+        }
+        public void displayError(Exception ex) {
+            errorHandler.error(ex);
+        }
     }
 
     /**
@@ -198,7 +211,8 @@ public class SVGCanvas extends JSVGCanvas
                     if (stopped)
                         ui.stop();
                     ui.initGameObjects(getGlobalObject());
-                    if (table != null) ui.setTable(table);
+                    if (table != null)
+                        ui.setTable(table);
                 }
             }
             interpreter = new GameUIInterpreter();
@@ -218,7 +232,8 @@ public class SVGCanvas extends JSVGCanvas
                     if (stopped)
                         ui.stop();
                     ui.initGameObjects(getGlobalObject());
-                    if (table != null) ui.setTable(table);
+                    if (table != null)
+                        ui.setTable(table);
                 }
             }
             interpreter = new GameUI12Interpreter();
@@ -235,8 +250,15 @@ public class SVGCanvas extends JSVGCanvas
     // The window containing this has closed. We need to do some cleanup.
     public void stop() {
         stopped = true;
-        if (ui != null)
+        if (ui != null) {
             ui.stop();
+            ui = null;
+        }
+        table = null;
+        interpreter = null;
+
+        // The dispose() call should (eventually) shut down all Batik activity.
+        dispose();
     }
   
     public GameUI getUI() { return ui; }
@@ -271,6 +293,10 @@ public class SVGCanvas extends JSVGCanvas
                     // one returned by Context.enter() in a new thread, because
                     // it needs to be a special subclass of Context.
                     public void run() {        
+                        if (interpreter == null) {
+                            callback.error(new NullPointerException("interpreter is stopped."));
+                            return;
+                        }
                         try {
                             Context context = interpreter.enterContext();
                             SVGUI.super.callUIMethod(method, params, callback);
@@ -287,6 +313,7 @@ public class SVGCanvas extends JSVGCanvas
      */
     public void setTable(GameTable table) {
         this.table = table;
-        if (ui != null) ui.setTable(table);
+        if (ui != null)
+            ui.setTable(table);
     }
 }
