@@ -117,10 +117,7 @@ public class MUCWindow extends JFrame implements PacketListener
                 {
                     // Leave the chat room when the window is closed
                     saveWindowState();
-                    mMucObject.leave();
-                    mUserColorMap.dispose();
-                    PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
-                        mColorChangeListener);
+                    leave();
                 }
 
                 public void windowOpened(WindowEvent we)
@@ -153,6 +150,41 @@ public class MUCWindow extends JFrame implements PacketListener
         {
             mMucObject.create(nickname);
             configureMuc();
+        }
+    }
+
+    /**
+     * Clean up everything we tried to create. This is called when the window
+     * closes, or if there's a creation error and it never gets opened.
+     */
+    protected void leave()
+    {
+        mUserColorMap.dispose();
+        PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
+            mColorChangeListener);
+
+        if (mMucObject != null) {
+            // Deregister listeners
+            mMucObject.removeMessageListener(this);
+            mMucObject.removeParticipantListener(this);
+
+            mMucObject.leave();
+
+            /* It is usually a mistake to call any object's finalize() method,
+             * but I have no choice. MultiUserChat is written so that all its
+             * internal packet filters are cleaned up in the finalize() method.
+             * I need to clean those up immediately -- otherwise they hang on
+             * the XMPPConnection forever, and the MUC never gets garbage-
+             * collected.
+             *
+             * When the object *is* garbage-collected, Java will call
+             * finalize() a second time. Fortunately, MultiUserChat doesn't
+             * choke on that. */
+            try {
+                mMucObject.finalize();
+            }
+            catch (Throwable ex) { }
+            mMucObject = null;
         }
     }
 
