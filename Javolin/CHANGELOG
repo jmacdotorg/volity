@@ -1,6 +1,10 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 CVS repository.
 
+* release 0.2.5
+
+More nasty memory leaks found, and subsequently plugged.
+
 * release 0.2.4
 
 The ugly running-out-of-memory bug that afflicted Javolin is now -- I
