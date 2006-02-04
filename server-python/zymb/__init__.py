@@ -30,6 +30,10 @@ simple tasks.
 
 * Version history:
 
+- 1.3.0:
+Exceptions in scheduled actions are now logged. They no longer kill the
+Zymb process.
+
 - 1.2.7:
 Fixed dumb bug when comparing (jid1 != jid2)
 

@@ -375,6 +375,7 @@ class StanzaError(Exception):
     errortype = 'cancel'
     description = 'Error.'
     def __init__(self, text=None):
+        Exception.__init__(self)
         self.text = text
 
     def __str__(self):

@@ -61,6 +61,8 @@ class RPCType:
     """
 
     typename = None
+    argstring = None
+    origarg = None
 
     def __init__(self):
         raise NotImplementedError('RPCType is an abstract base class')
@@ -572,6 +574,7 @@ class RPCResponse(Exception):
     """
 
     def __init__(self, value=True):
+        Exception.__init__(self)
         self.value = value
 
     def __repr__(self):
@@ -597,6 +600,7 @@ class RPCFault(Exception):
     """
     
     def __init__(self, code, st):
+        Exception.__init__(self)
         if (type(code) != int):
             raise TypeError(str(code) + ' must be an int')
         if (type(st) != str and type(st) != unicode):

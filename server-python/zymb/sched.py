@@ -26,7 +26,10 @@ class TimeoutException(Exception):
 class Action:
     """Action: Something to do. A function reference, more or less,
     except this class can include arguments bound into the function call.
-    (If Python had closures, this wouldn't be necessary.)
+    
+    (If Python had closures, this wouldn't be necessary. Okay: Python
+    *does* have closures. Fine. Feel free to use them. Or use an Action
+    with arguments. It's fine either way.)
 
     What you do with an action is pass it to the scheduler, which will
     then execute it. You can pass it in several ways:
@@ -42,6 +45,11 @@ class Action:
     they are cheap to manufacture. (In fact, the methods listed above will
     all manufacture an Action for you. You can simply pass *func* and
     *args* to them.)
+
+    An exception inside an Action will be caught; it will not kill the Zymb
+    scheduler. Depending on the context, the exception may be caught and
+    handled in a context-dependent way. If not, the scheduler will catch it
+    and log the stack trace.
 
     Action(func, [ arg1, arg2, ... ] ) -- constructor.
 
@@ -191,7 +199,7 @@ class ActionPollTimer(Action):
         Action.__init__(self, pollop)
         self.interval = interval
 
-    def __call__(self):
+    def __call__(self, *exargs):
         raise SchedException, 'ActionPollTimer should not be invoked'
         
 class Deferred:
@@ -1030,14 +1038,22 @@ def process(timeout=None):
         for ac in ls:
             assert ac.agent.live
             #log.debug('polling %s for %s', ac, ac.agent)
-            ac()
+            try:
+                ac()
+            except Exception, ex:
+                log.error('Uncaught exception in poll action',
+                    exc_info=True)
 
         if (sockets):
             ls = sockets.keys()
             (inls, outls, exls) = select.select(ls, [], [], 0)
             for fileno in inls:
                 ac = sockets[fileno]
-                ac()
+                try:
+                    ac()
+                except Exception, ex:
+                    log.error('Uncaught exception in poll action',
+                        exc_info=True)
 
         # All the items on actionqueue are timers and polls. They all
         # count as secondary actions. So move them there.
@@ -1060,6 +1076,9 @@ def process(timeout=None):
                 ac(*exargs)
             except Deferred:
                 pass
+            except Exception, ex:
+                log.error('Uncaught exception in action',
+                    exc_info=True)
     
         if (activity):
             break

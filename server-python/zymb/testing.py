@@ -151,6 +151,13 @@ class TestSelfJumperAgent(sched.Agent):
     def handler2(self):
         self.jump('s3')
 
+class TestAssertAgent(sched.Agent):
+    def __init__(self):
+        sched.Agent.__init__(self)
+        self.addhandler('start', self.starthandler)
+    def starthandler(self):
+        assert 0, 'assertion'
+
 class TestTimerAgent(sched.Agent):
     def __init__(self):
         sched.Agent.__init__(self)
@@ -296,6 +303,16 @@ class TestSched(unittest.TestCase):
         
         ls = logbuf.getagentstates(ag)
         self.assertEqual(ls, ['start', 's1', 's2', 's3', 's4'])
+        self.assert_(not logbuf.geterrors())
+
+    def test_assertagent(self):
+        logbuf = LoggingBuffer()
+        ag = TestAssertAgent()
+        ag.addhandler('error', logbuf.handleerror)
+        ag.start()
+        
+        schedloop()
+        
         self.assert_(not logbuf.geterrors())
 
     def test_periodictimeragent(self):

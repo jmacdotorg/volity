@@ -34,6 +34,10 @@ class RPCService(service.Service):
         invoke the Deferred object. That will result in *op* being called;
         and the *op* should then do one of the things on this list.
 
+    If you use an RPCService, you should add the string interface.NS_RPC
+    ('jabber:iq:rpc') to your DiscoService features. (It would be better
+    if this happened automatically, but it doesn't.)
+        
     RPCService(opset=None, notfoundhandler=None) -- constructor.
 
     If you don't supply an opset, a bare Opset instance will be used. This
@@ -486,7 +490,7 @@ class SeparatorOpset(Opset):
         
         pos = callname.find(self.sep)
         if (pos < 0):
-            CallNotFound
+            raise CallNotFound
             
         pref = callname[ : pos ]
         rootname = callname [ pos+len(self.sep) : ]
@@ -508,7 +512,7 @@ class WrapperOpset(Opset):
 
     Public method:
 
-    setopset(subobset) -- change the contained opset.
+    setopset() -- change the contained opset.
     getopset() -- retrieve the contained opset.
     """
     
