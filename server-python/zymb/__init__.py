@@ -30,9 +30,14 @@ simple tasks.
 
 * Version history:
 
+- 1.3.1:
+The priority queue system, which is supposed to ensure that the consequences
+    of a Jabber message play out completely before the next message is
+    processed, never worked right. Now (I think) it does.
+
 - 1.3.0:
 Exceptions in scheduled actions are now logged. They no longer kill the
-Zymb process.
+    Zymb process.
 
 - 1.2.7:
 Fixed dumb bug when comparing (jid1 != jid2)

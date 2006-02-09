@@ -356,8 +356,9 @@ class TestSched(unittest.TestCase):
         schedloop()
 
         ls = logbuf.getdologs()
-        self.assertEqual(ls, ['alpha-2', 'alpha-1', 'beta-2', 'beta-1',
-            'gamma-2', 'gamma-1', 'delta-2', 'delta-1'])
+        self.assertEqual(ls,
+            ['gamma-2', 'gamma-1', 'delta-2', 'delta-1',
+            'alpha-2', 'alpha-1', 'beta-2', 'beta-1'])
         self.assert_(not logbuf.geterrors())
 
     def test_deferred(self):
@@ -909,6 +910,51 @@ class TestJabber(unittest.TestCase):
         self.assert_(isinstance(ls[0], jabber.interface.StreamLevelError))
         (nam, text) = ls[0]
         self.assert_(nam, 'xml-not-well-formed')
+
+    def test_secondaryqueue(self):
+        dic = {
+            '<?xml version=\'1.0\'?><stream:stream xmlns="jabber:client" to="localhost" version="1.0" xmlns:stream="http://etherx.jabber.org/streams" >' :
+            ( "<stream:stream xmlns='jabber:client' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' from='jabber.org' id='ID' version='1.0'>",
+            "<features />"),
+            'M1': ('<message>alpha1</message>',
+                '<message>beta1</message>',
+                '<message>alpha2</message><message>beta2</message>'
+                '<message>omega</message>')
+        }
+
+        def handlestanza(ag, stanza):
+            val = stanza.getdata()
+            dolog(ag, val)
+            if (val.startswith('alpha')):
+                ag.queueaction(dolog, ag, 'startgame')
+            if (val.startswith('beta')):
+                dolog(ag, 'turn')
+            if (val == 'omega'):
+                ag.queueaction(ag.stop)
+        
+        logbuf = LoggingBuffer()
+
+        pocket = Pocket()
+        ag = TestListenParrotAgent(4201, pocket, dic)
+        ag2 = jabber.client.JabberConnect('erkyrath@localhost/test', 4201)
+        ag2.addhandler('error', logbuf.handleerror)
+        ag2.addhandler('connected', ag2.conn.send, 'M1')
+        ag2.adddispatcher(handlestanza, ag2,
+            name='message', accept=True)
+
+        ag.start()
+        ag2.start()
+        
+        schedloop()
+
+        ls = logbuf.getagentstates(ag2)
+        self.assertEqual(ls, ['start', 'gotheader', 'streaming', 'connected', 'end'])
+        self.assert_(not logbuf.geterrors())
+        ls = logbuf.getdologs()
+        self.assertEqual(ls,
+            ['alpha1', 'startgame', 'beta1', 'turn',
+            'alpha2', 'startgame', 'beta2', 'turn', 
+            'omega', 'closedpocket'])
 
 # ----
         

@@ -73,12 +73,25 @@ class XML(sched.Agent):
 
         self.addhandler('start', self.setup)
         self.addhandler('end', self.endparse)
-        
-        ac = stream.addhandler('handle', self.handle)
+
+        # All the watchers on stream are marked as "secondary" -- that is,
+        # the actions they generate will be low-priority. This ensures that
+        # each XML stanza is completely handled before the next one is
+        # considered.
+
+        ac = sched.Action(self.handle)
+        ac.secondary = True
+        stream.addhandler('handle', ac)
         self.addcleanupaction(ac)
-        ac = stream.addhandler('end', self.stop)
+
+        ac = sched.Action(self.stop)
+        ac.secondary = True
+        stream.addhandler('end', ac)
         self.addcleanupaction(ac)
-        ac = stream.addhandler('error', self.perform, 'error')
+
+        ac = sched.Action(self.perform, 'error')
+        ac.secondary = True
+        stream.addhandler('error', ac)
         self.addcleanupaction(ac)
 
     def setup(self):

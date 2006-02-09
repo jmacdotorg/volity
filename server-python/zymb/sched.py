@@ -73,6 +73,7 @@ class Action:
     ident = None
     interval = None
     periodic = False
+    secondary = None
     
     def __init__(self, op, *args):
         if (type(op) == tuple):
@@ -107,6 +108,11 @@ class Action:
         self.agent = agent
         self.location = loc
         self.locevent = event
+        if (self.secondary == None):
+            if (loc == LOC_SOCKETS or loc == LOC_POLLERS):
+                self.secondary = True
+            else:
+                self.secondary = False
 
     def remove(self):
         """remove() -> None
@@ -614,8 +620,11 @@ class Agent:
             tup = (ac, ())
             
         ac.register(LOC_ACTION, self)
-        
-        actionqueue.append(tup)
+
+        if (secondaryaction):
+            secondaryqueue.append(tup)
+        else:
+            actionqueue.append(tup)
         return ac
 
     def jump(self, st, *exargs):
@@ -641,8 +650,12 @@ class Agent:
         
         actions = self.handlers.get(st)
         if (actions):
-            for ac in actions:
-                actionqueue.append( (ac, exargs) )
+            if (secondaryaction):
+                for ac in actions:
+                    secondaryqueue.append( (ac, exargs) )
+            else:
+                for ac in actions:
+                    actionqueue.append( (ac, exargs) )
 
     def perform(self, name, *exargs):
         """perform(eventname, *args) -> None
@@ -656,8 +669,12 @@ class Agent:
         
         actions = self.handlers.get(name)
         if (actions):
-            for ac in actions:
-                actionqueue.append( (ac, exargs) )
+            if (secondaryaction):
+                for ac in actions:
+                    secondaryqueue.append( (ac, exargs) )
+            else:
+                for ac in actions:
+                    actionqueue.append( (ac, exargs) )
 
     def addhandler(self, state, op, *args):
         """addhandler(eventname, op, *args) -> action
@@ -898,6 +915,14 @@ agents = []
 
 agentcount = 0
 
+# secondaryaction -- whether actions queued *by* the current action
+# should go into the primary queue or the secondary queue. By default,
+# if the current action was registered as a poller, this will be
+# true. Timers, handlers, and ordinary queued actions will have this
+# be false.
+
+secondaryaction = False
+
 # actionqueue -- list of (action, args) tuples.
 # This represents actions which are scheduled to happen right away.
 # The actions are Action objects. The call to be made will be action(*args).
@@ -997,6 +1022,8 @@ def process(timeout=None):
 
     """
 
+    global secondaryaction
+
     activity = False
     firsttime = True
     polltimersset = False
@@ -1037,6 +1064,7 @@ def process(timeout=None):
             ls = nowpolls
         for ac in ls:
             assert ac.agent.live
+            secondaryaction = ac.secondary
             #log.debug('polling %s for %s', ac, ac.agent)
             try:
                 ac()
@@ -1044,17 +1072,22 @@ def process(timeout=None):
                 log.error('Uncaught exception in poll action',
                     exc_info=True)
 
+        secondaryaction = False
+            
         if (sockets):
             ls = sockets.keys()
             (inls, outls, exls) = select.select(ls, [], [], 0)
             for fileno in inls:
                 ac = sockets[fileno]
+                secondaryaction = ac.secondary
                 try:
                     ac()
                 except Exception, ex:
                     log.error('Uncaught exception in poll action',
                         exc_info=True)
 
+        secondaryaction = False
+        
         # All the items on actionqueue are timers and polls. They all
         # count as secondary actions. So move them there.
 
@@ -1071,6 +1104,7 @@ def process(timeout=None):
                 
             assert ac.agent.live
             activity = True
+            secondaryaction = ac.secondary
             #log.debug('activity %s for %s', ac, ac.agent)
             try:
                 ac(*exargs)
@@ -1080,6 +1114,8 @@ def process(timeout=None):
                 log.error('Uncaught exception in action',
                     exc_info=True)
     
+        secondaryaction = False
+        
         if (activity):
             break
         if (timeout == 0):
