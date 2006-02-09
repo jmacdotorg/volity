@@ -18,7 +18,7 @@ pull in the language-specific sections.
 * prep.pl
 A Perl script that, given the name of a subdirectory containing
 language-specific XML for the VDG, creates a file called
-language_entities.dtd. This file defines some XML entity references
+language-entities.dtd. This file defines some XML entity references
 found in devguide_core.xml to point to files found within your
 language-specific directory. Until you run this script, the VDG XML
 file contains undefined entity references.
