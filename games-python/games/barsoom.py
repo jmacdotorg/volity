@@ -420,6 +420,9 @@ class GoSeat(volity.game.Seat):
 
 class BarsoomBot(volity.bot.Bot):
     boardsize = None
+    initialscore = 0
+    initialnulls = None
+    initialroots = None
 
     def __init__(self, act):
         volity.bot.Bot.__init__(self, act)
@@ -432,13 +435,6 @@ class BarsoomBot(volity.bot.Bot):
         self.turn = None
                 
     def begingame(self):
-        self.tryinitgame() ### lame
-
-    def tryinitgame(self):
-        ### lame but necessary test
-        if (self.board):
-            return
-            
         self.board = Board(*self.boardsize)
         for (xp,yp) in self.roots:
             self.board.set(xp, yp, 'root')
@@ -451,22 +447,22 @@ class BarsoomBot(volity.bot.Bot):
 
         self.turn = None
 
-        #print '### begingame'
         #self.board.dump() ###
+
+    def gamehasbegun(self):
+        self.begingame()
 
     def endgame(self):
         self.board = None
         self.turn = None
 
     def rpc_move(self, sender, seat, xp, yp, size, dir):
-        self.tryinitgame()
         self.board.set(xp, yp, (self.getseat(seat), size))
         self.board.stashes[seat][size] -= 1
 
     def rpc_turn(self, sender, seat):
         self.turn = self.getseat(seat)
         if (self.turn and self.turn == self.getownseat()):
-            #print '### I am supposed to move now.'
             #self.board.dump() ###
             ls = self.allmoves(self.board, self.turn)
             if (ls):
