@@ -130,7 +130,7 @@ sub rpc_mark {
     }
 
 
-    return;
+    return 'volity.ok';
 }
 
 sub add_x_mark {
