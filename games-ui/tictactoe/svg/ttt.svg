@@ -65,7 +65,7 @@ game.mark = function(seat_id, location) {
   mark.setAttribute("y", square_y + 20);
   document.firstChild.appendChild(mark);
 
-  // Add to the placed_marks array, so we can wipe it in game.START().
+  // Add to the placed_marks array, so we can wipe it in volity.start_game().
   placed_marks.push(mark);
 
 }
@@ -86,11 +86,7 @@ function square_clicked(evt, location_number) {
   rpc("mark", location_number);
 }
 
-game.END = function() {
-//  reset();
-}
-
-game.START = function() {
+volity.start_game = function() {
   // Clear any marks made in the last game.
   for (mark_index in placed_marks) {
     var mark = placed_marks[mark_index];
