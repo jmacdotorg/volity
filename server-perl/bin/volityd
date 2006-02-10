@@ -99,7 +99,7 @@ volityd -- A simple Volity game server
 # Volity::Game::RPS module, with a bot class defined
 # in the Volity::Bot::RPS module.
 
-volityd -u rps -p foo -h volity.net -r testing \
+volityd -u mygame -p bigsecret -h volity.net -r testing \
         -b bookkeeper@volity.net/volity 
         -g Volity::Game::RPS -B Volity::Bot::RPS \
         -l /home/jmac/volity/volity_logger.conf
