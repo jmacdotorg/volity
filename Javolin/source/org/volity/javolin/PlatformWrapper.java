@@ -7,6 +7,12 @@ import java.lang.reflect.*;
 //### http://support.microsoft.com/default.aspx?scid=kb;en-us;283225
 //### http://www.centerkey.com/java/browser/myapp/BareBonesBrowserLaunch.java
 
+//### jvm parameter "http.agent" for UserAgent
+
+//### Java6 desktop stuff:
+//### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/systemtray/
+//### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/desktop_api/
+
 /**
  * A collection of static functions which bundle up platform-specific
  * operations. This is broken out as a separate class because it's a lot of

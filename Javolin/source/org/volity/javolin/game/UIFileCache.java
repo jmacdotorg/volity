@@ -23,6 +23,11 @@ import java.util.*;
 import java.util.zip.*;
 import org.volity.javolin.JavolinApp;
 
+//#### Harden this against direction deletions during play. And remember
+//#### that listFiles() can return null.
+//#### and we need a "clear cache" option! Even though this would not
+//#### have helped Doug.
+
 /**
  * Manages the on-disk cache of the Volity UI files.
  *
