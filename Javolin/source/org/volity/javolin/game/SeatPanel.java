@@ -3,7 +3,7 @@ package org.volity.javolin.game;
 import java.awt.*;
 import java.awt.datatransfer.*;
 import java.awt.dnd.*;
-import java.io.*;
+import java.awt.event.MouseEvent;
 import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
@@ -266,7 +266,8 @@ public class SeatPanel extends JPanel
                     selfColor = col;
                 }
 
-                label = new JLabel(player.getNick(), icon, SwingConstants.LEFT);
+                label = new JLabelPop(player, 
+                    player.getNick(), icon, SwingConstants.LEFT);
                 label.setFont(font);
                 label.setForeground(col);
                 c = new GridBagConstraints();
@@ -368,6 +369,29 @@ public class SeatPanel extends JPanel
         }
 
         revalidate();
+    }
+
+    private class JLabelPop extends JLabel {
+        Player mPlayer;
+
+        public JLabelPop(Player player,
+            String text, Icon icon, int horizontalAlignment) {
+            super(text, icon, horizontalAlignment);
+            mPlayer = player;
+        }
+
+        protected void processMouseEvent(MouseEvent ev) {
+            if (ev.isPopupTrigger()) {
+                if (mChart != null) {
+                    Point pt = getLocationOnScreen();
+                    mChart.displayPopupMenu(mPlayer, pt.x+ev.getX(), pt.y+ev.getY());
+                }
+                return;
+            }
+            
+            super.processMouseEvent(ev);
+        }
+        
     }
 
     private class DragSourceThing 

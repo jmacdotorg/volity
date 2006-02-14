@@ -42,6 +42,8 @@ public class SeatChart
     SeatPanel mCurrentSeat = null;
     String mCurrentSelfMark = GameTable.MARK_NONE;
 
+    SeatContextMenu mPopupMenu = null;
+
     ChangeListener mColorChangeListener;
     RPCBackground.Callback mDefaultCallback;
 
@@ -76,6 +78,8 @@ public class SeatChart
             String id = (String)it.next();
             adjustOnePanel(mTable.getSeat(id));
         }
+
+        mPopupMenu = new SeatContextMenu(this);
 
         mDefaultCallback = new RPCBackground.Callback() {
                 public void run(Object result, Exception err, Object rock) {
@@ -112,6 +116,10 @@ public class SeatChart
         mTable.removeStatusListener(this);
         PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
             mColorChangeListener);
+        if (mPopupMenu != null) {
+            mPopupMenu.dispose();
+            mPopupMenu = null;
+        }
     }
 
     /** Return the UI component that displays the chart. */
@@ -253,8 +261,8 @@ public class SeatChart
 
     /**
      * Send a sit or stand request to the referee. This is used by the
-     * drag-drop mechanism; that's why the arguments are Strings (which must be
-     * converted to Player/Seat objects).
+     * drag-drop and popup menu mechanisms; that's why the arguments are
+     * Strings (which must be converted to Player/Seat objects).
      *
      * @param jid the player who is to sit/stand.
      * @param seatid the seat to sit in (or null to stand, or ANY_SEAT to sit
@@ -281,7 +289,24 @@ public class SeatChart
             mTable.getReferee().sit(player, seat, mDefaultCallback, null);
         }
     }
+
+    /**
+     * Send a remove-bot request to the referee. This is used by the popup menu
+     * mechanism; that's why the argument is a String.
+     */
+    protected void requestRemoveBot(String jid) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        mTable.getReferee().removeBot(jid, mDefaultCallback, null);
+    }
     
+    /* The pop-up menu (shared among all the items in the chart) */
+
+    public void displayPopupMenu(Player player, int xpos, int ypos) {
+        Point pt = mPanel.getLocationOnScreen();
+        mPopupMenu.adjustShow(player, mPanel, xpos-pt.x, ypos-pt.y);
+    }
+
     /***** Methods which implement StatusListener. *****/
 
     /* All these methods are called from outside the Swing thread. */

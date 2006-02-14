@@ -65,6 +65,12 @@ public class Player {
         return mIsReferee;
     }
 
+    /** Is this a bot? */
+    public boolean isBot() {
+        // Not yet implemented.
+        return false;
+    }
+
     /** Record whether the player is the referee. */
     protected void setReferee(boolean val) {
         mIsReferee = val;

@@ -1,6 +1,11 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 CVS repository.
 
+* the present
+
+Contextual menus for players in the seating chart. You can chat with them, 
+sit them down, stand them up.
+
 * release 0.2.5
 
 More nasty memory leaks found, and subsequently plugged.
