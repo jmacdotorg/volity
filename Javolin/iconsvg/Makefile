@@ -12,7 +12,7 @@ table_toolbar_buttons: Ready_ButIcon.png Unready_ButIcon.png Seat_ButIcon.png Un
 
 roster_treeicons: Avail_TreeIcon.png Unavail_TreeIcon.png Reverse_TreeIcon.png Busy_TreeIcon.png VolAvail_TreeIcon.png VolBusy_TreeIcon.png ParAvail_TreeIcon.png
 
-seating_treeicons: Standing_TreeIcon.png Seated_TreeIcon.png Ready_TreeIcon.png Self_TreeIcon.png
+seating_treeicons: Standing_TreeIcon.png Seated_TreeIcon.png Ready_TreeIcon.png Self_TreeIcon.png Bot_TreeIcon.png Referee_TreeIcon.png
 
 mark_seaticons: Turn_SeatIcon.png Win_SeatIcon.png First_SeatIcon.png Other_SeatIcon.png Blank_SeatIcon.png
 
@@ -62,6 +62,12 @@ Seated_TreeIcon.png: seated-treeicon.svg
 
 Ready_TreeIcon.png: ready-treeicon.svg
 	$(SVGTOPNG) ready-treeicon.svg -a 0,0,100,100 -w 16 -h 16 -d Ready_TreeIcon.png
+
+Bot_TreeIcon.png: bot-treeicon.svg
+	$(SVGTOPNG) bot-treeicon.svg -a 0,0,100,100 -w 16 -h 16 -d Bot_TreeIcon.png
+
+Referee_TreeIcon.png: paravail-treeicon.svg
+	$(SVGTOPNG) paravail-treeicon.svg -a 0,0,100,100 -w 16 -h 16 -d Referee_TreeIcon.png
 
 Self_TreeIcon.png: self-treeicon.svg
 	$(SVGTOPNG) self-treeicon.svg -a 0,0,100,100 -w 12 -h 12 -d Self_TreeIcon.png

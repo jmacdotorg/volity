@@ -478,9 +478,23 @@ public class GameTable
             String jid = (String)ent.getKey();
             OccupantPresence opair = (OccupantPresence)ent.getValue();
             Occupant occ = opair.occupant;
+
+            // See if this presence packet has a Volity role
+            CapPacketExtension volrole = null;
+            PacketExtension ext = opair.presence.getExtension(
+                CapPacketExtension.NAME,
+                CapPacketExtension.NAMESPACE);
+            if (ext != null && ext instanceof CapPacketExtension) {
+                CapPacketExtension extp = (CapPacketExtension)ext;
+                if (extp.getNode().equals("http://volity.org/protocol/caps")) {
+                    volrole = extp;
+                }
+            }
+
             // this is a new player
             Player player = new Player(jid, occ.getNick(), 
-                jid.equals(mConnection.getUser()));
+                jid.equals(mConnection.getUser()),
+                volrole != null && volrole.hasExtString("bot"));
             if (newPlayers == null)
                 newPlayers = new ArrayList();
             newPlayers.add(player);
@@ -489,23 +503,16 @@ public class GameTable
 
             boolean knownRef = false;
 
-            PacketExtension ext = opair.presence.getExtension(
-                CapPacketExtension.NAME,
-                CapPacketExtension.NAMESPACE);
-            if (ext != null && ext instanceof CapPacketExtension) {
-                CapPacketExtension extp = (CapPacketExtension)ext;
-                if (extp.getNode().equals("http://volity.org/protocol/caps")
-                    && extp.hasExtString("referee")) {
-                    knownRef = true;
-                    player.setReferee(true);
-                    // Invoke into the Swing thread.
-                    final Player refPlayer = player;
-                    SwingUtilities.invokeLater(new Runnable() {
-                            public void run() {
-                                foundReferee(refPlayer);
-                            }
-                        });
-                }
+            if (volrole != null && volrole.hasExtString("referee")) {
+                knownRef = true;
+                player.setReferee(true);
+                // Invoke into the Swing thread.
+                final Player refPlayer = player;
+                SwingUtilities.invokeLater(new Runnable() {
+                        public void run() {
+                            foundReferee(refPlayer);
+                        }
+                    });
             }
             
             if ((!knownRef) && occ.getAffiliation().equals("owner")) {

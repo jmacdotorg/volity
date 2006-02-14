@@ -18,6 +18,7 @@ public class Player {
     protected String mNick;
     protected boolean mIsSelf;
     protected boolean mIsReferee;
+    protected boolean mIsBot;
     protected boolean mIsReady;
 
     /**
@@ -25,10 +26,11 @@ public class Player {
      * @param nick the nickname of the player in the MUC
      * @param isself is this you?
      */
-    public Player(String jid, String nick, boolean isself) {
+    public Player(String jid, String nick, boolean isself, boolean isbot) {
         mIsSelf = isself;
         mJID = jid;
         mIsReferee = false;
+        mIsBot = isbot;
         mNick = nick;
         mSeat = null;
         mIsReady = false;
@@ -67,8 +69,7 @@ public class Player {
 
     /** Is this a bot? */
     public boolean isBot() {
-        // Not yet implemented.
-        return false;
+        return mIsBot;
     }
 
     /** Record whether the player is the referee. */

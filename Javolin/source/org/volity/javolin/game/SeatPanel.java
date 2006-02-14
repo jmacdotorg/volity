@@ -32,19 +32,24 @@ public class SeatPanel extends JPanel
         new ImageIcon(SeatPanel.class.getResource("Blank_TreeIcon.png"));
     static protected Icon ICON_READY = 
         new ImageIcon(SeatPanel.class.getResource("Ready_TreeIcon.png"));
-    static protected Icon ICON_SEATED = 
-        new ImageIcon(SeatPanel.class.getResource("Seated_TreeIcon.png"));
     static protected Icon ICON_STANDING = 
         new ImageIcon(SeatPanel.class.getResource("Standing_TreeIcon.png"));
+    static protected Icon ICON_REFEREE = 
+        new ImageIcon(SeatPanel.class.getResource("Referee_TreeIcon.png"));
+    static protected Icon ICON_BOT = 
+        new ImageIcon(SeatPanel.class.getResource("Bot_TreeIcon.png"));
     static protected Icon ICON_SELF = 
         new ImageIcon(SeatPanel.class.getResource("Self_TreeIcon.png"));
 
-    static protected Icon ICON_READY_SELF = 
-        new MultiIcon(ICON_READY, ICON_SELF);
-    static protected Icon ICON_SEATED_SELF = 
-        new MultiIcon(ICON_SEATED, ICON_SELF);
-    static protected Icon ICON_STANDING_SELF = 
-        new MultiIcon(ICON_STANDING, ICON_SELF);
+    static protected MultiIcon.Cache iconCache;
+    static {
+        iconCache = new MultiIcon.Cache();
+        iconCache.add("ready", ICON_READY);
+        iconCache.add("human", ICON_STANDING);
+        iconCache.add("referee", ICON_REFEREE);
+        iconCache.add("bot", ICON_BOT);
+        iconCache.add("self", ICON_SELF);
+    }
 
     static protected Icon ICON_MARK_NONE = 
         new ImageIcon(SeatPanel.class.getResource("Blank_SeatIcon.png"));
@@ -237,24 +242,24 @@ public class SeatPanel extends JPanel
                 else
                     font = fontNameUnready;
 
-                Icon icon;
+                String iconlabel;
 
-                if (player.isSelf()) {
-                    if (mIsObserver) 
-                        icon = ICON_STANDING_SELF;
-                    else if (player.isReady())
-                        icon = ICON_READY_SELF;
-                    else
-                        icon = ICON_SEATED_SELF;
-                }
-                else {
-                    if (mIsObserver) 
-                        icon = ICON_STANDING;
-                    else if (player.isReady())
-                        icon = ICON_READY;
-                    else
-                        icon = ICON_SEATED;
-                }
+                if (player.isReferee()) 
+                    iconlabel = "referee";
+                else if (player.isBot())
+                    iconlabel = "bot";
+                else if (mIsObserver) 
+                    iconlabel = "human";
+                else
+                    iconlabel = "human";
+
+                if (player.isReady())
+                    iconlabel += " ready";
+
+                if (player.isSelf()) 
+                    iconlabel += " self";
+
+                Icon icon = iconCache.get(iconlabel);
 
                 if (player.isReferee()) {
                     mChart.mUserColorMap.setUserColor(player.getJID(), player.getNick(), Color.GRAY);

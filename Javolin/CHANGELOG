@@ -3,6 +3,10 @@ CVS repository.
 
 * the present
 
+Bots and referees now get distinct icons in the seating chart. I also made
+the "ready" checkmark a distinct icon; it's no longer superimposed on the
+player icon.
+
 Contextual menus for players in the seating chart. You can chat with them, 
 sit them down, stand them up.
 

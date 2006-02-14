@@ -1,6 +1,8 @@
 package org.volity.javolin;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.Icon;
 
 /**
@@ -70,6 +72,66 @@ public class MultiIcon implements Icon
 
         protected Element(Icon icon) {
             mIcon = icon;
+        }
+    }
+
+    /**
+     * If you want to mix and match a bunch of Icons, but you don't want to
+     * create a static MultiIcon for each combination, you can use this handy
+     * cache facility.
+     *
+     * Prime it by calling add(label, icon) for a bunch of icons; give each one
+     * a unique name. You can then call get(string). The string can be any
+     * label, or a space-separated list of labels. You will get an Icon or
+     * MultiIcon matching your list.
+     *
+     * The methods of this class are thread-safe.
+     */
+    public static class Cache {
+        Map mMap;
+
+        /** Constructor. */
+        public Cache() {
+            mMap = new HashMap();
+        }
+
+        /**
+         * Add a basic Icon to the cache. (Technically this could be a
+         * MultiIcon, but that wouldn't be efficient cache usage.) The label
+         * must be a simple string (containing no spaces), which will identify
+         * the icon.
+         */
+        public synchronized void add(String label, Icon icon) {
+            if (label.indexOf(' ') >= 0)
+                throw new RuntimeException("MultiIcon.Cache labels may not contain spaces.");
+
+            mMap.put(label, icon);
+        }
+
+        /**
+         * Fetch an Icon matching a given string. This should be the label of
+         * an existing Icon, or a space-separated list of labels.
+         *
+         * If there is no such Icon in the cache, it will be created (as a
+         * MultiIcon) from the ones that do exist.
+         */
+        public synchronized Icon get(String labels) {
+            Icon res = (Icon)mMap.get(labels);
+            if (res != null)
+                return res;
+
+            String [] ls = labels.split(" +");
+            Icon [] icons = new Icon[ls.length];
+            for (int ix=0; ix<ls.length; ix++) {
+                Icon icon = (Icon)mMap.get(ls[ix]);
+                if (icon == null)
+                    throw new RuntimeException("MultiIcon.Cache does not contain '"+ls[ix]+"'.");
+                icons[ix] = icon;
+            }
+
+            res = new MultiIcon(icons);
+            mMap.put(labels, res);
+            return res;            
         }
     }
 }
