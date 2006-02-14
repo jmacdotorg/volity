@@ -283,6 +283,12 @@ public class JavolinApp extends JFrame
         System.setProperty("sun.awt.exception.handler",
             "org.volity.javolin.ErrorWrapper");
 
+        /*
+         * Set the HTTP User-Agent.
+         */
+        val = getAppName() + "/" + getAppVersion();
+        System.setProperty("http.agent", val);
+
         // Set up system properties and the like.
         PlatformWrapper.mainInitialize();
 

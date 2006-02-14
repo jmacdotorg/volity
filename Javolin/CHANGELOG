@@ -3,6 +3,9 @@ CVS repository.
 
 * the present
 
+The Game Finder's User-Agent will now be set to a Javolin version number
+followed by a Java version number. E.g.: "Javolin/0.2.5 Java/1.4.2_09"
+
 If the game finder manages to generate bad XHTML, the Finder window will
 show a tidy error instead of crashing and closing. This error page contains
 a link to the bug-report form.

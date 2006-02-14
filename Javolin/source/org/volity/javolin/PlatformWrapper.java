@@ -7,8 +7,6 @@ import java.lang.reflect.*;
 //### http://support.microsoft.com/default.aspx?scid=kb;en-us;283225
 //### http://www.centerkey.com/java/browser/myapp/BareBonesBrowserLaunch.java
 
-//### jvm parameter "http.agent" for UserAgent
-
 //### Java6 desktop stuff:
 //### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/systemtray/
 //### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/desktop_api/
