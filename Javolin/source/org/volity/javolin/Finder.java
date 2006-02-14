@@ -2,26 +2,47 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.volity.client.CommandStub;
 import org.w3c.dom.Document;
+import org.xhtmlrenderer.extend.NamespaceHandler;
 import org.xhtmlrenderer.extend.UserAgentCallback;
 import org.xhtmlrenderer.simple.extend.XhtmlNamespaceHandler;
 import org.xhtmlrenderer.swing.BasicPanel;
 import org.xhtmlrenderer.swing.LinkListener;
+import org.xhtmlrenderer.util.XRRuntimeException;
 
 public class Finder extends JFrame
 {
     private final static String FINDER_URL = "http://www.volity.net/gamefinder/";
+    private final static String BUGREPORT_URL = "http://volity.net/bugs/beta_bugform.html";
 
     private final static String NODENAME = "FinderWin";
     private final static String OPENFINDER_KEY = "WantedOpen";
 
+    private final static String fallbackErrorText =
+        "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>\n"
+        +"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
+        +"\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+        +"<html><head>\n"
+        +"<title>Unable to load Game Finder</title>\n"
+        +"</head><body>\n"
+        +"<p>The Game Finder service does not appear to be\n"
+        +"working correctly.\n"
+        +"We apologize for the problem.</p>\n"
+        +"<p>Try <a href=\"<$FINDER$>\">reloading the Finder page</a></p>\n"
+        +"<p>Please <a href=\"<$BUGREPORT$>\">report problems</a>\n"
+        +"using our bug report service\n"
+        +"(<$BUGREPORT$>)</p>\n"
+        +"</body></html>\n";
+    
     private static Finder soleFinder = null;
 
     /**
@@ -48,7 +69,7 @@ public class Finder extends JFrame
     }
 
     private JavolinApp mOwner;
-    private BasicPanel mDisplay;
+    private XHTMLFinder mDisplay;
     private SizeAndPositionSaver mSizePosSaver;
 
     private Finder(JavolinApp owner) 
@@ -57,6 +78,15 @@ public class Finder extends JFrame
 
         setTitle(JavolinApp.getAppName() + " Game Finder");
         buildUI();
+
+        /* Push the setDocument into its own event. This doesn't speed up the
+         * startup procedure, but it does prevent errors from short-circuiting
+         * the creation of the window. */
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    trySetDocument();
+                }
+            });
 
         setSize(650, 400);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
@@ -221,13 +251,39 @@ public class Finder extends JFrame
         }
     }
 
+    private void trySetDocument() {
+        if (mDisplay == null)
+            return;
+
+        try {
+            mDisplay.setDocument(FINDER_URL);
+        }
+        catch (XRRuntimeException ex) {
+            new ErrorWrapper(ex);
+
+            String errortext = fallbackErrorText;
+            errortext = errortext.replaceAll("<\\$FINDER\\$>", FINDER_URL);
+            errortext = errortext.replaceAll("<\\$BUGREPORT\\$>", BUGREPORT_URL);
+
+            System.out.println("###\n"+errortext);
+
+            try {
+                byte[] bytes = errortext.getBytes("UTF-8");
+                InputStream instr = new ByteArrayInputStream(bytes);
+                mDisplay.setDocument(instr, FINDER_URL);
+            }
+            catch (Exception ex2) {
+                // give up
+            }
+        }
+    }
+
     private void buildUI()
     {
         Container cPane = getContentPane();
         cPane.setLayout(new BorderLayout());
         
         mDisplay = new XHTMLFinder();
-        mDisplay.setDocument(FINDER_URL);
         cPane.add(new JScrollPane(mDisplay), BorderLayout.CENTER);
 
         // Necessary for all windows, for Mac support
