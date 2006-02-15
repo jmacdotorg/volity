@@ -24,17 +24,23 @@ public class PrefsDialog extends JFrame
 
     /* Preference group names are top-level nodes. They're also used as keys in
      * the notification system, so they're publicly readable. */
+    public final static String GAME_OPTIONS = "GamePrefs";
     public final static String CHAT_COLOR_OPTIONS = "ChatPrefs";
     public final static String ROSTER_DISPLAY_OPTIONS = "RosterPrefs";
     public final static String SOUND_OPTIONS = "SoundPrefs";
     public final static String DEBUG_OPTIONS = "DebugPrefs";
 
     /* Keys within the various top-level nodes. */
+
+    public final static String GAMESHOWHELP_KEY = "ShowHelp";
+
     public final static String CHATNAMESHADE_KEY = "NameShade";
     public final static String CHATBODYSHADE_KEY = "BodyShade";
+
     public final static String ROSTERSHOWOFFLINE_KEY = "ShowOffline";
     public final static String ROSTERSHOWREVERSE_KEY = "ShowReverse";
     public final static String ROSTERNOTIFYSUBSCRIPTIONS_KEY = "NotifySubscriptions";
+
     public final static String SOUNDPLAYAUDIO_KEY = "PlayAudio";
     public final static String SOUNDSHOWALTTAGS_KEY = "ShowAltTags";
     public final static String SOUNDUSEBUDDYSOUNDS_KEY = "UseBuddySounds";
@@ -46,6 +52,7 @@ public class PrefsDialog extends JFrame
     public final static String SOUNDUSEERRORSOUND_KEY= "UseErrorSound";
 
     public final static String DEBUGSHOWRPCS_KEY = "ShowRPCs";
+
 
     private final static int MARGIN = 12; // Space to window edge
     private final static int GAP = 4; // Space between controls
@@ -65,6 +72,7 @@ public class PrefsDialog extends JFrame
      * The actual preference values. Call loadPreferences() at app start time
      * to make sure they're set properly.
      */
+    private static boolean prefGameShowHelp;
     private static int prefChatBodyShade;
     private static int prefChatNameShade;
     private static boolean prefRosterShowOffline;
@@ -87,6 +95,9 @@ public class PrefsDialog extends JFrame
      */
     public static void loadPreferences() {
         Preferences prefs;
+
+        prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(GAME_OPTIONS);
+        prefGameShowHelp = prefs.getBoolean(GAMESHOWHELP_KEY, true);
 
         prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(CHAT_COLOR_OPTIONS);
         prefChatBodyShade = prefs.getInt(CHATBODYSHADE_KEY, 30);
@@ -141,6 +152,7 @@ public class PrefsDialog extends JFrame
             });
     }
 
+    public static boolean getGameShowHelp() { return prefGameShowHelp; }
     public static int getChatBodyShade() { return prefChatBodyShade; }
     public static int getChatNameShade() { return prefChatNameShade; }
     public static boolean getRosterShowOffline() { return prefRosterShowOffline; }
@@ -211,6 +223,7 @@ public class PrefsDialog extends JFrame
         }
     }
 
+    private final static String LABEL_GAMESHOWHELP = "Display seating help";
     private final static String LABEL_ROSTERSHOWOFFLINE = "Display offline buddies";
     private final static String LABEL_ROSTERSHOWREVERSE = "Display people whose roster you are on";
     private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
@@ -230,6 +243,7 @@ public class PrefsDialog extends JFrame
     private SizeAndPositionSaver mSizePosSaver;
 
     private JTabbedPane mTabPane;
+    private JCheckBox mGameShowHelp;
     private JCheckBox mRosterShowOffline;
     private JCheckBox mRosterShowReverse;
     private JCheckBox mRosterNotifySubscriptions;
@@ -289,6 +303,15 @@ public class PrefsDialog extends JFrame
         mTabPane.addChangeListener(new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
                     saveWindowState();
+                }
+            });
+
+        mGameShowHelp.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefGameShowHelp = mGameShowHelp.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                    prefs.putBoolean(GAMESHOWHELP_KEY, prefGameShowHelp);
+                    noticeChange(GAME_OPTIONS, GAMESHOWHELP_KEY);
                 }
             });
 
@@ -544,6 +567,36 @@ public class PrefsDialog extends JFrame
         JLabel label;
         
         mTabPane = new JTabbedPane();
+
+        {
+            JPanel pane = new JPanel(new GridBagLayout());
+            
+            int row = 0;
+            
+            mGameShowHelp = new JCheckBox(LABEL_GAMESHOWHELP, prefGameShowHelp);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(mGameShowHelp, c);
+
+            // Blank stretchy spacer
+            label = new JLabel(" ");
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 1;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(label, c);
+
+            mTabPane.addTab("Game", pane);
+        }
 
         {
             JPanel pane = new JPanel(new GridBagLayout());

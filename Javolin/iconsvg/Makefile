@@ -18,6 +18,9 @@ mark_seaticons: Turn_SeatIcon.png Win_SeatIcon.png First_SeatIcon.png Other_Seat
 
 coloricons: Green_0_ColorIcon.png Green_1_ColorIcon.png Green_2_ColorIcon.png Green_3_ColorIcon.png Green_4_ColorIcon.png
 
+HelpIcon.png: help-icon.svg
+	$(SVGTOPNG) help-icon.svg -a 0,0,100,100 -w 32 -h 32 -d HelpIcon.png
+
 Ready_ButIcon.png: ready-button.svg
 	$(SVGTOPNG) ready-button.svg -a 0,0,100,100 -w 20 -h 20 -d Ready_ButIcon.png
 

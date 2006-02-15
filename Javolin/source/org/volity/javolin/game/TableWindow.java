@@ -101,6 +101,7 @@ public class TableWindow extends JFrame implements PacketListener
     private SVGCanvas mGameViewport;
     private JPanel mGameViewWrapper;
     private SeatChart mSeatChart;
+    private HelpPanel mHelpPanel;
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
     private GameTable.ReadyListener mTableReadyListener;
@@ -254,6 +255,8 @@ public class TableWindow extends JFrame implements PacketListener
 
         mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator,
             mMessageHandler);
+
+        mHelpPanel = new HelpPanel(mGameTable);
 
         buildUI();
 
@@ -596,6 +599,11 @@ public class TableWindow extends JFrame implements PacketListener
         if (mSeatChart != null) {
             mSeatChart.dispose();
             mSeatChart = null;
+        }
+
+        if (mHelpPanel != null) {
+            mHelpPanel.dispose();
+            mHelpPanel = null;
         }
 
         if (mUserColorMap != null) {
@@ -1282,8 +1290,36 @@ public class TableWindow extends JFrame implements PacketListener
 
         mUserListSplitter.setLeftComponent(mBoardSplitter);
 
-        JComponent chart = mSeatChart.getComponent();
-        mUserListSplitter.setRightComponent(new JScrollPane(chart));
+        // Right side, including SeatChart and HelpPanel
+        JPanel rightSide = new JPanel(new GridBagLayout());
+        {
+            JComponent chart = mSeatChart.getComponent();
+            JComponent scrollChart = new JScrollPane(chart);
+
+            GridBagConstraints c;
+            int row = 0;
+
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row;
+            c.fill = GridBagConstraints.BOTH;
+            c.anchor = GridBagConstraints.NORTH;
+            c.weightx = 1;
+            c.weighty = 1;
+            rightSide.add(scrollChart, c);
+            row++;
+
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.SOUTH;
+            c.weightx = 1;
+            c.weighty = 0;
+            rightSide.add(mHelpPanel, c);
+            row++;
+        }
+        mUserListSplitter.setRightComponent(rightSide);
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
 

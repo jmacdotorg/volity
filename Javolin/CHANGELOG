@@ -3,6 +3,9 @@ CVS repository.
 
 * the present
 
+The table window now shows dynamic help in the bottom right corner. You
+can hide this panel from the "Game" tab of the Preferences.
+
 The Game Finder's User-Agent will now be set to a Javolin version number
 followed by a Java version number. E.g.: "Javolin/0.2.5 Java/1.4.2_09"
 

@@ -87,6 +87,11 @@ public class Player {
         mIsReady = flag;
     }
 
+    /** Is this player seated? */
+    public boolean isSeated() {
+        return (mSeat != null);
+    }
+
     /** Return the Player's seat (or null, if unseated). */
     public Seat getSeat() {
         return mSeat;
