@@ -23,11 +23,6 @@ import java.util.*;
 import java.util.zip.*;
 import org.volity.javolin.JavolinApp;
 
-//#### Harden this against direction deletions during play. And remember
-//#### that listFiles() can return null.
-//#### and we need a "clear cache" option! Even though this would not
-//#### have helped Doug.
-
 /**
  * Manages the on-disk cache of the Volity UI files.
  *
@@ -82,6 +77,16 @@ public class UIFileCache
         mDownloadedFiles = new HashSet();
 
         // Create the cache dirs
+        ensureCacheDirsExist();
+    }
+
+    /**
+     * Create the cache dir and its subdirs, if necessary. We check this
+     * frequently, because some bozo might delete cache data while Javolin is
+     * running.
+     */
+    protected void ensureCacheDirsExist() 
+    {
         if (!mFileCacheDir.exists())
         {
             mFileCacheDir.mkdirs();
@@ -157,26 +162,40 @@ public class UIFileCache
      */
     public File getUIDir(URL uiURL) throws IOException, ZipException
     {
+        // First, double-check that the cache dirs exist.
+        ensureCacheDirsExist();
+
+        // Figure out all the pathnames we'll be using.
         String name = urlToCacheName(uiURL);
         File cacheFile = new File(mFileCacheDir, name);
         File cacheDir = new File(mDirCacheDir, name+".d");
 
         boolean download = false;
+        boolean unzip = false;
 
-        // Determine whether the file needs to be downloaded
+        // Determine whether the file needs to be downloaded.
         if (!cacheFile.exists())
         {
             download = true;
         }
         else
         {
-            URLConnection connection = uiURL.openConnection();
+            long ourmodtime = cacheFile.lastModified();
 
-            if (connection.getLastModified() > 0)
+            URLConnection connection = uiURL.openConnection();
+            connection.setUseCaches(false);
+            if (connection instanceof HttpURLConnection) {
+                HttpURLConnection hconn = (HttpURLConnection)connection;
+                hconn.setRequestMethod("HEAD");
+            }
+
+            long srcmodtime = connection.getLastModified();
+
+            if (srcmodtime > 0)
             {
                 // Download if modified date of file at URL is greater
                 // than that of the file on disk
-                download = (connection.getLastModified() > cacheFile.lastModified());
+                download = (srcmodtime > ourmodtime);
             }
             else
             {
@@ -187,21 +206,33 @@ public class UIFileCache
             }
         }
 
-        // Download the file, and unzip it (if necessary)
+        // If we've lost the dir cache, we'll need to unzip regardless.
+        if (!cacheDir.exists()) {
+            unzip = true;
+        }
+
+        /* Now the work begins. Download the file (if necessary), and then
+         * unzip it (if necessary. */
 
         if (download)
         {
             copyFile(uiURL, cacheFile);
             // Remember that we've downloaded it
             mDownloadedFiles.add(uiURL.toString()); 
-            
+
             /* Since we've downloaded a new copy of the file, the
              * cached unzipped version is invalid. */
-            boolean success = deleteRecursively(cacheDir);
-            if (!success) 
-            {
-                // Our cache is horked in some way. Sorry.
-                throw new IOException("unable to delete old UI data from cache");
+            unzip = true;
+        }
+
+        if (unzip) {
+            if (cacheDir.exists()) {
+                boolean success = deleteRecursively(cacheDir);
+                if (!success) 
+                {
+                    // Our cache is horked in some way. Sorry.
+                    throw new IOException("unable to delete old UI data from cache");
+                }
             }
 
             cacheDir.mkdirs();
@@ -239,6 +270,25 @@ public class UIFileCache
         }
 
         return cacheDir;
+    }
+
+    /**
+     * Clean out the UI cache. 
+     *
+     * If includeDirs is false, this only wipes the FileCache. Subsequent cache
+     * requests will be certain to download and unpack new copies of the files,
+     * but games in progress will not be disturbed.
+     *
+     * If includeDirs is true, this wipes both FileCache and DirCache. This
+     * reduces cache disk usage to zero, but it will crash games in progress.
+     * Do not set this flag if any TableWindows are open.
+     */
+    public void clearCache(boolean includeDirs)
+    {
+        deleteRecursively(mFileCacheDir);
+        if (includeDirs)
+            deleteRecursively(mDirCacheDir);
+        ensureCacheDirsExist();
     }
 
     /**
@@ -353,6 +403,17 @@ public class UIFileCache
     private static boolean deleteRecursively(File name) 
     {
         if (!name.exists()) 
+        {
+            return true;
+        }
+
+        /* Little trick here. We *don't* want to recursively follow symlinks to
+         * directories -- we just want to delete the symlink. But a symlink to
+         * a directory will test true in isDirectory(). So, we try a delete()
+         * first. If that fails, and the file appears to be a directory, we
+         * recurse. Finally, we delete() again to get rid of empty
+         * directories. */
+        if (name.delete())
         {
             return true;
         }

@@ -1109,6 +1109,15 @@ public class JavolinApp extends JFrame
         box.show();
     }
 
+    public void doClearCache() {
+        if (mTableWindows.size() == 0) {
+            sUIFileCache.clearCache(true);
+        }
+        else {
+            sUIFileCache.clearCache(false);
+        }
+    }
+
     /**
      * RosterPanelListener interface method implementation. Updates the toolbar
      * buttons when the roster selection has changed.

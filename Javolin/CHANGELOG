@@ -3,6 +3,12 @@ CVS repository.
 
 * the present
 
+The UI cache is now much better at weird cases where someone deletes files
+or directories by hand. There is now a "clear interface cache" menu item.
+The cache now tries to send headers which will punch through overly-smart
+web proxies. Also, it does a HEAD request when comparing file modification
+times.
+
 The table window now shows dynamic help in the bottom right corner. You
 can hide this panel from the "Game" tab of the Preferences.
 

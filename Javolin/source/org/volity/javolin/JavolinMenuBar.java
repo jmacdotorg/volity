@@ -44,6 +44,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
+    private final static String MENUCMD_CLEAR_CACHE = "Clear Interface Cache";
     private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
     private final static String MENUCMD_GAME_FINDER = "Game Finder";
 
@@ -60,6 +61,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mJoinTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
     private JMenuItem mShowLastErrorMenuItem;
+    private JMenuItem mClearCacheMenuItem;
     private JMenuItem mMemUsageMenuItem;
     private JMenuItem mGameInfoMenuItem;
     private JMenuItem mSuspendTableMenuItem;
@@ -145,6 +147,11 @@ public class JavolinMenuBar extends JMenuBar
         mShowLastErrorMenuItem.addActionListener(this);
         setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
         fileMenu.add(mShowLastErrorMenuItem);
+
+        mClearCacheMenuItem = new JMenuItem(MENUCMD_CLEAR_CACHE);
+        mClearCacheMenuItem.addActionListener(this);
+        setPlatformMnemonic(mClearCacheMenuItem, KeyEvent.VK_C);
+        fileMenu.add(mClearCacheMenuItem);
 
         if (true) {
             mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
@@ -427,6 +434,9 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (source == mShowLastErrorMenuItem) {
             mApplication.doShowLastError();
+        }
+        else if (source == mClearCacheMenuItem) {
+            mApplication.doClearCache();
         }
         else if (source == mMemUsageMenuItem) {
             Runtime runtime = Runtime.getRuntime();
