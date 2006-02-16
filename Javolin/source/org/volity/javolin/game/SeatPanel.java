@@ -199,8 +199,7 @@ public class SeatPanel extends JPanel
 
         removeAll();
 
-        boolean gameIsActive = 
-            (mChart.mTable.getRefereeState() == GameTable.STATE_ACTIVE);
+        boolean gameIsActive = mChart.mTable.isRefereeStateActive();
         String mark = (String)(mChart.mTable.getSeatMarks().get(mID));
         Icon markIcon = getIconForMark(mark);
 

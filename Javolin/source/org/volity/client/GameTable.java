@@ -43,14 +43,21 @@ public class GameTable
 {
     /**
      * Constants for referee states. UNKNOWN means we haven't contacted the
-     * referee yet. SETUP, ACTIVE, SUSPENDED track the referee. (Clients do not
-     * know about referee states "disrupted" or "abandoned"; those fall under
-     * ACTIVE.)
+     * referee yet. SETUP, ACTIVE, SUSPENDED, DISRUPTED, ABANDONED track the
+     * referee. (Clients may wish to lump ACTIVE/DISRUPTED/ABANDONED together.
+     * See the isRefereeStateActive() method.)
+     *
+     * ### The DISRUPTED and ABANDONED states can't actually occur right now,
+     * because there's no way for the client to be informed about them.
+     * Eventually we'll add an RPC to VolityHandler which receives these
+     * states.
      */
     public final static int STATE_UNKNOWN   = 0;
     public final static int STATE_SETUP     = 1;
     public final static int STATE_ACTIVE    = 2;
     public final static int STATE_SUSPENDED = 3;
+    public final static int STATE_DISRUPTED = 4;
+    public final static int STATE_ABANDONED = 5;
 
     /**
      * Constants for seat marks.
@@ -673,9 +680,9 @@ public class GameTable
         else if (val.equals("active"))
             newstate = STATE_ACTIVE;
         else if (val.equals("disrupted"))
-            newstate = STATE_ACTIVE;
+            newstate = STATE_DISRUPTED;
         else if (val.equals("abandoned"))
-            newstate = STATE_ACTIVE;
+            newstate = STATE_ABANDONED;
 
         setRefereeState(newstate);
     }
@@ -686,10 +693,26 @@ public class GameTable
      *   STATE_UNKNOWN:   The referee has not yet been contacted.
      *   STATE_SETUP:     New game configuration.
      *   STATE_ACTIVE:    Game in progress.
+     *   STATE_DISRUPTED: Game in progress, but a seat has lost all players.
+     *   STATE_ABANDONED: Game in progress, but all humans are gone.
      *   STATE_SUSPENDED: Game suspended for reconfiguration.
      */
     public int getRefereeState() {
         return mRefereeState;
+    }
+
+    /**
+     * Test whether the current known referee state corresponds to a form of
+     * "game in progress". ACTIVE, DISRUPTED, and ABANDONED are true; SETUP and
+     * SUSPENDED are false.
+     */
+    public boolean isRefereeStateActive() {
+        if (mRefereeState == STATE_ACTIVE 
+            || mRefereeState == STATE_DISRUPTED
+            || mRefereeState == STATE_ABANDONED)
+            return true;
+        else
+            return false;
     }
 
     public static String refereeStateToString(int val) {
@@ -697,6 +720,8 @@ public class GameTable
         case STATE_ACTIVE:    return "active";
         case STATE_SUSPENDED: return "suspended";
         case STATE_SETUP:     return "setup";
+        case STATE_DISRUPTED: return "disrupted";
+        case STATE_ABANDONED: return "abandoned";
         default:              return null;
         }
     }

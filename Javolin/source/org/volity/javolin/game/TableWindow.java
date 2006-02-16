@@ -341,6 +341,12 @@ public class TableWindow extends JFrame implements PacketListener
                     case GameTable.STATE_ACTIVE:
                         str = "Game in progress";
                         break;
+                    case GameTable.STATE_DISRUPTED:
+                        str = "Game is disrupted: a seat has been left empty";
+                        break;
+                    case GameTable.STATE_ABANDONED:
+                        str = "Game is abandoned: no humans are left";
+                        break;
                     case GameTable.STATE_SUSPENDED:
                         str = "Game suspended";
                         break;
@@ -1155,8 +1161,7 @@ public class TableWindow extends JFrame implements PacketListener
 
         boolean isSeated, isReady, isGameActive;
 
-        isGameActive = 
-            (mGameTable.getRefereeState() == GameTable.STATE_ACTIVE);
+        isGameActive = mGameTable.isRefereeStateActive();
         isSeated = mGameTable.isSelfSeated();
         isReady = mGameTable.isSelfReady();
 

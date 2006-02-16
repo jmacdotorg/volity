@@ -69,8 +69,7 @@ public class HelpPanel extends JPanel
     /* All these methods are called from outside the Swing thread. */
 
     public void stateChanged(int newstate) {
-        if (newstate == GameTable.STATE_ACTIVE
-            || newstate == GameTable.STATE_SUSPENDED)
+        if (newstate != GameTable.STATE_SETUP)
             everPlayed = true;
 
         invokeRebuildUI();
