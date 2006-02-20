@@ -69,8 +69,8 @@ Lib file: js.jar
 Name: Batik
 Home page: http://xml.apache.org/batik/
 Version: 1.6
-Download: svn checkout -r 333250 http://svn.apache.org/repos/asf/xmlgraphics/batik/trunk
-    (The "-r 333250" fetches the source as of 2005-Nov-13, which works with
+Download: svn checkout -r 379046 http://svn.apache.org/repos/asf/xmlgraphics/batik/trunk
+    (The "-r 379046" fetches the source as of 2006-Feb-20, which works with
     the current Javolin source.)
     % cd trunk
     % setenv JAVA_HOME /usr
