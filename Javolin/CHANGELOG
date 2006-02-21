@@ -1,6 +1,14 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 CVS repository.
 
+* release 0.2.7
+
+This is strictly a bugfix release. Actually, it is a jmac-screwed-up-the-
+build-last-time release. He apologizes.
+
+This release includes a game finder that works on Windows, and includes
+the MP3 libraries that were supposed to be included several builds ago.
+
 * release 0.2.6
 
 The supported version of Batik has been upgraded to revision 379046. This

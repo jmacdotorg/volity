@@ -53,7 +53,7 @@ public class JavolinApp extends JFrame
                RosterPanelListener, InvitationListener
 {
     private final static String APPNAME = "Javolin";
-    private final static String APPVERSION = "0.2.6";
+    private final static String APPVERSION = "0.2.7";
 
     private final static String NODENAME = "MainAppWin";
 
