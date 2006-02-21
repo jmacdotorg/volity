@@ -1,7 +1,7 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 CVS repository.
 
-* the present
+* release 0.2.6
 
 The supported version of Batik has been upgraded to revision 379046. This
 fixes a problem with <use> in an SVG 1.2 document.
