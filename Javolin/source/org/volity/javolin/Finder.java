@@ -265,8 +265,6 @@ public class Finder extends JFrame
             errortext = errortext.replaceAll("<\\$FINDER\\$>", FINDER_URL);
             errortext = errortext.replaceAll("<\\$BUGREPORT\\$>", BUGREPORT_URL);
 
-            System.out.println("###\n"+errortext);
-
             try {
                 byte[] bytes = errortext.getBytes("UTF-8");
                 InputStream instr = new ByteArrayInputStream(bytes);
