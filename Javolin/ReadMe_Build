@@ -78,7 +78,8 @@ Download: svn checkout -r 379046 http://svn.apache.org/repos/asf/xmlgraphics/bat
     The line above is correct for MacOSX.)
     % sh build.sh all-jar
 Lib files: batik-all.jar, xerces_2_5_0.jar, xml-apis-dom3.jar
-    (After building, batik-all.jar will be in the batik-1.6/lib directory; 
+    (We know this to throw warnings but still build successfully with Java 1.4.2.
+    After building, batik-all.jar will be in the batik-1.6/lib directory; 
     xerces_2_5_0.jar and xml-apis-dom3.jar are in the lib directory.)
 Comments: If you were building the previous version of Javolin, be sure to
     delete batik-*.jar and xml-apis.jar from your lib directory before
