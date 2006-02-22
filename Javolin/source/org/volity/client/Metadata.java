@@ -13,26 +13,50 @@ import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
+/**
+ * A class which parses metadata out of an SVG file, according to the Volity
+ * metadata spec. (Which is extremely simple.) The metadata object can then be
+ * queried (in an extremely simple way) to determine what was there.
+ */
 public class Metadata
 {
+    // XML namespaces used in the general vicinity of metadata
     public static final String NS_XML = "http://www.w3.org/XML/1998/namespace";
     public static final String NS_SVG = "http://www.w3.org/2000/svg";
     public static final String NS_DC = "http://purl.org/dc/elements/1.1/";
     public static final String NS_VOLITY = "http://volity.org/protocol/metadata";
 
-    public static final String SVG_TITLE = createKey(NS_SVG, "metadata");
+    // Keys which are used as metadata labels. Each exists in either the
+    // DC or VOLITY namespace.
 
     public static final String DC_TITLE = createKey(NS_DC, "title");
     public static final String DC_CREATOR = createKey(NS_DC, "creator");
+    public static final String DC_DESCRIPTION = createKey(NS_DC, "description");
+    public static final String DC_CREATED = createKey(NS_DC, "created");
+    public static final String DC_MODIFIED = createKey(NS_DC, "modified");
+    public static final String DC_LANGUAGE = createKey(NS_DC, "language");
 
-    public static final String VOLITY_REQUIRE_RULESET = createKey(NS_VOLITY, "require-ruleset");
+    public static final String VOLITY_DESCRIPTION_URL = createKey(NS_VOLITY, "description-url");
+    public static final String VOLITY_RULESET = createKey(NS_VOLITY, "ruleset");
+    public static final String VOLITY_VERSION = createKey(NS_VOLITY, "version");
+    public static final String VOLITY_REQUIRES_ECMASCRIPT_API = createKey(NS_VOLITY, "requires-ecmascript-api");
+
 
     protected Map mMap = new HashMap();
 
-    protected Metadata() {
+    /**
+     * Constructor. You should only call this if you want an empty metadata
+     * set. Call parseSVGMetadata() to create a Metadata object from an SVG
+     * file.
+     */
+    public Metadata() {
         // nothing to set up
     }
 
+    /**
+     * Add an entry to a metadata set. This is only used internally, while
+     * parsing metadata from a file.
+     */
     protected void add(String key, String value, String language) {
         List ls;
 
@@ -47,10 +71,22 @@ public class Metadata
         ls.add(new Entry(value, language));
     }
 
+    /**
+     * Retrieve an entry from the set. If there are multiple entries matching
+     * this key, it will retrieve the first one which has no xml:lang attribute
+     * (or the first one overall, if necessary).
+     */
     public String get(String key) {
         return get(key, null);
     }
 
+    /**
+     * Retrieve an entry from the set. If there are multiple entries matching
+     * this key, it will retrieve the first one whose xml:lang attribute
+     * matches the given language. If there are none of those (or if the
+     * language argument is null), this retrieves the first entry which has no
+     * xml:lang attribute (or the first one overall, if necessary).
+     */
     public String get(String key, String language) {
         List ls = (List)mMap.get(key);
         if (ls == null)
@@ -62,7 +98,7 @@ public class Metadata
         for (int ix=0; ix<ls.size(); ix++) {
             Entry val = (Entry)ls.get(ix);
             String lang = val.getLanguage();
-            if (language != null && lang.equals(language))
+            if (language != null && lang != null && lang.equals(language))
                 return val.getValue();
             if (lang == null) {
                 if (resultNone == null)
@@ -80,6 +116,10 @@ public class Metadata
             return resultWrong;
     }
 
+    /**
+     * Retrieve all the entries from the set which match the given key. The
+     * result is a List of Strings.
+     */
     public List getAll(String key) {
         List res = new ArrayList();
         List ls = (List)mMap.get(key);
@@ -93,6 +133,11 @@ public class Metadata
         return res;
     }
 
+    /**
+     * Retrieve all the entries from the set which match the given key. The
+     * result is a List of Entry objects; each Entry contains the string value
+     * of the key, and the entry language (its xml:lang attribute).
+     */
     public List getAllEntries(String key) {
         List res = new ArrayList();
         List ls = (List)mMap.get(key);
@@ -105,6 +150,10 @@ public class Metadata
         return res;
     }
 
+    /**
+     * Dump a text representation of the metadata to an output stream. This is
+     * useful mostly for debugging.
+     */
     public void dump(PrintStream out) {
         for (Iterator it = mMap.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry ent = (Map.Entry)it.next();
@@ -122,10 +171,20 @@ public class Metadata
         }
     }
 
+    /**
+     * Create a key (such as may be passed to the get() or getAll() methods of
+     * Metadata). A key is a namespaced XML element name, so you have to pass
+     * in a namespace and a name.
+     */
     public static String createKey(String namespace, String name) {
         return namespace + " " + name;
     }
 
+    /**
+     * A data-only class which represents a metadata entry. It contains a
+     * string value and, optionally, a language (which is taken from the
+     * entry's xml:lang attribute.)
+     */
     public static class Entry {
         protected String value;
         protected String language;
@@ -137,6 +196,9 @@ public class Metadata
         public String getLanguage() { return language; }
     }
 
+    /**
+     * Create a Metadata object from an SVG file.
+     */
     public static Metadata parseSVGMetadata(File file) 
         throws XmlPullParserException, IOException
     {

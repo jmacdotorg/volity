@@ -107,7 +107,7 @@ public class InfoDialog extends BaseDialog
                     field.setBorder(BorderFactory.createEmptyBorder(3, 4, 1, 4));
                     c = new GridBagConstraints();
                     c.gridx = 1;
-                    c.gridy = row++;
+                    c.gridy = row;
                     c.weightx = 1;
                     c.anchor = GridBagConstraints.WEST;
                     c.insets = new Insets(SPACING, SPACING, 0, MARGIN);

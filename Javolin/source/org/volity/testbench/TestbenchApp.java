@@ -11,7 +11,6 @@ import javax.swing.*;
 import org.apache.batik.bridge.*;
 import org.apache.batik.util.gui.JErrorPane;
 import org.volity.client.GameUI;
-import org.volity.client.Metadata;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
@@ -32,11 +31,13 @@ public class TestbenchApp extends JFrame
     private final static String MENUCMD_LASTEXCEPTION = "Show Last Exception";
     private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
     private final static String MENUCMD_RELOAD = "Reload";
+    private final static String MENUCMD_METADATA = "UI Metadata...";
 
     private final static String LOG_SPLIT_POS = "LogSplitPos";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
 
     private File mUIDir;
+    private File mUIFile;
     private DebugInfo mDebugInfo;
     private TranslateToken mTranslator;
     private TestButtonBar mButtonBar;
@@ -47,6 +48,7 @@ public class TestbenchApp extends JFrame
     private JSplitPane mChatSplitter;
     private LogTextPanel mMessageText;
     private JMenuItem mReloadMenuItem;
+    private JMenuItem mMetadataMenuItem;
     private JMenuItem mLastExceptionMenuItem;
     private JMenuItem mMemUsageMenuItem;
     private JMenuItem mQuitMenuItem;
@@ -159,6 +161,7 @@ public class TestbenchApp extends JFrame
         URL uiMainUrl = uiFile.toURI().toURL();
 
         mUIDir = uiDir;
+        mUIFile = uiFile;
         mTranslator = new TranslateToken(UIFileCache.findFileCaseless(uiDir, "locale"));
 
         GameUI.MessageHandler messageHandler = new GameUI.MessageHandler() {
@@ -273,6 +276,11 @@ public class TestbenchApp extends JFrame
             mDebugInfo = new DebugInfo(mUIDir);
             mButtonBar.reload(mDebugInfo);
             mViewport.reloadUI(mDebugInfo);
+            MetadataDialog.reloadSoleMetadataDialog();
+        }
+        else if (source == mMetadataMenuItem) {
+            MetadataDialog box = MetadataDialog.getSoleMetadataDialog(mUIFile);
+            box.show();        
         }
         else if (source == mLastExceptionMenuItem) {
             if (lastException instanceof Exception) {
@@ -367,6 +375,12 @@ public class TestbenchApp extends JFrame
         mReloadMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, keyMask));
         setPlatformMnemonic(mReloadMenuItem, KeyEvent.VK_R);
         fileMenu.add(mReloadMenuItem);
+
+        mMetadataMenuItem = new JMenuItem(MENUCMD_METADATA);
+        mMetadataMenuItem.addActionListener(this);
+        mMetadataMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, keyMask));
+        setPlatformMnemonic(mMetadataMenuItem, KeyEvent.VK_M);
+        fileMenu.add(mMetadataMenuItem);
 
         mLastExceptionMenuItem = new JMenuItem(MENUCMD_LASTEXCEPTION);
         mLastExceptionMenuItem.addActionListener(this);
