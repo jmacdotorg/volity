@@ -11,6 +11,7 @@ import javax.swing.*;
 import org.apache.batik.bridge.*;
 import org.apache.batik.util.gui.JErrorPane;
 import org.volity.client.GameUI;
+import org.volity.client.Metadata;
 import org.volity.client.TranslateToken;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
