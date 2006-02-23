@@ -920,11 +920,11 @@ public class TableWindow extends JFrame implements PacketListener
                             String nick = StringUtils.parseResource(from);
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
-                                writeMessageText(null, nick+" has joined the chat.");
+                                writeMessageText(null, nick+" has joined the table.");
                                 Audio.playPresenceIn();
                             }
                             if (typ == Presence.Type.UNAVAILABLE) {
-                                writeMessageText(null, nick+" has left the chat.");
+                                writeMessageText(null, nick+" has left the table.");
                                 Audio.playPresenceOut();
                             }
                         }
