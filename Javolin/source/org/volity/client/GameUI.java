@@ -16,7 +16,7 @@ import org.volity.jabber.*;
 /**
  * A game user interface.
  */
-public class GameUI implements RPCHandler {
+public abstract class GameUI implements RPCHandler {
 
     /**
      * This describes the API version implemented in this file.
@@ -29,6 +29,7 @@ public class GameUI implements RPCHandler {
      * translator and messageHandler. But then we'd have to catch more
      * exceptions. Maybe we should do it anyway.)
      *
+     * @param baseURL the top-level SVG document
      * @param connection an authenticated connection to an XMPP server
      * @param translator a token translation instance
      * @param messageHandler a handler for UI script and RPC messages
@@ -46,6 +47,9 @@ public class GameUI implements RPCHandler {
         this.translator = translator;
         this.errorHandler = errorHandler;
         this.messageHandler = messageHandler;
+
+        this.metadata = loadMetadata();
+
         this.dispatcher = new RPCDispatcherDebug(messageHandler);
         dispatcher.setHandler("game", this);
         dispatcherVolity = new VolityHandler(this);
@@ -59,6 +63,7 @@ public class GameUI implements RPCHandler {
     TranslateToken translator;
     ErrorHandler errorHandler;
     MessageHandler messageHandler;
+    Metadata metadata;
     RPCResponder responder;
     RPCDispatcher dispatcher;
     VolityHandler dispatcherVolity;
@@ -86,6 +91,19 @@ public class GameUI implements RPCHandler {
     public interface Completion {
         public abstract void result(Object obj);
         public abstract void error(Exception ex);
+    }
+
+    /**
+     * Abstract method. This should read metadata from the gamefile (baseURL).
+     * If there is no metadata, create a blank Metadata() and return that.
+     */
+    public abstract Metadata loadMetadata();
+
+    /**
+     * Get the metadata that was loaded from the UI.
+     */
+    public Metadata getMetadata() {
+        return metadata;
     }
 
     /**

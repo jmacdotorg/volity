@@ -42,6 +42,7 @@ import org.volity.client.GameServer;
 import org.volity.client.GameTable;
 import org.volity.client.GameUI;
 import org.volity.client.JIDTransfer;
+import org.volity.client.Metadata;
 import org.volity.client.Player;
 import org.volity.client.RPCBackground;
 import org.volity.client.Referee;
@@ -1064,8 +1065,9 @@ public class TableWindow extends JFrame implements PacketListener
      */
     public void doInfoDialog() {
         if (mInfoDialog == null) {
+            Metadata metadata = mGameViewport.getUI().getMetadata();
             mInfoDialog = new InfoDialog(this, mGameTable,
-                mServer.getGameInfo());
+                mServer.getGameInfo(), metadata);
 
             // When the InfoDialog closes, clear mInfoDialog
             mInfoDialog.addWindowListener(

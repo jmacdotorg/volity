@@ -3,7 +3,10 @@ package org.volity.client;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.Reader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -202,13 +205,50 @@ public class Metadata
     public static Metadata parseSVGMetadata(File file) 
         throws XmlPullParserException, IOException
     {
+        Metadata result = null;
+        FileReader in = new FileReader(file);
+
+        try {
+            result = parseSVGMetadata(null, in);
+        }
+        finally {
+            in.close();
+        }
+
+        return result;
+    }
+
+    /**
+     * Create a Metadata object from an SVG URL.
+     */
+    public static Metadata parseSVGMetadata(URL url) 
+        throws XmlPullParserException, IOException
+    {
+        Metadata result = null;
+        InputStream in = url.openStream();
+
+        try {
+            result = parseSVGMetadata(in, null);
+        }
+        finally {
+            in.close();
+        }
+
+        return result;
+    }
+
+    protected static Metadata parseSVGMetadata(InputStream inputStream, Reader reader)
+        throws XmlPullParserException, IOException
+    {
         Metadata result = new Metadata();
 
         XmlPullParser xpp = new MXParser();
         xpp.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
 
-        FileReader in = new FileReader(file);
-        xpp.setInput(in);
+        if (inputStream != null)
+            xpp.setInput(inputStream, "UTF-8");
+        else if (reader != null)
+            xpp.setInput(reader);
 
         boolean inMetadata = false;
         boolean inString = false;
@@ -283,8 +323,6 @@ public class Metadata
             }
             eventType = xpp.next();
         } while (eventType != xpp.END_DOCUMENT);
-
-        in.close();
 
         return result;
     }

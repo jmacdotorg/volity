@@ -269,6 +269,16 @@ public class SVGCanvas extends JSVGCanvas
                 SVGCanvas.this.messageHandler, SVGCanvas.this.errorHandler);
         }
 
+        public Metadata loadMetadata() {
+            try {
+                return Metadata.parseSVGMetadata(baseURL);
+            }
+            catch (Exception ex) {
+                errorHandler.error(ex);
+                return new Metadata();
+            }
+        }
+
         /**
          * Customization of GameUI.callUIMethod. The Batik library requires
          * that we invoke ECMAScript from a Batik thread. Therefore, all

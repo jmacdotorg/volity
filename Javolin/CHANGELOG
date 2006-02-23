@@ -1,6 +1,11 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 CVS repository.
 
+* the present
+
+Javolin now reads metadata. (So does Testbench.) The Game Info dialog
+displays whatever metadata is present and recognized.
+
 * release 0.2.7
 
 This is strictly a bugfix release. Actually, it is a jmac-screwed-up-the-
