@@ -198,7 +198,7 @@ public class HelpPanel extends JPanel
         }
 
         if (!selfseated) {
-            if (humancount <= 1)
+            if (humancount <= 1 && !everPlayed)
                 text.append("\nThis table has just been created. To take part");
             else
                 text.append("\nAt the moment, you are a bystander. To take part in this game");
