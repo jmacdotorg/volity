@@ -113,15 +113,13 @@ public class MUCWindow extends JFrame implements PacketListener
         addWindowListener(
             new WindowAdapter()
             {
-                public void windowClosing(WindowEvent we)
-                {
+                public void windowClosing(WindowEvent we) {
                     // Leave the chat room when the window is closed
                     saveWindowState();
                     leave();
                 }
 
-                public void windowOpened(WindowEvent we)
-                {
+                public void windowOpened(WindowEvent we) {
                     // Give focus to input text area when the window is created
                     mInputText.requestFocusInWindow();
                 }
