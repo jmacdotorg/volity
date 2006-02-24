@@ -150,7 +150,7 @@ public class VersionNumber
     }
 
     /**
-     * It's a unit test! To run, type
+     * This is a unit test. To run, type
      *   java org.volity.client.VersionNumber
      * in your build directory.
      */

@@ -12,9 +12,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.xmlpull.mxp1.MXParser;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
+import org.xml.sax.*;
+import org.xml.sax.helpers.DefaultHandler;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 /**
  * A class which parses metadata out of an SVG file, according to the Volity
@@ -203,13 +203,13 @@ public class Metadata
      * Create a Metadata object from an SVG file.
      */
     public static Metadata parseSVGMetadata(File file) 
-        throws XmlPullParserException, IOException
+        throws SAXException, IOException
     {
         Metadata result = null;
         FileReader in = new FileReader(file);
 
         try {
-            result = parseSVGMetadata(null, in);
+            result = parseSVGMetadata(file.toURL(), null, in);
         }
         finally {
             in.close();
@@ -222,13 +222,13 @@ public class Metadata
      * Create a Metadata object from an SVG URL.
      */
     public static Metadata parseSVGMetadata(URL url) 
-        throws XmlPullParserException, IOException
+        throws SAXException, IOException
     {
         Metadata result = null;
         InputStream in = url.openStream();
 
         try {
-            result = parseSVGMetadata(in, null);
+            result = parseSVGMetadata(url, in, null);
         }
         finally {
             in.close();
@@ -237,93 +237,137 @@ public class Metadata
         return result;
     }
 
-    protected static Metadata parseSVGMetadata(InputStream inputStream, Reader reader)
-        throws XmlPullParserException, IOException
+    protected static Metadata parseSVGMetadata(URL url, InputStream inputStream, Reader reader)
+        throws SAXException, IOException
     {
-        Metadata result = new Metadata();
+        final Metadata result = new Metadata();
 
-        XmlPullParser xpp = new MXParser();
-        xpp.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
+        XMLReader xr = XMLReaderFactory.createXMLReader("org.apache.xerces.parsers.SAXParser");
+        InputSource input = null;
+        if (reader != null)
+            input = new InputSource(reader);
+        else if (inputStream != null)
+            input = new InputSource(inputStream);
+        input.setEncoding("UTF-8");
+        input.setSystemId(url.toString());
 
-        if (inputStream != null)
-            xpp.setInput(inputStream, "UTF-8");
-        else if (reader != null)
-            xpp.setInput(reader);
+        final StringBuffer buf = new StringBuffer();
 
-        boolean inMetadata = false;
-        boolean inString = false;
-        String currentTag = null;
-        String currentLang = null;
-        int tuple[] = new int[2];
+        xr.setFeature("http://xml.org/sax/features/validation", false);
+        xr.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        xr.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
 
-        StringBuffer buf = new StringBuffer();
+        ContentHandler handler = new DefaultHandler() {
+                private int depth = 0;
 
-        int eventType = xpp.getEventType();
-        do {
-            if (eventType == xpp.START_TAG) {
-                if (xpp.getDepth() == 2 && xpp.getName().equals("metadata")
-                    && xpp.getNamespace().equals(NS_SVG)) {
-                    inMetadata = true;
+                private boolean inMetadata = false;
+                private boolean inString = false;
+                private String currentTag = null;
+                private String currentLang = null;
+
+                public void startElement (String uri, String name,
+                    String qName, Attributes attrs) {
+
+                    depth++;
+
+                    if (depth == 2 && name.equals("metadata")
+                        && uri.equals(NS_SVG)) {
+                        inMetadata = true;
+                    }
+                    if (inMetadata && depth == 3) {
+                        currentTag = createKey(uri, name);
+                        currentLang = attrs.getValue(NS_XML, "lang");
+                        buf.setLength(0);
+                        inString = true;
+                    }
+                    if (depth == 2 && name.equals("title")
+                        && uri.equals(NS_SVG)) {
+                        assert (!inMetadata);
+                        currentTag = DC_TITLE;
+                        currentLang = null;
+                        buf.setLength(0);
+                        inString = true;
+                    }
                 }
-                if (inMetadata && xpp.getDepth() == 3) {
-                    currentTag = createKey(xpp.getNamespace(), xpp.getName());
-                    currentLang = xpp.getAttributeValue(NS_XML, "lang");
-                    buf.setLength(0);
-                    inString = true;
+
+                public void endElement (String uri, String name,
+                    String qName) {
+
+                    if (depth == 2 && inMetadata) {
+                        inMetadata = false;
+                    }
+                    if (inMetadata && depth == 3 && inString) {
+                        String val = buf.toString();
+                        buf.setLength(0);
+                        inString = false;
+
+                        // Remove leading/trailing whitespace
+                        val = val.trim();
+                        // Turn all other whitespace into single spaces
+                        val = val.replaceAll("\\s+", " ");
+
+                        result.add(currentTag, val, currentLang);
+
+                        currentTag = null;
+                    }
+                    if (inString && depth == 2 && name.equals("title")) {
+                        String val = buf.toString();
+                        buf.setLength(0);
+                        inString = false;
+
+                        // Remove leading/trailing whitespace
+                        val = val.trim();
+                        // Turn all other whitespace into single spaces
+                        val = val.replaceAll("\\s+", " ");
+
+                        result.add(currentTag, val, currentLang);
+
+                        currentTag = null;
+                    }
+
+                    depth--;
                 }
-                if (xpp.getDepth() == 2 && xpp.getName().equals("title")
-                    && xpp.getNamespace().equals(NS_SVG)) {
-                    assert (!inMetadata);
-                    currentTag = DC_TITLE;
-                    currentLang = null;
-                    buf.setLength(0);
-                    inString = true;
+
+                public void characters(char ch[], int start, int length) {
+                    if (inString) {
+                        buf.append(ch, start, length);
+                    }
                 }
-            }
-            if (eventType == xpp.END_TAG) {
-                if (xpp.getDepth() == 2 && inMetadata) {
-                    inMetadata = false;
-                }
-                if (inMetadata && xpp.getDepth() == 3 && inString) {
-                    String val = buf.toString();
-                    buf.setLength(0);
-                    inString = false;
+            };
+        xr.setContentHandler(handler);
 
-                    // Remove leading/trailing whitespace
-                    val = val.trim();
-                    // Turn all other whitespace into single spaces
-                    val = val.replaceAll("\\s+", " ");
-
-                    result.add(currentTag, val, currentLang);
-
-                    currentTag = null;
-                }
-                if (inString && xpp.getDepth() == 2 && xpp.getName().equals("title")) {
-                    String val = buf.toString();
-                    buf.setLength(0);
-                    inString = false;
-
-                    // Remove leading/trailing whitespace
-                    val = val.trim();
-                    // Turn all other whitespace into single spaces
-                    val = val.replaceAll("\\s+", " ");
-
-                    result.add(currentTag, val, currentLang);
-
-                    currentTag = null;
-                }
-            }
-            if (eventType == xpp.TEXT) {
-                if (inString) {
-                    char ch[] = xpp.getTextCharacters(tuple);
-                    int start = tuple[0];
-                    int length = tuple[1];
-                    buf.append(ch, start, length);
-                }
-            }
-            eventType = xpp.next();
-        } while (eventType != xpp.END_DOCUMENT);
-
+        xr.parse(input);
         return result;
+    }
+
+    /**
+     * This lets you run the metadata parser as a stand-alone command, which is
+     * handy for unit testing.
+     */
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println("usage: java -cp .:../lib/xerces_2_5_0.jar:../lib/smack.jar org.volity.client.Metadata file [ file2 ...]");
+            return;
+        }
+
+        String val = System.getProperty("java.protocol.handler.pkgs");
+        if (val == null)
+            val = "org.volity.client.protocols";
+        else
+            val = val + "|org.volity.client.protocols";
+        System.setProperty("java.protocol.handler.pkgs", val);
+
+        for (int ix=0; ix<args.length; ix++) {
+            String filename = args[ix];
+            File file = new File(filename);
+            try {
+                Metadata data = parseSVGMetadata(file);
+                data.dump(System.out);
+            }
+            catch (Exception ex) {
+                System.out.println("Cannot parse " + filename + ":");
+                ex.printStackTrace();
+            }
+        }
     }
 }

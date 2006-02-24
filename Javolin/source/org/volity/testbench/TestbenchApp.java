@@ -40,6 +40,7 @@ public class TestbenchApp extends JFrame
     private File mUIFile;
     private DebugInfo mDebugInfo;
     private TranslateToken mTranslator;
+    private TestUI.ErrorHandler errorHandler;
     private TestButtonBar mButtonBar;
 
     private SVGTestCanvas mViewport;
@@ -169,7 +170,7 @@ public class TestbenchApp extends JFrame
                     writeMessageText(msg);
                 }
             };
-        TestUI.ErrorHandler errorHandler = new TestUI.ErrorHandler() {
+        errorHandler = new TestUI.ErrorHandler() {
                 public void error(Throwable ex) {
                     error(ex, null);
                 }
@@ -279,7 +280,8 @@ public class TestbenchApp extends JFrame
             MetadataDialog.reloadSoleMetadataDialog();
         }
         else if (source == mMetadataMenuItem) {
-            MetadataDialog box = MetadataDialog.getSoleMetadataDialog(mUIFile);
+            MetadataDialog box = MetadataDialog.getSoleMetadataDialog(mUIFile,
+                errorHandler);
             box.show();        
         }
         else if (source == mLastExceptionMenuItem) {

@@ -23,9 +23,10 @@ public class MetadataDialog extends BaseDialog
      * There should only be one dialog at a time. This returns it if there is
      * one, or else creates it.
      */
-    public static MetadataDialog getSoleMetadataDialog(File file) {
+    public static MetadataDialog getSoleMetadataDialog(File file,
+        TestUI.ErrorHandler errorHandler) {
         if (soleMetadataDialog == null) {
-            soleMetadataDialog = new MetadataDialog(file);
+            soleMetadataDialog = new MetadataDialog(file, errorHandler);
         }
         return soleMetadataDialog;
     }
@@ -41,11 +42,13 @@ public class MetadataDialog extends BaseDialog
 
     private File mFile;
     private JButton mButton;
+    private TestUI.ErrorHandler errorHandler;
 
-    public MetadataDialog(File file) {
+    public MetadataDialog(File file, TestUI.ErrorHandler errorHandler) {
         super(null, "Metadata", false, NODENAME);
 
         mFile = file;
+        this.errorHandler = errorHandler;
 
         buildUI();
         setResizable(false);
@@ -178,8 +181,9 @@ public class MetadataDialog extends BaseDialog
             data = Metadata.parseSVGMetadata(mFile);
         }
         catch (Exception ex) {
+            errorHandler.error(ex);
             msg = ex.toString();
-            adder.add(row++, "Error:", msg);
+            addarea.add(row++, "Error:", msg);
 
             // Create an empty set, so that we can finish the routine
             data = new Metadata();
