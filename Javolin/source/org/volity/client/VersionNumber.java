@@ -123,10 +123,10 @@ public class VersionNumber
     }
 
     /**
-     * Does this version match the given spec? The code that does this check
-     * lives in VersionSpec, so we call that.
+     * Does this version match the given spec?
      */
     public boolean matches(VersionSpec spec) {
+        // The code that does this check lives in VersionSpec, so we call that.
         return spec.matches(this);
     }
 

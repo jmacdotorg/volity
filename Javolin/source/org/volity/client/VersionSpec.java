@@ -1,5 +1,7 @@
 package org.volity.client;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +13,28 @@ import java.util.List;
  */
 public class VersionSpec
 {
+    /**
+     * Extract the spec from a URI of the form ruleset#spec.
+     */
+    public static VersionSpec fromURI(String uri)
+        throws VersionNumber.VersionFormatException, URISyntaxException
+    {
+        return fromURI(new URI(uri));
+    }
+    
+    /**
+     * Extract the spec from a URI of the form ruleset#spec.
+     */
+    public static VersionSpec fromURI(URI uri)
+        throws VersionNumber.VersionFormatException
+    {
+        String fragment = uri.getRawFragment();
+        if (fragment == null)
+            return new VersionSpec();
+        else
+            return new VersionSpec(fragment);
+    }
+
     protected Pattern[] mPatterns;
     protected String mStringForm = null;
 

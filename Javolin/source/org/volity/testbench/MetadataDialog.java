@@ -3,11 +3,16 @@ package org.volity.testbench;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.volity.client.Metadata;
 import org.volity.client.TranslateToken;
+import org.volity.client.VersionNumber;
+import org.volity.client.VersionSpec;
 import org.volity.javolin.BaseDialog;
 
 /**
@@ -221,15 +226,40 @@ public class MetadataDialog extends BaseDialog
         adder.add(row++, "Version:", msg);
 
         ls = data.getAll(Metadata.VOLITY_RULESET);
-        for (int ix=0; ix<ls.size(); ix++)
-            adder.add(row++, "Ruleset:", (String)ls.get(ix));
+        for (int ix=0; ix<ls.size(); ix++) {
+            String ruleset = (String)ls.get(ix);
+            try {
+                VersionSpec.fromURI(ruleset);
+            }
+            catch (URISyntaxException ex) {
+                ruleset += "   [invalid URI]";
+            }
+            catch (VersionNumber.VersionFormatException ex) {
+                ruleset += "   [invalid spec]";
+            }
+            adder.add(row++, "Ruleset:", ruleset);
+        }
 
         msg = data.get(Metadata.VOLITY_DESCRIPTION_URL);
-        if (msg != null)
+        if (msg != null) {
+            try {
+                new URL(msg);
+            }
+            catch (MalformedURLException ex) {
+                msg += "   [invalid URL]";
+            }
             adder.add(row++, "Description URL:", msg);
+        }
         msg = data.get(Metadata.VOLITY_REQUIRES_ECMASCRIPT_API);
-        if (msg != null)
+        if (msg != null) {
+            try {
+                new VersionSpec(msg);
+            }
+            catch (VersionNumber.VersionFormatException ex) {
+                msg += "   [invalid spec]";
+            }
             adder.add(row++, "Requires ECMA API:", msg);
+        }
 
         mButton = new JButton("OK");
         c = new GridBagConstraints();
