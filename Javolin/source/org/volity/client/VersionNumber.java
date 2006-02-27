@@ -8,11 +8,11 @@ package org.volity.client;
  */
 public class VersionNumber
 {
-    int mMajor = 1;
-    int mMinor = 0;
-    boolean isMinorVisible = true;
-    String mRelease = null;
-    String mStringForm = null;
+    protected int mMajor = 1;
+    protected int mMinor = 0;
+    protected boolean isMinorVisible = true;
+    protected String mRelease = null;
+    protected String mStringForm = null;
 
     public VersionNumber(int major)
         throws VersionFormatException
@@ -120,6 +120,14 @@ public class VersionNumber
     {
         if (!release.matches("\\A[\\w[_.+-]]+\\z"))
             throw new VersionFormatException("Release string is invalid: \"" + release + "\".");
+    }
+
+    /**
+     * Does this version match the given spec? The code that does this check
+     * lives in VersionSpec, so we call that.
+     */
+    public boolean matches(VersionSpec spec) {
+        return spec.matches(this);
     }
 
     /**
