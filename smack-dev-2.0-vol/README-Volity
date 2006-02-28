@@ -45,6 +45,10 @@ Changelog:
 your eyes bleed. I will apply tags as major changes go in. Tags are
 listed below, most-recent-first.)
 
+* discobug
+    Fixed a bug with disco#info error responses. (This was causing iChat
+to flail wildly.)
+
 * disco
     Added service discovery extension forms (JEP-0128) to 
 ServiceDiscoveryManager.

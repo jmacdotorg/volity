@@ -281,6 +281,7 @@ public class ServiceDiscoveryManager {
                     }
                     else {
                         // Return an <item-not-found/> error since a client doesn't have nodes
+                        response.setNode(discoverInfo.getNode());
                         response.setType(IQ.Type.ERROR);
                         response.setError(new XMPPError(404, "item-not-found"));
                     }
