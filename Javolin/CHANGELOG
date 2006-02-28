@@ -1,7 +1,11 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
-CVS repository.
+SVN repository.
 
 * the present
+
+The supported version of Smack has been upgraded. This fixes a bad 
+interaction with iChat. Please get the latest version of Smack from Volity's
+SVN repository or from http://volity.org/projects/javolin/buildlib/.
 
 Javolin now reads metadata. (So does Testbench.) The Game Info dialog
 displays whatever metadata is present and recognized.

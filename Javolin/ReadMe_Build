@@ -31,6 +31,10 @@ commands are available:
 
   testbench - Compiles Testbench and builds the Testbench.jar file.
 
+  libtestbench - Compiles and builds Testbench.jar, containing all the third
+      party libraries needed for it to run. Use this version to create a
+      Testbench for public release.
+
   doc - Uses Javadoc to generate Javolin API documentation in a directory 
       called "doc".
 
@@ -44,21 +48,34 @@ Libraries
 ---------
 
 Javolin relies on third party libraries. If you don't have these libraries, you
-cannot build or run Javolin. Most of these libraries are not checked in to the
-SVN repository, so you must download them and place them into the lib directory
-yourself. The following is a list of the libraries currently used, along with
-URLs pointing to the download location of the version currently being developed
-against. The Lib file(s) item tells you what file or files must be copied into
-the lib directory so that Javolin can be compiled and run. (Please keep this
-list up-to-date when new library dependencies are added to Javolin, as well as
-when we move to a new version of a library that we are already using.)
+cannot build or run Javolin. The easiest way to get these libraries is from the
+Javolin project web site:
+
+    http://volity.org/projects/javolin/buildlib/
+
+Grab all the .jar files from there and place them in the Javolin/lib directory.
+You will then be able to compile Javolin.
+
+The following is a list of the libraries currently used, along with the
+download site that each one originated from. In some cases this is a third-
+party binary download. Other libraries require you to build a .jar file from
+source. The Lib file(s) item tells you what file or files must be copied into
+the Jaovlin/lib directory so that Javolin can be compiled and run. 
+
+(Please keep this list up-to-date when new library dependencies are added to
+Javolin, as well as when we move to a new version of a library that we are
+already using.)
 
 ---
 Name: Smack (modified version in Volity SVN)
 Home page: http://www.jivesoftware.org/smack/
-Version: 2.0.0-v-1
-Download: https://sourceforge.net/project/showfiles.php?group_id=91751 (the smack-volity package)
+Version: 2.0.0-v-2
+Download: svn checkout -r 859 https://svn.sourceforge.net/svnroot/volity/trunk/smack-dev-2.0-vol
+    % cd smack-dev-2.0-vol/build
+    % ant jar
 Lib files: smack.jar, smackx.jar
+    After building, both .jar files will be in the top level directory
+    (smack-dev-2.0-vol).
 ---
 Name: Rhino
 Home page: http://www.mozilla.org/rhino/
