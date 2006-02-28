@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +18,7 @@ import java.util.Map;
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
+import org.volity.client.protocols.volresp.Handler;
 
 /**
  * A class which parses metadata out of an SVG file, according to the Volity
@@ -43,8 +47,21 @@ public class Metadata
     public static final String VOLITY_RULESET = createKey(NS_VOLITY, "ruleset");
     public static final String VOLITY_VERSION = createKey(NS_VOLITY, "version");
     public static final String VOLITY_REQUIRES_ECMASCRIPT_API = createKey(NS_VOLITY, "requires-ecmascript-api");
+    public static final String VOLITY_REQUIRES_RESOURCE = createKey(NS_VOLITY, "requires-resource");
+    public static final String VOLITY_PROVIDES_RESOURCE = createKey(NS_VOLITY, "provides-resource");
 
+    public static final URI sBlankURI;
+    static {
+        try {
+            sBlankURI = new URI("");
+        }
+        catch (URISyntaxException ex) {
+            throw new RuntimeException("Unable to create blank URI.");
+        }
+    }
 
+    protected boolean isTopLevel;
+    protected Map mResources;
     protected Map mMap = new HashMap();
 
     /**
@@ -53,7 +70,29 @@ public class Metadata
      * file.
      */
     public Metadata() {
-        // nothing to set up
+        this(null);
+    }
+
+    /**
+     * Constructor. If you pass a (non-null) parent object, this creates a
+     * subordinate Metadata object.
+     */
+    protected Metadata(Metadata parent) {
+        if (parent == null) {
+            isTopLevel = true;
+            /* A top-level Metadata object holds its own resource map. Its
+             * children will share access to it. */
+            mResources = new HashMap();
+
+            // Add the Metadata itself, with a blank URI.
+            ResourceEntry entry = new ResourceEntry(null, null, this);
+            mResources.put(sBlankURI, entry);
+        }
+        else {
+            isTopLevel = false;
+            /* A subordinate Metadata object points at its parent's map. */
+            mResources = parent.mResources;
+        }
     }
 
     /**
@@ -154,6 +193,85 @@ public class Metadata
     }
 
     /**
+     * Get the external location of the file containing the resource with the
+     * given URI. If the URI is null or "", this returns null. If the URI is
+     * not known, this returns null. If the resource is taken from the UI
+     * package (the default, rather than being a player preference) then this
+     * returns null.
+     */
+    public URL getResourceLocation(URI uri) {
+        if (uri == null || uri.toString().equals(""))
+            uri = sBlankURI;
+
+        ResourceEntry entry = (ResourceEntry)mResources.get(uri);
+        if (entry == null)
+            return null;
+
+        return entry.source;
+    }
+
+    /**
+     * Get the location of the file containing the resource with the given URI.
+     * If the URI is null or "", this returns the location of the top-level
+     * Metadata object. If the URI is not known, this returns null.
+     */
+    public URL getLocalResourceLocation(URI uri) {
+        if (uri == null || uri.toString().equals(""))
+            uri = sBlankURI;
+
+        ResourceEntry entry = (ResourceEntry)mResources.get(uri);
+        if (entry == null)
+            return null;
+
+        return entry.file;
+    }
+
+    /**
+     * Get the Metadata associated with the given resource URI. If the URI is
+     * null or "", this returns the top-level Metadata object for the UI. If
+     * the resource has no metadata, this returns an empty Metadata object. If
+     * the URI is not known, this returns null.
+     */
+    public Metadata getResource(URI uri) {
+        if (uri == null || uri.toString().equals(""))
+            uri = sBlankURI;
+
+        ResourceEntry entry = (ResourceEntry)mResources.get(uri);
+        if (entry == null)
+            return null;
+
+        if (entry.metadata == null) {
+            try {
+                entry.metadata = parseSVGMetadata(entry.file, this);
+            }
+            catch (Exception ex) {
+                // nothing we can do
+            }
+        }
+        return entry.metadata;
+    }
+
+    /**
+     * Return a list of the resource URIs in the Metadata list. (Excluding the
+     * blank URI which represents the top level.) You can feed these URIs to
+     * getResource() to examine the metadata of each resource.
+     */
+    public List getAllResources() {
+        List res = new ArrayList();
+
+        for (Iterator it = mResources.keySet().iterator(); it.hasNext(); ) {
+            URI key = (URI)it.next();
+            if (key.toString().equals("")) {
+                // don't repeat the resource that is the top-level file.
+                continue;
+            }
+            res.add(key);
+        }
+
+        return res;
+    }
+
+    /**
      * Dump a text representation of the metadata to an output stream. This is
      * useful mostly for debugging.
      */
@@ -170,6 +288,20 @@ public class Metadata
                     out.println("<" + key + ">: \"" + value + "\"");
                 else
                     out.println("<" + key + "> (" + lang + "): \"" + value + "\"");
+            }
+        }
+
+        if (isTopLevel) {
+            List ls = getAllResources();
+            for (int ix=0; ix<ls.size(); ix++) {
+                URI key = (URI)ls.get(ix);
+                URL file = getLocalResourceLocation(key);
+                out.println("* resource <" + key + ">: <" + file + ">");
+                Metadata subdata = getResource(key);
+                if (subdata == null)
+                    out.println("...not readable");
+                else
+                    subdata.dump(out);
             }
         }
     }
@@ -205,11 +337,20 @@ public class Metadata
     public static Metadata parseSVGMetadata(File file) 
         throws SAXException, IOException
     {
+        return parseSVGMetadata(file, null);
+    }
+
+    /**
+     * Create a Metadata object from an SVG file.
+     */
+    public static Metadata parseSVGMetadata(File file, Metadata parent) 
+        throws SAXException, IOException
+    {
         Metadata result = null;
         FileReader in = new FileReader(file);
 
         try {
-            result = parseSVGMetadata(file.toURL(), null, in);
+            result = parseSVGMetadata(file.toURL(), null, in, parent);
         }
         finally {
             in.close();
@@ -224,11 +365,20 @@ public class Metadata
     public static Metadata parseSVGMetadata(URL url) 
         throws SAXException, IOException
     {
+        return parseSVGMetadata(url, null);
+    }
+
+    /**
+     * Create a Metadata object from an SVG URL.
+     */
+    public static Metadata parseSVGMetadata(URL url, Metadata parent) 
+        throws SAXException, IOException
+    {
         Metadata result = null;
         InputStream in = url.openStream();
 
         try {
-            result = parseSVGMetadata(url, in, null);
+            result = parseSVGMetadata(url, in, null, parent);
         }
         finally {
             in.close();
@@ -237,10 +387,11 @@ public class Metadata
         return result;
     }
 
-    protected static Metadata parseSVGMetadata(URL url, InputStream inputStream, Reader reader)
+    protected static Metadata parseSVGMetadata(final URL url,
+        InputStream inputStream, Reader reader, Metadata parent)
         throws SAXException, IOException
     {
-        final Metadata result = new Metadata();
+        final Metadata result = new Metadata(parent);
 
         XMLReader xr = XMLReaderFactory.createXMLReader("org.apache.xerces.parsers.SAXParser");
         InputSource input = null;
@@ -254,8 +405,53 @@ public class Metadata
         final StringBuffer buf = new StringBuffer();
 
         xr.setFeature("http://xml.org/sax/features/validation", false);
-        xr.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        xr.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        xr.setFeature("http://xml.org/sax/features/external-general-entities", true);
+        xr.setFeature("http://xml.org/sax/features/external-parameter-entities", true);
+
+
+        EntityResolver resolver = new EntityResolver() {
+                public InputSource resolveEntity(String publicId,
+                    String systemId)
+                    throws IOException, SAXException {
+
+                    URI uri;
+                    try {
+                        uri = new URI(systemId);
+                    }
+                    catch (URISyntaxException ex) {
+                        throw new SAXException(ex);
+                    }
+                    String scheme = uri.getScheme();
+
+                    if (scheme.equals("file")) {
+                        // load the file
+                        return null;
+                    }
+                    if (scheme.equals("vollocp")) {
+                        // resolve the localization protocol
+                        return null;
+                    }
+                    if (scheme.equals("volresp")) {
+                        /* resolve the resource protocol, but first record the
+                         * URI for future metadata lookups */
+                        Handler.Trio pair = Handler.resolveURI(url, uri);
+                        if (!result.mResources.containsKey(pair.uri)) {
+                            ResourceEntry entry = new ResourceEntry(pair.source, pair.result);
+                            result.mResources.put(pair.uri, entry);
+                        }
+                        return null;
+                    }
+
+                    Reader reader = new StringReader("");
+                    InputSource stub = new InputSource(reader);
+                    if (systemId != null)
+                        stub.setSystemId(systemId);
+                    if (publicId != null)
+                        stub.setPublicId(publicId);
+                    return stub;
+                }
+            };
+        xr.setEntityResolver(resolver);
 
         ContentHandler handler = new DefaultHandler() {
                 private int depth = 0;
@@ -338,6 +534,22 @@ public class Metadata
 
         xr.parse(input);
         return result;
+    }
+
+    protected static class ResourceEntry {
+        URL source;
+        URL file;
+        Metadata metadata;
+        public ResourceEntry(URL source, URL file) {
+            this.source = source;
+            this.file = file;
+            metadata = null;
+        }
+        public ResourceEntry(URL source, URL file, Metadata data) {
+            this.source = source;
+            this.file = file;
+            metadata = data;
+        }
     }
 
     /**

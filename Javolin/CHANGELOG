@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+The Game Info window now has a tab for every resource file loaded by
+the current UI.
+
 The supported version of Smack has been upgraded. This fixes a bad 
 interaction with iChat. Please get the latest version of Smack from Volity's
 SVN repository or from http://volity.org/projects/javolin/buildlib/.

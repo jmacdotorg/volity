@@ -14,7 +14,8 @@ import java.util.List;
 public class VersionSpec
 {
     /**
-     * Extract the spec from a URI of the form ruleset#spec.
+     * Extract the spec from a URI of the form ruleset#spec. If there is none,
+     * return a "match anything" spec.
      */
     public static VersionSpec fromURI(String uri)
         throws VersionNumber.VersionFormatException, URISyntaxException
@@ -23,7 +24,8 @@ public class VersionSpec
     }
     
     /**
-     * Extract the spec from a URI of the form ruleset#spec.
+     * Extract the spec from a URI of the form ruleset#spec. If there is none,
+     * return a "match anything" spec.
      */
     public static VersionSpec fromURI(URI uri)
         throws VersionNumber.VersionFormatException

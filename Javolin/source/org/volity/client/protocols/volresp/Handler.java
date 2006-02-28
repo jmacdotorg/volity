@@ -73,6 +73,59 @@ public class Handler
         return new StubConnection(url, text);
     }
 
+    /**
+     * Resolve the given volresp: URI (in the context of baseurl). Return a
+     * Trio containing (1) the resource URI that was requested, and (2) the
+     * location of the resource file which the user has selected.
+     */
+    public static Trio resolveURI(URL baseurl, URI respuri)
+        throws MalformedURLException {
+        URL url = respuri.toURL();
+
+        String path = url.getPath();
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+
+        String query = url.getQuery();
+        if (query == null || query.equals("")) {
+            throw new MalformedURLException("The volresp protocol requires that the URL contain \"?URI\".");
+        }
+        URI uri = URI.create(query);
+
+        URL source = null;
+        URL value = new URL(baseurl, path);
+        if (resourcePrefs != null) {
+            // Try to get preference matching URI
+            File fl = resourcePrefs.getResource(uri);
+            if (fl != null) {
+                value = fl.toURL();
+                source = resourcePrefs.getURL(uri);
+            }            
+        }
+
+        return new Trio(uri, source, value);
+    }
+
+    /**
+     * A data-only class which contains:
+     *
+     * - uri: a resource URI
+     * - source: the web URL that is the player's preference (or null if the
+     *   default is used)
+     * - result: the file URL in the cache (never null)
+     */
+    public static class Trio {
+        public URI uri;
+        public URL source;
+        public URL result;
+        public Trio(URI uri, URL source, URL result) {
+            this.uri = uri;
+            this.source = source;
+            this.result = result;
+        }
+    }
+
     protected static ResourcePrefs resourcePrefs = null;
 
     /**

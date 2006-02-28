@@ -261,6 +261,36 @@ public class MetadataDialog extends BaseDialog
             adder.add(row++, "Requires ECMA API:", msg);
         }
 
+        msg = data.get(Metadata.VOLITY_PROVIDES_RESOURCE);
+        if (msg != null) {
+            try {
+                VersionNumber.fromURI(msg);
+            }
+            catch (URISyntaxException ex) {
+                msg += "   [invalid URI]";
+            }
+            catch (VersionNumber.VersionFormatException ex) {
+                msg += "   [invalid number]";
+            }
+            adder.add(row++, "Provides Resource:", msg);
+        }
+
+        ls = data.getAll(Metadata.VOLITY_REQUIRES_RESOURCE);
+        for (int ix=0; ix<ls.size(); ix++) {
+            String resource = (String)ls.get(ix);
+            try {
+                VersionSpec.fromURI(resource);
+            }
+            catch (URISyntaxException ex) {
+                resource += "   [invalid URI]";
+            }
+            catch (VersionNumber.VersionFormatException ex) {
+                resource += "   [invalid spec]";
+            }
+            adder.add(row++, "Requires Resource:", resource);
+        }
+
+
         mButton = new JButton("OK");
         c = new GridBagConstraints();
         c.gridx = 0;

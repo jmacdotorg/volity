@@ -376,6 +376,11 @@ public class JavolinApp extends JFrame
         return sClientTypeUri;
     }
 
+    public static GameResourcePrefs getGameResourcePrefs()
+    {
+        return sGameResourcePrefs;
+    }
+
     /**
      * Tells whether Javolin is currently connected to a Volity server.
      *

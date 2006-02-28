@@ -2,6 +2,8 @@ package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.*;
@@ -293,9 +295,94 @@ public class InfoDialog extends BaseDialog
             if (msg != null)
                 adder.add(pane, row++, "Requires ECMA API:", msg);
 
+            ls = mMetadata.getAll(Metadata.VOLITY_REQUIRES_RESOURCE);
+            for (int ix=0; ix<ls.size(); ix++) {
+                String resource = (String)ls.get(ix);
+                adder.add(pane, row++, "Requires resource:", resource);
+            }
+
             addblank.add(pane, row++, null, null);
 
             mTabPane.addTab("UI", pane);
+        }
+
+        List resList = mMetadata.getAllResources();
+        for (int jx=0; jx<resList.size(); jx++) {
+            URI key = (URI)resList.get(jx);
+            Metadata subdata = mMetadata.getResource(key);
+            if (subdata == null)
+                continue;
+
+            JPanel pane = new JPanel(new GridBagLayout());
+            String msg;
+            List ls;
+            
+            // Slightly cheesy way to get the client language setting
+            String currentLanguage = TranslateToken.getLanguage();
+
+            int row = 0;
+
+            msg = key.toString();
+            adder.add(pane, row++, "Resource URI:", msg);
+
+            URL loc = mMetadata.getResourceLocation(key);
+            if (loc != null)
+                msg = loc.toString();
+            else
+                msg = "(default)";
+            adder.add(pane, row++, "Resource loaded:", msg);
+
+            msg = subdata.get(Metadata.VOLITY_VERSION);
+            adder.add(pane, row++, "Version:", msg);
+
+            msg = subdata.get(Metadata.DC_TITLE, currentLanguage);
+            if (msg != null)
+                adder.add(pane, row++, "Title:", msg);
+            msg = subdata.get(Metadata.DC_DESCRIPTION, currentLanguage);
+            if (msg != null)
+                addarea.add(pane, row++, "Description:", msg);
+
+            ls = subdata.getAll(Metadata.DC_CREATOR);
+            for (int ix=0; ix<ls.size(); ix++)
+                adder.add(pane, row++, "Creator:", (String)ls.get(ix));
+
+            msg = subdata.get(Metadata.DC_CREATED);
+            if (msg != null)
+                adder.add(pane, row++, "Created:", msg);
+            msg = subdata.get(Metadata.DC_MODIFIED);
+            if (msg != null)
+                adder.add(pane, row++, "Modified:", msg);
+
+            msg = subdata.get(Metadata.VOLITY_DESCRIPTION_URL);
+            if (msg != null)
+                adder.add(pane, row++, "Description URL:", msg);
+
+            ls = subdata.getAll(Metadata.DC_LANGUAGE);
+            msg = "";
+            for (int ix=0; ix<ls.size(); ix++) {
+                if (msg.length() != 0)
+                    msg += ", ";
+                msg += (String)ls.get(ix);
+            }
+            if (msg.length() != 0)
+                adder.add(pane, row++, "Languages:", msg);
+
+            msg = subdata.get(Metadata.VOLITY_REQUIRES_ECMASCRIPT_API);
+            if (msg != null)
+                adder.add(pane, row++, "Requires ECMA API:", msg);
+
+            ls = subdata.getAll(Metadata.VOLITY_PROVIDES_RESOURCE);
+            for (int ix=0; ix<ls.size(); ix++) {
+                String resource = (String)ls.get(ix);
+                adder.add(pane, row++, "Provides resource:", resource);
+            }
+
+            addblank.add(pane, row++, null, null);
+
+            msg = "Resource";
+            if (resList.size() > 1)
+                msg += " " + String.valueOf(jx+1);
+            mTabPane.addTab(msg, pane);
         }
 
         GridBagConstraints c;

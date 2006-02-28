@@ -19,6 +19,21 @@ public class GameResourcePrefs implements ResourcePrefs
         mCache = cache;
     }
 
+    public URL getURL(URI uri) {
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+        String urlstr = prefs.get(uri.toString(), null);
+        if (urlstr == null)
+            return null;
+
+        try {
+            URL url = new URL(urlstr);
+            return url;
+        }
+        catch (Exception ex) {
+            return null;
+        }
+    }
+
     public File getResource(URI uri) {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
         String urlstr = prefs.get(uri.toString(), null);

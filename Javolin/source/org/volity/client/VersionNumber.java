@@ -1,5 +1,8 @@
 package org.volity.client;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * Represents a version number, according to the Volity spec for (matchable)
  * version numbers.
@@ -8,6 +11,30 @@ package org.volity.client;
  */
 public class VersionNumber
 {
+    /**
+     * Extract the spec from a URI of the form ruleset#spec. If there is none,
+     * return null.
+     */
+    public static VersionNumber fromURI(String uri)
+        throws VersionNumber.VersionFormatException, URISyntaxException
+    {
+        return fromURI(new URI(uri));
+    }
+    
+    /**
+     * Extract the spec from a URI of the form ruleset#spec. If there is none,
+     * return null.
+     */
+    public static VersionNumber fromURI(URI uri)
+        throws VersionNumber.VersionFormatException
+    {
+        String fragment = uri.getRawFragment();
+        if (fragment == null)
+            return null;
+        else
+            return new VersionNumber(fragment);
+    }
+
     protected int mMajor = 1;
     protected int mMinor = 0;
     protected boolean isMinorVisible = true;

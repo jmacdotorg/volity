@@ -1065,6 +1065,8 @@ public class TableWindow extends JFrame implements PacketListener
      */
     public void doInfoDialog() {
         if (mInfoDialog == null) {
+            if (mGameViewport == null || mGameViewport.getUI() == null)
+                return;
             Metadata metadata = mGameViewport.getUI().getMetadata();
             mInfoDialog = new InfoDialog(this, mGameTable,
                 mServer.getGameInfo(), metadata);
