@@ -42,12 +42,15 @@ development stream, and the general principles adopted.
 Changelog:
 
 (I'm not using release numbers, because "Smack 2.0.0.V.7" will make
-your eyes bleed. I will apply tags as major changes go in. Tags are
+your eyes bleed. I will mark SVN revision numbers as major changes go in
 listed below, most-recent-first.)
 
-* discobug
-    Fixed a bug with disco#info error responses. (This was causing iChat
-to flail wildly.)
+* discobug (revision 859)
+    Fixed a bug with disco#info error responses. This was causing iChat
+to flail wildly.
+
+* (prior to this point, source was in CVS, so no SVN revision numbers are
+available)
 
 * disco
     Added service discovery extension forms (JEP-0128) to 
