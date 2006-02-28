@@ -1,5 +1,5 @@
 This document assumes that you have obtained the Javolin build environment from
-the CVS repository at SourceForge.net, and wish to build Javolin or Testbench.
+the SVN repository at SourceForge.net, and wish to build Javolin or Testbench.
 
 ------------
 Requirements
@@ -45,7 +45,7 @@ Libraries
 
 Javolin relies on third party libraries. If you don't have these libraries, you
 cannot build or run Javolin. Most of these libraries are not checked in to the
-CVS repository, so you must download them and place them into the lib directory
+SVN repository, so you must download them and place them into the lib directory
 yourself. The following is a list of the libraries currently used, along with
 URLs pointing to the download location of the version currently being developed
 against. The Lib file(s) item tells you what file or files must be copied into
@@ -54,7 +54,7 @@ list up-to-date when new library dependencies are added to Javolin, as well as
 when we move to a new version of a library that we are already using.)
 
 ---
-Name: Smack (modified version in Volity CVS)
+Name: Smack (modified version in Volity SVN)
 Home page: http://www.jivesoftware.org/smack/
 Version: 2.0.0-v-1
 Download: https://sourceforge.net/project/showfiles.php?group_id=91751 (the smack-volity package)
