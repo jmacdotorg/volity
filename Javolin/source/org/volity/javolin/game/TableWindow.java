@@ -36,6 +36,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.packet.MUCUser;
 
 import org.volity.client.DefaultStatusListener;
 import org.volity.client.GameServer;
@@ -977,14 +978,23 @@ public class TableWindow extends JFrame implements PacketListener
             String addr = msg.getFrom();
             Date date = null;
 
-            if (addr != null)
-            {
+            if (addr != null) {
                 nick = StringUtils.parseResource(addr);
             }
 
-            PacketExtension ext = msg.getExtension("x", "jabber:x:delay");
-            if (ext != null && ext instanceof DelayInformation) 
-            {
+            PacketExtension ext;
+
+            // Suppress old-style MUC status messages.
+            ext = msg.getExtension("x", "http://jabber.org/protocol/muc#user");
+            if (ext != null && ext instanceof MUCUser) {
+                MUCUser userext = (MUCUser)ext;
+                if (userext != null && userext.getStatus() != null
+                    && ((nick == null) || (nick.equals(""))))
+                    return;
+            }
+
+            ext = msg.getExtension("x", "jabber:x:delay");
+            if (ext != null && ext instanceof DelayInformation) {
                 date = ((DelayInformation)ext).getStamp();
             }
 
