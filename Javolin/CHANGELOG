@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+If you click on a Finder command link when you're disconnected (or if you
+have your OS set to launch Javolin from stub files), you will now get a
+connection dialog. The command will fire when you finish connecting.
+
 The help icon (in the bottom corner of the table window) is now a button.
 
 Added the metadata() function to the ECMAScript API.

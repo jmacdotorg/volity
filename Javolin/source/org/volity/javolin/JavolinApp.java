@@ -98,6 +98,9 @@ public class JavolinApp extends JFrame
     List mDialogWindows;
     private Map mUserChatWinMap;
 
+    private boolean mTryingConnection = false;
+    private List mQueuedCommandStubs = new ArrayList();
+
     static
     {
         CONNECTED_ICON =
@@ -467,9 +470,20 @@ public class JavolinApp extends JFrame
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-        ConnectDialog connDlg = new ConnectDialog(this);
-        connDlg.show();
-        mConnection = connDlg.getConnection();
+        // Guard against more than one of these at a time.
+        if (mTryingConnection)
+            return;
+
+        try {
+            mTryingConnection = true;
+
+            ConnectDialog connDlg = new ConnectDialog(this);
+            connDlg.show();
+            mConnection = connDlg.getConnection();
+        }
+        finally {
+            mTryingConnection = false;
+        }
 
         if (mConnection != null)
         {
@@ -547,6 +561,26 @@ public class JavolinApp extends JFrame
 
         // Update the UI
         updateUI();
+
+        if (mConnection != null)
+        {
+            /*
+             * If we have any queued stubs, launch them now. But we pull a copy
+             * of the queue, and then clear it, so that this can't get into an
+             * infinite loop.
+             *
+             * As a safety measure, we chop the queue at eight stubs. We don't
+             * want to flood the user with a million connections, if he forgot
+             * to log in for hours at a time. 
+             */
+            List ls = new ArrayList(mQueuedCommandStubs);
+            mQueuedCommandStubs.clear();
+
+            for (int ix=0; ix<ls.size() && ix<8; ix++) {
+                CommandStub stub = (CommandStub)ls.get(ix);
+                doOpenFile(stub);
+            }
+        }
     }
 
     /**
@@ -703,17 +737,21 @@ public class JavolinApp extends JFrame
     void doOpenFile(CommandStub stub)
     {
         try {
-            /* Make sure we're connected to Jabber. If we're not, display an
-             * annoying error message. If the player clicks on a Volity command
-             * file in the filesystem, this error is certain to appear --
-             * that's the annoying part. A better implementation would hang on
-             * to the file reference until connection was complete. */
+            /* Make sure we're connected to Jabber. If we're not, try to
+             * connect (if we're not in the middle of connecting already). We
+             * also queue up the stub, so that it will be opened when we next
+             * succeed in connecting. */
             if (!isConnected()) {
-                JOptionPane.showMessageDialog(this,
-                    "You must be connected in order to play Volity games.\n"
-                    +"Use the Connect menu option to log in.",
-                    getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
+                mQueuedCommandStubs.add(stub);
+
+                if (!mTryingConnection) {
+                    // invoke a connection dialog.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                doConnect();
+                            }
+                        });
+                }
                 return;
             }
 
