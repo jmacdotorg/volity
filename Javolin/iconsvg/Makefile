@@ -21,6 +21,9 @@ coloricons: Green_0_ColorIcon.png Green_1_ColorIcon.png Green_2_ColorIcon.png Gr
 HelpIcon.png: help-icon.svg
 	$(SVGTOPNG) help-icon.svg -a 0,0,100,100 -w 32 -h 32 -d HelpIcon.png
 
+HelpIconPress.png: help-press-icon.svg
+	$(SVGTOPNG) help-press-icon.svg -a 0,0,100,100 -w 32 -h 32 -d HelpIconPress.png
+
 Ready_ButIcon.png: ready-button.svg
 	$(SVGTOPNG) ready-button.svg -a 0,0,100,100 -w 20 -h 20 -d Ready_ButIcon.png
 

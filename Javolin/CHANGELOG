@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+The help icon (in the bottom corner of the table window) is now a button.
+
 Added the metadata() function to the ECMAScript API.
 
 * release 0.2.8

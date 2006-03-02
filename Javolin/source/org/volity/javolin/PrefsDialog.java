@@ -166,6 +166,20 @@ public class PrefsDialog extends JFrame
     public static boolean getSoundUseThreadSound() { return prefSoundUseThreadSound; }
     public static boolean getSoundUseErrorSound() { return prefSoundUseErrorSound; }
 
+    public static void setGameShowHelp(boolean val) {
+        if (prefGameShowHelp == val)
+            return;
+
+        prefGameShowHelp = val;
+        Preferences prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(GAME_OPTIONS);
+        prefs.putBoolean(GAMESHOWHELP_KEY, prefGameShowHelp);
+        noticeChange(GAME_OPTIONS, GAMESHOWHELP_KEY);
+
+        if (solePrefsDialog != null) {
+            solePrefsDialog.mGameShowHelp.setSelected(prefGameShowHelp);
+        }
+    }
+
     // The sole existing PrefsDialog.
     private static PrefsDialog solePrefsDialog = null;
 

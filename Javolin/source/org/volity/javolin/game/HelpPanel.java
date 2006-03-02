@@ -1,6 +1,7 @@
 package org.volity.javolin.game;
 
 import java.awt.*;
+import java.awt.event.*;
 import java.util.Iterator;
 import java.util.List;
 import javax.swing.*;
@@ -19,6 +20,8 @@ public class HelpPanel extends JPanel
 {
     static protected Icon ICON_HELP = 
         new ImageIcon(HelpPanel.class.getResource("HelpIcon.png"));
+    static protected Icon ICON_HELP_PRESS = 
+        new ImageIcon(HelpPanel.class.getResource("HelpIconPress.png"));
 
     GameTable mTable;
     boolean everPlayed;
@@ -329,17 +332,28 @@ public class HelpPanel extends JPanel
      */
     private void buildUI() {
         GridBagConstraints c;
-        JLabel label;
+        JButton button;
         int row = 0;
 
-        label = new JLabel(ICON_HELP);
+        button = new JButton(ICON_HELP);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setPressedIcon(ICON_HELP_PRESS);
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
         c.weightx = 1;
         c.weighty = 0;
-        c.fill = GridBagConstraints.HORIZONTAL;
         c.anchor = GridBagConstraints.CENTER;
-        add(label, c);
+        add(button, c);
+
+        button.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    boolean val = PrefsDialog.getGameShowHelp();
+                    PrefsDialog.setGameShowHelp(!val);
+                }
+            });
+
     }
 }
