@@ -57,7 +57,7 @@ public class RPCDispatcher implements RPCHandler {
 
   // Implements RPCHandler interface.
   public void handleRPC(String methodName, List params, RPCResponseHandler k) {
-    int i = methodName.indexOf(".");
+    int i = methodName.indexOf('.');
     if (i < 0) {
       if (globalHandler == null)
         noSuchMethodFault(methodName, k);

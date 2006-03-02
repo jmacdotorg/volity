@@ -89,7 +89,7 @@ public class VersionSpec
             String pattern;
             Pattern val;
 
-            pos = str.indexOf(",");
+            pos = str.indexOf(',');
             if (pos < 0) {
                 pattern = str;
                 str = null;
@@ -99,7 +99,7 @@ public class VersionSpec
                 str = str.substring(pos+1);
             }
 
-            int dashpos = pattern.indexOf("-");
+            int dashpos = pattern.indexOf('-');
             if (dashpos < 0) {
                 if (pattern.endsWith(".")) {
                     pattern = pattern.substring(0, pattern.length()-1);
@@ -303,7 +303,7 @@ public class VersionSpec
         static protected void parseNumber(int[] triple, String str) 
             throws VersionNumber.VersionFormatException
         {
-            int pos = str.indexOf(".");
+            int pos = str.indexOf('.');
             String strMajor, strMinor;
 
             if (pos < 0) {

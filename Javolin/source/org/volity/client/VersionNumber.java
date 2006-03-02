@@ -79,7 +79,7 @@ public class VersionNumber
         String strMajor, strMinor;
         int pos;
 
-        pos = str.indexOf(".");
+        pos = str.indexOf('.');
         if (pos < 0) {
             strMajor = str;
             str = null;
@@ -99,7 +99,7 @@ public class VersionNumber
             return;
         }
 
-        pos = str.indexOf(".");
+        pos = str.indexOf('.');
         if (pos < 0) {
             strMinor = str;
             str = null;
