@@ -269,6 +269,10 @@ public class SVGCanvas extends JSVGCanvas
                 SVGCanvas.this.messageHandler, SVGCanvas.this.errorHandler);
         }
 
+        /**
+         * Implementation of GameUI.loadMetadata. This performs the appropriate
+         * parsing for an SVG file.
+         */
         public Metadata loadMetadata() {
             try {
                 return Metadata.parseSVGMetadata(baseURL);

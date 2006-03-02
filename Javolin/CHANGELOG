@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Added the metadata() function to the ECMAScript API.
+
+* release 0.2.8
+
 The Game Info window now has a tab for every resource file loaded by
 the current UI.
 

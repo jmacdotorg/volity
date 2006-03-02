@@ -23,6 +23,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.volity.client.GameUI;
+import org.volity.client.Metadata;
 import org.volity.client.TranslateToken;
 
 /**
@@ -207,6 +208,20 @@ public class SVGTestCanvas extends JSVGCanvas
                 SVGTestCanvas.this.translator, 
                 SVGTestCanvas.this.messageHandler,
                 SVGTestCanvas.this.errorHandler);
+        }
+
+        /**
+         * Implementation of TestUI.loadMetadata. This performs the appropriate
+         * parsing for an SVG file.
+         */
+        public Metadata loadMetadata() {
+            try {
+                return Metadata.parseSVGMetadata(baseURL);
+            }
+            catch (Exception ex) {
+                errorHandler.error(ex);
+                return new Metadata();
+            }
         }
 
         public DebugInfo getDebugInfo() {

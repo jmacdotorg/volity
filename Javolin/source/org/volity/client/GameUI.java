@@ -1,6 +1,7 @@
 package org.volity.client;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import org.jivesoftware.smack.XMPPConnection;
@@ -21,7 +22,15 @@ public abstract class GameUI implements RPCHandler {
     /**
      * This describes the API version implemented in this file.
      */
-    public static final int UI_VERSION = 3;
+    public static VersionNumber sUIVersion;
+    static {
+        try {
+            sUIVersion = new VersionNumber("3.1");
+        }
+        catch (VersionNumber.VersionFormatException ex) {
+            throw new RuntimeException("Unable to create UI version number");
+        }
+    }
 
     /**
      * (The arguments here are slightly redundant -- we could implement the
@@ -132,6 +141,7 @@ public abstract class GameUI implements RPCHandler {
             scope.delete("game");
             scope.delete("volity");
             scope.delete("info");
+            scope.delete("metadata");
             scope.delete("rpc");
             scope.delete("literalmessage");
             scope.delete("localize");
@@ -146,7 +156,7 @@ public abstract class GameUI implements RPCHandler {
     }
 
     /**
-     * Initialize game-handling objects: "game", "info", "volity", and "rpc".
+     * Initialize game-handling objects.
      * @return the initialized scope
      */
     public ScriptableObject initGameObjects() {
@@ -154,7 +164,7 @@ public abstract class GameUI implements RPCHandler {
     }
 
     /**
-     * Initialize game-handling objects: "game", "info", "volity", and "rpc".
+     * Initialize game-handling objects.
      * @param scope the scope to initialize, or null, in which case a
      *              new object will be created to serve as the scope.
      * @return the initialized scope, which is the same as the scope
@@ -170,6 +180,7 @@ public abstract class GameUI implements RPCHandler {
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("volity", scope, volity = context.newObject(scope));
             scope.put("info", scope, info = new Info());
+            scope.put("metadata", scope, new MetadataObj());
             scope.put("rpc", scope, new Callback() {
                     public Object run(Object[] args) {
                         try {
@@ -353,6 +364,31 @@ public abstract class GameUI implements RPCHandler {
     }
 
     /**
+     * Expand a namespaced metadata key (UI style, like "dc.title" or
+     * "volity.version") into a Metadata key.
+     */
+    public static String expandKey(String val) {
+        String namespace;
+        int pos = val.indexOf('.');
+        if (pos >= 0) {
+            namespace = val.substring(0, pos);
+            val = val.substring(pos+1);
+        }
+        else {
+            namespace = "game";
+        }
+
+        String uri = "NONEXISTENT";
+        if (namespace.equals("dc"))
+            uri = Metadata.NS_DC;
+        else if (namespace.equals("game"))
+            uri = Metadata.NS_GAME;
+        else if (namespace.equals("volity"))
+            uri = Metadata.NS_VOLITY;
+        return Metadata.createKey(uri, val);
+    }
+
+    /**
      * Return the UISeat object for a given Seat.
      *
      * We keep a cache of these, in a hash table. Any call to getUISeat() for a
@@ -379,6 +415,8 @@ public abstract class GameUI implements RPCHandler {
     }
 
     public class Info extends ScriptableObject {
+        private Callable funcVersionMatch;
+
         {
             try {
                 defineProperty("version", Info.class, PERMANENT);
@@ -391,13 +429,36 @@ public abstract class GameUI implements RPCHandler {
             } catch (PropertyException e) {
                 errorHandler.error(e);
             }
+
+            funcVersionMatch = new Callback() {
+                    public Object run(Object[] args) {
+                        if (args.length != 2)
+                            throw new RuntimeException("versionmatch() requires two arguments");
+                        VersionNumber vnum;
+                        VersionSpec vspec;
+                        try {
+                            vnum = new VersionNumber(args[0].toString());
+                        }
+                        catch (Exception ex) {
+                            throw new RuntimeException(ex.getMessage());
+                        }
+                        try {
+                            vspec = new VersionSpec(args[1].toString());
+                        }
+                        catch (Exception ex) {
+                            throw new RuntimeException(ex.getMessage());
+                        }
+                        boolean result = vspec.matches(vnum);
+                        return new Boolean(result);
+                    }
+                };
         }
 
         public String getClassName() { return "Info"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
-        public Integer getVersion() {
-            return new Integer(UI_VERSION);
+        public String getVersion() {
+            return sUIVersion.toString();
         }
         public String getState() {
             int val = table.getRefereeState();
@@ -439,6 +500,94 @@ public abstract class GameUI implements RPCHandler {
                 ls.put(count++, ls, getUISeat(seat));
             }
             return ls;
+        }
+        public Callable getVersionmatch() throws JavaScriptException {
+            return funcVersionMatch;
+        }
+    }
+
+    class MetadataObj extends ScriptableObject {
+        private Callable funcGet;
+        private Callable funcGetall;
+
+        {
+            try {
+                defineProperty("get", MetadataObj.class, PERMANENT);
+                defineProperty("getall", MetadataObj.class, PERMANENT);
+            } catch (PropertyException e) {
+                throw new RuntimeException(e.toString());
+            }
+
+            funcGet = new Callback() {
+                    public Object run(Object[] args) {
+                        if (args.length != 2 && args.length != 3)
+                            throw new RuntimeException("get() requires two or three arguments");
+                        Object uristr = args[0];
+                        String label = args[1].toString();
+                        Object defaultval = null;
+                        if (args.length == 3)
+                            defaultval = args[2];
+
+                        Metadata data;
+                        URI uri = null;
+                        if (!(uristr == null || uristr instanceof Undefined)) {
+                            try {
+                                uri = new URI(uristr.toString());
+                            }
+                            catch (Exception ex) { }
+                        }
+                        if (uri == null)
+                            data = metadata;
+                        else
+                            data = metadata.getResource(uri);
+                        if (data == null)
+                            return null;
+                        Object res = data.get(expandKey(label), TranslateToken.getLanguage());
+                        if (res == null)
+                            res = defaultval;
+                        return res;
+                    }
+                };
+
+            funcGetall = new Callback() {
+                    public Object run(Object[] args) {
+                        if (args.length != 2)
+                            throw new RuntimeException("getall() requires two arguments");
+                        Object uristr = args[0];
+                        String label = args[1].toString();
+
+                        Metadata data;
+                        URI uri = null;
+                        if (!(uristr == null || uristr instanceof Undefined)) {
+                            try {
+                                uri = new URI(uristr.toString());
+                            }
+                            catch (Exception ex) { }
+                        }
+                        if (uri == null)
+                            data = metadata;
+                        else
+                            data = metadata.getResource(uri);
+                        List res = data.getAll(expandKey(label));
+
+                        Context context = Context.getCurrentContext();
+                        Scriptable ls = context.newArray(scope, 0);
+                        for (int ix=0; ix<res.size(); ix++) {
+                            ls.put(ix, ls, res.get(ix));
+                        }
+                        return ls;
+                    }
+                };
+        }
+
+        public String getClassName() { return "Metadata"; }
+        public Object getDefaultValue(Class typeHint) { return toString(); }
+
+        public Callable getGet() throws JavaScriptException {
+            return funcGet;
+        }
+        public Callable getGetall() throws JavaScriptException {
+            return funcGetall;
         }
     }
 

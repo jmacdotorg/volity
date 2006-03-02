@@ -32,6 +32,7 @@ public class Metadata
     public static final String NS_SVG = "http://www.w3.org/2000/svg";
     public static final String NS_DC = "http://purl.org/dc/elements/1.1/";
     public static final String NS_VOLITY = "http://volity.org/protocol/metadata";
+    public static final String NS_GAME = "http://volity.org/protocol/gamedata";
 
     // Keys which are used as metadata labels. Each exists in either the
     // DC or VOLITY namespace.

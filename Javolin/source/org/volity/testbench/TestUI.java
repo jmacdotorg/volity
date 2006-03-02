@@ -1,14 +1,18 @@
 package org.volity.testbench;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.mozilla.javascript.*;
 import org.volity.client.Audio;
 import org.volity.client.GameUI;
+import org.volity.client.Metadata;
 import org.volity.client.TokenFailure;
 import org.volity.client.TranslateToken;
+import org.volity.client.VersionNumber;
+import org.volity.client.VersionSpec;
 
 /**
  * This class is analogous to org.volity.client.GameUI. It represents the game
@@ -20,7 +24,7 @@ public abstract class TestUI
     /**
      * This describes the API version implemented in this file.
      */
-    public static final int UI_VERSION = 3;
+    public static VersionNumber sUIVersion = GameUI.sUIVersion;
 
     public static abstract class ErrorHandler implements GameUI.ErrorHandler {
         /**
@@ -36,6 +40,12 @@ public abstract class TestUI
         public abstract void result(Object obj);
         public abstract void error(Throwable ex);
     }
+
+    /**
+     * Abstract method. This should read metadata from the gamefile (baseURL).
+     * If there is no metadata, create a blank Metadata() and return that.
+     */
+    public abstract Metadata loadMetadata();
 
     /**
      * Call a UI method. Since this is a slow operation, probably involving
@@ -112,6 +122,7 @@ public abstract class TestUI
     ErrorHandler errorHandler;
     ErrorHandler parentErrorHandler;
     GameUI.MessageHandler messageHandler;
+    Metadata metadata;
     Object securityDomain; 
 
     String currentSeat;
@@ -130,6 +141,9 @@ public abstract class TestUI
         this.translator = translator;
         this.messageHandler = messageHandler;
         this.parentErrorHandler = parentErrorHandler;
+
+        this.metadata = loadMetadata();
+
         // This is not super-necessary, since nothing in Testbench can
         // *raise* a TokenFailure.
         this.errorHandler = new ErrorHandler() {
@@ -217,7 +231,7 @@ public abstract class TestUI
     }
 
     /**
-     * Initialize game-handling objects: "game", "info", "volity", and "rpc".
+     * Initialize game-handling objects.
      * @return the initialized scope
      */
     public ScriptableObject initGameObjects() {
@@ -225,7 +239,7 @@ public abstract class TestUI
     }
 
     /**
-     * Initialize game-handling objects: "game", "info", "volity", and "rpc".
+     * Initialize game-handling objects.
      * @param scope the scope to initialize, or null, in which case a
      *              new object will be created to serve as the scope.
      * @return the initialized scope, which is the same as the scope
@@ -241,6 +255,7 @@ public abstract class TestUI
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("volity", scope, volity = context.newObject(scope));
             scope.put("info", scope, info = new Info());
+            scope.put("metadata", scope, new MetadataObj());
             scope.put("rpc", scope, new GameUI.Callback() {
                     public Object run(Object[] args) {
                         try {
@@ -365,6 +380,7 @@ public abstract class TestUI
             scope.delete("game");
             scope.delete("volity");
             scope.delete("info");
+            scope.delete("metadata");
             scope.delete("rpc");
             scope.delete("literalmessage");
             scope.delete("localize");
@@ -522,6 +538,8 @@ public abstract class TestUI
     }
 
     class Info extends ScriptableObject {
+        private Callable funcVersionMatch;
+
         {
             try {
                 defineProperty("version", Info.class, PERMANENT);
@@ -531,16 +549,40 @@ public abstract class TestUI
                 defineProperty("seat", Info.class, PERMANENT);
                 defineProperty("allseats", Info.class, PERMANENT);
                 defineProperty("gameseats", Info.class, PERMANENT);
+                defineProperty("versionmatch", Info.class, PERMANENT);
             } catch (PropertyException e) {
                 throw new RuntimeException(e.toString());
             }
+
+            funcVersionMatch = new GameUI.Callback() {
+                    public Object run(Object[] args) {
+                        if (args.length != 2)
+                            throw new RuntimeException("versionmatch() requires two arguments");
+                        VersionNumber vnum;
+                        VersionSpec vspec;
+                        try {
+                            vnum = new VersionNumber(args[0].toString());
+                        }
+                        catch (Exception ex) {
+                            throw new RuntimeException(ex.getMessage());
+                        }
+                        try {
+                            vspec = new VersionSpec(args[1].toString());
+                        }
+                        catch (Exception ex) {
+                            throw new RuntimeException(ex.getMessage());
+                        }
+                        boolean result = vspec.matches(vnum);
+                        return new Boolean(result);
+                    }
+                };
         }
 
         public String getClassName() { return "Info"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
-        public Integer getVersion() {
-            return new Integer(UI_VERSION);
+        public String getVersion() {
+            return sUIVersion.toString();
         }
         public String getState() {
             return null; //### track "ref" state
@@ -571,6 +613,94 @@ public abstract class TestUI
         }
         public Object getGameseats() throws JavaScriptException {
             return getAllseats();
+        }
+        public Callable getVersionmatch() throws JavaScriptException {
+            return funcVersionMatch;
+        }
+    }
+
+    class MetadataObj extends ScriptableObject {
+        private Callable funcGet;
+        private Callable funcGetall;
+
+        {
+            try {
+                defineProperty("get", MetadataObj.class, PERMANENT);
+                defineProperty("getall", MetadataObj.class, PERMANENT);
+            } catch (PropertyException e) {
+                throw new RuntimeException(e.toString());
+            }
+
+            funcGet = new GameUI.Callback() {
+                    public Object run(Object[] args) {
+                        if (args.length != 2 && args.length != 3)
+                            throw new RuntimeException("get() requires two or three arguments");
+                        Object uristr = args[0];
+                        String label = args[1].toString();
+                        Object defaultval = null;
+                        if (args.length == 3)
+                            defaultval = args[2];
+
+                        Metadata data;
+                        URI uri = null;
+                        if (!(uristr == null || uristr instanceof Undefined)) {
+                            try {
+                                uri = new URI(uristr.toString());
+                            }
+                            catch (Exception ex) { }
+                        }
+                        if (uri == null)
+                            data = metadata;
+                        else
+                            data = metadata.getResource(uri);
+                        if (data == null)
+                            return null;
+                        Object res = data.get(GameUI.expandKey(label), TranslateToken.getLanguage());
+                        if (res == null)
+                            res = defaultval;
+                        return res;
+                    }
+                };
+
+            funcGetall = new GameUI.Callback() {
+                    public Object run(Object[] args) {
+                        if (args.length != 2)
+                            throw new RuntimeException("getall() requires two arguments");
+                        Object uristr = args[0];
+                        String label = args[1].toString();
+
+                        Metadata data;
+                        URI uri = null;
+                        if (!(uristr == null || uristr instanceof Undefined)) {
+                            try {
+                                uri = new URI(uristr.toString());
+                            }
+                            catch (Exception ex) { }
+                        }
+                        if (uri == null)
+                            data = metadata;
+                        else
+                            data = metadata.getResource(uri);
+                        List res = data.getAll(GameUI.expandKey(label));
+
+                        Context context = Context.getCurrentContext();
+                        Scriptable ls = context.newArray(scope, 0);
+                        for (int ix=0; ix<res.size(); ix++) {
+                            ls.put(ix, ls, res.get(ix));
+                        }
+                        return ls;
+                    }
+                };
+        }
+
+        public String getClassName() { return "Metadata"; }
+        public Object getDefaultValue(Class typeHint) { return toString(); }
+
+        public Callable getGet() throws JavaScriptException {
+            return funcGet;
+        }
+        public Callable getGetall() throws JavaScriptException {
+            return funcGetall;
         }
     }
 
