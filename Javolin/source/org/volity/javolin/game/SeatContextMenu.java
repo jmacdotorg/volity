@@ -57,6 +57,7 @@ public class SeatContextMenu extends JPopupMenu
         }
 
         mPlayer = player;
+        boolean isGameActive = mChart.mTable.isRefereeStateActive();
 
         removeAll();
         mChatMenuItem = null;
@@ -80,10 +81,16 @@ public class SeatContextMenu extends JPopupMenu
         mStandMenuItem.addActionListener(this);
         add(mStandMenuItem);
 
-        if (mPlayer.getSeat() == null) {
-            mStandMenuItem.setEnabled(false);
+        if (!isGameActive) {
+            if (mPlayer.getSeat() == null) {
+                mStandMenuItem.setEnabled(false);
+            }
+            else {
+                mSitMenuItem.setEnabled(false);
+            }
         }
         else {
+            mStandMenuItem.setEnabled(false);
             mSitMenuItem.setEnabled(false);
         }
 
@@ -91,6 +98,8 @@ public class SeatContextMenu extends JPopupMenu
             mRemoveBotMenuItem = new JMenuItem("Remove Bot");
             mRemoveBotMenuItem.addActionListener(this);
             add(mRemoveBotMenuItem);
+            if (mPlayer.getSeat() != null)
+                mRemoveBotMenuItem.setEnabled(false);
         }
 
         show(parent, xpos, ypos);
