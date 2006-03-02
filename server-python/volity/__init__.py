@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.6:
+Improved the logging options. You can now log to a specified file, and rotate
+    the log file. You can also include config files from other config files.
+
 - 1.5.5:
 Fixed a bug where inviting a player failed if he is supposed to be seated,
     but is not present at the table.

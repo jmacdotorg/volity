@@ -142,6 +142,10 @@ set the --contact-jid option.
       send periodic messages to exercise Jabber connection
   --keepalive-interval=KEEPALIVEINTERVAL, [keepalive-interval]
       send periodic messages with given interval
+  --logfile=FILE, [logfile]
+      write log info to a file (default: stdout)
+  --rotate-logfile=COUNT, [rotate-logfile]
+      rotate log files, once per day, keeping given number of old files
   --debug, -D, [debug-level]
       display more info. (If used twice, even more.)
 
@@ -156,9 +160,9 @@ if (sys.hexversion < 0x2030000):
     raise Exception, 'volityd.py requires Python version 2.3 or later.'
 
 ### jid or password could be Unicode?
-### handle HUP signal! 
     
 import time
+import os
 import optparse
 import logging
 import zymb.sched
@@ -216,6 +220,12 @@ popt.add_option('--keepalive',
 popt.add_option('--keepalive-interval',
     action='store', type='int', dest='keepaliveinterval',
     help='send periodic messages with given interval')
+popt.add_option('--logfile',
+    action='store', type='string', dest='logfile', metavar='FILE',
+    help='write log info to a file (default: stdout)')
+popt.add_option('--rotate-logfile',
+    action='store', type='int', dest='rotatelogfile', metavar='COUNT',
+    help='rotate log files, once per day, keeping given number of old files')
 popt.add_option('-D', '--debug',
     action='count', dest='debuglevel',
     help='display more info. (If used twice, even more.)')
@@ -241,6 +251,8 @@ if (opts.debuglevel):
     argmap['debug-level'] = str(opts.debuglevel)
 if (opts.retry):
     argmap['retry'] = 'True'
+if (opts.rotatelogfile):
+    argmap['rotate-logfile'] = str(opts.rotatelogfile)
 argmap['muchost'] = opts.muchost
 argmap['bookkeeper'] = opts.bookkeeper
 if (opts.keepalive):
@@ -248,6 +260,7 @@ if (opts.keepalive):
 if (opts.keepaliveinterval):
     argmap['keepalive-interval'] = str(opts.keepaliveinterval)
 argmap['admin'] = opts.admin
+argmap['logfile'] = opts.logfile
 
 config = volity.config.ConfigFile(opts.configfile, argmap)
 
@@ -286,18 +299,65 @@ elif (debuglevel >= 2):
 elif (debuglevel == 1):
     rootlogger.setLevel(logging.INFO)
     logging.getLogger('zymb').setLevel(logging.WARNING)
-roothandler = logging.StreamHandler(sys.stdout)
-rootform = logging.Formatter('%(levelname)-8s: (%(name)s) %(message)s')
-roothandler.setFormatter(rootform)
-rootlogger.addHandler(roothandler)
+
+roothandler = None
+logfilename = config.get('logfile', '-')
+
+def sethandler():
+    global roothandler
+    if (roothandler):
+        roothandler.flush()
+        roothandler.close()
+        rootlogger.removeHandler(roothandler)
+        removeHandler = None
+        
+    if (logfilename == '-'):
+        roothandler = logging.StreamHandler(sys.stdout)
+    else:
+        roothandler = logging.FileHandler(logfilename)
+    rootform = logging.Formatter('%(levelname)-8s: (%(name)s) %(message)s')
+    roothandler.setFormatter(rootform)
+    rootlogger.addHandler(roothandler)
+
+lastrotation = time.localtime().tm_yday
+
+def rotatelogs():
+    global lastrotation
+    assert (logfilename != '-')
+    assert (rotatecount)
+    
+    newrotation = time.localtime().tm_yday
+    if (newrotation != lastrotation):
+        lastrotation = newrotation
+        rootlogger.info('rotating log files...')
+        ix = rotatecount-1
+        while (ix > 0):
+            oldname = logfilename+'.'+str(ix)
+            newname = logfilename+'.'+str(ix+1)
+            if (os.path.exists(oldname)):
+                os.rename(oldname, newname)
+            ix -= 1
+        os.rename(logfilename, logfilename+'.1')
+        sethandler()
+    
+sethandler()
 
 retryflag = False
 if (config.get('retry')):
     retryflag = True
 
+rotatecount = None
+if (logfilename != '-'):
+    rotatecount = config.get('rotate-logfile')
+    if (rotatecount):
+        rotatecount = int(rotatecount)
+    
 while 1:
     serv = parlor.Parlor(config)
     serv.start()
+    
+    if (rotatecount):
+        serv.addtimer(rotatelogs, delay=119, periodic=True)
 
     # The main doing-stuff loop.
 

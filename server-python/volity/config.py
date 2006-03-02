@@ -16,6 +16,9 @@ class ConfigFile:
     Blank lines and lines beginning with '#' are ignored. A line without
     a colon is considered to have the empty string for a value.
 
+    A line with the special form 'INCLUDE: filename' will parse in the
+    given filename (taken as relative to the one being parsed).
+
     If *filename* is None, you still get a ConfigFile (as if it had parsed
     an empty file).
 
@@ -53,20 +56,19 @@ class ConfigFile:
         self.map = {}
         if (type(filename) in [str, unicode]):
             fl = open(self.filename)
-            self.parse(fl)
+            self.parse(fl, filename)
             fl.close()
         elif (filename == None):
             pass
         else:
             self.parse(filename)
 
-    def parse(self, fl):
-        """parse(fl) -- parse the config file.
+    def parse(self, fl, filename='.'):
+        """parse(fl, filename='.') -- parse the config file.
 
         This is called internally when you create the ConfigFile.
         """
         
-        self.map.clear()
         while (1):
             ln = fl.readline()
             if (not ln):
@@ -82,7 +84,14 @@ class ConfigFile:
             else:
                 key = ln[ : pos ].strip()
                 val = ln[ pos+1 : ].strip()
-            self.map[key] = val
+            if (key == 'INCLUDE'):
+                if (val):
+                    val = os.path.join(os.path.dirname(filename), val)
+                    subfl = open(val)
+                    self.parse(subfl, val)
+                    subfl.close()
+            else:
+                self.map[key] = val
             
     def makeenvname(self, key):
         """makeenvname(key) -- convert a key name to a possible environment
