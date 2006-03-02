@@ -24,7 +24,6 @@ public class HelpPanel extends JPanel
     boolean everPlayed;
     boolean usesSeatMarks;
 
-    boolean isEmpty;
     JTextPane mText;
     ChangeListener mShowHelpListener;
 
@@ -35,15 +34,15 @@ public class HelpPanel extends JPanel
         everPlayed = false;
         usesSeatMarks = false;
 
-        isEmpty = true;
         mText = null;
-        rebuildUI();
+        buildUI();
+        adjustUI();
 
         mShowHelpListener = new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
                     String key = (String)ev.getSource();
                     if (key == PrefsDialog.GAMESHOWHELP_KEY)
-                        rebuildUI();
+                        adjustUI();
                 }
             };
         PrefsDialog.addListener(PrefsDialog.GAME_OPTIONS,
@@ -72,46 +71,46 @@ public class HelpPanel extends JPanel
         if (newstate != GameTable.STATE_SETUP)
             everPlayed = true;
 
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
 
     public void seatListKnown() {
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
     public void requiredSeatsChanged() {
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
     public void seatMarksChanged(List seats) {
         if (seats.size() != 0) {
             if (!usesSeatMarks) {
                 usesSeatMarks = true;
-                invokeRebuildUI();
+                invokeAdjustUI();
             }
         }
     }
 
     public void playerJoined(Player player) { 
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
     public void playerLeft(Player player) { 
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
     public void playerNickChanged(Player player, String oldNick) { }
     public void playerIsReferee(Player player) { }
 
     public void playerSeatChanged(Player player, Seat oldseat, Seat newseat) {
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
     public void playerReady(Player player, boolean flag) {
-        invokeRebuildUI();
+        invokeAdjustUI();
     }
 
-    private void invokeRebuildUI() {
+    private void invokeAdjustUI() {
         // Called outside Swing thread!
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    rebuildUI();
+                    adjustUI();
                 }
             });
     }
@@ -269,9 +268,45 @@ public class HelpPanel extends JPanel
     }
 
     /**
-     * Change the TextPane to reflect the current table status.
+     * Create or destroy the text pane.
      */
-    private void adjustText() {
+    private void adjustUI() {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        boolean beEmpty = false;
+
+        if (!PrefsDialog.getGameShowHelp())
+            beEmpty = true;
+        if (mTable == null) 
+            beEmpty = true;
+
+        if (beEmpty) {
+            if (mText == null) {
+                return;
+            }
+            remove(mText);
+            mText = null;
+            revalidate();
+            return;
+        }
+
+        if (mText == null) {
+            GridBagConstraints c;
+
+            mText = new JTextPane();
+            mText.setEditable(false);
+            mText.setOpaque(false);
+            mText.setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = 1;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.SOUTH;
+            add(mText, c);
+        }
+
         String text = buildHelpText();
 
         Document doc = mText.getDocument();
@@ -290,35 +325,9 @@ public class HelpPanel extends JPanel
     }
 
     /**
-     * Clean out and recreate the contents of this panel. This is called both
-     * at construction time and when the table state changes.
+     * Create the permanent contents of the panel (only the button).
      */
-    private void rebuildUI() {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        boolean beEmpty = false;
-
-        if (!PrefsDialog.getGameShowHelp())
-            beEmpty = true;
-        if (mTable == null) 
-            beEmpty = true;
-
-        if (beEmpty) {
-            if (isEmpty) {
-                return;
-            }
-            removeAll();
-            revalidate();
-            isEmpty = true;
-            return;
-        }
-
-        if (!isEmpty) {
-            adjustText();
-            return;
-        }
-        isEmpty = false;
-
+    private void buildUI() {
         GridBagConstraints c;
         JLabel label;
         int row = 0;
@@ -332,20 +341,5 @@ public class HelpPanel extends JPanel
         c.fill = GridBagConstraints.HORIZONTAL;
         c.anchor = GridBagConstraints.CENTER;
         add(label, c);
-
-        mText = new JTextPane();
-        mText.setEditable(false);
-        mText.setOpaque(false);
-        mText.setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
-        c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = row++;
-        c.weightx = 1;
-        c.weighty = 0;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.anchor = GridBagConstraints.SOUTH;
-        add(mText, c);
-
-        adjustText();
     }
 }
