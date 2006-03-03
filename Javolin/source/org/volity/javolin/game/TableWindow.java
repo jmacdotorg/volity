@@ -130,6 +130,7 @@ public class TableWindow extends JFrame implements PacketListener
     private TableErrorHandler mErrorHandler;
     private TableLinkHandler mLinkHandler;
     private TableDefaultCallback mDefaultCallback;
+    private TableMetadataProvider mMetadataProvider;
 
     private boolean mGameTableStarted = false;
     private boolean mGameViewportStarted = false;
@@ -250,13 +251,15 @@ public class TableWindow extends JFrame implements PacketListener
             };
         mGameViewport.addUpdateManagerListener(mViewportUpdateListener);
 
+        mMetadataProvider = new TableMetadataProvider(mGameViewport);
+
         mUserColorMap = new UserColorMap();
         mUserColorMap.getUserNameColor(nickname); // Give user first color
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
-        mSeatChart = new SeatChart(mGameTable, mUserColorMap, mTranslator,
-            mMessageHandler);
+        mSeatChart = new SeatChart(mGameTable, mUserColorMap, 
+            mMetadataProvider, mTranslator, mMessageHandler);
 
         mHelpPanel = new HelpPanel(mGameTable);
 
@@ -619,6 +622,10 @@ public class TableWindow extends JFrame implements PacketListener
             mUserColorMap = null;
         }
 
+        if (mMetadataProvider != null) {
+            mMetadataProvider.close();
+            mMetadataProvider = null;
+        }
         if (mLinkHandler != null) {
             mLinkHandler.close();
             mLinkHandler = null;
@@ -757,6 +764,28 @@ public class TableWindow extends JFrame implements PacketListener
         }
     }
 
+    protected static class TableMetadataProvider implements Metadata.Provider
+    {
+        SVGCanvas mCanvas;
+
+        public TableMetadataProvider(SVGCanvas canvas) {
+            mCanvas = canvas;
+        }
+
+        public void close() {
+            mCanvas = null;
+        }
+
+        public Metadata getMetadata() {
+            if (mCanvas == null)
+                return null;
+            GameUI ui = mCanvas.getUI();
+            if (ui == null)
+                return null;
+            return ui.getMetadata();
+        }
+    }
+    
     /**
      * Return the URL that the window's UI was loaded from. (This points at the
      * original server, not the cache directory.)
@@ -895,6 +924,13 @@ public class TableWindow extends JFrame implements PacketListener
         mGameStartFinished = false;
 
         mGameViewport.reloadUI();
+
+        /* ### This may change metadata, therefore seat panel coloring.
+         * However, it's a nuisance to notify all the SeatPanels and get them
+         * to update their borders. I suppose this could lead to a race, where
+         * the SeatPanels get created before the metadata is available, and
+         * therefore they never get colored. Oh well.
+         */
     }
 
     /**

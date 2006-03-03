@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Seat panels are now tinted according to the color of the seat. (The coloring
+is controlled by the UI file's metadata -- the "volity:seat-color" entry.)
+
 UIFileCache now accepts Zip files which don't explicitly name the directories
 to be created.
 

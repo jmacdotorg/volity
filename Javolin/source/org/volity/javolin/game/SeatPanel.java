@@ -101,8 +101,27 @@ public class SeatPanel extends JPanel
             mDragBorder = mStandardBorder;
         }
         else {
-            mBorderColor = new Color(0.5f, 0.5f, 0.5f);
-            mFillColor = new Color(0.92f, 0.92f, 0.92f);
+            Color color = mChart.getSeatColor(mID);
+
+            if (color == null) {
+                mBorderColor = new Color(0.5f, 0.5f, 0.5f);
+                mFillColor = new Color(0.92f, 0.92f, 0.92f);
+            }
+            else {
+                float[] arr = new float[4];
+
+                arr = color.getRGBComponents(arr);
+                arr[0] = arr[0] * 0.25f + 0.5f * 0.75f;
+                arr[1] = arr[1] * 0.25f + 0.5f * 0.75f;
+                arr[2] = arr[2] * 0.25f + 0.5f * 0.75f;
+                mBorderColor = new Color(arr[0], arr[1], arr[2]);
+
+                arr = color.getRGBComponents(arr);
+                arr[0] = arr[0] * 0.08f + 0.92f * 0.92f;
+                arr[1] = arr[1] * 0.08f + 0.92f * 0.92f;
+                arr[2] = arr[2] * 0.08f + 0.92f * 0.92f;
+                mFillColor = new Color(arr[0], arr[1], arr[2]);
+            }
             mDragColor = new Color(0.8f, 0.8f, 0.9f);
 
             Border innerBorder;

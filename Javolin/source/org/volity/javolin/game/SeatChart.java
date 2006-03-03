@@ -30,8 +30,10 @@ public class SeatChart
     GameTable mTable;
     JPanel mPanel;
     UserColorMap mUserColorMap;
+    Map mSeatColors;
     TranslateToken mTranslator;
     GameUI.MessageHandler mMessageHandler;
+    Metadata.Provider mMetadataProvider;
 
     Map mSeatPanels;        // maps String IDs to SeatPanel objects
     SeatPanel mUnseatPanel; // for unseated players
@@ -54,11 +56,14 @@ public class SeatChart
      * @param translator a translator object (used for seat IDs).
      */
     public SeatChart(GameTable table, UserColorMap colormap,
+        Metadata.Provider metadataProvider,
         TranslateToken translator, GameUI.MessageHandler messageHandler) {
         mTable = table;
         mUserColorMap = colormap;
+        mSeatColors = null;
         mTranslator = translator;
         mMessageHandler = messageHandler;
+        mMetadataProvider = metadataProvider;
         mSeatPanels = new HashMap();
 
         mPanel = new JPanel(new GridBagLayout());
@@ -130,6 +135,38 @@ public class SeatChart
     /** Return the translator. */
     public TranslateToken getTranslator() {
         return mTranslator;
+    }
+
+    /**
+     * Get the canonical color for a seat.
+     *
+     * This parses the metadata (when it's available), and caches the result.
+     */
+    public Color getSeatColor(String id) {
+        if (mSeatColors != null)
+            return (Color)mSeatColors.get(id);
+
+        Metadata metadata = mMetadataProvider.getMetadata();
+        if (metadata == null)
+            return null;
+
+        mSeatColors = new HashMap();
+
+        List ls = metadata.getAll(Metadata.VOLITY_SEAT_COLOR);
+
+        for (int ix=0; ix<ls.size(); ix++) {
+            String val = (String)ls.get(ix);
+            int pos = val.lastIndexOf('#');
+            if (pos < 0)
+                continue;
+            String seatid = val.substring(0, pos).trim();
+            Color col = GameUI.parseColor(val.substring(pos));
+            if (col != null) {
+                mSeatColors.put(seatid, col);
+            }
+        }
+
+        return (Color)mSeatColors.get(id);
     }
 
     /**

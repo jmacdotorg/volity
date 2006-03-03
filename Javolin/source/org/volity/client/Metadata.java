@@ -50,6 +50,7 @@ public class Metadata
     public static final String VOLITY_REQUIRES_ECMASCRIPT_API = createKey(NS_VOLITY, "requires-ecmascript-api");
     public static final String VOLITY_REQUIRES_RESOURCE = createKey(NS_VOLITY, "requires-resource");
     public static final String VOLITY_PROVIDES_RESOURCE = createKey(NS_VOLITY, "provides-resource");
+    public static final String VOLITY_SEAT_COLOR = createKey(NS_VOLITY, "seat-color");
 
     public static final URI sBlankURI;
     static {
@@ -551,6 +552,14 @@ public class Metadata
             this.file = file;
             metadata = data;
         }
+    }
+
+    /**
+     * Simple interface for an object which you can get metadata from. Useful
+     * to have around.
+     */
+    public interface Provider {
+        public Metadata getMetadata();
     }
 
     /**

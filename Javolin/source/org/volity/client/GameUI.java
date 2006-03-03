@@ -1,5 +1,6 @@
 package org.volity.client;
 
+import java.awt.Color;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
@@ -386,6 +387,48 @@ public abstract class GameUI implements RPCHandler {
         else if (namespace.equals("volity"))
             uri = Metadata.NS_VOLITY;
         return Metadata.createKey(uri, val);
+    }
+
+    /**
+     * Expand a hex color string ("#HHH" or "#HHHHHH") into a Color object.
+     * If the string doesn't match one of these formats, returns null.
+     */
+    public static Color parseColor(String val) {
+        if (val == null)
+            return null;
+        if (!val.startsWith("#"))
+            return null;
+
+        if (val.length() != 4 && val.length() != 7) 
+            return null;
+
+        int rval, bval, gval;
+
+        try {
+            if (val.length() == 4) {
+                rval = Integer.parseInt(val.substring(1,2), 16);
+                gval = Integer.parseInt(val.substring(2,3), 16);
+                bval = Integer.parseInt(val.substring(3,4), 16);
+                rval *= 0x11;
+                gval *= 0x11;
+                bval *= 0x11;
+            }
+            else {
+                rval = Integer.parseInt(val.substring(1,3), 16);
+                gval = Integer.parseInt(val.substring(3,5), 16);
+                bval = Integer.parseInt(val.substring(5,7), 16);
+            }
+        }
+        catch (NumberFormatException ex) {
+            return null;
+        }
+
+        if (rval < 0 || gval < 0 || bval < 0)
+            return null;
+        if (rval >= 256 || gval >= 256 || bval >= 256)
+            return null;
+
+        return new Color(rval, gval, bval);
     }
 
     /**
