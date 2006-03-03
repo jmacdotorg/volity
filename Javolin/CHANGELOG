@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+UIFileCache now accepts Zip files which don't explicitly name the directories
+to be created.
+
 If you click on a Finder command link when you're disconnected (or if you
 have your OS set to launch Javolin from stub files), you will now get a
 connection dialog. The command will fire when you finish connecting.
