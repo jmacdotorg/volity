@@ -118,7 +118,7 @@ public class SVGCanvas extends JSVGCanvas
      * SVGUserAgent class, but I haven't done it.)
      */
     protected UserAgent createUserAgent() {
-        UserAgent agent = new UserAgentJavolin(messageHandler, errorHandler);
+        UserAgent agent = new UserAgentJavolin();
         return agent;
     }
 
@@ -128,13 +128,7 @@ public class SVGCanvas extends JSVGCanvas
      * handlers.
      */
     protected class UserAgentJavolin extends JSVGCanvas.CanvasUserAgent {
-        GameUI.MessageHandler messageHandler;
-        GameUI.ErrorHandler errorHandler;
-
-        public UserAgentJavolin(GameUI.MessageHandler messageHandler,
-            GameUI.ErrorHandler errorHandler) {
-            this.messageHandler = messageHandler;
-            this.errorHandler = errorHandler;
+        public UserAgentJavolin() {
         }
         public void displayError(String msg) {
             messageHandler.print(msg);
