@@ -381,6 +381,10 @@ public class UIFileCache
                 destLoc.mkdirs();
             }
             else {
+                File destParent = destLoc.getParentFile();
+                if (destParent != null && !destParent.exists())
+                    destParent.mkdirs();
+
                 InputStream zipStream = zip.getInputStream(entry);
                 BufferedInputStream in = new BufferedInputStream(zipStream);
                 copyFile(in, destLoc);

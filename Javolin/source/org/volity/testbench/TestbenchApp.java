@@ -7,6 +7,7 @@ import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.prefs.*;
+import java.util.zip.ZipException;
 import javax.swing.*;
 import org.apache.batik.bridge.*;
 import org.apache.batik.util.gui.JErrorPane;
@@ -118,7 +119,7 @@ public class TestbenchApp extends JFrame
      * Constructor.
      */
     public TestbenchApp(File ui)
-        throws MalformedURLException, IOException
+        throws MalformedURLException, IOException, ZipException
     {
         setTitle(APPNAME);
 
