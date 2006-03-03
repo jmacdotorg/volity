@@ -4,9 +4,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+<title>Four-Player Barsoomite Go</title>
 
-
-
+<metadata
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:volity="http://volity.org/protocol/metadata" >
+  <volity:version>1.2</volity:version>
+  <dc:creator>Andrew Plotkin</dc:creator>
+  <dc:modified>2006-03-03</dc:modified>
+  <volity:seat-color>red #F00</volity:seat-color>  
+  <volity:seat-color>blue #00F</volity:seat-color>  
+  <volity:seat-color>yellow #FF0</volity:seat-color>  
+  <volity:seat-color>green #0F0</volity:seat-color>  
+</metadata>
 
 <script type="text/ecmascript">
 <![CDATA[
