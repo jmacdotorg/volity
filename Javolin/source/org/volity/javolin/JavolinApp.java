@@ -127,7 +127,7 @@ public class JavolinApp extends JFrame
         mTableWindows = new ArrayList();
         mChatWindows = new ArrayList();
         mDialogWindows = new ArrayList();
-        mUserChatWinMap = new Hashtable();
+        mUserChatWinMap = new HashMap();
 
         PrefsDialog.loadPreferences();
 
@@ -898,6 +898,8 @@ public class JavolinApp extends JFrame
      */
     public ChatWindow chatWithUser(String userId, boolean toFront)
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         userId = StringUtils.parseBareAddress(userId);
 
         ChatWindow chatWin = (ChatWindow)mUserChatWinMap.get(userId);
