@@ -18,13 +18,12 @@ package org.volity.javolin.chat;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.*;
-import java.util.*;
-import java.util.prefs.*;
+import java.util.prefs.Preferences;
 import javax.swing.*;
 import javax.swing.text.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.util.*;
+import org.jivesoftware.smack.util.StringUtils;
 import org.volity.javolin.*;
 
 /**
@@ -36,13 +35,11 @@ public class ChatWindow extends JFrame implements PacketListener
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
 
     private JSplitPane mChatSplitter;
-    private LogTextPanel mMessageText;
+    private ChatLogPanel mLog;
     private JTextArea mInputText;
     private AbstractAction mSendMessageAction;
 
-    private UserColorMap mUserColorMap;
-    private SimpleDateFormat mTimeStampFormat;
-    private SimpleAttributeSet mBaseUserListStyle;
+    private UserColorMap mColorMap;
 
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
@@ -87,15 +84,8 @@ public class ChatWindow extends JFrame implements PacketListener
 
         // Get local user ID and chat color
         mLocalId = StringUtils.parseBareAddress(mConnection.getUser());
-        mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(mLocalId); // Give user first color
-
-        // Initialize remaining data members
-        mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
-
-        mBaseUserListStyle = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(mBaseUserListStyle, "SansSerif");
-        StyleConstants.setFontSize(mBaseUserListStyle, 12);
+        mColorMap = new UserColorMap();
+        mColorMap.getUserNameColor(mLocalId); // Give user first color
 
         // Set up UI
         buildUI();
@@ -126,7 +116,7 @@ public class ChatWindow extends JFrame implements PacketListener
                 public void windowClosing(WindowEvent we)
                 {
                     saveWindowState();
-                    mUserColorMap.dispose();
+                    mColorMap.dispose();
                 }
 
                 public void windowOpened(WindowEvent we)
@@ -211,7 +201,7 @@ public class ChatWindow extends JFrame implements PacketListener
 
             mChatObject.sendMessage(message);
             mInputText.setText("");
-            writeMessageText(mLocalId, message);
+            mLog.message(mLocalId, mLocalId, message);
             // Make the noise, since we won't get an incoming copy of this
             Audio.playMessage();
         }
@@ -243,38 +233,9 @@ public class ChatWindow extends JFrame implements PacketListener
         }
         else
         {
-            writeMessageText(mRemoteNick, msg.getBody());
+            mLog.message(mRemoteId, mRemoteNick, msg.getBody());
             Audio.playMessage();
         }
-    }
-
-    /**
-     * Appends the given message text to the message text area.
-     *
-     * @param nickname  The nickname of the user who sent the message. If null or empty,
-     * it is assumed to have come from the MultiUserChat itself.
-     * @param message   The text of the message.
-     */
-    private void writeMessageText(String nickname, String message)
-    {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        // Append time stamp
-        Date now = new Date();
-        mMessageText.append("[" + mTimeStampFormat.format(now) + "] ", Color.BLACK);
-
-        // Append received message
-        boolean hasNick = ((nickname != null) && (!nickname.equals("")));
-
-        String nickText = hasNick ? nickname + ":" : "***";
-
-        Color nameColor = hasNick ? mUserColorMap.getUserNameColor(nickname) :
-            Color.BLACK;
-        Color textColor = hasNick ? mUserColorMap.getUserTextColor(nickname) :
-            Color.BLACK;
-
-        mMessageText.append(nickText + " ", nameColor);
-        mMessageText.append(message + "\n", textColor);
     }
 
     /**
@@ -290,8 +251,8 @@ public class ChatWindow extends JFrame implements PacketListener
         mChatSplitter.setResizeWeight(1);
         mChatSplitter.setBorder(BorderFactory.createEmptyBorder());
 
-        mMessageText = new LogTextPanel();
-        mChatSplitter.setTopComponent(mMessageText);
+        mLog = new ChatLogPanel(mColorMap);
+        mChatSplitter.setTopComponent(mLog);
 
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);

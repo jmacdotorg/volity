@@ -98,7 +98,7 @@ public class TableWindow extends JFrame implements PacketListener
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
     private JSplitPane mBoardSplitter;
-    private LogTextPanel mMessageText;
+    private ChatLogPanel mLog;
     private JTextArea mInputText;
     private SVGCanvas mGameViewport;
     private JPanel mGameViewWrapper;
@@ -116,7 +116,7 @@ public class TableWindow extends JFrame implements PacketListener
     private JButton mSeatButton;
     private JLabel mRefereeStatusLabel;
 
-    private UserColorMap mUserColorMap;
+    private UserColorMap mColorMap;
     private SimpleDateFormat mTimeStampFormat;
 
     private SizeAndPositionSaver mSizePosSaver;
@@ -210,8 +210,8 @@ public class TableWindow extends JFrame implements PacketListener
 
         /* Several components want a callback that prints text in the message
          * window. However, we don't know that they'll call it in the Swing
-         * thread. So, we'll make a thread-safe wrapper for
-         * writeMessageText. */
+         * thread. So, we'll make a thread-safe wrapper for mLog.message().
+         */
         mMessageHandler = new TableMessageHandler(this);
 
         /* Some components also want a callback in which they can dump an
@@ -253,12 +253,13 @@ public class TableWindow extends JFrame implements PacketListener
 
         mMetadataProvider = new TableMetadataProvider(mGameViewport);
 
-        mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(nickname); // Give user first color
+        mColorMap = new UserColorMap();
+        // Give user first color
+        mColorMap.getUserNameColor(mGameTable.getConnection().getUser());
 
         mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
-        mSeatChart = new SeatChart(mGameTable, mUserColorMap, 
+        mSeatChart = new SeatChart(mGameTable, mColorMap, 
             mMetadataProvider, mTranslator, mMessageHandler);
 
         mHelpPanel = new HelpPanel(mGameTable);
@@ -617,9 +618,9 @@ public class TableWindow extends JFrame implements PacketListener
             mHelpPanel = null;
         }
 
-        if (mUserColorMap != null) {
-            mUserColorMap.dispose();
-            mUserColorMap = null;
+        if (mColorMap != null) {
+            mColorMap.dispose();
+            mColorMap = null;
         }
 
         if (mMetadataProvider != null) {
@@ -669,14 +670,14 @@ public class TableWindow extends JFrame implements PacketListener
         public void print(final String msg) {
             if (SwingUtilities.isEventDispatchThread()) {
                 if (mParent != null)
-                    mParent.writeMessageText(msg);
+                    mParent.mLog.message(msg);
                 return;
             }
             // Otherwise, invoke into the Swing thread.
             SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
                         if (mParent != null)
-                            mParent.writeMessageText(msg);
+                            mParent.mLog.message(msg);
                     }
                 });
         }
@@ -954,14 +955,32 @@ public class TableWindow extends JFrame implements PacketListener
 
                         String from = pres.getFrom();
                         if (from != null) {
-                            String nick = StringUtils.parseResource(from);
+                            Player player = mGameTable.getPlayerByJID(from);
+
+                            String nick;
+                            String realAddr;
+
+                            if (player != null) {
+                                nick = player.getNick();
+                                realAddr = player.getJID();
+                            }
+                            else {
+                                nick = StringUtils.parseResource(from);
+                                realAddr = from;
+                            }
+
+                            if (realAddr == null)
+                                realAddr = from;
+
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
-                                writeMessageText(null, nick+" has joined the table.");
+                                mLog.message(realAddr, null,
+                                    nick+" has joined the table.");
                                 Audio.playPresenceIn();
                             }
                             if (typ == Presence.Type.UNAVAILABLE) {
-                                writeMessageText(null, nick+" has left the table.");
+                                mLog.message(realAddr, null,
+                                    nick+" has left the table.");
                                 Audio.playPresenceOut();
                             }
                         }
@@ -1010,15 +1029,27 @@ public class TableWindow extends JFrame implements PacketListener
         }
         else
         {
-            String nick = null;
             String addr = msg.getFrom();
-            Date date = null;
 
-            if (addr != null) {
+            Player player = mGameTable.getPlayerByJID(addr);
+
+            String nick;
+            String realAddr;
+
+            if (player != null) {
+                nick = player.getNick();
+                realAddr = player.getJID();
+            }
+            else {
                 nick = StringUtils.parseResource(addr);
+                realAddr = addr;
             }
 
+            if (realAddr == null)
+                realAddr = addr;
+
             PacketExtension ext;
+            Date date = null;
 
             // Suppress old-style MUC status messages.
             ext = msg.getExtension("x", "http://jabber.org/protocol/muc#user");
@@ -1034,76 +1065,10 @@ public class TableWindow extends JFrame implements PacketListener
                 date = ((DelayInformation)ext).getStamp();
             }
 
-            writeMessageText(nick, msg.getBody(), date);
+            mLog.message(realAddr, nick, msg.getBody(), date);
             if (ext == null)
                 Audio.playMessage();
         }
-    }
-
-    /**
-     * Appends the given message text to the message text area.
-     *
-     * @param nickname  The nickname of the user who sent the message.
-     *                  If null or empty, it is assumed to have come from the
-     *                  client or from the MultiUserChat itself.
-     * @param message   The text of the message.
-     * @param date      The timestamp of the message. If null, it is assumed
-     *                  to be current.
-     */
-    private void writeMessageText(String nickname, String message, Date date)
-    {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        // Append time stamp
-        Color dateColor;
-        if (date == null) {
-            date = new Date();
-            dateColor = colorCurrentTimestamp;
-        }
-        else {
-            dateColor = colorDelayedTimestamp;
-        }
-        mMessageText.append("[" + mTimeStampFormat.format(date) + "]  ",
-            dateColor);
-
-        // Append received message
-        boolean hasNick = ((nickname != null) && (!nickname.equals("")));
-
-        String nickText = hasNick ? (nickname + ":") : "***";
-
-        Color nameColor =
-            hasNick ? mUserColorMap.getUserNameColor(nickname) : Color.BLACK;
-        Color textColor =
-            hasNick ? mUserColorMap.getUserTextColor(nickname) : Color.BLACK;
-
-        mMessageText.append(nickText + " ", nameColor);
-        mMessageText.append(message + "\n", textColor);
-    }
-
-    /**
-     * Appends the given message text to the message text area. The message is
-     * assumed to be current.
-     *
-     * @param nickname  The nickname of the user who sent the message.
-     *                  If null or empty, it is assumed to have come from the
-     *                  client or from the MultiUserChat itself.
-     * @param message   The text of the message.
-     */
-    private void writeMessageText(String nickname, String message)
-    {
-        writeMessageText(nickname, message, null);
-    }
-
-    /**
-     * Appends the given message text to the message text area. The message is
-     * assumed to be current, and to have come from the client or from the
-     * MultiUserChat itself.
-     *
-     * @param message  The text of the message.
-     */
-    private void writeMessageText(String message)
-    {
-        writeMessageText(null, message);
     }
 
     /**
@@ -1321,8 +1286,8 @@ public class TableWindow extends JFrame implements PacketListener
         mChatSplitter.setResizeWeight(1);
         mChatSplitter.setBorder(BorderFactory.createEmptyBorder());
 
-        mMessageText = new LogTextPanel();
-        mChatSplitter.setTopComponent(mMessageText);
+        mLog = new ChatLogPanel(mColorMap);
+        mChatSplitter.setTopComponent(mLog);
 
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);

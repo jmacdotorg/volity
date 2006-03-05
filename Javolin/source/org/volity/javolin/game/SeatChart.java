@@ -9,7 +9,6 @@ import javax.swing.event.ChangeListener;
 import javax.swing.text.SimpleAttributeSet;
 import org.volity.client.*;
 import org.volity.javolin.ErrorWrapper;
-import org.volity.javolin.PrefsDialog;
 import org.volity.javolin.chat.UserColorMap;
 
 /**
@@ -112,15 +111,13 @@ public class SeatChart
                     adjustOnePanel((Seat)null);
                 }
             };
-        PrefsDialog.addListener(PrefsDialog.CHAT_COLOR_OPTIONS,
-            mColorChangeListener);
+        mUserColorMap.addListener(mColorChangeListener);
     }
 
     /** Clean up this component. */
     public void dispose() {
         mTable.removeStatusListener(this);
-        PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
-            mColorChangeListener);
+        mUserColorMap.removeListener(mColorChangeListener);
         if (mPopupMenu != null) {
             mPopupMenu.dispose();
             mPopupMenu = null;
@@ -423,8 +420,8 @@ public class SeatChart
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    mUserColorMap.changeUserColor(player.getJID(),
-                        player.getNick(), Color.GRAY);
+                    mUserColorMap.setUserColor(player.getJID(),
+                        Color.GRAY);
                     adjustOnePanel(player);
                 }
             });
@@ -435,7 +432,6 @@ public class SeatChart
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    mUserColorMap.changeUserName(oldNick, player.getNick());
                     adjustOnePanel(player);
                 }
             });

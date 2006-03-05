@@ -23,16 +23,20 @@ import javax.swing.event.*;
 import javax.swing.text.*;
 
 /**
- * A read-only, vertically-scrolling text pane, which text can only be appended to the
- * end of, and which automatically scrolls to the bottom each time text is appended.
+ * A read-only, vertically-scrolling text pane, which text can only be appended
+ * to the end of, and which automatically scrolls to the bottom each time text
+ * is appended.
+ *
+ * See also ChatLogPanel, which is a subclass of this intended for chat
+ * interaction.
  */
 public class LogTextPanel extends JPanel implements ChangeListener
 {
-    private JTextPane mLogTextPane;
-    private JScrollPane mLogScroller;
+    protected JTextPane mLogTextPane;
+    protected JScrollPane mLogScroller;
 
-    private SimpleAttributeSet mBaseStyle;
-    private boolean mShouldScroll;
+    protected SimpleAttributeSet mBaseStyle;
+    protected boolean mShouldScroll;
 
     /**
      * Constructor.
@@ -54,8 +58,8 @@ public class LogTextPanel extends JPanel implements ChangeListener
      */
     public void append(String text, Color color)
     {
-        // Scroll to the bottom of the text pane unless the user is dragging the
-        // scroll thumb
+        // Scroll to the bottom of the text pane unless the user is dragging
+        // the scroll thumb
         if (!mLogScroller.getVerticalScrollBar().getValueIsAdjusting())
         {
             mShouldScroll = true;
@@ -96,7 +100,7 @@ public class LogTextPanel extends JPanel implements ChangeListener
     /**
      * Populates the pane with UI controls.
      */
-    private void buildUI()
+    protected void buildUI()
     {
         setLayout(new BorderLayout());
 

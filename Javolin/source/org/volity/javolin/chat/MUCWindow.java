@@ -20,8 +20,9 @@ package org.volity.javolin.chat;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.*;
-import java.util.*;
-import java.util.prefs.*;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.prefs.Preferences;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -31,6 +32,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.*;
 import org.jivesoftware.smackx.*;
 import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.volity.javolin.*;
 
@@ -43,18 +45,14 @@ public class MUCWindow extends JFrame implements PacketListener
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
     private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
 
-    private final static Color colorCurrentTimestamp = Color.BLACK;
-    private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
-
     private JSplitPane mChatSplitter;
     private JSplitPane mUserListSplitter;
-    private LogTextPanel mMessageText;
+    private ChatLogPanel mLog;
     private JTextArea mInputText;
     private JTextPane mUserListText;
     private AbstractAction mSendMessageAction;
 
-    private UserColorMap mUserColorMap;
-    private SimpleDateFormat mTimeStampFormat;
+    private UserColorMap mColorMap;
     private SimpleAttributeSet mBaseUserListStyle;
 
     private SizeAndPositionSaver mSizePosSaver;
@@ -79,10 +77,9 @@ public class MUCWindow extends JFrame implements PacketListener
         mConnection = connection;
         mMucObject = new MultiUserChat(connection, mucId);
 
-        mUserColorMap = new UserColorMap();
-        mUserColorMap.getUserNameColor(nickname); // Give user first color
-
-        mTimeStampFormat = new SimpleDateFormat("HH:mm:ss");
+        mColorMap = new UserColorMap();
+        // Give user first color
+        mColorMap.getUserNameColor(mConnection.getUser());
 
         mBaseUserListStyle = new SimpleAttributeSet();
         StyleConstants.setFontFamily(mBaseUserListStyle, "SansSerif");
@@ -130,8 +127,7 @@ public class MUCWindow extends JFrame implements PacketListener
                     updateUserList();
                 }
             };
-        PrefsDialog.addListener(PrefsDialog.CHAT_COLOR_OPTIONS,
-            mColorChangeListener);
+        mColorMap.addListener(mColorChangeListener);
 
         // Register as message listener.
         mMucObject.addMessageListener(this);
@@ -157,9 +153,8 @@ public class MUCWindow extends JFrame implements PacketListener
      */
     protected void leave()
     {
-        mUserColorMap.dispose();
-        PrefsDialog.removeListener(PrefsDialog.CHAT_COLOR_OPTIONS,
-            mColorChangeListener);
+        mColorMap.removeListener(mColorChangeListener);
+        mColorMap.dispose();
 
         if (mMucObject != null) {
             // Deregister listeners
@@ -268,19 +263,25 @@ public class MUCWindow extends JFrame implements PacketListener
         mUserListText.setText("");
         Iterator iter = mMucObject.getOccupants();
 
-        while (iter.hasNext())
-        {
-            String userName = StringUtils.parseResource(iter.next().toString());
+        while (iter.hasNext()) {
+            String jid = (String)iter.next();
+            Occupant occ = mMucObject.getOccupant(jid);
+            String nick = occ.getNick();
+            String realAddr = occ.getJid();
+
+            // For an anonymous MUC, color by full MUC JID.
+            if (realAddr == null)
+                realAddr = jid;
 
             SimpleAttributeSet style = new SimpleAttributeSet(mBaseUserListStyle);
             StyleConstants.setForeground(style,
-                mUserColorMap.getUserNameColor(userName));
+                mColorMap.getUserNameColor(realAddr));
 
             Document doc = mUserListText.getDocument();
 
             try
             {
-                doc.insertString(doc.getLength(), userName + "\n", style);
+                doc.insertString(doc.getLength(), nick + "\n", style);
             }
             catch (BadLocationException ex)
             {
@@ -312,14 +313,33 @@ public class MUCWindow extends JFrame implements PacketListener
 
                         String from = pres.getFrom();
                         if (from != null) {
-                            String nick = StringUtils.parseResource(from);
+                            Occupant occ = mMucObject.getOccupant(from);
+                            // For Unavailable, occ will probably be null
+
+                            String nick;
+                            String realAddr;
+
+                            if (occ != null) {
+                                nick = occ.getNick();
+                                realAddr = occ.getJid();
+                            }
+                            else {
+                                nick = StringUtils.parseResource(from);
+                                realAddr = null;
+                            }
+
+                            if (realAddr == null)
+                                realAddr = from;
+
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
-                                writeMessageText(null, nick+" has joined the chat.");
+                                mLog.message(realAddr, null,
+                                    nick+" has joined the chat.");
                                 Audio.playPresenceIn();
                             }
                             if (typ == Presence.Type.UNAVAILABLE) {
-                                writeMessageText(null, nick+" has left the chat.");
+                                mLog.message(realAddr, null,
+                                    nick+" has left the chat.");
                                 Audio.playPresenceOut();
                             }
                         }
@@ -368,79 +388,35 @@ public class MUCWindow extends JFrame implements PacketListener
         }
         else
         {
-            String nick = null;
-            String addr = msg.getFrom();
-            Date date = null;
+            String from = msg.getFrom();
 
-            if (addr != null)
-            {
-                nick = StringUtils.parseResource(addr);
+            Occupant occ = mMucObject.getOccupant(from);
+
+            String nick;
+            String realAddr;
+
+            if (occ != null) {
+                nick = occ.getNick();
+                realAddr = occ.getJid();
+            }
+            else {
+                nick = StringUtils.parseResource(from);
+                realAddr = from;
             }
 
+            if (realAddr == null)
+                realAddr = from;
+
+            Date date = null;
             PacketExtension ext = msg.getExtension("x", "jabber:x:delay");
-            if (ext != null && ext instanceof DelayInformation) 
-            {
+            if (ext != null && ext instanceof DelayInformation) {
                 date = ((DelayInformation)ext).getStamp();
             }
 
-            writeMessageText(nick, msg.getBody(), date);
+            mLog.message(realAddr, nick, msg.getBody(), date);
             if (ext == null)
                 Audio.playMessage();
         }
-    }
-
-    /**
-     * Appends the given message text to the message text area.
-     *
-     * @param nickname  The nickname of the user who sent the message.
-     *                  If null or empty, it is assumed to have come from the
-     *                  client or from the MultiUserChat itself.
-     * @param message   The text of the message.
-     * @param date      The timestamp of the message. If null, it is assumed
-     *                  to be current.
-     */
-    private void writeMessageText(String nickname, String message, Date date)
-    {
-        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-        // Append time stamp
-        Color dateColor;
-        if (date == null) {
-            date = new Date();
-            dateColor = colorCurrentTimestamp;
-        }
-        else {
-            dateColor = colorDelayedTimestamp;
-        }
-        mMessageText.append("[" + mTimeStampFormat.format(date) + "]  ",
-            dateColor);
-
-        // Append received message
-        boolean hasNick = ((nickname != null) && (!nickname.equals("")));
-
-        String nickText = hasNick ? nickname + ":" : "***";
-
-        Color nameColor =
-            hasNick ? mUserColorMap.getUserNameColor(nickname) : Color.BLACK;
-        Color textColor =
-            hasNick ? mUserColorMap.getUserTextColor(nickname) : Color.BLACK;
-
-        mMessageText.append(nickText + " ", nameColor);
-        mMessageText.append(message + "\n", textColor);
-    }
-
-    /**
-     * Appends the given message text to the message text area. The message is
-     * assumed to be current.
-     *
-     * @param nickname  The nickname of the user who sent the message.
-     *                  If null or empty, it is assumed to have come from the
-     *                  client or from the MultiUserChat itself.
-     * @param message   The text of the message.
-     */
-    private void writeMessageText(String nickname, String message)
-    {
-        writeMessageText(nickname, message, null);
     }
 
     /**
@@ -456,8 +432,8 @@ public class MUCWindow extends JFrame implements PacketListener
         mChatSplitter.setResizeWeight(1);
         mChatSplitter.setBorder(BorderFactory.createEmptyBorder());
 
-        mMessageText = new LogTextPanel();
-        mChatSplitter.setTopComponent(mMessageText);
+        mLog = new ChatLogPanel(mColorMap);
+        mChatSplitter.setTopComponent(mLog);
 
         mInputText = new JTextArea();
         mInputText.setLineWrap(true);
