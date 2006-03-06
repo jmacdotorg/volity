@@ -35,7 +35,7 @@ public class LogTextPanel extends JPanel implements ChangeListener
     protected JTextPane mLogTextPane;
     protected JScrollPane mLogScroller;
 
-    protected SimpleAttributeSet mBaseStyle;
+    protected SimpleAttributeSet mBaseAttrs;
     protected boolean mShouldScroll;
 
     /**
@@ -43,11 +43,15 @@ public class LogTextPanel extends JPanel implements ChangeListener
      */
     public LogTextPanel()
     {
-        mBaseStyle = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(mBaseStyle, "SansSerif");
-        StyleConstants.setFontSize(mBaseStyle, 12);
+        mBaseAttrs = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(mBaseAttrs, "SansSerif");
+        StyleConstants.setFontSize(mBaseAttrs, 12);
 
         buildUI();
+    }
+
+    /** Clean up component. */
+    public void dispose() {
     }
 
     /**
@@ -58,16 +62,11 @@ public class LogTextPanel extends JPanel implements ChangeListener
      */
     public void append(String text, Color color)
     {
-        // Scroll to the bottom of the text pane unless the user is dragging
-        // the scroll thumb
-        if (!mLogScroller.getVerticalScrollBar().getValueIsAdjusting())
-        {
-            mShouldScroll = true;
-        }
+        scrollToBottom();
 
         Document doc = mLogTextPane.getDocument();
 
-        SimpleAttributeSet style = new SimpleAttributeSet(mBaseStyle);
+        SimpleAttributeSet style = new SimpleAttributeSet(mBaseAttrs);
         StyleConstants.setForeground(style, color);
         
         try
@@ -76,6 +75,21 @@ public class LogTextPanel extends JPanel implements ChangeListener
         }
         catch (BadLocationException ex)
         {
+        }
+    }
+
+    /**
+     * Scroll to the bottom of the text pane, unless the user is dragging the
+     * scroll thumb.
+     *
+     * This doesn't actually perform the scroll; it sets a flag which will trip
+     * at the next scroll bar change event.
+     */
+    protected void scrollToBottom()
+    {
+        if (!mLogScroller.getVerticalScrollBar().getValueIsAdjusting())
+        {
+            mShouldScroll = true;
         }
     }
 

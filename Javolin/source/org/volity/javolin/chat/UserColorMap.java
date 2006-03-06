@@ -27,8 +27,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.volity.javolin.PrefsDialog;
 
-//### be able to set (and clear) super-override colors (which is a change)
-//### make sure all callers use JID
+//### be able to set (and clear) super-override colors (which is a change) 
+//### make sure all callers use JID 
 
 /**
  * Maps JIDs to colors for message text. This allows each user to have a
@@ -239,7 +239,7 @@ public class UserColorMap
     {
         ColorEntry ent = new ColorEntry(col);
         mHueMap.put(user, ent);
-        //### fire notify? 
+        //### fire notify?  
     }
 
     /** Add a map-changed listener. */

@@ -729,7 +729,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(mChatSampleText, c);
 
-            //###
+            //### 
             label = new JLabel("(Changes do not affect messages already");
             label.setFont(new Font("SansSerif", Font.PLAIN, 12));
             c = new GridBagConstraints();
@@ -743,7 +743,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            //###
+            //### 
             label = new JLabel("displayed in existing chat windows.)");
             label.setFont(new Font("SansSerif", Font.PLAIN, 12));
             c = new GridBagConstraints();

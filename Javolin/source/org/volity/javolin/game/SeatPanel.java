@@ -280,9 +280,9 @@ public class SeatPanel extends JPanel
                 Icon icon = iconCache.get(iconlabel);
 
                 if (player.isReferee()) {
-                    mChart.mUserColorMap.setUserColor(player.getJID(), Color.GRAY);
+                    mChart.mColorMap.setUserColor(player.getJID(), Color.GRAY);
                 }
-                Color col = mChart.mUserColorMap.getUserNameColor(player.getJID());
+                Color col = mChart.mColorMap.getUserNameColor(player.getJID());
 
                 if (player.isSelf()) {
                     isSelf = true;

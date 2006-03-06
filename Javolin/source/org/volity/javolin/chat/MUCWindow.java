@@ -153,6 +153,10 @@ public class MUCWindow extends JFrame implements PacketListener
      */
     protected void leave()
     {
+        if (mLog != null) {
+            mLog.dispose();
+        }
+
         mColorMap.removeListener(mColorChangeListener);
         mColorMap.dispose();
 

@@ -618,6 +618,10 @@ public class TableWindow extends JFrame implements PacketListener
             mHelpPanel = null;
         }
 
+        if (mLog != null) {
+            mLog.dispose();
+        }
+
         if (mColorMap != null) {
             mColorMap.dispose();
             mColorMap = null;

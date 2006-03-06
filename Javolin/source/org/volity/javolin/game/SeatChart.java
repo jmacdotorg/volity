@@ -28,7 +28,7 @@ public class SeatChart
 
     GameTable mTable;
     JPanel mPanel;
-    UserColorMap mUserColorMap;
+    UserColorMap mColorMap;
     Map mSeatColors;
     TranslateToken mTranslator;
     GameUI.MessageHandler mMessageHandler;
@@ -58,7 +58,7 @@ public class SeatChart
         Metadata.Provider metadataProvider,
         TranslateToken translator, GameUI.MessageHandler messageHandler) {
         mTable = table;
-        mUserColorMap = colormap;
+        mColorMap = colormap;
         mSeatColors = null;
         mTranslator = translator;
         mMessageHandler = messageHandler;
@@ -111,13 +111,13 @@ public class SeatChart
                     adjustOnePanel((Seat)null);
                 }
             };
-        mUserColorMap.addListener(mColorChangeListener);
+        mColorMap.addListener(mColorChangeListener);
     }
 
     /** Clean up this component. */
     public void dispose() {
         mTable.removeStatusListener(this);
-        mUserColorMap.removeListener(mColorChangeListener);
+        mColorMap.removeListener(mColorChangeListener);
         if (mPopupMenu != null) {
             mPopupMenu.dispose();
             mPopupMenu = null;
@@ -420,7 +420,7 @@ public class SeatChart
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    mUserColorMap.setUserColor(player.getJID(),
+                    mColorMap.setUserColor(player.getJID(),
                         Color.GRAY);
                     adjustOnePanel(player);
                 }

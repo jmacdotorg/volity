@@ -3,10 +3,14 @@ package org.volity.javolin.chat;
 import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.text.*;
 import org.volity.javolin.LogTextPanel;
-
-//### styling
 
 /**
  * A subclass of LogTextPanel which is intended for chat transcripts. This
@@ -20,12 +24,49 @@ public class ChatLogPanel extends LogTextPanel
     private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
     private final static SimpleDateFormat timeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
+    private StyledDocument mDocument;
     private UserColorMap mColorMap;
+    private Map mUserMap = new HashMap();
+    private ChangeListener mColorChangeListener;
 
+    protected Style mStyleBase;
+    protected Style mStyleCurrentTimestamp;
+    protected Style mStyleDelayedTimestamp;
+
+    /**
+     * Constructor. The map may be null, if you don't want name coloring.
+     */
     public ChatLogPanel(UserColorMap map) {
         super();
 
+        mDocument = mLogTextPane.getStyledDocument();
         mColorMap = map;
+
+        mStyleBase = mLogTextPane.addStyle("base", null);
+        StyleConstants.setFontFamily(mStyleBase, "SansSerif");
+        StyleConstants.setFontSize(mStyleBase, 12);
+
+        mStyleCurrentTimestamp = mLogTextPane.addStyle("current", mStyleBase);
+        StyleConstants.setForeground(mStyleCurrentTimestamp,
+            colorCurrentTimestamp);
+        mStyleDelayedTimestamp = mLogTextPane.addStyle("delayed", mStyleBase);
+        StyleConstants.setForeground(mStyleDelayedTimestamp,
+            colorDelayedTimestamp);
+
+        mColorChangeListener = new ChangeListener() {
+                public void stateChanged(ChangeEvent ev) {
+                    //###System.out.println("### chat log saw color change");
+                    adjustAllColors();
+                }
+            };
+        mColorMap.addListener(mColorChangeListener);
+    }
+
+    /** Clean up component. */
+    public void dispose() {
+        mColorMap.removeListener(mColorChangeListener);
+        // Don't dispose of the colormap; we don't own it.
+        super.dispose();
     }
 
     /**
@@ -68,38 +109,97 @@ public class ChatLogPanel extends LogTextPanel
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
         // Append time stamp
-        Color dateColor;
+        Style dateStyle;
         if (date == null) {
             date = new Date();
-            dateColor = colorCurrentTimestamp;
+            dateStyle = mStyleCurrentTimestamp;
         }
         else {
-            dateColor = colorDelayedTimestamp;
+            dateStyle = mStyleDelayedTimestamp;
         }
-        append("[" + timeStampFormat.format(date) + "]  ", dateColor);
+        append("[" + timeStampFormat.format(date) + "]  ", dateStyle);
+
+        Entry ent = null;
+        if (jid != null)
+            ent = getEntry(jid);
 
         String nickText;
-        Color nameColor, textColor;
+        Style nameStyle = mStyleBase;
+        Style textStyle = mStyleBase;
 
         if (nick == null || nick.equals("")) {
             nickText = "***";
-            nameColor = Color.BLACK;
-            textColor = Color.BLACK;
+            if (ent != null)
+                textStyle = ent.styleAbout;
         }
         else {
             nickText = nick + ":";
-            if (jid == null) {
-                nameColor = Color.BLACK;
-                textColor = Color.BLACK;
-            }
-            else {
-                nameColor = mColorMap.getUserNameColor(jid);
-                textColor = mColorMap.getUserTextColor(jid);
+            if (ent != null) {
+                nameStyle = ent.styleName;
+                textStyle = ent.styleText;
             }
         }
 
-        append(nickText + " ", nameColor);
-        append(text + "\n", textColor);
+        append(nickText + " ", nameStyle);
+        append(text + "\n", textStyle);
+
+        scrollToBottom();
     }
 
+    /**
+     * Appends the given text to the text pane. This does not do a
+     * scroll-to-bottom; the caller is responsible for that.
+     */
+    public void append(String text, Style style)
+    {
+        try {
+            mDocument.insertString(mDocument.getLength(), text, style);
+        }
+        catch (BadLocationException ex) { }
+    }
+
+    protected Entry getEntry(String jid) {
+        Entry ent = (Entry)mUserMap.get(jid);
+
+        if (ent == null) {
+            ent = new Entry(jid);
+            mUserMap.put(jid, ent);
+        }
+
+        return ent;
+    }
+
+    protected void adjustAllColors() {
+        for (Iterator it = mUserMap.values().iterator(); it.hasNext(); ) {
+            Entry ent = (Entry)it.next();
+            ent.adjustColors();
+        }
+    }
+
+    protected class Entry {
+        String mJID;
+        Style styleName;
+        Style styleText;
+        Style styleAbout;
+
+        public Entry(String jid) {
+            mJID = jid;
+            styleName = mLogTextPane.addStyle(null, mStyleBase);
+            styleText = mLogTextPane.addStyle(null, mStyleBase);
+            styleAbout = mLogTextPane.addStyle(null, mStyleBase);
+
+            adjustColors();
+        }
+
+        protected void adjustColors() {
+            if (mColorMap == null)
+                return;
+
+            Color nameColor = mColorMap.getUserNameColor(mJID);
+            Color textColor = mColorMap.getUserTextColor(mJID);
+
+            StyleConstants.setForeground(styleName, nameColor);
+            StyleConstants.setForeground(styleText, textColor);
+        }
+    }
 }
