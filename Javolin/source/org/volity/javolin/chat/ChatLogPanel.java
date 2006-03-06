@@ -16,6 +16,9 @@ import org.volity.javolin.LogTextPanel;
  * A subclass of LogTextPanel which is intended for chat transcripts. This
  * class provides a high-level message() method, which records a single message
  * and the context of who sent it.
+ *
+ * This is also capable of recoloring all the messages in the log, if the
+ * color-name associations (or the preferences) change.
  */
 public class ChatLogPanel extends LogTextPanel
 {
@@ -23,6 +26,12 @@ public class ChatLogPanel extends LogTextPanel
     private final static Color colorCurrentTimestamp = Color.BLACK;
     private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
     private final static SimpleDateFormat timeStampFormat = new SimpleDateFormat("HH:mm:ss");
+
+    private final static String ATTR_JID = "VolityJID";
+    private final static String ATTR_TYPE = "VolityType";
+    private final static String ATTR_TYPE_NAME = "VolityJID:Name";
+    private final static String ATTR_TYPE_TEXT = "VolityJID:Text";
+    private final static String ATTR_TYPE_ABOUT = "VolityJID:About";
 
     private StyledDocument mDocument;
     private UserColorMap mColorMap;
@@ -39,8 +48,9 @@ public class ChatLogPanel extends LogTextPanel
     public ChatLogPanel(UserColorMap map) {
         super();
 
-        mDocument = mLogTextPane.getStyledDocument();
         mColorMap = map;
+
+        mDocument = mLogTextPane.getStyledDocument();
 
         mStyleBase = mLogTextPane.addStyle("base", null);
         StyleConstants.setFontFamily(mStyleBase, "SansSerif");
@@ -55,7 +65,6 @@ public class ChatLogPanel extends LogTextPanel
 
         mColorChangeListener = new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
-                    //###System.out.println("### chat log saw color change");
                     adjustAllColors();
                 }
             };
@@ -158,6 +167,10 @@ public class ChatLogPanel extends LogTextPanel
         catch (BadLocationException ex) { }
     }
 
+    /**
+     * Get the entry for a given JID (creating one if necessary). This entry
+     * contains the styles needed to draw the user's messages.
+     */
     protected Entry getEntry(String jid) {
         Entry ent = (Entry)mUserMap.get(jid);
 
@@ -169,13 +182,69 @@ public class ChatLogPanel extends LogTextPanel
         return ent;
     }
 
+    /**
+     * Recolor all the text. This is called when we notice that the colormap
+     * has changed.
+     * 
+     * It turns out that logical styles in Swing are a filthy trap and an
+     * unusable snare, so we have to go through the document and apply color
+     * attributes to each chunk which is a user name or message.
+     */
     protected void adjustAllColors() {
         for (Iterator it = mUserMap.values().iterator(); it.hasNext(); ) {
             Entry ent = (Entry)it.next();
             ent.adjustColors();
         }
+
+        Element el = mDocument.getDefaultRootElement();
+        recurseElements(el);
     }
 
+    /**
+     * Work function -- used to iterate through Element tree in
+     * adjustAllColors().
+     */
+    protected void recurseElements(Element el) {
+        if (!el.isLeaf()) {
+            int count = el.getElementCount();
+            for (int ix=0; ix<count; ix++) {
+                Element subel = el.getElement(ix);
+                recurseElements(subel);
+            }
+            return;
+        }
+
+        AttributeSet attrs = el.getAttributes();
+        String jid = (String)attrs.getAttribute(ATTR_JID);
+        Object type = attrs.getAttribute(ATTR_TYPE);
+        if (jid != null && type != null && type != ATTR_TYPE_ABOUT) {
+            int start = el.getStartOffset();
+            int end = el.getEndOffset();
+
+            Entry ent = getEntry(jid);
+
+            Style style = null;
+            if (type == ATTR_TYPE_NAME)
+                style = ent.styleName;
+            if (type == ATTR_TYPE_TEXT)
+                style = ent.styleText;
+
+            mDocument.setCharacterAttributes(start, end-start,
+                style, true);
+        }
+    }
+
+    /**
+     * An Entry structure is associated with every JID which appears in the
+     * chat. This contains the styles needed to draw the user's text:
+     *
+     * styleName: name (displayed before message)
+     * styleText: a message from the user
+     * styleAbout: used for "... has joined the chat" messages
+     *
+     * Each of these styles has an ATTR_JID attribute (whose value is the JID).
+     * This is very handy when it comes time to pop up a contextual menu.
+     */
     protected class Entry {
         String mJID;
         Style styleName;
@@ -187,6 +256,14 @@ public class ChatLogPanel extends LogTextPanel
             styleName = mLogTextPane.addStyle(null, mStyleBase);
             styleText = mLogTextPane.addStyle(null, mStyleBase);
             styleAbout = mLogTextPane.addStyle(null, mStyleBase);
+
+            styleName.addAttribute(ATTR_JID, mJID);
+            styleText.addAttribute(ATTR_JID, mJID);
+            styleAbout.addAttribute(ATTR_JID, mJID);
+
+            styleName.addAttribute(ATTR_TYPE, ATTR_TYPE_NAME);
+            styleText.addAttribute(ATTR_TYPE, ATTR_TYPE_TEXT);
+            styleAbout.addAttribute(ATTR_TYPE, ATTR_TYPE_ABOUT);
 
             adjustColors();
         }
