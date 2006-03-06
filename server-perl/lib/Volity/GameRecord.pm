@@ -66,7 +66,7 @@ use Date::Format;
 
 use base qw( Volity );
 use fields qw( id signature winners start_time end_time game_uri_object
-    game_name parlor finished );
+    game_name parlor finished seats );
 
 # Set up package variables for GPG config.
 our ( $gpg_bin, $gpg_secretkey, $gpg_passphrase );
@@ -465,7 +465,7 @@ sub render_as_hashref {
     # First, directly copy some fields from the object into the hashref...
     foreach (
         qw( id winners start_time end_time parlor signature
-        finished )
+        finished seats )
         )
     {
         $$hashref{$_} = $self->{$_} if defined( $self->$_ );

@@ -1062,19 +1062,24 @@ sub end_game {
 				      });
   $record->game_uri($self->game_class->uri);
   $record->end_time(scalar(localtime));
+
+  my %recorded_seats = ();
+  
   my @slots = $self->game->winners->slots;
   if (@slots and defined($slots[0])) {
-      my @player_jids;
+      my @winners_list;
       for my $slot (@slots) {
-	  my @slot_jids;
 	  my @seats = @$slot;
 	  for my $seat (@seats) {
-	      push (@slot_jids, [$seat->registered_player_jids]);
+	      $recorded_seats{$seat->id} = [$seat->registered_player_jids];
 	  }
-	  push (@player_jids, \@slot_jids);
+	  push (@winners_list, [map($_->id, @seats)]);
       }
-      $record->winners(@player_jids);
+      $record->winners(@winners_list);
   }
+
+  $record->seats(\%recorded_seats);
+
 
   # Give it the ol' John Hancock, if possible.
   if (defined($Volity::GameRecord::gpg_bin) and defined($Volity::GameRecord::gpg_secretkey) and defined($Volity::GameRecord::gpg_passphrase)) {
