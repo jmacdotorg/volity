@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+There is now a "File Bug Report" menu item in the "Debug" menu. It just
+sends your browser to the beta bug report page.
+
 Big menu rearrangement. Debugging items have been moved to a "Debug" menu.
 Keyboard shortcuts have been rethought from scratch -- many changes. There
 is a "Close Window" item.
