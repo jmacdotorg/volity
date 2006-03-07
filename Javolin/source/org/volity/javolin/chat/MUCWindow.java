@@ -50,7 +50,7 @@ public class MUCWindow extends JFrame implements PacketListener
     private JSplitPane mUserListSplitter;
     private ChatLogPanel mLog;
     private JTextArea mInputText;
-    private JTextPane mUserListText;
+    private JTextPanePopup mUserListText;
     private AbstractAction mSendMessageAction;
 
     private UserColorMap mColorMap;
@@ -156,6 +156,11 @@ public class MUCWindow extends JFrame implements PacketListener
     {
         if (mLog != null) {
             mLog.dispose();
+        }
+
+        if (mUserListText != null) {
+            mUserListText.dispose();
+            mUserListText = null;
         }
 
         mColorMap.removeListener(mColorChangeListener);
@@ -264,6 +269,8 @@ public class MUCWindow extends JFrame implements PacketListener
     private void updateUserList()
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+        if (mUserListText == null)
+            return;
 
         mUserListText.setText("");
         Iterator iter = mMucObject.getOccupants();
@@ -274,13 +281,15 @@ public class MUCWindow extends JFrame implements PacketListener
             String nick = occ.getNick();
             String realAddr = occ.getJid();
 
-            // For an anonymous MUC, color by full MUC JID.
+            // For an anonymous MUC, color by full MUC JID. (but no popup)
             if (realAddr == null)
                 realAddr = jid;
 
             SimpleAttributeSet style = new SimpleAttributeSet(mBaseUserListStyle);
             StyleConstants.setForeground(style,
                 mColorMap.getUserNameColor(realAddr));
+            if (occ.getJid() != null)
+                style.addAttribute(ChatLogPanel.ATTR_JID, occ.getJid());
 
             Document doc = mUserListText.getDocument();
 
@@ -465,7 +474,7 @@ public class MUCWindow extends JFrame implements PacketListener
 
         mUserListSplitter.setLeftComponent(mChatSplitter);
 
-        mUserListText = new JTextPane();
+        mUserListText = new JTextPanePopup();
         mUserListText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
         mUserListText.setEditable(false);
         mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
@@ -474,5 +483,59 @@ public class MUCWindow extends JFrame implements PacketListener
 
         // Necessary for all windows, for Mac support
         JavolinMenuBar.applyPlatformMenuBar(this);
+    }
+
+
+    /**
+     * Subclass of JTextPane that has a pop-up menu.
+     */
+    protected static class JTextPanePopup extends JTextPane {
+        protected UserContextMenu mPopupMenu = null;
+
+        public JTextPanePopup() {
+            mPopupMenu = new UserContextMenu();
+        }
+
+        /** Clean up component. */
+        public void dispose() {
+            if (mPopupMenu != null) {
+                mPopupMenu.dispose();
+                mPopupMenu = null;
+            }
+        }
+
+        /** Customized mouse handler that knows about popup clicks. */
+        protected void processMouseEvent(MouseEvent ev) {
+            if (ev.isPopupTrigger()) {
+                if (mPopupMenu != null) {
+                    displayPopupMenu(ev.getX(), ev.getY());
+                }
+                return;
+            }
+            
+            super.processMouseEvent(ev);
+        }
+
+        /**
+         * Given a popup-inducing click at a particular location, see if
+         * there's a JID associated with that location. If so, pop up a
+         * contextual menu.
+         */
+        protected void displayPopupMenu(int xp, int yp) {
+            int pos = viewToModel(new Point(xp, yp));
+            StyledDocument doc = getStyledDocument();
+            Element el = doc.getCharacterElement(pos);
+            if (el == null)
+                return;
+            AttributeSet attrs = el.getAttributes();
+            if (attrs == null)
+                return;
+            String jid = (String)attrs.getAttribute(ChatLogPanel.ATTR_JID);
+            if (jid == null)
+                return;
+
+            mPopupMenu.adjustShow(jid, this, xp, yp);
+        }
+
     }
 }

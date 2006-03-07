@@ -28,12 +28,12 @@ public class ChatLogPanel extends LogTextPanel
     private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
     private final static SimpleDateFormat timeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
-    private final static String ATTR_JID = "VolityJID";
-    private final static String ATTR_REALJID = "VolityRealJID";
-    private final static String ATTR_TYPE = "VolityType";
-    private final static String ATTR_TYPE_NAME = "VolityJID:Name";
-    private final static String ATTR_TYPE_TEXT = "VolityJID:Text";
-    private final static String ATTR_TYPE_ABOUT = "VolityJID:About";
+    public final static String ATTR_JID = "VolityJID";
+    public final static String ATTR_REALJID = "VolityRealJID";
+    public final static String ATTR_TYPE = "VolityType";
+    public final static String ATTR_TYPE_NAME = "VolityJID:Name";
+    public final static String ATTR_TYPE_TEXT = "VolityJID:Text";
+    public final static String ATTR_TYPE_ABOUT = "VolityJID:About";
 
     private StyledDocument mDocument;
     private UserColorMap mColorMap;
@@ -272,8 +272,13 @@ public class ChatLogPanel extends LogTextPanel
     /**
      * Given a popup-inducing click at a particular location, see if there's a
      * JID associated with that location. If so, pop up a contextual menu.
+     * 
+     * Should this just be shoved into the JTextPanePopup class?
      */
     protected void displayPopupMenu(int xp, int yp) {
+        if (mPopupMenu == null)
+            return;
+
         int pos = mTextPane.viewToModel(new Point(xp, yp));
         Element el = mDocument.getCharacterElement(pos);
         if (el == null)
@@ -360,10 +365,12 @@ public class ChatLogPanel extends LogTextPanel
             mOwner = owner;
         }
 
+        /** Clean up component. */
         public void dispose() {
             mOwner = null;
         }
 
+        /** Customized mouse handler that knows about popup clicks. */
         protected void processMouseEvent(MouseEvent ev) {
             if (ev.isPopupTrigger()) {
                 if (mOwner != null) {
