@@ -12,7 +12,7 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
 import org.volity.client.Audio;
-import org.volity.client.TranslateToken;
+import org.volity.client.translate.TranslateToken;
 import org.volity.jabber.*;
 
 /**

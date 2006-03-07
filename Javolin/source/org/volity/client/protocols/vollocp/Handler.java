@@ -2,8 +2,8 @@ package org.volity.client.protocols.vollocp;
 
 import java.io.*;
 import java.net.*;
-import org.volity.client.TranslateToken;
 import org.volity.client.protocols.StubConnection;
+import org.volity.client.translate.TranslateToken;
 
 /**
  * A URLStreamHandler for the "vollocp:" URL protocol. 

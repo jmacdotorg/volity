@@ -41,6 +41,7 @@ import org.jivesoftware.smackx.ServiceDiscoveryFactory;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
+import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
 import org.volity.javolin.roster.*;

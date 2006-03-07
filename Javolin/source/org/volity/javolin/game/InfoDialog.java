@@ -12,7 +12,7 @@ import javax.swing.event.ChangeListener;
 import org.volity.client.GameInfo;
 import org.volity.client.GameTable;
 import org.volity.client.Metadata;
-import org.volity.client.TranslateToken;
+import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.BaseDialog;
 
 /**

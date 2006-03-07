@@ -1,11 +1,10 @@
-package org.volity.client;
+package org.volity.client.translate;
 
 import java.util.List;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
 import org.volity.jabber.RPCRequester;
 import org.volity.jabber.RPCException;
-import org.volity.client.TokenFailure;
 
 /**
  * A class for making Jabber-RPC requests to a service which responds

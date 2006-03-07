@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.translate;
 
 import java.util.ArrayList;
 import java.util.List;

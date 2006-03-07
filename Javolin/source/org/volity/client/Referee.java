@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
-import org.volity.client.TokenFailure;
-import org.volity.client.TokenRequester;
+import org.volity.client.translate.TokenFailure;
+import org.volity.client.translate.TokenRequester;
 import org.volity.jabber.RPCException;
 
 /**

@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.volity.client.Metadata;
-import org.volity.client.TranslateToken;
 import org.volity.client.VersionNumber;
 import org.volity.client.VersionSpec;
+import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.BaseDialog;
 
 /**

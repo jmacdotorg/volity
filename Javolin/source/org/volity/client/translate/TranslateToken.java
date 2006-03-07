@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.translate;
 
 import java.io.File;
 import java.io.FileReader;
@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import org.volity.client.TokenFailure;
 import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;

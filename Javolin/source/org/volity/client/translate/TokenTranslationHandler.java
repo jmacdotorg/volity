@@ -1,8 +1,6 @@
-package org.volity.client;
+package org.volity.client.translate;
 
 import java.util.List;
-import org.volity.client.TranslateToken;
-import org.volity.client.TokenFailure;
 
 public class TokenTranslationHandler {
     /**

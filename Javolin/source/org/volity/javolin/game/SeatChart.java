@@ -8,6 +8,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.SimpleAttributeSet;
 import org.volity.client.*;
+import org.volity.client.translate.TokenFailure;
+import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.chat.UserColorMap;
 

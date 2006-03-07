@@ -24,7 +24,7 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.volity.client.GameUI;
 import org.volity.client.Metadata;
-import org.volity.client.TranslateToken;
+import org.volity.client.translate.TranslateToken;
 
 /**
  * This class is analogous to SVGCanvas. It handles the SVG pane in Testbench.

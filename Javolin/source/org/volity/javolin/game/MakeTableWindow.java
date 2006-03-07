@@ -17,6 +17,7 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.volity.client.*;
+import org.volity.client.translate.TokenFailure;
 import org.volity.jabber.JIDUtils;
 import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.JavolinApp;
