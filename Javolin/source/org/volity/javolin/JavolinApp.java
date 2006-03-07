@@ -55,6 +55,9 @@ public class JavolinApp extends JFrame
     private final static String APPNAME = "Javolin";
     private final static String APPVERSION = "0.2.8";
 
+    private final static String PLAYER_STAT_QUERY_URL
+        = "http://volity.net/history/player_detail.html?player_jid=";
+
     private final static String NODENAME = "MainAppWin";
 
     private final static String ADDUSER_LABEL = "Add";
@@ -84,6 +87,7 @@ public class JavolinApp extends JFrame
 
     private JPopupMenu mRosterContextMenu;
     private JMenuItem mChatContextItem;
+    private JMenuItem mStatsContextItem;
     private JMenuItem mAddUserContextItem;
     private JMenuItem mDelUserContextItem;
 
@@ -402,17 +406,27 @@ public class JavolinApp extends JFrame
      */
     public void actionPerformed(ActionEvent e)
     {
-        if ((e.getSource() == mAddUserBut) || (e.getSource() == mAddUserContextItem))
+        Object source = e.getSource();
+        if (source == null)
+            return;
+ 
+        if ((source == mAddUserBut) || (source == mAddUserContextItem))
         {
             doAddUserBut();
         }
-        else if ((e.getSource() == mDelUserBut) || (e.getSource() == mDelUserContextItem))
+        else if ((source == mDelUserBut) || (source == mDelUserContextItem))
         {
             doDeleteUserBut();
         }
-        else if ((e.getSource() == mChatBut) || (e.getSource() == mChatContextItem))
+        else if ((source == mChatBut) || (source == mChatContextItem))
         {
             doChatBut();
+        }
+        else if (source == mStatsContextItem)
+        {
+            RosterTreeItem selItem = mRosterPanel.getSelectedRosterItem();
+            if (selItem != null)
+                showUserGameStats(selItem.getId());
         }
     }
 
@@ -966,6 +980,20 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * Send the user's browser to a page showing the game stats of the given
+     * JID. (The resource string is ignored.)
+     */
+    public void showUserGameStats(String jid)
+    {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        jid = StringUtils.parseBareAddress(jid);
+        String url = PLAYER_STAT_QUERY_URL + jid;
+
+        PlatformWrapper.launchURL(url);
+    }
+
+    /**
      * Handler for the Add User button.
      */
     private void doAddUserBut()
@@ -1333,6 +1361,12 @@ public class JavolinApp extends JFrame
         mChatContextItem = new JMenuItem("Chat");
         mChatContextItem.addActionListener(this);
         retVal.add(mChatContextItem);
+
+        mStatsContextItem = new JMenuItem("Game Stats");
+        mStatsContextItem.addActionListener(this);
+        retVal.add(mStatsContextItem);
+        if (!PlatformWrapper.launchURLAvailable())
+            mStatsContextItem.setEnabled(false);
 
         retVal.addSeparator();
 

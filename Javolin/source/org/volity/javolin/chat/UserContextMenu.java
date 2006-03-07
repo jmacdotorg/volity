@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 import org.volity.jabber.JIDUtils;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.PlatformWrapper;
 
 /**
  * A contextual menu which can be used anywhere we have a JID. (Lines in chat
@@ -17,6 +18,7 @@ public class UserContextMenu extends JPopupMenu
     boolean mIsSelf;
 
     JMenuItem mChatMenuItem;
+    JMenuItem mStatsMenuItem;
 
     /** Constructor. */
     public UserContextMenu() {
@@ -64,7 +66,9 @@ public class UserContextMenu extends JPopupMenu
         if (source == mChatMenuItem) {
             JavolinApp.getSoleJavolinApp().chatWithUser(mJID);
         }
-
+        if (source == mStatsMenuItem) {
+            JavolinApp.getSoleJavolinApp().showUserGameStats(mJID);
+        }
     }
 
     /** Create the interface. */
@@ -72,5 +76,11 @@ public class UserContextMenu extends JPopupMenu
         mChatMenuItem = new JMenuItem("Chat With User");
         mChatMenuItem.addActionListener(this);
         add(mChatMenuItem);
+
+        mStatsMenuItem = new JMenuItem("Game Stats");
+        mStatsMenuItem.addActionListener(this);
+        add(mStatsMenuItem);
+        if (!PlatformWrapper.launchURLAvailable())
+            mStatsMenuItem.setEnabled(false);
     }
 }

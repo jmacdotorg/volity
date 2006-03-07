@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+All contextual menus on people now have a "Game Stats" item. This sends your
+browser to the Volity.net page with the selected user's game standings.
+
 Name colors (finally!) change to match the seat color.
 
 Chat windows now let you pop up a contextual menu on (most) user messages.

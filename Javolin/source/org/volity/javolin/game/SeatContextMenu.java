@@ -5,6 +5,9 @@ import java.awt.event.ActionListener;
 import javax.swing.*;
 import org.volity.client.Player;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.PlatformWrapper;
+
+//### show stats
 
 /**
  * The popup (contextual) menu that appears for players in the seating chart.
@@ -25,6 +28,7 @@ public class SeatContextMenu extends JPopupMenu
     JMenuItem mRemoveBotMenuItem;
     JMenuItem mSitMenuItem;
     JMenuItem mStandMenuItem;
+    JMenuItem mStatsMenuItem;
 
     public SeatContextMenu(SeatChart chart) {
         super();
@@ -64,6 +68,7 @@ public class SeatContextMenu extends JPopupMenu
         mRemoveBotMenuItem = null;
         mSitMenuItem = null;
         mStandMenuItem = null;
+        mStatsMenuItem = null;
 
         mChatMenuItem = new JMenuItem("Chat With User");
         mChatMenuItem.addActionListener(this);
@@ -102,6 +107,14 @@ public class SeatContextMenu extends JPopupMenu
                 mRemoveBotMenuItem.setEnabled(false);
         }
 
+        addSeparator();
+
+        mStatsMenuItem = new JMenuItem("Game Stats");
+        mStatsMenuItem.addActionListener(this);
+        add(mStatsMenuItem);
+        if (!PlatformWrapper.launchURLAvailable())
+            mStatsMenuItem.setEnabled(false);
+
         show(parent, xpos, ypos);
     }
 
@@ -128,6 +141,10 @@ public class SeatContextMenu extends JPopupMenu
 
         if (source == mStandMenuItem) {
             mChart.requestSeatChange(mPlayer.getJID(), null);
+        }
+
+        if (source == mStatsMenuItem) {
+            JavolinApp.getSoleJavolinApp().showUserGameStats(mPlayer.getJID());
         }
     }
         
