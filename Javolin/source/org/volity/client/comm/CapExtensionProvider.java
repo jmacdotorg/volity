@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.comm;
 
 import java.io.IOException;
 import org.jivesoftware.smack.packet.PacketExtension;

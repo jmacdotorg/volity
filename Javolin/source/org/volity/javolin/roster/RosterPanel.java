@@ -34,7 +34,7 @@ import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.RosterPacket;
 import org.jivesoftware.smack.util.StringUtils;
-import org.volity.client.CapPacketExtension;
+import org.volity.client.comm.CapPacketExtension;
 import org.volity.client.data.JIDTransfer;
 import org.volity.javolin.CapPresenceFactory;
 import org.volity.javolin.PrefsDialog;

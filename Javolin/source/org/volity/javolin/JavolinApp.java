@@ -41,6 +41,8 @@ import org.jivesoftware.smackx.ServiceDiscoveryFactory;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 
 import org.volity.client.*;
+import org.volity.client.comm.CapExtensionProvider;
+import org.volity.client.comm.CapPacketExtension;
 import org.volity.client.data.CommandStub;
 import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.chat.*;

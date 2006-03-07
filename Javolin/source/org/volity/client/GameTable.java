@@ -13,6 +13,8 @@ import org.jivesoftware.smackx.muc.DiscussionHistory;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
+import org.volity.client.comm.CapPacketExtension;
+import org.volity.client.comm.DiscoBackground;
 
 /**
  * A game table (a Multi-User Chat room for playing a Volity game).

@@ -17,6 +17,8 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.volity.client.*;
+import org.volity.client.comm.DiscoBackground;
+import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.GameUIInfo;
 import org.volity.client.translate.TokenFailure;
 import org.volity.jabber.JIDUtils;

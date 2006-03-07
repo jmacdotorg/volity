@@ -4,7 +4,7 @@ import org.jivesoftware.smack.packet.DefaultPresenceFactory;
 import org.jivesoftware.smack.packet.DefaultPacketExtension;
 import org.jivesoftware.smack.packet.PacketExtension;
 import org.jivesoftware.smack.packet.Presence;
-import org.volity.client.CapPacketExtension;
+import org.volity.client.comm.CapPacketExtension;
 
 /**
  * A PresenceFactory which generates presence stanzas that include

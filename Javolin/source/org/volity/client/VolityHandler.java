@@ -14,6 +14,7 @@ import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
+import org.volity.client.comm.DiscoBackground;
 import org.volity.jabber.*;
 
 /**

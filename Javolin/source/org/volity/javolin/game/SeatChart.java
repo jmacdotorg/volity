@@ -8,6 +8,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.SimpleAttributeSet;
 import org.volity.client.*;
+import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.Metadata;
 import org.volity.client.translate.TokenFailure;
 import org.volity.client.translate.TranslateToken;

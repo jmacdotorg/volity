@@ -10,8 +10,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.*;
 import org.volity.client.Audio;
-import org.volity.client.RPCDispatcherDebug;
 import org.volity.client.Referee;
+import org.volity.client.comm.RPCDispatcherDebug;
 
 /**
  * The Preferences box. Do not instantiate this directly; call

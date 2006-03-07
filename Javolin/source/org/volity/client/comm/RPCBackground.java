@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.comm;
 
 import java.util.List;
 import org.jivesoftware.smack.XMPPConnection;

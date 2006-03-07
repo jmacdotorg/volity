@@ -26,7 +26,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
-import org.volity.client.CapPacketExtension;
+import org.volity.client.comm.CapPacketExtension;
 
 /**
  * The dialog for establishing a connection to a Jabber server.

@@ -12,6 +12,7 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
 import org.mozilla.javascript.*;
 import org.volity.client.Audio;
+import org.volity.client.comm.RPCDispatcherDebug;
 import org.volity.client.data.Metadata;
 import org.volity.client.data.VersionNumber;
 import org.volity.client.data.VersionSpec;

@@ -10,7 +10,7 @@ import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.GameTable;
-import org.volity.client.RPCBackground;
+import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.JIDTransfer;
 import org.volity.client.translate.TokenFailure;
 import org.volity.client.translate.TranslateToken;
