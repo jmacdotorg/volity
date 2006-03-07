@@ -8,6 +8,7 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.DiscoverItems;
+import org.volity.client.data.GameUIInfo;
 import org.volity.jabber.JIDUtils;
 
 //### asyncify all APIs

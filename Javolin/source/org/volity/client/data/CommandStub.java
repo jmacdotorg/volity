@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.data;
 
 import java.io.*;
 import org.xmlpull.mxp1.MXParser;

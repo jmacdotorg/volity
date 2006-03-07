@@ -10,7 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.prefs.Preferences;
 import javax.swing.*;
-import org.volity.client.CommandStub;
+import org.volity.client.data.CommandStub;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.extend.NamespaceHandler;
 import org.xhtmlrenderer.extend.UserAgentCallback;

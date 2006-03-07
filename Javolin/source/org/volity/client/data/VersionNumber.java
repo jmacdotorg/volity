@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.data;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -186,7 +186,7 @@ public class VersionNumber
 
     /**
      * This is a unit test. To run, type
-     *   java org.volity.client.VersionNumber
+     *   java org.volity.client.data.VersionNumber
      * in your build directory.
      */
     public static void main(String[] args) {

@@ -8,6 +8,7 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
+import org.volity.client.data.GameInfo;
 import org.volity.client.translate.TokenFailure;
 import org.volity.client.translate.TokenRequester;
 import org.volity.jabber.RPCException;

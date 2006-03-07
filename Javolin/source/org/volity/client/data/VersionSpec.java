@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.data;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -390,7 +390,7 @@ public class VersionSpec
 
     /**
      * This is a unit test. To run, type
-     *   java org.volity.client.VersionSpec
+     *   java org.volity.client.data.VersionSpec
      * in your build directory.
      */
     public static void main(String[] args) {

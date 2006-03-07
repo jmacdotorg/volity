@@ -8,6 +8,7 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import org.volity.client.*;
+import org.volity.client.data.JIDTransfer;
 import org.volity.javolin.Audio;
 import org.volity.javolin.MultiIcon;
 

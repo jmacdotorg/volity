@@ -3,7 +3,7 @@ package org.volity.client.protocols.application;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
-import org.volity.client.CommandStub;
+import org.volity.client.data.CommandStub;
 import org.xmlpull.v1.XmlPullParserException;
 
 /**

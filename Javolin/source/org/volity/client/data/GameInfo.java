@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.data;
 
 import java.net.*;
 import java.util.Iterator;

@@ -8,9 +8,9 @@ import org.apache.batik.script.rhino.RhinoInterpreter;
 import org.mozilla.javascript.*;
 import org.volity.client.Audio;
 import org.volity.client.GameUI;
-import org.volity.client.Metadata;
-import org.volity.client.VersionNumber;
-import org.volity.client.VersionSpec;
+import org.volity.client.data.Metadata;
+import org.volity.client.data.VersionNumber;
+import org.volity.client.data.VersionSpec;
 import org.volity.client.translate.TokenFailure;
 import org.volity.client.translate.TranslateToken;
 

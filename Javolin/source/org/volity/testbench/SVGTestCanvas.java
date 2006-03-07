@@ -23,7 +23,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.volity.client.GameUI;
-import org.volity.client.Metadata;
+import org.volity.client.data.Metadata;
 import org.volity.client.translate.TranslateToken;
 
 /**

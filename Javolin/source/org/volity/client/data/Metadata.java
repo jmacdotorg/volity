@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.data;
 
 import java.io.File;
 import java.io.FileReader;
@@ -568,7 +568,7 @@ public class Metadata
      */
     public static void main(String[] args) {
         if (args.length == 0) {
-            System.out.println("usage: java -cp .:../lib/xerces_2_5_0.jar:../lib/smack.jar org.volity.client.Metadata file [ file2 ...]");
+            System.out.println("usage: java -cp .:../lib/xerces_2_5_0.jar:../lib/smack.jar org.volity.client.data.Metadata file [ file2 ...]");
             return;
         }
 
