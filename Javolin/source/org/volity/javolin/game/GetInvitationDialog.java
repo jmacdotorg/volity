@@ -8,7 +8,7 @@ import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.util.StringUtils;
-import org.volity.client.Invitation;
+import org.volity.client.data.Invitation;
 import org.volity.javolin.*;
 
 /**

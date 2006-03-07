@@ -1,5 +1,7 @@
 package org.volity.client;
 
+import org.volity.client.data.Invitation;
+
 /**
  * A listener for game table invitation events.
  */

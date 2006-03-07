@@ -4,10 +4,11 @@ import java.util.*;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
-import org.volity.jabber.packet.RPCRequest;
+import org.volity.client.data.Invitation;
 import org.volity.jabber.RPCHandler;
 import org.volity.jabber.RPCResponder;
 import org.volity.jabber.RPCResponseHandler;
+import org.volity.jabber.packet.RPCRequest;
 
 /**
  * A class for receiving invitations to a game table.

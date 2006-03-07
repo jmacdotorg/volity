@@ -44,6 +44,7 @@ import org.volity.client.*;
 import org.volity.client.comm.CapExtensionProvider;
 import org.volity.client.comm.CapPacketExtension;
 import org.volity.client.data.CommandStub;
+import org.volity.client.data.Invitation;
 import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;

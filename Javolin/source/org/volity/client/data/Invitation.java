@@ -1,4 +1,4 @@
-package org.volity.client;
+package org.volity.client.data;
 
 import java.util.Map;
 import java.net.URI;
@@ -9,7 +9,7 @@ import java.net.URISyntaxException;
  */
 public class Invitation {
   /** Create an invitation from a struct recieved via RPC. */
-  Invitation(Map invitationStruct) {
+  public Invitation(Map invitationStruct) {
     fields = invitationStruct;
   }
 
