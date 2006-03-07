@@ -22,8 +22,8 @@ import org.xhtmlrenderer.util.XRRuntimeException;
 public class Finder extends JFrame
     implements CloseableWindow
 {
-    private final static String FINDER_URL = "http://www.volity.net/gamefinder/";
-    private final static String BUGREPORT_URL = "http://volity.net/bugs/beta_bugform.html";
+    public final static String FINDER_URL = "http://www.volity.net/gamefinder/";
+    public final static String BUGREPORT_URL = "http://volity.net/bugs/beta_bugform.html";
 
     private final static String NODENAME = "FinderWin";
     private final static String OPENFINDER_KEY = "WantedOpen";

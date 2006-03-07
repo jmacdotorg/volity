@@ -49,6 +49,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
     private final static String MENUCMD_GAME_FINDER = "Game Finder";
     private final static String MENUCMD_SHOW_GAME_FINDER = "Show Game Finder";
+    private final static String MENUCMD_BUG_REPORT = "File Bug Report";
 
     private JavolinApp mApplication = null;
     private JFrame mWindow = null;
@@ -75,6 +76,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mInviteBotMenuItem;
     private JMenuItem mGameFinderMenuItem;
     private JMenuItem mShowGameFinderMenuItem;
+    private JMenuItem mBugReportMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -234,6 +236,15 @@ public class JavolinMenuBar extends JMenuBar
 
         // Debug menu
         JMenu debugMenu = new JMenu("Debug");
+
+        mBugReportMenuItem = new JMenuItem(MENUCMD_BUG_REPORT);
+        mBugReportMenuItem.addActionListener(this);
+        setPlatformMnemonic(mBugReportMenuItem, KeyEvent.VK_B);
+        if (!PlatformWrapper.launchURLAvailable())
+            mBugReportMenuItem.setEnabled(false);
+        debugMenu.add(mBugReportMenuItem);
+
+        debugMenu.addSeparator();
 
         mReloadUIMenuItem = new JMenuItem(MENUCMD_RELOAD_UI);
         mReloadUIMenuItem.addActionListener(this);
@@ -488,6 +499,9 @@ public class JavolinMenuBar extends JMenuBar
         else if (source == mGameFinderMenuItem
             || source == mShowGameFinderMenuItem) {
             mApplication.doGetFinder();
+        }
+        else if (source == mBugReportMenuItem) {
+            PlatformWrapper.launchURL(Finder.BUGREPORT_URL);
         }
     }
 
