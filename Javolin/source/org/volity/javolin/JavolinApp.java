@@ -697,12 +697,28 @@ public class JavolinApp extends JFrame
     String getDefaultNickname()
     {
         // Make a default nickname based on the user ID
-        String defNick = mConnection.getUser();
-        defNick = defNick.substring(0, defNick.indexOf('@'));
+
+        String defNick = null;
+
+        if (isConnected()) {
+            defNick = mConnection.getUser();
+            defNick = defNick.substring(0, defNick.indexOf('@'));
+        }
 
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NewTableAtDialog.NODENAME);
 
         return prefs.get(NewTableAtDialog.NICKNAME_KEY, defNick);
+    }
+
+    /**
+     * Pull the user's current JID out of the air. If not connected, this
+     * returns null.
+     */
+    public String getSelfJID()
+    {
+        if (!isConnected())
+            return null;
+        return mConnection.getUser();
     }
 
     /**

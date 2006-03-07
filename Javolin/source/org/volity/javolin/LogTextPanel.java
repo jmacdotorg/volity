@@ -32,7 +32,7 @@ import javax.swing.text.*;
  */
 public class LogTextPanel extends JPanel implements ChangeListener
 {
-    protected JTextPane mLogTextPane;
+    protected JTextPane mTextPane;
     protected JScrollPane mLogScroller;
 
     protected SimpleAttributeSet mBaseAttrs;
@@ -64,7 +64,7 @@ public class LogTextPanel extends JPanel implements ChangeListener
     {
         scrollToBottom();
 
-        Document doc = mLogTextPane.getDocument();
+        Document doc = mTextPane.getDocument();
 
         SimpleAttributeSet style = new SimpleAttributeSet(mBaseAttrs);
         StyleConstants.setForeground(style, color);
@@ -112,17 +112,25 @@ public class LogTextPanel extends JPanel implements ChangeListener
     }
 
     /**
+     * Create a JTextPane. This is broken out so that subclasses can override
+     * it.
+     */
+    protected JTextPane buildTextPane() {
+        return new JTextPane();
+    }
+
+    /**
      * Populates the pane with UI controls.
      */
     protected void buildUI()
     {
         setLayout(new BorderLayout());
 
-        mLogTextPane = new JTextPane();
-        mLogTextPane.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
-        mLogTextPane.setEditable(false);
+        mTextPane = buildTextPane();
+        mTextPane.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
+        mTextPane.setEditable(false);
 
-        mLogScroller = new JScrollPane(mLogTextPane);
+        mLogScroller = new JScrollPane(mTextPane);
         mLogScroller.getVerticalScrollBar().getModel().addChangeListener(this);
         add(mLogScroller, BorderLayout.CENTER);
     }

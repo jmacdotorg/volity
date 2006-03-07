@@ -35,6 +35,7 @@ import org.apache.batik.bridge.UpdateManagerEvent;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MUCUser;
 
@@ -958,24 +959,33 @@ public class TableWindow extends JFrame implements PacketListener
                         Presence pres = (Presence)packet;
 
                         String from = pres.getFrom();
-                        if (from != null) {
-                            Player player = mGameTable.getPlayerByJID(from);
 
-                            String nick;
-                            String realAddr;
+                        String nick = null;
+                        String realAddr = null;
+                        boolean realjid = false;
 
-                            if (player != null) {
-                                nick = player.getNick();
-                                realAddr = player.getJID();
+                        PacketExtension ext = pres.getExtension("x",
+                            "http://jabber.org/protocol/muc#user");
+                        if (ext != null && ext instanceof MUCUser) {
+                            MUCUser userext = (MUCUser)ext;
+                            MUCUser.Item item = userext.getItem();
+                            if (item != null) {
+                                realAddr = item.getJid();
+                                realjid = true;
+                                nick = item.getNick();
                             }
-                            else {
-                                nick = StringUtils.parseResource(from);
-                                realAddr = from;
-                            }
+                        }
 
-                            if (realAddr == null)
-                                realAddr = from;
+                        if (realAddr == null && from != null) {
+                            realAddr = from;
+                            realjid = false;
+                        }
 
+                        if (nick == null && from != null) {
+                            nick = StringUtils.parseResource(from);
+                        }
+
+                        if (realAddr != null && nick != null) {
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
                                 mLog.message(realAddr, null,
@@ -1033,24 +1043,29 @@ public class TableWindow extends JFrame implements PacketListener
         }
         else
         {
-            String addr = msg.getFrom();
+            String from = msg.getFrom();
 
-            Player player = mGameTable.getPlayerByJID(addr);
+            Occupant occ = mGameTable.getOccupant(from);
 
             String nick;
             String realAddr;
+            boolean realjid;
 
-            if (player != null) {
-                nick = player.getNick();
-                realAddr = player.getJID();
+            if (occ != null) {
+                nick = occ.getNick();
+                realAddr = occ.getJid();
+                realjid = true;
             }
             else {
-                nick = StringUtils.parseResource(addr);
-                realAddr = addr;
+                nick = StringUtils.parseResource(from);
+                realAddr = from;
+                realjid = false;
             }
 
-            if (realAddr == null)
-                realAddr = addr;
+            if (realAddr == null) {
+                realAddr = from;
+                realjid = false;
+            }
 
             PacketExtension ext;
             Date date = null;
@@ -1069,7 +1084,7 @@ public class TableWindow extends JFrame implements PacketListener
                 date = ((DelayInformation)ext).getStamp();
             }
 
-            mLog.message(realAddr, nick, msg.getBody(), date);
+            mLog.message(realAddr, realjid, nick, msg.getBody(), date);
             if (ext == null)
                 Audio.playMessage();
         }

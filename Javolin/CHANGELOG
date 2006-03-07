@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Chat windows now let you pop up a contextual menu on (most) user messages.
+The menu currently contains only a "Chat With User..." item, but we can
+add more items as we think of them.
+
 Seat panels are now tinted according to the color of the seat. (The coloring
 is controlled by the UI file's metadata -- the "volity:seat-color" entry.)
 

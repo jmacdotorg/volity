@@ -1,6 +1,7 @@
 package org.volity.javolin.chat;
 
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ public class ChatLogPanel extends LogTextPanel
     private final static SimpleDateFormat timeStampFormat = new SimpleDateFormat("HH:mm:ss");
 
     private final static String ATTR_JID = "VolityJID";
+    private final static String ATTR_REALJID = "VolityRealJID";
     private final static String ATTR_TYPE = "VolityType";
     private final static String ATTR_TYPE_NAME = "VolityJID:Name";
     private final static String ATTR_TYPE_TEXT = "VolityJID:Text";
@@ -37,6 +39,8 @@ public class ChatLogPanel extends LogTextPanel
     private UserColorMap mColorMap;
     private Map mUserMap = new HashMap();
     private ChangeListener mColorChangeListener;
+
+    protected UserContextMenu mPopupMenu = null;
 
     protected Style mStyleBase;
     protected Style mStyleCurrentTimestamp;
@@ -50,21 +54,24 @@ public class ChatLogPanel extends LogTextPanel
 
         mColorMap = map;
 
-        mDocument = mLogTextPane.getStyledDocument();
+        mPopupMenu = new UserContextMenu();
 
-        mStyleBase = mLogTextPane.addStyle("base", null);
+        mDocument = mTextPane.getStyledDocument();
+
+        mStyleBase = mTextPane.addStyle("base", null);
         StyleConstants.setFontFamily(mStyleBase, "SansSerif");
         StyleConstants.setFontSize(mStyleBase, 12);
 
-        mStyleCurrentTimestamp = mLogTextPane.addStyle("current", mStyleBase);
+        mStyleCurrentTimestamp = mTextPane.addStyle("current", mStyleBase);
         StyleConstants.setForeground(mStyleCurrentTimestamp,
             colorCurrentTimestamp);
-        mStyleDelayedTimestamp = mLogTextPane.addStyle("delayed", mStyleBase);
+        mStyleDelayedTimestamp = mTextPane.addStyle("delayed", mStyleBase);
         StyleConstants.setForeground(mStyleDelayedTimestamp,
             colorDelayedTimestamp);
 
         mColorChangeListener = new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
+                    //###System.out.println("### chat log saw color change");
                     adjustAllColors();
                 }
             };
@@ -73,31 +80,50 @@ public class ChatLogPanel extends LogTextPanel
 
     /** Clean up component. */
     public void dispose() {
+        if (mPopupMenu != null) {
+            mPopupMenu.dispose();
+            mPopupMenu = null;
+        }
+
+        ((JTextPanePopup)mTextPane).dispose();
+
         mColorMap.removeListener(mColorChangeListener);
         // Don't dispose of the colormap; we don't own it.
         super.dispose();
+    }
+
+    /** Create a JTextPane subclass. */
+    protected JTextPane buildTextPane() {
+        return new JTextPanePopup(this);
     }
 
     /**
      * Display a message which is not associated with any user.
      */
     public void message(String text) {
-        message(null, null, text, null);
+        message(null, false, null, text, null);
     }
 
     /**
      * Display a message.
-     *
-     * @param jid The JID associated with the message. This is not displayed,
-     * but the message color is based on it, as are the contextual actions.
-     * May be null. If the JID has a resource, it is counted as significant.
-     *
-     * @param nick The nickname to show in the message head. May be null. (A
-     * status message about (but not from) a user may be given with a JID but
-     * no nick.)
      */
     public void message(String jid, String nick, String text) {
-        message(jid, nick, text, null);
+        message(jid, true, nick, text, null);
+    }
+
+    /**
+     * Display a message.
+     */
+    public void message(String jid, boolean realjid, String nick, 
+        String text) {
+        message(jid, realjid, nick, text, null);
+    }
+
+    /**
+     * Display a message.
+     */
+    public void message(String jid, String nick, String text, Date date) {
+        message(jid, true, nick, text, date);
     }
 
     /**
@@ -107,14 +133,21 @@ public class ChatLogPanel extends LogTextPanel
      * but the message color is based on it, as are the contextual actions.
      * May be null. If the JID has a resource, it is counted as significant.
      *
+     * @param realjid Whether the JID is a real JID or a MUC identifier.
+     * Pass false if you want unique coloring for the JID but you don't
+     * want a contextual menu for it.
+     *
      * @param nick The nickname to show in the message head. May be null. (A
      * status message about (but not from) a user may be given with a JID but
      * no nick.)
+     *
+     * @param text The message.
      *
      * @param date The timestamp at which the message occurred. If null, this
      * is assumed to be the present.
      */
-    public void message(String jid, String nick, String text, Date date) {
+    public void message(String jid, boolean realjid, String nick,
+        String text, Date date) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
         // Append time stamp
@@ -130,7 +163,7 @@ public class ChatLogPanel extends LogTextPanel
 
         Entry ent = null;
         if (jid != null)
-            ent = getEntry(jid);
+            ent = getEntry(jid, realjid);
 
         String nickText;
         Style nameStyle = mStyleBase;
@@ -171,11 +204,11 @@ public class ChatLogPanel extends LogTextPanel
      * Get the entry for a given JID (creating one if necessary). This entry
      * contains the styles needed to draw the user's messages.
      */
-    protected Entry getEntry(String jid) {
+    protected Entry getEntry(String jid, boolean real) {
         Entry ent = (Entry)mUserMap.get(jid);
 
         if (ent == null) {
-            ent = new Entry(jid);
+            ent = new Entry(jid, real);
             mUserMap.put(jid, ent);
         }
 
@@ -217,11 +250,14 @@ public class ChatLogPanel extends LogTextPanel
         AttributeSet attrs = el.getAttributes();
         String jid = (String)attrs.getAttribute(ATTR_JID);
         Object type = attrs.getAttribute(ATTR_TYPE);
-        if (jid != null && type != null && type != ATTR_TYPE_ABOUT) {
+        Boolean realjid = (Boolean)attrs.getAttribute(ATTR_REALJID);
+
+        if (jid != null && type != null && realjid != null 
+            && type != ATTR_TYPE_ABOUT) {
             int start = el.getStartOffset();
             int end = el.getEndOffset();
 
-            Entry ent = getEntry(jid);
+            Entry ent = getEntry(jid, realjid.booleanValue());
 
             Style style = null;
             if (type == ATTR_TYPE_NAME)
@@ -232,6 +268,28 @@ public class ChatLogPanel extends LogTextPanel
             mDocument.setCharacterAttributes(start, end-start,
                 style, true);
         }
+    }
+
+    /**
+     * Given a popup-inducing click at a particular location, see if there's a
+     * JID associated with that location. If so, pop up a contextual menu.
+     */
+    protected void displayPopupMenu(int xp, int yp) {
+        int pos = mTextPane.viewToModel(new Point(xp, yp));
+        Element el = mDocument.getCharacterElement(pos);
+        if (el == null)
+            return;
+        AttributeSet attrs = el.getAttributes();
+        if (attrs == null)
+            return;
+        String jid = (String)attrs.getAttribute(ATTR_JID);
+        if (jid == null)
+            return;
+        Boolean realjid = (Boolean)attrs.getAttribute(ATTR_REALJID);
+        if (realjid != null && !realjid.booleanValue())
+            return;
+
+        mPopupMenu.adjustShow(jid, mTextPane, xp, yp);
     }
 
     /**
@@ -247,19 +305,28 @@ public class ChatLogPanel extends LogTextPanel
      */
     protected class Entry {
         String mJID;
+        boolean mReal;
         Style styleName;
         Style styleText;
         Style styleAbout;
 
-        public Entry(String jid) {
+        public Entry(String jid, boolean real) {
             mJID = jid;
-            styleName = mLogTextPane.addStyle(null, mStyleBase);
-            styleText = mLogTextPane.addStyle(null, mStyleBase);
-            styleAbout = mLogTextPane.addStyle(null, mStyleBase);
+            mReal = real;
+
+            styleName = mTextPane.addStyle(null, mStyleBase);
+            styleText = mTextPane.addStyle(null, mStyleBase);
+            styleAbout = mTextPane.addStyle(null, mStyleBase);
 
             styleName.addAttribute(ATTR_JID, mJID);
             styleText.addAttribute(ATTR_JID, mJID);
             styleAbout.addAttribute(ATTR_JID, mJID);
+
+            Boolean val = Boolean.valueOf(mReal);
+
+            styleName.addAttribute(ATTR_REALJID, val);
+            styleText.addAttribute(ATTR_REALJID, val);
+            styleAbout.addAttribute(ATTR_REALJID, val);
 
             styleName.addAttribute(ATTR_TYPE, ATTR_TYPE_NAME);
             styleText.addAttribute(ATTR_TYPE, ATTR_TYPE_TEXT);
@@ -268,6 +335,10 @@ public class ChatLogPanel extends LogTextPanel
             adjustColors();
         }
 
+        /**
+         * Re-fetch the colors from the colormap, and modify the "name" and
+         * "text" styles to use them.
+         */
         protected void adjustColors() {
             if (mColorMap == null)
                 return;
@@ -277,6 +348,32 @@ public class ChatLogPanel extends LogTextPanel
 
             StyleConstants.setForeground(styleName, nameColor);
             StyleConstants.setForeground(styleText, textColor);
+        }
+    }
+
+    /**
+     * Subclass of JTextPane that has a pop-up menu.
+     */
+    protected static class JTextPanePopup extends JTextPane {
+        ChatLogPanel mOwner;
+
+        public JTextPanePopup(ChatLogPanel owner) {
+            mOwner = owner;
+        }
+
+        public void dispose() {
+            mOwner = null;
+        }
+
+        protected void processMouseEvent(MouseEvent ev) {
+            if (ev.isPopupTrigger()) {
+                if (mOwner != null) {
+                    mOwner.displayPopupMenu(ev.getX(), ev.getY());
+                }
+                return;
+            }
+            
+            super.processMouseEvent(ev);
         }
     }
 }

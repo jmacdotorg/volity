@@ -334,8 +334,7 @@ public class SeatChart
         mTable.getReferee().removeBot(jid, mDefaultCallback, null);
     }
     
-    /* The pop-up menu (shared among all the items in the chart) */
-
+    /** The pop-up menu (shared among all the items in the chart) */
     public void displayPopupMenu(Player player, int xpos, int ypos) {
         Point pt = mPanel.getLocationOnScreen();
         mPopupMenu.adjustShow(player, mPanel, xpos-pt.x, ypos-pt.y);

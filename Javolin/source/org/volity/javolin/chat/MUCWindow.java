@@ -34,6 +34,7 @@ import org.jivesoftware.smackx.*;
 import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DelayInformation;
+import org.jivesoftware.smackx.packet.MUCUser;
 import org.volity.javolin.*;
 
 /**
@@ -316,33 +317,41 @@ public class MUCWindow extends JFrame implements PacketListener
                         updateUserList();
 
                         String from = pres.getFrom();
-                        if (from != null) {
-                            Occupant occ = mMucObject.getOccupant(from);
-                            // For Unavailable, occ will probably be null
 
-                            String nick;
-                            String realAddr;
+                        String nick = null;
+                        String realAddr = null;
+                        boolean realjid = false;
 
-                            if (occ != null) {
-                                nick = occ.getNick();
-                                realAddr = occ.getJid();
+                        PacketExtension ext = pres.getExtension("x",
+                            "http://jabber.org/protocol/muc#user");
+                        if (ext != null && ext instanceof MUCUser) {
+                            MUCUser userext = (MUCUser)ext;
+                            MUCUser.Item item = userext.getItem();
+                            if (item != null) {
+                                realAddr = item.getJid();
+                                realjid = true;
+                                nick = item.getNick();
                             }
-                            else {
-                                nick = StringUtils.parseResource(from);
-                                realAddr = null;
-                            }
+                        }
 
-                            if (realAddr == null)
-                                realAddr = from;
+                        if (realAddr == null && from != null) {
+                            realAddr = from;
+                            realjid = false;
+                        }
 
+                        if (nick == null && from != null) {
+                            nick = StringUtils.parseResource(from);
+                        }
+
+                        if (realAddr != null && nick != null) {
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
-                                mLog.message(realAddr, null,
+                                mLog.message(realAddr, realjid, null,
                                     nick+" has joined the chat.");
                                 Audio.playPresenceIn();
                             }
                             if (typ == Presence.Type.UNAVAILABLE) {
-                                mLog.message(realAddr, null,
+                                mLog.message(realAddr, realjid, null,
                                     nick+" has left the chat.");
                                 Audio.playPresenceOut();
                             }
@@ -398,18 +407,23 @@ public class MUCWindow extends JFrame implements PacketListener
 
             String nick;
             String realAddr;
+            boolean realjid;
 
             if (occ != null) {
                 nick = occ.getNick();
                 realAddr = occ.getJid();
+                realjid = true;
             }
             else {
                 nick = StringUtils.parseResource(from);
                 realAddr = from;
+                realjid = false;
             }
 
-            if (realAddr == null)
+            if (realAddr == null) {
                 realAddr = from;
+                realjid = false;
+            }
 
             Date date = null;
             PacketExtension ext = msg.getExtension("x", "jabber:x:delay");
@@ -417,7 +431,7 @@ public class MUCWindow extends JFrame implements PacketListener
                 date = ((DelayInformation)ext).getStamp();
             }
 
-            mLog.message(realAddr, nick, msg.getBody(), date);
+            mLog.message(realAddr, realjid, nick, msg.getBody(), date);
             if (ext == null)
                 Audio.playMessage();
         }

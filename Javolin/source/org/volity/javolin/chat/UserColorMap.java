@@ -236,7 +236,10 @@ public class UserColorMap
     {
         ColorEntry ent = new ColorEntry(col);
         mHueMap.put(user, ent);
-        //### fire notify?
+        /* Theoretically we should fire a change notification here. However,
+         * the only code that calls setUserColor() is the code that turns the
+         * referee grey. Referees don't talk, so there's no need to notify
+         * anybody. */
     }
 
     /** Add a map-changed listener. */

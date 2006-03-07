@@ -243,6 +243,9 @@ public class GameTable
     public void removeParticipantListener(PacketListener listener) {
         mMUC.removeParticipantListener(listener);
     }
+    public Occupant getOccupant(String jid) {
+        return mMUC.getOccupant(jid);
+    }
 
     /**
      * The referee for this table, or null if no referee is connected.
