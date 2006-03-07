@@ -29,7 +29,8 @@ import org.volity.javolin.*;
 /**
  * A window for participating in a one-on-one chat.
  */
-public class ChatWindow extends JFrame implements PacketListener
+public class ChatWindow extends JFrame
+    implements PacketListener, WindowMenu.GetWindowName
 {
     private final static String NODENAME = "ChatWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -181,6 +182,12 @@ public class ChatWindow extends JFrame implements PacketListener
                     }
                 }
             });
+    }
+
+    // Implements GetWindowName.
+    public String getWindowName() 
+    {
+        return "Chat: " + mRemoteNick;
     }
 
     /**

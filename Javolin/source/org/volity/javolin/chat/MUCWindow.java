@@ -40,7 +40,8 @@ import org.volity.javolin.*;
 /**
  * A window for participating in a MUC.
  */
-public class MUCWindow extends JFrame implements PacketListener
+public class MUCWindow extends JFrame 
+    implements PacketListener, WindowMenu.GetWindowName
 {
     private final static String NODENAME = "MUCWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -56,6 +57,7 @@ public class MUCWindow extends JFrame implements PacketListener
     private UserColorMap mColorMap;
     private SimpleAttributeSet mBaseUserListStyle;
 
+    private String mWindowName;
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
     private MultiUserChat mMucObject;
@@ -74,6 +76,7 @@ public class MUCWindow extends JFrame implements PacketListener
          throws XMPPException
     {
         super(JavolinApp.getAppName() + ": " + mucId);
+        mWindowName = "Chat Room: " + StringUtils.parseName(mucId);
 
         mConnection = connection;
         mMucObject = new MultiUserChat(connection, mucId);
@@ -261,6 +264,12 @@ public class MUCWindow extends JFrame implements PacketListener
     public String getRoom() 
     {
         return mMucObject.getRoom();
+    }
+
+    // Implements GetWindowName.
+    public String getWindowName() 
+    {
+        return mWindowName;
     }
 
     /**

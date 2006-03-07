@@ -91,10 +91,19 @@ public class WindowMenu extends JMenu implements ActionListener
             ((WindowMenuItem)source).getWindow().toFront();
         }
     }
+
+    /**
+     * A window that wants to supply a specific name for its menu entry should
+     * implement this interface.
+     */
+    public interface GetWindowName
+    {
+        public String getWindowName();
+    }
 }
 
 /**
- * A JMenuItem sublclass for items in a WindowMenu.
+ * A JMenuItem subclass for items in a WindowMenu.
  */
 class WindowMenuItem extends JMenuItem
 {
@@ -109,11 +118,24 @@ class WindowMenuItem extends JMenuItem
     public WindowMenuItem(JFrame window)
     {
         mWindow = window;
-        String title = mWindow.getTitle();
 
-        if (title.startsWith(JavolinApp.getAppName()))
+        String app = JavolinApp.getAppName();
+        String title;
+
+        if (window instanceof WindowMenu.GetWindowName)
         {
-            title = title.replaceFirst(JavolinApp.getAppName() + "\\S*\\s+", "");
+            // The window supplies a specific name
+            title = ((WindowMenu.GetWindowName)window).getWindowName();
+        }
+        else 
+        {
+            // Grab the window's title string
+            title = mWindow.getTitle();
+
+            if (title.startsWith(app))
+            {
+                title = title.replaceFirst(app + "\\S*\\s+", "");
+            }
         }
 
         setText(title);
