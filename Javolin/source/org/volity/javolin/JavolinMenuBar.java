@@ -34,6 +34,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_PREFERENCES = "Preferences...";
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";
+    private final static String MENUCMD_CLOSE_WINDOW = "Close Window";
     private final static String MENUCMD_QUIT = "Exit";
     private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
@@ -47,15 +48,19 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_CLEAR_CACHE = "Clear Interface Cache";
     private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
     private final static String MENUCMD_GAME_FINDER = "Game Finder";
+    private final static String MENUCMD_SHOW_GAME_FINDER = "Show Game Finder";
 
     private JavolinApp mApplication = null;
     private JFrame mWindow = null;
     private TableWindow mTableWindow = null;
+    private boolean mCloseableWindow = false;
+    private CloseableWindow.Custom mCustomCloseableWindow = null;
 
     private WindowMenu mWindowMenu;
     private JMenuItem mAboutMenuItem;
     private JMenuItem mPreferencesMenuItem;
     private JMenuItem mConnectMenuItem;
+    private JMenuItem mCloseWindowMenuItem;
     private JMenuItem mQuitMenuItem;
     private JMenuItem mNewTableAtMenuItem;
     private JMenuItem mJoinTableAtMenuItem;
@@ -69,6 +74,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
     private JMenuItem mGameFinderMenuItem;
+    private JMenuItem mShowGameFinderMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -87,6 +93,10 @@ public class JavolinMenuBar extends JMenuBar
         mWindow = win;
         if (win instanceof TableWindow)
             mTableWindow = (TableWindow)win;
+        if (win instanceof CloseableWindow)
+            mCloseableWindow = true;
+        if (win instanceof CloseableWindow.Custom)
+            mCustomCloseableWindow = (CloseableWindow.Custom)win;
 
         // Add to the notification list.
         menuBarList.add(this);
@@ -97,7 +107,7 @@ public class JavolinMenuBar extends JMenuBar
 
         mWindow.addWindowListener(
             new WindowAdapter() {
-                public void windowClosing(WindowEvent ev) {
+                public void windowClosed(WindowEvent ev) {
                     // When the window closes, remove its menu bar from the
                     // notification list.
                     menuBarList.remove(JavolinMenuBar.this);
@@ -116,9 +126,6 @@ public class JavolinMenuBar extends JMenuBar
      */
     private void setUpAppMenus()
     {
-        // Platform independent accelerator key
-        int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
-
         JMenu helpMenu = null;
 
         // File menu
@@ -127,11 +134,19 @@ public class JavolinMenuBar extends JMenuBar
 
         mConnectMenuItem = new JMenuItem(MENUCMD_CONNECT);
         mConnectMenuItem.addActionListener(this);
-        mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, keyMask));
-        setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
+        setAccelerator(mConnectMenuItem, KeyEvent.VK_L);
+        setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_L);
         fileMenu.add(mConnectMenuItem);
 
         fileMenu.addSeparator();
+
+        mCloseWindowMenuItem = new JMenuItem(MENUCMD_CLOSE_WINDOW);
+        mCloseWindowMenuItem.addActionListener(this);
+        setPlatformMnemonic(mCloseWindowMenuItem, KeyEvent.VK_W);
+        setAccelerator(mCloseWindowMenuItem, KeyEvent.VK_W);
+        if (!mCloseableWindow) 
+            mCloseWindowMenuItem.setEnabled(false);
+        fileMenu.add(mCloseWindowMenuItem);
 
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
             // Only needed if there isn't a built-in Preferences menu
@@ -139,26 +154,6 @@ public class JavolinMenuBar extends JMenuBar
             mPreferencesMenuItem.addActionListener(this);
             setPlatformMnemonic(mPreferencesMenuItem, KeyEvent.VK_P);
             fileMenu.add(mPreferencesMenuItem);
-        }
-
-        // This one is for debugging, and should be removed for a final
-        // release. Well, hidden, anyway.
-        mShowLastErrorMenuItem = new JMenuItem(MENUCMD_SHOW_LAST_ERROR);
-        mShowLastErrorMenuItem.addActionListener(this);
-        setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
-        fileMenu.add(mShowLastErrorMenuItem);
-
-        mClearCacheMenuItem = new JMenuItem(MENUCMD_CLEAR_CACHE);
-        mClearCacheMenuItem.addActionListener(this);
-        setPlatformMnemonic(mClearCacheMenuItem, KeyEvent.VK_C);
-        fileMenu.add(mClearCacheMenuItem);
-
-        if (true) {
-            mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
-            mMemUsageMenuItem.addActionListener(this);
-            mMemUsageMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, keyMask));
-            setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
-            fileMenu.add(mMemUsageMenuItem);
         }
 
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
@@ -178,8 +173,8 @@ public class JavolinMenuBar extends JMenuBar
 
         mJoinMucMenuItem = new JMenuItem(MENUCMD_JOIN_MUC);
         mJoinMucMenuItem.addActionListener(this);
-        mJoinMucMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J, keyMask));
-        setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_J);
+        setAccelerator(mJoinMucMenuItem, KeyEvent.VK_G);
+        setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_G);
         chatMenu.add(mJoinMucMenuItem);
 
         // Game menu
@@ -188,17 +183,21 @@ public class JavolinMenuBar extends JMenuBar
 
         mNewTableAtMenuItem = new JMenuItem(MENUCMD_NEW_TABLE_AT);
         mNewTableAtMenuItem.addActionListener(this);
-        mNewTableAtMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
-            keyMask));
-        setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_E);
+        setAccelerator(mNewTableAtMenuItem, KeyEvent.VK_N);
+        setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_N);
         gameMenu.add(mNewTableAtMenuItem);
 
         mJoinTableAtMenuItem = new JMenuItem(MENUCMD_JOIN_TABLE_AT);
         mJoinTableAtMenuItem.addActionListener(this);
-        mJoinTableAtMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
-            keyMask));
-        setPlatformMnemonic(mJoinTableAtMenuItem, KeyEvent.VK_T);
+        setAccelerator(mJoinTableAtMenuItem, KeyEvent.VK_J);
+        setPlatformMnemonic(mJoinTableAtMenuItem, KeyEvent.VK_J);
         gameMenu.add(mJoinTableAtMenuItem);
+
+        mShowGameFinderMenuItem = new JMenuItem(MENUCMD_SHOW_GAME_FINDER);
+        mShowGameFinderMenuItem.addActionListener(this);
+        setAccelerator(mShowGameFinderMenuItem, KeyEvent.VK_F);
+        setPlatformMnemonic(mShowGameFinderMenuItem, KeyEvent.VK_F);
+        gameMenu.add(mShowGameFinderMenuItem);
 
         gameMenu.addSeparator();
         
@@ -230,15 +229,34 @@ public class JavolinMenuBar extends JMenuBar
             mInviteBotMenuItem.setEnabled(false);
         gameMenu.add(mInviteBotMenuItem);
 
+        // Window menu
+        mWindowMenu = new WindowMenu();
+
+        // Debug menu
+        JMenu debugMenu = new JMenu("Debug");
+
         mReloadUIMenuItem = new JMenuItem(MENUCMD_RELOAD_UI);
         mReloadUIMenuItem.addActionListener(this);
         setPlatformMnemonic(mReloadUIMenuItem, KeyEvent.VK_R);
         if (mTableWindow == null) 
             mReloadUIMenuItem.setEnabled(false);
-        gameMenu.add(mReloadUIMenuItem);
+        debugMenu.add(mReloadUIMenuItem);
 
-        // Window menu
-        mWindowMenu = new WindowMenu();
+        mShowLastErrorMenuItem = new JMenuItem(MENUCMD_SHOW_LAST_ERROR);
+        mShowLastErrorMenuItem.addActionListener(this);
+        setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
+        debugMenu.add(mShowLastErrorMenuItem);
+
+        mClearCacheMenuItem = new JMenuItem(MENUCMD_CLEAR_CACHE);
+        mClearCacheMenuItem.addActionListener(this);
+        setPlatformMnemonic(mClearCacheMenuItem, KeyEvent.VK_C);
+        debugMenu.add(mClearCacheMenuItem);
+
+        mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
+        mMemUsageMenuItem.addActionListener(this);
+        setAccelerator(mMemUsageMenuItem, KeyEvent.VK_M);
+        setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
+        debugMenu.add(mMemUsageMenuItem);
 
         // Help menu
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
@@ -258,6 +276,7 @@ public class JavolinMenuBar extends JMenuBar
         add(chatMenu);
         add(gameMenu);
         add(mWindowMenu);
+        add(debugMenu);
         if (helpMenu != null)
             add(helpMenu);
 
@@ -277,15 +296,13 @@ public class JavolinMenuBar extends JMenuBar
 
         if (isConnected) {
             mConnectMenuItem.setText(MENUCMD_DISCONNECT);
-            mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D,
-                keyMask));
+            setAccelerator(mConnectMenuItem, KeyEvent.VK_D);
             setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_D);
         }
         else {
             mConnectMenuItem.setText(MENUCMD_CONNECT);
-            mConnectMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N,
-                keyMask));
-            setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_N);
+            setAccelerator(mConnectMenuItem, KeyEvent.VK_L);
+            setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_L);
         }
 
         mNewTableAtMenuItem.setEnabled(isConnected);
@@ -373,6 +390,20 @@ public class JavolinMenuBar extends JMenuBar
     }
 
     /**
+     * Helper method for setUpAppMenus. Assigns a keyboard shortcut to a menu
+     * item.
+     *
+     * @param item  The menu or menu item to assign the mnemonic to
+     * @param key   The keyboard mnemonic.
+     */
+    private void setAccelerator(JMenuItem item, int key) {
+        // Platform independent accelerator key
+        int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+
+        item.setAccelerator(KeyStroke.getKeyStroke(key, keyMask));
+    }
+
+    /**
      * ActionListener interface method implementation.
      * All the actual work is done by mApplication.
      *
@@ -402,6 +433,14 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (source == mQuitMenuItem) {
             mApplication.doQuit();
+        }
+        else if (source == mCloseWindowMenuItem) {
+            if (mCloseableWindow) {
+                if (mCustomCloseableWindow == null)
+                    mWindow.dispose();
+                else
+                    mCustomCloseableWindow.closeWindow();
+            }
         }
         else if (source == mNewTableAtMenuItem) {
             mApplication.doNewTableAt();
@@ -446,7 +485,8 @@ public class JavolinMenuBar extends JMenuBar
             System.out.println("Memory used: " + String.valueOf(total-free)
                                + " of " + String.valueOf(total));
         }
-        else if (source == mGameFinderMenuItem) {
+        else if (source == mGameFinderMenuItem
+            || source == mShowGameFinderMenuItem) {
             mApplication.doGetFinder();
         }
     }

@@ -187,7 +187,10 @@ public class GameTable
         }
 
         if (mMUC != null) {
-            mMUC.leave();
+            try {
+                mMUC.leave();
+            }
+            catch (Throwable ex) { }
 
             /* It is usually a mistake to call any object's finalize() method,
              * but I have no choice. MultiUserChat is written so that all its

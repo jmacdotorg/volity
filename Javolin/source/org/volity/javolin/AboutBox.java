@@ -9,6 +9,7 @@ import javax.swing.text.*;
  * The About box. Do not instantiate this directly; call getSoleAboutBox.
  */
 public class AboutBox extends JFrame 
+    implements CloseableWindow
 {
     private final static String NODENAME = "AboutBox";
     private final static int MARGIN = 12; // Space to window edge

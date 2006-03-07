@@ -61,7 +61,8 @@ import org.volity.javolin.chat.*;
 /**
  * A window for playing a game.
  */
-public class TableWindow extends JFrame implements PacketListener
+public class TableWindow extends JFrame
+    implements PacketListener, CloseableWindow
 {
     private final static String NODENAME = "TableWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -290,7 +291,7 @@ public class TableWindow extends JFrame implements PacketListener
         addWindowListener(
             new WindowAdapter()
             {
-                public void windowClosing(WindowEvent we)
+                public void windowClosed(WindowEvent we)
                 {
                     saveWindowState();
                     leave();

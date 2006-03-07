@@ -10,7 +10,8 @@ import javax.swing.text.*;
 /**
  * A window which displays an exception.
  */
-public class ErrorDialog extends JFrame 
+public class ErrorDialog extends JFrame
+    implements CloseableWindow
 {
     private final static String NODENAME = "DebugErrorDialog";
     private final static int MARGIN = 12; // Space to window edge

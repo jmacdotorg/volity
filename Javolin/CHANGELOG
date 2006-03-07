@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Big menu rearrangement. Debugging items have been moved to a "Debug" menu.
+Keyboard shortcuts have been rethought from scratch -- many changes. There
+is a "Close Window" item.
+
 All contextual menus on people now have a "Game Stats" item. This sends your
 browser to the Volity.net page with the selected user's game standings.
 

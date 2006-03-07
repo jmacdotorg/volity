@@ -15,6 +15,7 @@ import org.volity.javolin.*;
  * Dialog box that appears when a game invitation is received.
  */
 public class GetInvitationDialog extends BaseWindow
+    implements CloseableWindow
 {
     private final static String NODENAME = "GetInvitationDialog";
     private final static String NICKNAME_KEY = "Nickname";

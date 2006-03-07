@@ -18,6 +18,7 @@ import org.volity.client.comm.RPCDispatcherDebug;
  * getSolePrefsDialog.
  */
 public class PrefsDialog extends JFrame
+    implements CloseableWindow
 {
     private final static String NODENAME = "PrefsDialog";
     private final static String TABPANESELECTION_KEY = "TabSelection";

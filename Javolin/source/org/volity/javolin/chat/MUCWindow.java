@@ -41,7 +41,7 @@ import org.volity.javolin.*;
  * A window for participating in a MUC.
  */
 public class MUCWindow extends JFrame 
-    implements PacketListener, WindowMenu.GetWindowName
+    implements PacketListener, WindowMenu.GetWindowName, CloseableWindow
 {
     private final static String NODENAME = "MUCWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -114,7 +114,7 @@ public class MUCWindow extends JFrame
         addWindowListener(
             new WindowAdapter()
             {
-                public void windowClosing(WindowEvent we) {
+                public void windowClosed(WindowEvent we) {
                     // Leave the chat room when the window is closed
                     saveWindowState();
                     leave();

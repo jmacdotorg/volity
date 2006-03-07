@@ -55,7 +55,8 @@ import org.volity.javolin.roster.*;
  */
 public class JavolinApp extends JFrame 
     implements ActionListener, ConnectionListener,
-               RosterPanelListener, InvitationListener
+               RosterPanelListener, InvitationListener,
+               CloseableWindow.Custom
 {
     private final static String APPNAME = "Javolin";
     private final static String APPVERSION = "0.2.8";
@@ -176,6 +177,8 @@ public class JavolinApp extends JFrame
             {
                 public void windowClosing(WindowEvent we)
                 {
+                    // This handles the close button in the title bar, not
+                    // the windowClosed event!
                     doQuit();
                 }
             });
@@ -695,6 +698,17 @@ public class JavolinApp extends JFrame
 
         // Update UI component states
         updateUI();
+    }
+
+    /**
+     * Handler for the Close Window menu item, which at the moment is
+     * equivalent to Quit.
+     *
+     * Implements the CloseableWindow.Custom interface.
+     */
+    public void closeWindow() 
+    {
+        doQuit();
     }
 
     /**

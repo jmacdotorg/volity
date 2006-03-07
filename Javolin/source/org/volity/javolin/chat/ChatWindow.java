@@ -30,7 +30,7 @@ import org.volity.javolin.*;
  * A window for participating in a one-on-one chat.
  */
 public class ChatWindow extends JFrame
-    implements PacketListener, WindowMenu.GetWindowName
+    implements PacketListener, WindowMenu.GetWindowName, CloseableWindow
 {
     private final static String NODENAME = "ChatWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
@@ -114,7 +114,7 @@ public class ChatWindow extends JFrame
         addWindowListener(
             new WindowAdapter()
             {
-                public void windowClosing(WindowEvent we)
+                public void windowClosed(WindowEvent we)
                 {
                     saveWindowState();
                     if (mLog != null) {
