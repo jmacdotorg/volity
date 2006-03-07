@@ -71,7 +71,6 @@ public class ChatLogPanel extends LogTextPanel
 
         mColorChangeListener = new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
-                    //###System.out.println("### chat log saw color change");
                     adjustAllColors();
                 }
             };

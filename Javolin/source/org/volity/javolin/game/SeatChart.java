@@ -167,6 +167,17 @@ public class SeatChart
     }
 
     /**
+     * Adjust the player's ColorMap color to the seat color, if necessary. (The
+     * UserColorMap decides if it's necessary.)
+     */
+    public void adjustPlayerColor(Player player, Seat seat) {
+        Color col = null;
+        if (seat != null)
+            col = getSeatColor(seat.getID());
+        mColorMap.changeOverrideColor(player.getJID(), col);
+    }
+
+    /**
      * Create the SeatPanel objects for all the seats. (Not the "unseated"
      * panel -- that's created directly by the constructor.)
      *
@@ -436,7 +447,7 @@ public class SeatChart
             });
     }
 
-    public void playerSeatChanged(Player player, 
+    public void playerSeatChanged(final Player player, 
         final Seat oldseat, final Seat newseat) {
         // Called outside Swing thread!
         // Invoke into the Swing thread.
@@ -445,6 +456,7 @@ public class SeatChart
                     adjustOnePanel(oldseat);
                     adjustOnePanel(newseat);
                     checkPanelVisibility();
+                    adjustPlayerColor(player, newseat);
                 }
             });
     }

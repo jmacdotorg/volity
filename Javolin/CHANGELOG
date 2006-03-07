@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Name colors (finally!) change to match the seat color.
+
 Chat windows now let you pop up a contextual menu on (most) user messages.
 The menu currently contains only a "Chat With User..." item, but we can
 add more items as we think of them.

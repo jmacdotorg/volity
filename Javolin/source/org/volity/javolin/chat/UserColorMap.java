@@ -85,6 +85,9 @@ public class UserColorMap
         Color mTitleColor;
         Color mBodyColor;
 
+        Color mOverridePureColor;
+        Color mOverrideColor;
+
         /**
          * Create an entry containing a (saturated) color.
          * @param hue a hue value on the color wheel, from 0.0 to 1.0.
@@ -92,21 +95,13 @@ public class UserColorMap
         public ColorEntry(float hue)
         {
             Color col = new Color(Color.HSBtoRGB(hue, 1.0f, 1.0f));
-
-            // Measure the value (in HSV space) using a hoary old formula.
-            float arr[] = col.getColorComponents(null);
-            float value = arr[0] * 0.299f + arr[1] * 0.587f + arr[2] * 0.114f;
-
-            // If the color's value is too high, scale it down.
-            if (value >= VALUE_LIMIT) 
-            {
-                float bright = VALUE_LIMIT / value;
-                col = new Color(arr[0] * bright, arr[1] * bright, arr[2] * bright);
-            }
+            col = dampenColor(col);
 
             mBaseColor = col;
             mTitleColor = null;
             mBodyColor = null;
+            mOverridePureColor = null;
+            mOverrideColor = null;
         }
 
         /**
@@ -118,7 +113,24 @@ public class UserColorMap
             mBaseColor = col;
             mTitleColor = null;
             mBodyColor = null;
+            mOverridePureColor = null;
+            mOverrideColor = null;
         }
+    }
+
+    /** If the color's value is too high, scale it down. */
+    private static Color dampenColor(Color col) 
+    {
+        // Measure the value (in HSV space) using a hoary old formula.
+        float arr[] = col.getColorComponents(null);
+        float value = arr[0] * 0.299f + arr[1] * 0.587f + arr[2] * 0.114f;
+
+        if (value >= VALUE_LIMIT) {
+            float bright = VALUE_LIMIT / value;
+            col = new Color(arr[0] * bright, arr[1] * bright, arr[2] * bright);
+        }
+
+        return col;
     }
 
     /**
@@ -201,10 +213,16 @@ public class UserColorMap
     public Color getUserNameColor(String user)
     {
         ColorEntry ent = getUserEntry(user);
+
         if (ent.mTitleColor == null) {
-            ent.mTitleColor = PrefsDialog.transformColor(ent.mBaseColor,
+            Color base = ent.mBaseColor;
+            if (ent.mOverrideColor != null)
+                base = ent.mOverrideColor;
+
+            ent.mTitleColor = PrefsDialog.transformColor(base,
                 PrefsDialog.getChatNameShade());
         }
+
         return ent.mTitleColor;
     }
 
@@ -219,10 +237,16 @@ public class UserColorMap
     public Color getUserTextColor(String user)
     {
         ColorEntry ent = getUserEntry(user);
+
         if (ent.mBodyColor == null) {
-            ent.mBodyColor = PrefsDialog.transformColor(ent.mBaseColor,
+            Color base = ent.mBaseColor;
+            if (ent.mOverrideColor != null)
+                base = ent.mOverrideColor;
+
+            ent.mBodyColor = PrefsDialog.transformColor(base,
                 PrefsDialog.getChatBodyShade());
         }
+
         return ent.mBodyColor;
     }
 
@@ -240,6 +264,31 @@ public class UserColorMap
          * the only code that calls setUserColor() is the code that turns the
          * referee grey. Referees don't talk, so there's no need to notify
          * anybody. */
+    }
+
+    /**
+     * Apply an override color to the user. (Or remove it, if the color is
+     * null.) If this is a visible change, notify listeners.
+     */
+    public void changeOverrideColor(String user, Color col)
+    {
+        ColorEntry ent = getUserEntry(user);
+        if (ent.mOverridePureColor == col)
+            return;
+
+        ent.mOverridePureColor = col;
+
+        // Create a cooled-down version for actual use
+        if (col != null)
+            ent.mOverrideColor = dampenColor(ent.mOverridePureColor);
+        else
+            ent.mOverrideColor = null;
+
+        // Clear these so that they get recalculated
+        ent.mTitleColor = null;
+        ent.mBodyColor = null;
+
+        fireListeners();
     }
 
     /** Add a map-changed listener. */
