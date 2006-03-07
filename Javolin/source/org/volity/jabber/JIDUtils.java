@@ -33,4 +33,18 @@ public class JIDUtils
             return jid;
         return jid + "/" + resource;
     }
+
+    /** 
+     * Do the bare addresses of the two JIDs match?
+     */
+    public static boolean bareMatch(String jid1, String jid2) {
+        String name1 = StringUtils.parseName(jid1);
+        String name2 = StringUtils.parseName(jid2);
+        String host1 = StringUtils.parseServer(jid1);
+        String host2 = StringUtils.parseServer(jid2);
+
+        if (name1.equals(name2) && host1.equalsIgnoreCase(host2))
+            return true;
+        return false;
+    }
 }
