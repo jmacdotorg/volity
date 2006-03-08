@@ -2,10 +2,14 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
-
+import org.volity.client.data.GameInfo;
 import org.volity.javolin.game.TableWindow;
 
 /**
@@ -501,8 +505,58 @@ public class JavolinMenuBar extends JMenuBar
             mApplication.doGetFinder();
         }
         else if (source == mBugReportMenuItem) {
-            PlatformWrapper.launchURL(Finder.BUGREPORT_URL);
+            sendBugReportURL();
         }
+    }
+
+    protected void sendBugReportURL() {
+        String url = Finder.BUGREPORT_URL;
+
+        try {
+            String query = "";
+
+            query += "?javolin_version=";
+            query += URLEncoder.encode(JavolinApp.getAppVersion(), "UTF-8");
+
+            String jid = JavolinApp.getSoleJavolinApp().getSelfJID();
+            if (jid != null) {
+                query += "&username=";
+                query += URLEncoder.encode(jid, "UTF-8");
+            }
+
+            if (mTableWindow != null) {
+                GameInfo info = mTableWindow.getGameInfo();
+                if (info != null) {
+                    URI uri = info.getRulesetURI();
+                    if (uri != null) {
+                        query += "&ruleset_uri=";
+                        query += URLEncoder.encode(uri.toString(), "UTF-8");
+                    }
+                    String version = info.getRulesetVersion();
+                    if (version != null) {
+                        query += "&ruleset_version=";
+                        query += URLEncoder.encode(version, "UTF-8");
+                    }
+                }
+                URL uiurl = mTableWindow.getUIUrl();
+                if (uiurl != null) {
+                    query += "&ui_url=";
+                    query += URLEncoder.encode(uiurl.toString(), "UTF-8");
+                }
+                String muc = mTableWindow.getRoom();
+                if (muc != null) {
+                    query += "&table_muc=";
+                    query += URLEncoder.encode(muc, "UTF-8");
+                }
+            }
+
+            url += query;
+        }
+        catch (UnsupportedEncodingException ex) {
+            // never mind.
+        }
+
+        PlatformWrapper.launchURL(url);
     }
 
     /**

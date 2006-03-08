@@ -49,6 +49,7 @@ import org.volity.client.SVGCanvas;
 import org.volity.client.Seat;
 import org.volity.client.comm.RPCBackground;
 import org.volity.client.comm.SwingWorker;
+import org.volity.client.data.GameInfo;
 import org.volity.client.data.JIDTransfer;
 import org.volity.client.data.Metadata;
 import org.volity.client.translate.TokenFailure;
@@ -866,6 +867,16 @@ public class TableWindow extends JFrame
     public String getRoom()
     {
         return mGameTable.getRoom();
+    }
+
+    /**
+     * Get the GameInfo (ruleset URI, etc).
+     */
+    public GameInfo getGameInfo()
+    {
+        if (mServer == null)
+            return null;
+        return mServer.getGameInfo();
     }
 
     /**
