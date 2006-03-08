@@ -3,6 +3,12 @@ SVN repository.
 
 * the present
 
+Completely rewrote the Bookkeeper class to have async APIs. (This required
+me to write a batch equivalent of DiscoBackground, if that means anything
+to you.) The make-table sequence is one step closer to being completely
+async. The UI-selection function is all that remains; and that only blocks
+on user input, not on network requests.
+
 There is now a "File Bug Report" menu item in the "Debug" menu. It just
 sends your browser to the beta bug report page.
 

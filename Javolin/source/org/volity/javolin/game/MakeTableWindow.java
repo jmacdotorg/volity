@@ -40,9 +40,9 @@ public class MakeTableWindow
     TableWindowCallback mCallback;
     Window mParentDialog;
 
-    GameServer mGameServer;
+    GameServer mParlor;
     GameTable mGameTable;
-    String mServerID;
+    String mParlorID;
     String mTableID;
     String mNickname;
     TableWindow mTableWindow;
@@ -140,7 +140,7 @@ public class MakeTableWindow
         mCallback = callback;
         mNickname = nickname;
         mGameTable = null;
-        mGameServer = null;
+        mParlor = null;
         mTableID = tableID;
         mIsCreating = false;
 
@@ -154,15 +154,15 @@ public class MakeTableWindow
             // Create a new table.
 
             mIsCreating = true;
-            mServerID = serverID;
+            mParlorID = serverID;
 
-            if (!JIDUtils.hasResource(mServerID)) {
-                mServerID = JIDUtils.setResource(mServerID, "volity");
+            if (!JIDUtils.hasResource(mParlorID)) {
+                mParlorID = JIDUtils.setResource(mParlorID, "volity");
             }
 
             try {
-                mGameServer = new GameServer(mConnection, mServerID);
-                mGameServer.newTable(new RPCBackground.Callback() {
+                mParlor = new GameServer(mConnection, mParlorID);
+                mParlor.newTable(new RPCBackground.Callback() {
                         public void run(Object result, Exception err, Object rock) {
                             GameTable table = (GameTable)result;
                             contCreateDidNewTable(table, err);
@@ -401,22 +401,22 @@ public class MakeTableWindow
 
         try {
             DiscoverInfo info = (DiscoverInfo)result;
-            mServerID = null;
+            mParlorID = null;
 
             Form form = Form.getFormFrom(info);
             if (form != null) {
                 FormField field = form.getField("parlor");
                 if (field != null)
-                    mServerID = (String) field.getValues().next();
+                    mParlorID = (String) field.getValues().next();
             }
             
-            if (mServerID == null || mServerID.equals("")) {
+            if (mParlorID == null || mParlorID.equals("")) {
                 throw new Exception("Unable to fetch parlor ID from referee");
             }
 
             // Next step: connect to the server, and construct the TableWindow.
 
-            mGameServer = new GameServer(mConnection, mServerID);
+            mParlor = new GameServer(mConnection, mParlorID);
 
             SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
@@ -471,7 +471,7 @@ public class MakeTableWindow
                     msg = "No game parlor exists at this address.";
                     if (error.getMessage() != null)
                         msg = msg + " (" + error.getMessage() + ")";
-                    msg = msg + "\n(" + mServerID + ")";
+                    msg = msg + "\n(" + mParlorID + ")";
                 }
                 else if (error != null && error.getCode() == 409) {
                     /* A common case: your nickname conflicts. */
@@ -519,64 +519,81 @@ public class MakeTableWindow
      */
     private void contJoinDoConstruct() {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-        assert (mGameServer != null);
+        assert (mParlor != null);
         assert (mGameTable != null);
         assert (mTableWindow == null);
 
+        Bookkeeper keeper = new Bookkeeper(mParlor.getConnection());
+        keeper.getGameUIs(new Bookkeeper.Callback() {
+                public void run(Object result, XMPPException ex, Object rock) {
+                    if (result != null) {
+                        contJoinPickUI((List)result);
+                        return;
+                    }
+
+                    assert (ex != null);
+
+                    new ErrorWrapper(ex);
+                    callbackFail();
+
+                    mGameTable.leave();
+
+                    String msg = "The bookkeeper could not be found.";
+
+                    // Any or all of these may be null.
+                    String submsg = ex.getMessage();
+                    XMPPError error = ex.getXMPPError();
+                    Throwable subex = ex.getWrappedThrowable();
+
+                    if (error != null && error.getCode() == 404) {
+                        /* A common case: the JID was not found. */
+                        msg = "No bookkeeper exists at this address.";
+                        if (error.getMessage() != null)
+                            msg = msg + " (" + error.getMessage() + ")";
+                        msg = msg + "\n(" + Bookkeeper.getDefaultJid() + ")";
+                    }
+                    else {
+                        msg = "The bookkeeper could not be found";
+                        if (submsg != null && subex == null && error == null)
+                            msg = msg + ": " + submsg;
+                        else
+                            msg = msg + ".";
+                        if (subex != null)
+                            msg = msg + "\n" + subex.toString();
+                        if (error != null)
+                            msg = msg + "\nJabber error " + error.toString();
+                    }
+
+                    JOptionPane.showMessageDialog(mParentDialog, 
+                        msg,
+                        JavolinApp.getAppName() + ": Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }, mParlor.getRuleset(), null);
+    }
+
+    /**
+     * The bookkeeper has given us a list of UIs. (In fact, a list of UIInfo
+     * objects.) We must choose one.
+     */
+    private void contJoinPickUI(List uilist) {
         URL uiUrl = null;
 
         try {
-            uiUrl = getUIURL(mGameServer);
+            // ought to be an async call
+            uiUrl = getUIURL(mParlor.getRuleset(), uilist);
             if (uiUrl == null) {
                 callbackFail();
 
                 mGameTable.leave();
 
                 JOptionPane.showMessageDialog(mParentDialog, 
-                    "Unable to fetch UI URL for this game.",
+                    "Unable to select a UI for this game.",
                     JavolinApp.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
                 return;
             }
-        }
-        catch (XMPPException ex) 
-        {
-            new ErrorWrapper(ex);
-            callbackFail();
-
-            mGameTable.leave();
-
-            String msg = "The bookkeeper could not be found.";
-
-            // Any or all of these may be null.
-            String submsg = ex.getMessage();
-            XMPPError error = ex.getXMPPError();
-            Throwable subex = ex.getWrappedThrowable();
-
-            if (error != null && error.getCode() == 404) {
-                /* A common case: the JID was not found. */
-                msg = "No bookkeeper exists at this address.";
-                if (error.getMessage() != null)
-                    msg = msg + " (" + error.getMessage() + ")";
-                msg = msg + "\n(" + Bookkeeper.getDefaultJid() + ")";
-            }
-            else {
-                msg = "The bookkeeper could not be found";
-                if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
-                else
-                    msg = msg + ".";
-                if (subex != null)
-                    msg = msg + "\n" + subex.toString();
-                if (error != null)
-                    msg = msg + "\nJabber error " + error.toString();
-            }
-
-            JOptionPane.showMessageDialog(mParentDialog, 
-                msg,
-                JavolinApp.getAppName() + ": Error", 
-                JOptionPane.ERROR_MESSAGE);
-            return;
         }
         catch (Exception ex)
         {
@@ -586,7 +603,7 @@ public class MakeTableWindow
             mGameTable.leave();
 
             JOptionPane.showMessageDialog(mParentDialog, 
-                "Problem fetching UI from bookkeeper:\n" + ex.toString(),
+                "Problem selecting UI:\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
             return;
@@ -597,7 +614,7 @@ public class MakeTableWindow
 
             /* Once we call the TableWindow constructor, it owns the GameTable.
              * The constructor will clean up the GameTable on failure. */
-            mTableWindow = new TableWindow(mGameServer, mGameTable,
+            mTableWindow = new TableWindow(mParlor, mGameTable,
                 mNickname, dir, uiUrl);
 
             // If there were a failure after this point, we'd have to call
@@ -641,7 +658,7 @@ public class MakeTableWindow
                 msg = "No game parlor exists at this address.";
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
-                msg = msg + "\n(" + mServerID + ")";
+                msg = msg + "\n(" + mParlorID + ")";
             }
             else if (error != null && error.getCode() == 409) {
                 /* A common case: your nickname conflicts. */
@@ -705,27 +722,32 @@ public class MakeTableWindow
     private static Map sLocalUiFileMap = new HashMap();
 
     /**
-     * Helper method for makeTableWindow. Returns the URL for the given game
-     * server's UI.
+     * Helper method for makeTableWindow. Select a UI from the given list,
+     * based on the client's criteria.
+     * 
+     * ### ideally, this would be async.
      *
-     * @param server The game server for which to retrieve the UI URL.
+     * @param ruleset The ruleset we are interested in.
+     * @param ls The list of GameUIInfo objects to choose from.
      * @return       The URL for the game UI, or null if none was
      *   available.
-     * @exception XMPPException          If an XMPP error occurs.
      * @exception MalformedURLException  If an error ocurred creating a URL for
      *   a local file.
      */
-    static URL getUIURL(GameServer server) throws XMPPException,
-        MalformedURLException
+    static URL getUIURL(URI ruleset, List ls) throws MalformedURLException
     {
         URL retVal = null;
 
-        //### asyncify this call! and all of getUIURL. And make sure that a
-        //### Bookkeeper XMPPException shows a distinct error dialog!
+        /* First issue: not all the UIs on this list may have a compatible
+         * client type. Filter those out. */
 
-        Bookkeeper keeper = new Bookkeeper(server.getConnection());
-        List uiList = keeper.getCompatibleGameUIs(server.getRuleset(),
-            JavolinApp.getClientTypeURI());
+        URI clientType = JavolinApp.getClientTypeURI();
+        List uiList = new ArrayList();
+        for (Iterator it = ls.iterator(); it.hasNext();) {
+            GameUIInfo gameUI = (GameUIInfo) it.next();
+            if (gameUI.getClientTypes().contains(clientType))
+                uiList.add(gameUI);
+        }
 
         if (uiList.size() != 0) {
             // Use first UI info object
@@ -733,8 +755,8 @@ public class MakeTableWindow
             retVal = info.getLocation();
         }
         else {
-            if (sLocalUiFileMap.containsKey(server.getRuleset())) {
-                retVal = (URL)sLocalUiFileMap.get(server.getRuleset());
+            if (sLocalUiFileMap.containsKey(ruleset)) {
+                retVal = (URL)sLocalUiFileMap.get(ruleset);
             }
             else if (JOptionPane.showConfirmDialog(null,
                 "No UI file is known for this game.\nChoose a local file?",
@@ -745,7 +767,7 @@ public class MakeTableWindow
 
                 if (val == JFileChooser.APPROVE_OPTION) {
                     retVal = fDlg.getSelectedFile().toURI().toURL();
-                    sLocalUiFileMap.put(server.getRuleset(), retVal);
+                    sLocalUiFileMap.put(ruleset, retVal);
                 }
             }
         }

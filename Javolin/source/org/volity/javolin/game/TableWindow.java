@@ -123,7 +123,7 @@ public class TableWindow extends JFrame
     private SimpleDateFormat mTimeStampFormat;
 
     private SizeAndPositionSaver mSizePosSaver;
-    private GameServer mServer;
+    private GameServer mParlor;
     private GameTable mGameTable;
     private String mNickname;
     private URL mUIUrl;
@@ -164,7 +164,7 @@ public class TableWindow extends JFrame
         assert (table != null);
         assert (nickname != null);
 
-        mServer = server;
+        mParlor = server;
         mGameTable = table;
         mNickname = nickname;
         mUIUrl = uiUrl;    // We save this only for the sake of the info dialog
@@ -204,7 +204,7 @@ public class TableWindow extends JFrame
         /* Store the basic game name (as determined by the parlor info), and
          * the uniquifying number which we may add onto the end in the window
          * titlebar. */
-        mGameName = mServer.getGameInfo().getGameName();
+        mGameName = mParlor.getGameInfo().getGameName();
         if (mGameName == null)
             mGameName = "Game";
         mGameNameNumber = getGameNameNumber(mGameName);
@@ -874,9 +874,9 @@ public class TableWindow extends JFrame
      */
     public GameInfo getGameInfo()
     {
-        if (mServer == null)
+        if (mParlor == null)
             return null;
-        return mServer.getGameInfo();
+        return mParlor.getGameInfo();
     }
 
     /**
@@ -1111,7 +1111,7 @@ public class TableWindow extends JFrame
                 return;
             Metadata metadata = mGameViewport.getUI().getMetadata();
             mInfoDialog = new InfoDialog(this, mGameTable,
-                mServer.getGameInfo(), metadata);
+                mParlor.getGameInfo(), metadata);
 
             // When the InfoDialog closes, clear mInfoDialog
             mInfoDialog.addWindowListener(
