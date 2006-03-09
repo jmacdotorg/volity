@@ -140,9 +140,12 @@ public class UserColorMap
      */
     private float getNextHue()
     {
-        float retVal = (float)(1.0 * mHueNumerator / mHueDenominator);
+        float retVal = ((float)mHueNumerator / (float)mHueDenominator);
+        retVal += 0.06;
+        if (retVal >= 1.0)
+            retVal -= 1.0;
         
-        if (mHueNumerator == (mHueDenominator - 1))
+        if (mHueNumerator >= (mHueDenominator - 1))
         {
             mHueDenominator *= 2;
             mHueNumerator = 1;
