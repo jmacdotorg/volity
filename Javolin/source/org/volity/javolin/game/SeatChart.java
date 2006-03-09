@@ -44,13 +44,14 @@ public class SeatChart
     /* These values are tracked for audio alerts. They are updated from inside
      * SeatPanel.
      */
-    SeatPanel mCurrentSeat = null;
+    String mCurrentSeat = null;
     String mCurrentSelfMark = GameTable.MARK_NONE;
 
     SeatContextMenu mPopupMenu = null;
 
     ChangeListener mColorChangeListener;
     RPCBackground.Callback mDefaultCallback;
+    List mSeatMarkListeners = new ArrayList();
 
     /**
      * @param table the GameTable to watch. (The SeatChart sets itself up as a
@@ -136,6 +137,27 @@ public class SeatChart
     /** Return the translator. */
     public TranslateToken getTranslator() {
         return mTranslator;
+    }
+
+    /**
+     * We are now in the given seat, with the given mark. This can be caused by
+     * changing seats or by a seat's mark changing. Or just by a redraw of the
+     * seat panel -- we have to filter out non-changes.
+     */
+    protected void setSeatAndMark(String seatid, String mark) {
+        // Yes, we use == on strings here. It's okay.
+        if (mCurrentSeat == seatid && mCurrentSelfMark == mark)
+            return;
+
+        String oldseat = mCurrentSeat;
+        String oldmark = mCurrentSelfMark;
+
+        mCurrentSeat = seatid;
+        mCurrentSelfMark = mark;
+
+        if (oldmark != mCurrentSelfMark) {
+            fireSeatMarkListeners(mCurrentSelfMark, oldseat == mCurrentSeat);
+        }
     }
 
     /**
@@ -353,6 +375,36 @@ public class SeatChart
     public void displayPopupMenu(Player player, int xpos, int ypos) {
         Point pt = mPanel.getLocationOnScreen();
         mPopupMenu.adjustShow(player, mPanel, xpos-pt.x, ypos-pt.y);
+    }
+
+    /**
+     * Interface for those interested in changes to the player's seat mark. 
+     *
+     * Listeners will only be called when the mark actually changes. The mark
+     * will be one of the GameTable.MARK_* constants. If bygame is true, the
+     * event is caused by the game actually changing the seat's mark. If false,
+     * the event is caused by the player switching to a different seat (with a
+     * different mark).
+     */
+    public interface SeatMarkListener {
+        public void markChanged(String mark, boolean bygame);
+    }
+
+    /** Add a listener for changes of the player's seat mark. */
+    public void addSeatMarkListener(SeatMarkListener listener) {
+        mSeatMarkListeners.add(listener);
+    }
+
+    /** Remove a listener for changes of the player's seat mark. */
+    public void removeSeatMarkListener(SeatMarkListener listener) {
+        mSeatMarkListeners.remove(listener);
+    }
+
+    /** Notify listeners of a seat mark change. */
+    protected void fireSeatMarkListeners(String mark, boolean bygame) {
+        for (Iterator iter = mSeatMarkListeners.iterator(); iter.hasNext(); ) {
+            ((SeatMarkListener)iter.next()).markChanged(mark, bygame);
+        }
     }
 
     /***** Methods which implement StatusListener. *****/

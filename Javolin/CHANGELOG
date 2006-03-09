@@ -3,6 +3,11 @@ SVN repository.
 
 * the present
 
+Your seat mark now also appears in the window title bar. (After the game
+name.) This makes it easier to see when it's your turn in Windows, if you 
+have the window iconified. (Would like to do something similar in the OSX
+Dock, but I don't know how.)
+
 Completely rewrote the Bookkeeper class to have async APIs. (This required
 me to write a batch equivalent of DiscoBackground, if that means anything
 to you.) The make-table sequence is one step closer to being completely

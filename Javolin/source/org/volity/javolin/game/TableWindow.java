@@ -113,6 +113,7 @@ public class TableWindow extends JFrame
     private GameTable.ReadyListener mTableShutdownListener;
     private DefaultStatusListener mTableStatusListener;
     private UpdateManagerAdapter mViewportUpdateListener;
+    private SeatChart.SeatMarkListener mSeatMarkListener;
 
     private JButton mInviteButton;
     private JButton mReadyButton;
@@ -127,6 +128,7 @@ public class TableWindow extends JFrame
     private GameTable mGameTable;
     private String mNickname;
     private URL mUIUrl;
+    private String mBaseTitle;
 
     private TranslateToken mTranslator;
     private TableMessageHandler mMessageHandler;
@@ -209,7 +211,8 @@ public class TableWindow extends JFrame
             mGameName = "Game";
         mGameNameNumber = getGameNameNumber(mGameName);
 
-        setTitle(JavolinApp.getAppName() + ": " + getWindowName());
+        mBaseTitle = JavolinApp.getAppName() + ": " + getWindowName();
+        setTitle(mBaseTitle);
 
         /* Several components want a callback that prints text in the message
          * window. However, we don't know that they'll call it in the Swing
@@ -394,6 +397,24 @@ public class TableWindow extends JFrame
                 }
             };
         mGameTable.addStatusListener(mTableStatusListener);
+
+        mSeatMarkListener = new SeatChart.SeatMarkListener() {
+                public void markChanged(String mark, boolean bygame) {
+                    String suffix = "";
+                    if (mark == GameTable.MARK_TURN)
+                        suffix = " [GO]";
+                    else if (mark == GameTable.MARK_WIN)
+                        suffix = " [WON]";
+                    else if (mark == GameTable.MARK_FIRST)
+                        suffix = " [+++]";
+                    else if (mark == GameTable.MARK_OTHER)
+                        suffix = " [---]";
+                    setTitle(mBaseTitle+suffix);
+                    if (bygame)
+                        Audio.playMark(mark);
+                }
+            };
+        mSeatChart.addSeatMarkListener(mSeatMarkListener);
 
         // Set up button actions.
 
@@ -612,6 +633,10 @@ public class TableWindow extends JFrame
         }
 
         if (mSeatChart != null) {
+            if (mSeatMarkListener != null) {
+                mSeatChart.removeSeatMarkListener(mSeatMarkListener);
+                mSeatMarkListener = null;
+            }
             mSeatChart.dispose();
             mSeatChart = null;
         }
