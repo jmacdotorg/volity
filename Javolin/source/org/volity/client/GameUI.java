@@ -473,6 +473,7 @@ public abstract class GameUI implements RPCHandler {
                 defineProperty("seat", Info.class, PERMANENT);
                 defineProperty("allseats", Info.class, PERMANENT);
                 defineProperty("gameseats", Info.class, PERMANENT);
+                defineProperty("versionmatch", Info.class, PERMANENT);
             } catch (PropertyException e) {
                 errorHandler.error(e);
             }
