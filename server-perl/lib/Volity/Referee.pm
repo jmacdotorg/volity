@@ -1075,7 +1075,7 @@ sub end_game {
 	  }
 	  push (@winners_list, [map($_->id, @seats)]);
       }
-      $record->winners(@winners_list);
+      $record->winners(\@winners_list);
   }
 
   $record->seats(\%recorded_seats);
