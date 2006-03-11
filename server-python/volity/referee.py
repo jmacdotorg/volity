@@ -771,6 +771,8 @@ class Referee(volent.VolEntity):
         'abandoned' state; if the timer is not running, the referee might
         be 'active' or 'disrupted'.
         """
+
+        oldstate = self.refstate
         
         if (self.refstate in [STATE_SETUP, STATE_SUSPENDED]):
             ls = [ pla for pla in self.players.values()
@@ -785,6 +787,8 @@ class Referee(volent.VolEntity):
                 if player.live and player.seat and (not player.isbot) ]
             if (not ls):
                 self.refstate = STATE_ABANDONED
+                if (oldstate != STATE_ABANDONED):
+                    self.reportactivity()
                 self.settimer('abandoned')
                 return
             for seat in self.gameseatlist:
@@ -794,9 +798,13 @@ class Referee(volent.VolEntity):
                     if player.live ]
                 if (not ls):
                     self.refstate = STATE_DISRUPTED
+                    if (oldstate != STATE_DISRUPTED):
+                        self.reportactivity()
                     self.settimer(None)
                     return
             self.refstate = STATE_ACTIVE
+            if (oldstate != STATE_ACTIVE):
+                self.reportactivity()
             self.settimer(None)
             return
 
@@ -1503,6 +1511,15 @@ class Referee(volent.VolEntity):
             
         self.game.sendplayer(player, 'volity.state_sent')
 
+    def reportactivity(self):
+        """reportactivity() -> None
+
+        Report a new "in progress" state (one of ACTIVE, DISRUPTED, or
+        ABANDONED).
+        """
+        self.log.info('game is now %s', self.refstate)
+        self.sendall('volity.game_activity', self.refstate)
+        
     def reportsit(self, player, seat):
         """reportsit(player, seat) -> None
 
@@ -1600,8 +1617,8 @@ class Referee(volent.VolEntity):
         """parsewinners(ls) -> list
 
         Turn a list of game seats (in winning order) into a standardized
-        winners list (a list of lists of lists of players). This is called
-        by the game-ending methods of Game. Since the *ls* comes from
+        winners list (a list of lists of seats). This is called by the
+        game-ending methods of Game. Since the *ls* comes from
         game-specific code, we do lots of consistency-checking on it.
 
         Each element of *ls* must be either a Seat object, or a list of
@@ -1646,12 +1663,7 @@ class Referee(volent.VolEntity):
         if (remaining):
             res.append(remaining)
             
-        # Final step: turn each Seat element into a list of JIDs.
-        final = [
-            [ val.getplayerhistory() for val in subls ]
-            for subls in res ]
-
-        return final
+        return res
 
     # ---- Game state transitions.
 
@@ -1731,9 +1743,15 @@ class Referee(volent.VolEntity):
         self.sendall('volity.end_game')
         self.game.endgame(cancelled)
 
+        seatmap = {}
+        for seat in self.gameseatlist:
+            seatmap[seat.id] = seat.getplayerhistory()
+
         self.log.info('winners: %s', winners)
+        self.log.info('seat inhabitants: %s', seatmap)
         dic = {
             'winners' : winners,
+            'seats' : seatmap,
             'end_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime()),
             'start_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime(self.gamestarttime)),
             'game_uri' : self.parlor.gameclass.ruleseturi,

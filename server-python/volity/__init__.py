@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.7:
+The referee now sends the newer game-record format. Also the newer
+    volity.game_activity() RPC.
+
 - 1.5.6:
 Improved the logging options. You can now log to a specified file, and rotate
     the log file. You can also include config files from other config files.

@@ -784,6 +784,15 @@ class Seat:
         self.required = False
         self.players = []
         
+    def __repr__(self):
+        return '<Seat \'' + self.id + '\'>'
+
+    def __unicode__(self):
+        return self.id
+        
+    def __str__(self):
+        return str(self.id)
+        
 # late imports
 import bot
 from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED

@@ -1074,6 +1074,15 @@ class Seat:
         # create all your seats at __init__ time.
         self.referee.addseat(self)
 
+    def __repr__(self):
+        return '<Seat \'' + self.id + '\'>'
+
+    def __unicode__(self):
+        return self.id
+        
+    def __str__(self):
+        return str(self.id)
+        
     def getgame(self):
         """getgame() -> Game
 

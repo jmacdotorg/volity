@@ -339,6 +339,7 @@ def rotatelogs():
             ix -= 1
         os.rename(logfilename, logfilename+'.1')
         sethandler()
+        rootlogger.info('...rotated log files')
     
 sethandler()
 
