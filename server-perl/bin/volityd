@@ -11,7 +11,21 @@ use Getopt::Std;
 use Volity::GameRecord;
 
 my %opts;
-getopts('u:p:h:r:g:o:b:l:m:B:f:c:v:j:V:', \%opts);
+getopts('u:p:h:r:J:g:o:b:l:m:B:f:c:v:j:V:', \%opts);
+
+# Check to see if there's a J option, with a full login JID. If so,
+# break it up and stuff the parts into other opts. Collisions are bad,
+# though.
+
+if ($opts{J}) {
+    if ($opts{u} || $opts{h} || $opts{r}) {
+	die "If you provide a full login JID with the J flag, then you can't use the u, h, or r flags. Make up your mind and use one style or the other!\n";
+    }
+    ($opts{u}, $opts{h}, $opts{r}) = $opts{J} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
+    unless ($opts{u}) {
+	die "I couldn't parse '$opts{J} as a valid JID. Sorry!\n";
+    }
+}
 
 foreach ('user', 'host', 'password',) {
   unless (defined($opts{substr($_, 0, 1)})) {
@@ -117,8 +131,11 @@ a file-based configuration system, in time.
 
 =head2 Required parameters
 
-The program will immediately die (with a specific complaint) if any of
-the following parameters are not defined at runtime.
+The program will immediately die (with a specific complaint) if you
+don't specify enough information on the command line to allow the
+parlor to authenticate with the Jabber server, or run a game
+module. Use an appropriate combination of the following flags to
+achieve this.
 
 =over
 
@@ -139,6 +156,12 @@ the Jabber server.
 
 The full Perl package name of the game module that the game server
 will run. It must be visible to @INC.
+
+=item J
+
+The parlor's full Jabber ID. You can use this flag instead of using
+the C<u>, C<h> and C<r> flags. (But you can't use both this I<and>
+them.)
 
 =back
 
