@@ -1201,7 +1201,9 @@ sub invite_player {
 				   table=>$self->muc_jid,
 				   referee=>$self->jid,
 				   server=>$self->server->jid,
+				   parlor=>$self->server->jid,
 				   ruleset=>$self->game_class->uri,
+				   name=>$self->game_class->name,
 			       }],
 			   handler=>'invitation',
 			  });
