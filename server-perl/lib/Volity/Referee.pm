@@ -1703,7 +1703,8 @@ sub handle_disco_info_request {
     $fields[1]->values($self->server->jid);
     $fields[2]->values($self->muc_jid);
     $fields[3]->values($self->current_state);
-    $fields[4]->values(scalar($self->players));
+#    $fields[4]->values(scalar($self->players));
+    $fields[4]->values(scalar(grep($_->registered_player_jids, $self->seats)));
     $fields[5]->values($self->language);
     $fields[6]->values($self->name);
     $fields[7]->values('referee');
