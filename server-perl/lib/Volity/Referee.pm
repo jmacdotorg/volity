@@ -656,7 +656,7 @@ sub muc_creation {
     }
 
     $config_form->fields(
-			 Volity::Jabber::Form::Field->new({var=>$field_info[0]})->values("A volity game..."),
+			 Volity::Jabber::Form::Field->new({var=>$field_info[0]})->values($self->game_class->name),
 			 Volity::Jabber::Form::Field->new({var=>$field_info[1]})->values($field_info[2]),
 			 );
     
