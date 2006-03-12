@@ -54,6 +54,7 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_GAME_FINDER = "Game Finder";
     private final static String MENUCMD_SHOW_GAME_FINDER = "Show Game Finder";
     private final static String MENUCMD_BUG_REPORT = "File Bug Report";
+    private final static String MENUCMD_DEBUG_SHOW_RPCS = "Print All RPCs";
 
     private JavolinApp mApplication = null;
     private JFrame mWindow = null;
@@ -81,6 +82,7 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mGameFinderMenuItem;
     private JMenuItem mShowGameFinderMenuItem;
     private JMenuItem mBugReportMenuItem;
+    private JCheckBoxMenuItem mDebugShowRPCsMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -262,6 +264,11 @@ public class JavolinMenuBar extends JMenuBar
         setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
         debugMenu.add(mShowLastErrorMenuItem);
 
+        mDebugShowRPCsMenuItem = new JCheckBoxMenuItem(MENUCMD_DEBUG_SHOW_RPCS);
+        mDebugShowRPCsMenuItem.addActionListener(this);
+        setPlatformMnemonic(mDebugShowRPCsMenuItem, KeyEvent.VK_P);
+        debugMenu.add(mDebugShowRPCsMenuItem);
+
         mClearCacheMenuItem = new JMenuItem(MENUCMD_CLEAR_CACHE);
         mClearCacheMenuItem.addActionListener(this);
         setPlatformMnemonic(mClearCacheMenuItem, KeyEvent.VK_C);
@@ -323,6 +330,8 @@ public class JavolinMenuBar extends JMenuBar
         mNewTableAtMenuItem.setEnabled(isConnected);
         mJoinTableAtMenuItem.setEnabled(isConnected);
         mJoinMucMenuItem.setEnabled(isConnected);
+
+        mDebugShowRPCsMenuItem.setState(PrefsDialog.getDebugShowRPCs());
     }
 
     /**
@@ -488,6 +497,10 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (source == mShowLastErrorMenuItem) {
             mApplication.doShowLastError();
+        }
+        else if (source == mDebugShowRPCsMenuItem) {
+            boolean val = mDebugShowRPCsMenuItem.getState();
+            PrefsDialog.setDebugShowRPCs(val);
         }
         else if (source == mClearCacheMenuItem) {
             mApplication.doClearCache();

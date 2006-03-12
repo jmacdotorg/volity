@@ -147,8 +147,11 @@ public class PrefsDialog extends JFrame
         PrefsDialog.addListener(PrefsDialog.DEBUG_OPTIONS,
             new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
-                    RPCDispatcherDebug.setDebugOutput(prefDebugShowRPCs);
-                    Referee.setDebugOutput(prefDebugShowRPCs);
+                    if (ev.getSource() == DEBUGSHOWRPCS_KEY) {
+                        RPCDispatcherDebug.setDebugOutput(prefDebugShowRPCs);
+                        Referee.setDebugOutput(prefDebugShowRPCs);
+                        JavolinMenuBar.notifyUpdateItems();
+                    }
                 }
             });
     }
@@ -166,6 +169,7 @@ public class PrefsDialog extends JFrame
     public static boolean getSoundUsePresenceSounds() { return prefSoundUsePresenceSounds; }
     public static boolean getSoundUseThreadSound() { return prefSoundUseThreadSound; }
     public static boolean getSoundUseErrorSound() { return prefSoundUseErrorSound; }
+    public static boolean getDebugShowRPCs() { return prefDebugShowRPCs; }
 
     public static void setGameShowHelp(boolean val) {
         if (prefGameShowHelp == val)
@@ -180,6 +184,21 @@ public class PrefsDialog extends JFrame
             solePrefsDialog.mGameShowHelp.setSelected(prefGameShowHelp);
         }
     }
+
+    public static void setDebugShowRPCs(boolean val) {
+        if (prefDebugShowRPCs == val)
+            return;
+
+        prefDebugShowRPCs = val;
+        Preferences prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(DEBUG_OPTIONS);
+        prefs.putBoolean(DEBUGSHOWRPCS_KEY, prefDebugShowRPCs);
+        noticeChange(DEBUG_OPTIONS, DEBUGSHOWRPCS_KEY);
+
+        if (solePrefsDialog != null) {
+            solePrefsDialog.mDebugShowRPCs.setSelected(prefDebugShowRPCs);
+        }
+    }
+
 
     // The sole existing PrefsDialog.
     private static PrefsDialog solePrefsDialog = null;
