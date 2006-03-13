@@ -490,6 +490,40 @@ public class UIFileCache
     }
 
     /**
+     * Look in a directory and locate the "main file". If there is only one
+     * file (and no directories), that's it. Otherwise, look for "main.svg" or
+     * "MAIN.SVG".
+     *
+     * The directory you pass to this function should already have been run
+     * through locateTopDirectory().
+     *
+     * @param dir  the directory in which to search
+     * @return     the file which is the main document.
+     */
+    public static File locateMainFile(File dir)
+        throws IOException
+    {
+        File uiMainFile;
+        File[] entries = dir.listFiles();
+
+        if (entries.length == 1 && !entries[0].isDirectory())
+        {
+            uiMainFile = entries[0];
+        }
+        else
+        {
+            uiMainFile = findFileCaseless(dir, "main.svg");
+            if (uiMainFile == null)
+            {
+                throw new IOException("unable to locate UI file in directory "
+                    + dir);
+            }
+        }
+
+        return uiMainFile;
+    }
+
+    /**
      * Given a directory and a string, locate a directory entry which matches
      * the string, case-insensitively. More precisely: this looks for an entry
      * which matches name, name.toLowerCase(), or name.toUpperCase(). It will
