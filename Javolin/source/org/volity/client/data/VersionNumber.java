@@ -28,7 +28,7 @@ public class VersionNumber
     public static VersionNumber fromURI(URI uri)
         throws VersionNumber.VersionFormatException
     {
-        String fragment = uri.getRawFragment();
+        String fragment = uri.getFragment();
         if (fragment == null)
             return null;
         else
