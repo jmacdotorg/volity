@@ -40,9 +40,9 @@ public class BaseDialog extends JDialog
     /**
      * Constructor.
      *
-     * @param owner     The parent frame.
+     * @param owner     The parent frame. (May be null.)
      * @param title     The dialog title.
-     * @param modal     true for a modal dialog, false for non-modal.
+     * @param modal     True for a modal dialog, false for non-modal.
      * @param nodeName  A string to uniquely identify the dialog, to use as the
      * node name in the preferences storage.
      */
