@@ -523,7 +523,7 @@ public class MakeTableWindow
         assert (mGameTable != null);
         assert (mTableWindow == null);
 
-        Bookkeeper keeper = new Bookkeeper(mParlor.getConnection());
+        Bookkeeper keeper = JavolinApp.getSoleJavolinApp().getBookkeeper();
         keeper.getGameUIs(new Bookkeeper.Callback() {
                 public void run(Object result, XMPPException ex, Object rock) {
                     if (result != null) {
@@ -719,6 +719,7 @@ public class MakeTableWindow
     }
 
 
+    //### delete?
     private static Map sLocalUiFileMap = new HashMap();
 
     /**

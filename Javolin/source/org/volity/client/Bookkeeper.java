@@ -77,6 +77,11 @@ public class Bookkeeper {
     protected XMPPConnection connection;
     protected String jid;
 
+    /** Clean up resources. */
+    public void close() {
+        connection = null;
+    }
+
     /**
      * Ask the bookkeeper what rulesets are available.
      * The result will be a list of URIs.

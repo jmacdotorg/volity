@@ -12,34 +12,63 @@ import java.net.URISyntaxException;
 public class VersionNumber
 {
     /**
-     * Extract the spec from a URI of the form ruleset#spec. If there is none,
-     * return null.
+     * Extract the number from a URI of the form ruleset#num. If there is
+     * none, return "1".
      */
     public static VersionNumber fromURI(String uri)
         throws VersionNumber.VersionFormatException, URISyntaxException
     {
         return fromURI(new URI(uri));
     }
-    
+
     /**
-     * Extract the spec from a URI of the form ruleset#spec. If there is none,
-     * return null.
+     * Extract the number from a URI of the form ruleset#num. If there is
+     * none, return "1".
      */
     public static VersionNumber fromURI(URI uri)
         throws VersionNumber.VersionFormatException
     {
         String fragment = uri.getFragment();
         if (fragment == null)
-            return null;
+            return new VersionNumber();
         else
             return new VersionNumber(fragment);
     }
+
+    /**
+     * Extract the non-spec part from a URI of the form ruleset#spec. If there
+     * is no spec, return the original URI.
+     */
+    public static URI onlyURI(String uri)
+        throws URISyntaxException
+    {
+        return onlyURI(new URI(uri));
+    }
+
+    /**
+     * Extract the non-spec part from a URI of the form ruleset#spec. If there
+     * is no spec, return the original URI.
+     */
+    public static URI onlyURI(URI uri)
+        throws URISyntaxException
+    {
+        if (uri.getFragment() == null)
+            return uri;
+        return new URI(uri.getScheme(), uri.getSchemeSpecificPart(), null);
+    }
+    
 
     protected int mMajor = 1;
     protected int mMinor = 0;
     protected boolean isMinorVisible = true;
     protected String mRelease = null;
     protected String mStringForm = null;
+
+    public VersionNumber()
+    {
+        mMajor = 1;
+        isMinorVisible = false;
+    }
 
     public VersionNumber(int major)
         throws VersionFormatException
@@ -150,9 +179,12 @@ public class VersionNumber
     }
 
     /**
-     * Does this version match the given spec?
+     * Does this version match the given spec? (If the given spec is null, we
+     * take that as a "matches anything" spec.)
      */
     public boolean matches(VersionSpec spec) {
+        if (spec == null)
+            return true;
         // The code that does this check lives in VersionSpec, so we call that.
         return spec.matches(this);
     }

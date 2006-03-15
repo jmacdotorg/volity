@@ -37,6 +37,28 @@ public class VersionSpec
             return new VersionSpec(fragment);
     }
 
+    /**
+     * Extract the non-spec part from a URI of the form ruleset#spec. If there
+     * is no spec, return the original URI.
+     */
+    public static URI onlyURI(String uri)
+        throws URISyntaxException
+    {
+        return onlyURI(new URI(uri));
+    }
+
+    /**
+     * Extract the non-spec part from a URI of the form ruleset#spec. If there
+     * is no spec, return the original URI.
+     */
+    public static URI onlyURI(URI uri)
+        throws URISyntaxException
+    {
+        if (uri.getFragment() == null)
+            return uri;
+        return new URI(uri.getScheme(), uri.getSchemeSpecificPart(), null);
+    }
+    
     protected Pattern[] mPatterns;
     protected String mStringForm = null;
 

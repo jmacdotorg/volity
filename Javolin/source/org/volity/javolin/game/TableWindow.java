@@ -178,22 +178,7 @@ public class TableWindow extends JFrame
         //If there's exactly one file, that's it. Otherwise, look for
         // main.svg or MAIN.SVG.
         // XXX Or config.svg, main.html, config.html...
-        File uiMainFile;
-        File[] entries = uiDir.listFiles();
-
-        if (entries.length == 1 && !entries[0].isDirectory())
-        {
-            uiMainFile = entries[0];
-        }
-        else
-        {
-            uiMainFile = UIFileCache.findFileCaseless(uiDir, "main.svg");
-            if (uiMainFile == null)
-            {
-                throw new IOException("unable to locate UI file in cache");
-            }
-        }
-
+        File uiMainFile = UIFileCache.locateMainFile(uiDir);
         URL uiMainUrl = uiMainFile.toURI().toURL();
 
         // Set up a translator which knows about the "locale" subdirectory.

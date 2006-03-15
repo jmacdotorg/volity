@@ -47,18 +47,7 @@ public class GameResourcePrefs implements ResourcePrefs
 
             // If there's exactly one file, that's it. Otherwise, look for
             // main.svg or MAIN.SVG.
-            File uiMainFile;
-            File[] entries = uiDir.listFiles();
-
-            if (entries.length == 1 && !entries[0].isDirectory()) {
-                uiMainFile = entries[0];
-            }
-            else {
-                uiMainFile = UIFileCache.findFileCaseless(uiDir, "main.svg");
-                if (uiMainFile == null)
-                    throw new IOException("unable to locate UI file in cache");
-            }
-
+            File uiMainFile = UIFileCache.locateMainFile(uiDir);
             return uiMainFile;
         }
         catch (Exception ex) {

@@ -143,21 +143,7 @@ public class TestbenchApp extends JFrame
 
         if (uiFile == null) {
             uiDir = UIFileCache.locateTopDirectory(uiDir);
-            
-            File[] entries = uiDir.listFiles();
-
-            if (entries.length == 1 && !entries[0].isDirectory())
-            {
-                uiFile = entries[0];
-            }
-            else
-            {
-                uiFile = UIFileCache.findFileCaseless(uiDir, "main.svg");
-                if (uiFile == null)
-                {
-                    throw new IOException("unable to locate UI file in cache");
-                }
-            }
+            uiFile = UIFileCache.locateMainFile(uiDir);
         }
 
         URL uiMainUrl = uiFile.toURI().toURL();

@@ -34,6 +34,9 @@ public class PrefsDialog extends JFrame
     /* Keys within the various top-level nodes. */
 
     public final static String GAMESHOWHELP_KEY = "ShowHelp";
+    public final static String GAMESELECTUIALWAYS_KEY = "SelectUIAlways";
+    public final static String GAMESELECTUISOLE_KEY = "SelectUISole";
+    public final static String GAMESELECTUIFAMILIAR_KEY = "SelectUIFamiliar";
 
     public final static String CHATNAMESHADE_KEY = "NameShade";
     public final static String CHATBODYSHADE_KEY = "BodyShade";
@@ -74,6 +77,9 @@ public class PrefsDialog extends JFrame
      * to make sure they're set properly.
      */
     private static boolean prefGameShowHelp;
+    private static boolean prefGameSelectUIAlways;
+    private static boolean prefGameSelectUISole;
+    private static boolean prefGameSelectUIFamiliar;
     private static int prefChatBodyShade;
     private static int prefChatNameShade;
     private static boolean prefRosterShowOffline;
@@ -99,6 +105,9 @@ public class PrefsDialog extends JFrame
 
         prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(GAME_OPTIONS);
         prefGameShowHelp = prefs.getBoolean(GAMESHOWHELP_KEY, true);
+        prefGameSelectUIAlways = prefs.getBoolean(GAMESELECTUIALWAYS_KEY, true);
+        prefGameSelectUISole = prefs.getBoolean(GAMESELECTUISOLE_KEY, false);
+        prefGameSelectUIFamiliar = prefs.getBoolean(GAMESELECTUIFAMILIAR_KEY, true);
 
         prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(CHAT_COLOR_OPTIONS);
         prefChatBodyShade = prefs.getInt(CHATBODYSHADE_KEY, 30);
@@ -157,6 +166,9 @@ public class PrefsDialog extends JFrame
     }
 
     public static boolean getGameShowHelp() { return prefGameShowHelp; }
+    public static boolean getGameSelectUIAlways() { return prefGameSelectUIAlways; }
+    public static boolean getGameSelectUISole() { return prefGameSelectUISole; }
+    public static boolean getGameSelectUIFamiliar() { return prefGameSelectUIFamiliar; }
     public static int getChatBodyShade() { return prefChatBodyShade; }
     public static int getChatNameShade() { return prefChatNameShade; }
     public static boolean getRosterShowOffline() { return prefRosterShowOffline; }
@@ -258,6 +270,10 @@ public class PrefsDialog extends JFrame
     }
 
     private final static String LABEL_GAMESHOWHELP = "Display seating help";
+    private final static String LABEL_GAMESELECTUI = "Automatically select a game UI...";
+    private final static String LABEL_GAMESELECTUIALWAYS = "...always";
+    private final static String LABEL_GAMESELECTUISOLE = "...if exactly one is available";
+    private final static String LABEL_GAMESELECTUIFAMILIAR = "...if you've played the game before";
     private final static String LABEL_ROSTERSHOWOFFLINE = "Display offline buddies";
     private final static String LABEL_ROSTERSHOWREVERSE = "Display people whose roster you are on";
     private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
@@ -278,6 +294,9 @@ public class PrefsDialog extends JFrame
 
     private JTabbedPane mTabPane;
     private JCheckBox mGameShowHelp;
+    private JCheckBox mGameSelectUIAlways;
+    private JCheckBox mGameSelectUISole;
+    private JCheckBox mGameSelectUIFamiliar;
     private JCheckBox mRosterShowOffline;
     private JCheckBox mRosterShowReverse;
     private JCheckBox mRosterNotifySubscriptions;
@@ -346,6 +365,35 @@ public class PrefsDialog extends JFrame
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
                     prefs.putBoolean(GAMESHOWHELP_KEY, prefGameShowHelp);
                     noticeChange(GAME_OPTIONS, GAMESHOWHELP_KEY);
+                }
+            });
+
+        mGameSelectUIAlways.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefGameSelectUIAlways = mGameSelectUIAlways.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                    prefs.putBoolean(GAMESELECTUIALWAYS_KEY, prefGameSelectUIAlways);
+                    noticeChange(GAME_OPTIONS, GAMESELECTUIALWAYS_KEY);
+                    mGameSelectUISole.setEnabled(!prefGameSelectUIAlways);
+                    mGameSelectUIFamiliar.setEnabled(!prefGameSelectUIAlways);
+                }
+            });
+
+        mGameSelectUISole.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefGameSelectUISole = mGameSelectUISole.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                    prefs.putBoolean(GAMESELECTUISOLE_KEY, prefGameSelectUISole);
+                    noticeChange(GAME_OPTIONS, GAMESELECTUISOLE_KEY);
+                }
+            });
+
+        mGameSelectUIFamiliar.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    prefGameSelectUIFamiliar = mGameSelectUIFamiliar.isSelected();
+                    Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                    prefs.putBoolean(GAMESELECTUIFAMILIAR_KEY, prefGameSelectUIFamiliar);
+                    noticeChange(GAME_OPTIONS, GAMESELECTUIFAMILIAR_KEY);
                 }
             });
 
@@ -607,6 +655,52 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
             
+            label = new JLabel(LABEL_GAMESELECTUI);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(label, c);
+
+            mGameSelectUIAlways = new JCheckBox(LABEL_GAMESELECTUIALWAYS, prefGameSelectUIAlways);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mGameSelectUIAlways, c);
+
+            mGameSelectUISole = new JCheckBox(LABEL_GAMESELECTUISOLE, prefGameSelectUISole);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            mGameSelectUISole.setEnabled(!prefGameSelectUIAlways);
+            pane.add(mGameSelectUISole, c);
+
+            mGameSelectUIFamiliar = new JCheckBox(LABEL_GAMESELECTUIFAMILIAR, prefGameSelectUIFamiliar);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            mGameSelectUIFamiliar.setEnabled(!prefGameSelectUIAlways);
+            pane.add(mGameSelectUIFamiliar, c);
+
             mGameShowHelp = new JCheckBox(LABEL_GAMESHOWHELP, prefGameShowHelp);
             c = new GridBagConstraints();
             c.gridx = 0;

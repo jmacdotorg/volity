@@ -102,6 +102,7 @@ public class JavolinApp extends JFrame
 
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
+    private Bookkeeper mBookkeeper;
     List mMucWindows;
     List mTableWindows;
     List mChatWindows;
@@ -402,7 +403,7 @@ public class JavolinApp extends JFrame
      * @return   true if Javolin is currently connected to a Volity server, false
      * otherwise.
      */
-    boolean isConnected()
+    public boolean isConnected()
     {
         return (mConnection != null) && mConnection.isConnected();
     }
@@ -564,6 +565,11 @@ public class JavolinApp extends JFrame
             mConnection.addPacketListener(listener, filter);
         }
 
+        if (mConnection != null)
+        {
+            mBookkeeper = new Bookkeeper(mConnection);
+        }
+
         // Assign the roster to the RosterPanel
         Roster connRost = null;
 
@@ -685,6 +691,13 @@ public class JavolinApp extends JFrame
 
         // Clear the Window menu
         JavolinMenuBar.notifyUpdateWindowMenu();
+
+        // Kill the bookkeeper object
+        if (mBookkeeper != null)
+        {
+            mBookkeeper.close();
+            mBookkeeper = null;
+        }
 
         // Close connection if open
         if (mConnection != null)
@@ -1166,6 +1179,15 @@ public class JavolinApp extends JFrame
     public RosterPanel getRosterPanel() 
     {
         return mRosterPanel;
+    }
+
+    /**
+     * Return the app's Bookkeeper object. If the app is not connected to
+     * Jabber, this returns null.
+     */
+    public Bookkeeper getBookkeeper() 
+    {
+        return mBookkeeper;
     }
 
     /**
