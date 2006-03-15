@@ -32,6 +32,8 @@ import org.volity.javolin.URLChooser;
 public class ChooseUIDialog extends BaseDialog
 {
     private final static String NODENAME = "ChooseUIDialog";
+    private final static String COLORDER_KEY = "ColOrder";
+    private final static String COLWIDTH_KEY = "ColWidth";
 
     private final static String COL_INTERFACE = "Interface";
     private final static String COL_URL = "URL";
@@ -182,11 +184,20 @@ public class ChooseUIDialog extends BaseDialog
         TableColumn col;
         try {
             col = mTable.getColumn(COL_INTERFACE);
-            prefs.putInt("ColWidth"+COL_INTERFACE, col.getWidth());
+            prefs.putInt(COLWIDTH_KEY+COL_INTERFACE, col.getWidth());
             col = mTable.getColumn(COL_URL);
-            prefs.putInt("ColWidth"+COL_URL, col.getWidth());
+            prefs.putInt(COLWIDTH_KEY+COL_URL, col.getWidth());
         }
         catch (Exception ex) { }
+
+        String colpref = "";
+        for (int ix=0; ix<mTable.getColumnCount(); ix++) {
+            col = mTable.getColumnModel().getColumn(ix);
+            String colname = (String)col.getIdentifier();
+            colpref += colname + ",";
+        }
+
+        prefs.put(COLORDER_KEY, colpref);
     }
 
     /** Load the window state preferences. */
@@ -197,13 +208,37 @@ public class ChooseUIDialog extends BaseDialog
         int val;
         try {
             col = mTable.getColumn(COL_INTERFACE);
-            val = prefs.getInt("ColWidth"+COL_INTERFACE, col.getPreferredWidth());
+            val = prefs.getInt(COLWIDTH_KEY+COL_INTERFACE, col.getPreferredWidth());
             col.setPreferredWidth(val);
             col = mTable.getColumn(COL_URL);
-            val = prefs.getInt("ColWidth"+COL_URL, col.getPreferredWidth());
+            val = prefs.getInt(COLWIDTH_KEY+COL_URL, col.getPreferredWidth());
             col.setPreferredWidth(val);
         }
         catch (Exception ex) { }
+
+        String colpref = prefs.get(COLORDER_KEY, null);
+        if (colpref != null) {
+            String[] cols = colpref.split(",");
+            for (int ix=0; ix<mTable.getColumnCount(); ) {
+                col = mTable.getColumnModel().getColumn(ix);
+                String colname = (String)col.getIdentifier();
+
+                int destix = -1;
+                for (int jx=0; jx<cols.length; jx++) {
+                    if (cols[jx].equals(colname)) {
+                        destix = jx;
+                        break;
+                    }
+                }
+
+                if (destix >= 0 && destix > ix) {
+                    mTable.moveColumn(ix, destix);
+                }
+                else {
+                    ix++;
+                }
+            }
+        }
     }
 
     /**
@@ -259,7 +294,7 @@ public class ChooseUIDialog extends BaseDialog
     private void buildUI() {
         if (mModel.getRowCount() == 0) {
             mEmpty = true;
-            Object[] row = new Object[] { "(none listed)" };
+            Object[] row = new Object[] { "(no UIs are published for this game)" };
             mModel.addRow(row);
         }
 

@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+The UI-selection interface is completely rewritten. It will mostly work like
+it used to, but you have preference options if you want to see an explicit
+"choose a UI" dialog box more often.
+
 Your seat mark now also appears in the window title bar. (After the game
 name.) This makes it easier to see when it's your turn in Windows, if you 
 have the window iconified. (Would like to do something similar in the OSX

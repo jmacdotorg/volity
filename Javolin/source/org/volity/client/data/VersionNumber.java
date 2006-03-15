@@ -179,8 +179,8 @@ public class VersionNumber
     }
 
     /**
-     * Does this version match the given spec? (If the given spec is null, we
-     * take that as a "matches anything" spec.)
+     * Check whether this version matches the given spec. If the given spec is
+     * null, we take that as a "matches anything" spec.
      */
     public boolean matches(VersionSpec spec) {
         if (spec == null)

@@ -303,8 +303,12 @@ public class SelectUI
     }
 
     private void contPopDialog() {
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAMENAMES);
-        String lastname = prefs.get(mLastChoice.toString(), "Game interface");
+        String lastname = null;
+
+        if (mLastChoice != null) {
+            Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAMENAMES);
+            lastname = prefs.get(mLastChoice.toString(), "Game interface");
+        }
 
         ChooseUIDialog box = new ChooseUIDialog(mGameUIInfoList,
             mLastChoice, lastname);

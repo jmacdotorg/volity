@@ -20,10 +20,12 @@ import org.volity.client.*;
 import org.volity.client.comm.DiscoBackground;
 import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.GameUIInfo;
+import org.volity.client.data.VersionNumber;
 import org.volity.client.translate.TokenFailure;
 import org.volity.jabber.JIDUtils;
 import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.JavolinApp;
+
 
 /**
  * The all-singing, all-dancing, fully-asynchronous TableWindow factory.
@@ -514,8 +516,8 @@ public class MakeTableWindow
 
     /**
      * The new-table and join-table paths merge here. At this point, we have
-     * both a GameServer object and a GameTable object. It is time to construct
-     * the TableWindow.
+     * both a GameServer object and a GameTable object. It is time to select a
+     * UI.
      */
     private void contJoinDoConstruct() {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
@@ -523,99 +525,54 @@ public class MakeTableWindow
         assert (mGameTable != null);
         assert (mTableWindow == null);
 
-        Bookkeeper keeper = JavolinApp.getSoleJavolinApp().getBookkeeper();
-        keeper.getGameUIs(new Bookkeeper.Callback() {
-                public void run(Object result, XMPPException ex, Object rock) {
-                    if (result != null) {
-                        contJoinPickUI((List)result);
-                        return;
-                    }
-
-                    assert (ex != null);
-
-                    new ErrorWrapper(ex);
-                    callbackFail();
-
-                    mGameTable.leave();
-
-                    String msg = "The bookkeeper could not be found.";
-
-                    // Any or all of these may be null.
-                    String submsg = ex.getMessage();
-                    XMPPError error = ex.getXMPPError();
-                    Throwable subex = ex.getWrappedThrowable();
-
-                    if (error != null && error.getCode() == 404) {
-                        /* A common case: the JID was not found. */
-                        msg = "No bookkeeper exists at this address.";
-                        if (error.getMessage() != null)
-                            msg = msg + " (" + error.getMessage() + ")";
-                        msg = msg + "\n(" + Bookkeeper.getDefaultJid() + ")";
-                    }
-                    else {
-                        msg = "The bookkeeper could not be found";
-                        if (submsg != null && subex == null && error == null)
-                            msg = msg + ": " + submsg;
-                        else
-                            msg = msg + ".";
-                        if (subex != null)
-                            msg = msg + "\n" + subex.toString();
-                        if (error != null)
-                            msg = msg + "\nJabber error " + error.toString();
-                    }
-
-                    JOptionPane.showMessageDialog(mParentDialog, 
-                        msg,
-                        JavolinApp.getAppName() + ": Error", 
-                        JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-            }, mParlor.getRuleset(), null);
-    }
-
-    /**
-     * The bookkeeper has given us a list of UIs. (In fact, a list of UIInfo
-     * objects.) We must choose one.
-     */
-    private void contJoinPickUI(List uilist) {
-        URL uiUrl = null;
-
+        SelectUI select; 
         try {
-            // ought to be an async call
-            uiUrl = getUIURL(mParlor.getRuleset(), uilist);
-            if (uiUrl == null) {
-                callbackFail();
-
-                mGameTable.leave();
-
-                JOptionPane.showMessageDialog(mParentDialog, 
-                    "Unable to select a UI for this game.",
-                    JavolinApp.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            select = new SelectUI(mParlor.getRuleset(), false);
         }
-        catch (Exception ex)
-        {
-            new ErrorWrapper(ex);
+        catch (URISyntaxException ex) {
             callbackFail();
-
             mGameTable.leave();
-
             JOptionPane.showMessageDialog(mParentDialog, 
-                "Problem selecting UI:\n" + ex.toString(),
+                "This table's ruleset is not a valid URI:\n" + ex.toString(),
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        catch (VersionNumber.VersionFormatException ex) {
+            callbackFail();
+            mGameTable.leave();
+            JOptionPane.showMessageDialog(mParentDialog, 
+                "This table's ruleset has an invalid version number:\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try {
-            File dir = JavolinApp.getUIFileCache().getUIDir(uiUrl);
 
+        select.select(new SelectUI.Callback() {
+                public void succeed(URL ui, File localui) {
+                    contJoinPickedUI(ui, localui);
+                }
+                public void fail() {
+                    callbackFail();
+                    mGameTable.leave();
+                    JOptionPane.showMessageDialog(mParentDialog, 
+                        "Unable to select a UI for this game.",
+                        JavolinApp.getAppName() + ": Error",
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            });
+    }
+
+    /**
+     * Now we have a valid UI.
+     */
+    private void contJoinPickedUI(URL ui, File localui) {
+        try {
             /* Once we call the TableWindow constructor, it owns the GameTable.
              * The constructor will clean up the GameTable on failure. */
             mTableWindow = new TableWindow(mParlor, mGameTable,
-                mNickname, dir, uiUrl);
+                mNickname, localui, ui);
 
             // If there were a failure after this point, we'd have to call
             // mTableWindow.leave(). But we're done.
@@ -717,63 +674,4 @@ public class MakeTableWindow
         if (mCallback != null)
             mCallback.succeed(mTableWindow);
     }
-
-
-    //### delete?
-    private static Map sLocalUiFileMap = new HashMap();
-
-    /**
-     * Helper method for makeTableWindow. Select a UI from the given list,
-     * based on the client's criteria.
-     * 
-     * ### ideally, this would be async.
-     *
-     * @param ruleset The ruleset we are interested in.
-     * @param ls The list of GameUIInfo objects to choose from.
-     * @return       The URL for the game UI, or null if none was
-     *   available.
-     * @exception MalformedURLException  If an error ocurred creating a URL for
-     *   a local file.
-     */
-    static URL getUIURL(URI ruleset, List ls) throws MalformedURLException
-    {
-        URL retVal = null;
-
-        /* First issue: not all the UIs on this list may have a compatible
-         * client type. Filter those out. */
-
-        URI clientType = JavolinApp.getClientTypeURI();
-        List uiList = new ArrayList();
-        for (Iterator it = ls.iterator(); it.hasNext();) {
-            GameUIInfo gameUI = (GameUIInfo) it.next();
-            if (gameUI.getClientTypes().contains(clientType))
-                uiList.add(gameUI);
-        }
-
-        if (uiList.size() != 0) {
-            // Use first UI info object
-            GameUIInfo info = (GameUIInfo)uiList.get(0);
-            retVal = info.getLocation();
-        }
-        else {
-            if (sLocalUiFileMap.containsKey(ruleset)) {
-                retVal = (URL)sLocalUiFileMap.get(ruleset);
-            }
-            else if (JOptionPane.showConfirmDialog(null,
-                "No UI file is known for this game.\nChoose a local file?",
-                JavolinApp.getAppName(), JOptionPane.YES_NO_OPTION) ==
-                JOptionPane.YES_OPTION) {
-                JFileChooser fDlg = new JFileChooser();
-                int val = fDlg.showOpenDialog(null);
-
-                if (val == JFileChooser.APPROVE_OPTION) {
-                    retVal = fDlg.getSelectedFile().toURI().toURL();
-                    sLocalUiFileMap.put(ruleset, retVal);
-                }
-            }
-        }
-
-        return retVal;
-    }
-
 }
