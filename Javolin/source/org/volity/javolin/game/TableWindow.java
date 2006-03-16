@@ -663,6 +663,14 @@ public class TableWindow extends JFrame
     }
 
     /**
+     * Returns whether this table window is open. Once leave() is called, this
+     * becomes false.
+     */
+    public boolean isTableOpen() {
+        return (mGameViewport != null);
+    }
+
+    /**
      * Some classes which act as services: handling text messages, errors, or
      * link clicks. 
      *
@@ -932,16 +940,62 @@ public class TableWindow extends JFrame
     }
 
     /**
-     * Reload the game UI from scratch.
+     * Reload the game UI from scratch. If the download argument is true, this
+     * downloads a fresh copy from the original URL. If false, it just restarts
+     * the cached copy.
      */
-    public void doReloadUI() 
+    public void doReloadUI(boolean download) 
     {
-        /* ### If we switch to a different UI, we'd need a whole new
-         * translator. Or we'd need to switch the translator to a different
-         * localedir, really, since so many components cache pointers to it. 
-         * ### This also applies to a reload that recreates the cache dir.
+        doReloadUI(null, download);
+    }
+
+    /**
+     * Load the game UI from scratch, from the given URL. If the download
+     * argument is true, this downloads a fresh copy from the URL. If false, it
+     * just restarts the cached copy.
+     */
+    public void doReloadUI(URL newui, boolean download) 
+    {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        File translateDir = null;
+        URL uiMainUrl = null;
+
+        UIFileCache cache = JavolinApp.getSoleJavolinApp().getUIFileCache();
+
+        if (newui != null || download) {
+            if (newui != null)
+                mUIUrl = newui;
+
+            if (download)
+                cache.clearCache(mUIUrl, false);
+
+            try {
+                File uiDir = cache.getUIDir(mUIUrl);
+                uiDir = UIFileCache.locateTopDirectory(uiDir);
+                File uiMainFile = UIFileCache.locateMainFile(uiDir);
+                uiMainUrl = uiMainFile.toURI().toURL();
+                translateDir = UIFileCache.findFileCaseless(uiDir, "locale");
+            }
+            catch (Exception ex) {
+                new ErrorWrapper(ex);
+
+                JOptionPane.showMessageDialog(null, 
+                    "Cannot download UI:\n" + ex.toString(),
+                    JavolinApp.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+
+        /* If we switched to a different UI, we need to switch the translator
+         * to a different localedir. (We can't just create a new translator,
+         * since so many components cache pointers to it.)
          */
-        mTranslator.clearCache();
+        if (translateDir == null)
+            mTranslator.clearCache();
+        else
+            mTranslator.changeLocaleDir(translateDir);
 
         /* Clear the seat marks, so that the new UI gets a blank mark slate.
          */
@@ -951,7 +1005,8 @@ public class TableWindow extends JFrame
          * send_state() RPC. */
         mGameStartFinished = false;
 
-        mGameViewport.reloadUI();
+        /** Reload the old UI, or load the new one. */
+        mGameViewport.reloadUI(uiMainUrl);
 
         /* ### This may change metadata, therefore seat panel coloring.
          * However, it's a nuisance to notify all the SeatPanels and get them
@@ -959,6 +1014,35 @@ public class TableWindow extends JFrame
          * the SeatPanels get created before the metadata is available, and
          * therefore they never get colored. Oh well.
          */
+    }
+
+    /**
+     * Prompt for and select a new UI.
+     */
+    public void doSelectNewUI()
+    {
+        URI ruleset = mParlor.getRuleset();
+        SelectUI select;
+
+        try {
+            select = new SelectUI(ruleset, true);
+        }
+        catch (Exception ex) {
+            mErrorHandler.error(ex);
+            return;
+        }
+
+        select.select(new SelectUI.Callback() {
+                public void succeed(URL ui, File localui) {
+                    if (!isTableOpen()) {
+                        return;
+                    }
+                    doReloadUI(ui, false);
+                }
+                public void fail() {
+                    // cancelled.
+                }
+            });
     }
 
     /**

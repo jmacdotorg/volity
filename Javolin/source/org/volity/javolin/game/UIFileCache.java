@@ -291,6 +291,35 @@ public class UIFileCache
         ensureCacheDirsExist();
     }
 
+    /** 
+     * Clean one UI out of the UI cache.
+     *
+     * If includeDirs is false, this only wipes the FileCache. Subsequent cache
+     * requests will be certain to download and unpack new copies of the files,
+     * but games in progress will not be disturbed.
+     *
+     * If includeDirs is true, this wipes both FileCache and DirCache. This
+     * will crash games in progress. Do not set this flag if any TableWindows
+     * are open for the game in question.
+     */
+    public void clearCache(URL uiURL, boolean includeDirs)
+    {
+        ensureCacheDirsExist();
+
+        // Figure out all the pathnames we'll be using.
+        String name = urlToCacheName(uiURL);
+        File cacheFile = new File(mFileCacheDir, name);
+        File cacheDir = new File(mDirCacheDir, name+".d");
+
+        if (cacheFile.exists())
+            cacheFile.delete();
+
+        if (includeDirs) {
+            if (cacheDir.exists())
+                deleteRecursively(cacheDir);
+        }
+    }
+
     /**
      * Downloads a file at the given URL into a local file.
      *

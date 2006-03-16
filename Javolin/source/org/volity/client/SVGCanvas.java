@@ -142,9 +142,12 @@ public class SVGCanvas extends JSVGCanvas
 
     /**
      * Kludge (or maybe it's just a clever way) to force the canvas to reload
-     * the SVG file from disk.
+     * the SVG file from disk. If newDocument is non-null, reload that instead.
      */
-    public void reloadUI() {
+    public void reloadUI(URL newDocument) {
+        if (newDocument != null)
+            uiDocument = newDocument;
+
         if (ui != null)
             ui.stop();
         setURI(uiDocument.toString());

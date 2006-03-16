@@ -46,8 +46,12 @@ public class TranslateToken {
      * may contain files gametokens.xml and/or seattokens.xml, in
      * order to translate tokens in the "game", "seat", and "ui"
      * namespaces.
+     *
+     * If the directory argument is null, you get a translator which can only
+     * handle the global ("volity") namespace. This is useful for parlor and
+     * bookkeeper RPCs.
      * 
-     * @param localeDir a File referring to the locale directory
+     * @param localeDir a File referring to the locale directory.
      */
     public TranslateToken(File localeDir) {
         this.localeDir = localeDir;
@@ -416,7 +420,7 @@ public class TranslateToken {
     /**
      * Clear the cached tables we loaded from the UI package. This is useful in
      * Testbench when we reload changes. We also do it in Javolin when we
-     * reload the UI.
+     * reload the UI. (It is not necessary to do this when changing languages.)
      */
     public void clearCache() {
         tableCacheGame.clear();
@@ -424,9 +428,15 @@ public class TranslateToken {
         tableCacheSeat.clear();
     }
 
-    /* ### also have changeLocaleDir() method? It would have to clear the
-     * cache, of course. It would also have to deal with switching to or from a
-     * null locale dir. ### */
+    /**
+     * Switch to a different locale directory. This clears the cache, so that
+     * data from the old locale stops appearing. We do this in Javolin when
+     * switching UIs.
+     */
+    public void changeLocaleDir(File localeDir) {
+        this.localeDir = localeDir;
+        clearCache();
+    }
 
     /**
      * Parse an XML token translation table, and store its entries into

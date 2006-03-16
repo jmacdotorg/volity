@@ -3,6 +3,13 @@ SVN repository.
 
 * the present
 
+"Select New Interface" is now a menu option under the Game menu. It lets
+you choose a new interface for the game you're playing, either from the 
+bookkeeper list, from a disk file, or by typing in a URL. Also added
+"Restart Interface" under the Debug menu, and made "Reload Interface"
+reload the UI from the original source. ("Restart" does what "Reload" used
+to do. Got it?)
+
 The UI-selection interface is completely rewritten. It will mostly work like
 it used to, but you have preference options if you want to see an explicit
 "choose a UI" dialog box more often.

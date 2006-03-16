@@ -44,7 +44,9 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
     private final static String MENUCMD_GAME_INFO = "Game Info...";
     private final static String MENUCMD_SUSPEND_TABLE = "Suspend Table";
+    private final static String MENUCMD_RESTART_UI = "Restart Interface";
     private final static String MENUCMD_RELOAD_UI = "Reload Interface";
+    private final static String MENUCMD_SELECT_UI = "Select New Interface...";
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
@@ -76,7 +78,9 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mMemUsageMenuItem;
     private JMenuItem mGameInfoMenuItem;
     private JMenuItem mSuspendTableMenuItem;
+    private JMenuItem mRestartUIMenuItem;
     private JMenuItem mReloadUIMenuItem;
+    private JMenuItem mSelectUIMenuItem;
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
     private JMenuItem mGameFinderMenuItem;
@@ -209,6 +213,13 @@ public class JavolinMenuBar extends JMenuBar
 
         gameMenu.addSeparator();
         
+        mSelectUIMenuItem = new JMenuItem(MENUCMD_SELECT_UI);
+        mSelectUIMenuItem.addActionListener(this);
+        setPlatformMnemonic(mSelectUIMenuItem, KeyEvent.VK_U);
+        if (mTableWindow == null) 
+            mSelectUIMenuItem.setEnabled(false);
+        gameMenu.add(mSelectUIMenuItem);
+
         mGameInfoMenuItem = new JMenuItem(MENUCMD_GAME_INFO);
         mGameInfoMenuItem.addActionListener(this);
         setPlatformMnemonic(mGameInfoMenuItem, KeyEvent.VK_I);
@@ -251,6 +262,13 @@ public class JavolinMenuBar extends JMenuBar
         debugMenu.add(mBugReportMenuItem);
 
         debugMenu.addSeparator();
+
+        mRestartUIMenuItem = new JMenuItem(MENUCMD_RESTART_UI);
+        mRestartUIMenuItem.addActionListener(this);
+        setPlatformMnemonic(mRestartUIMenuItem, KeyEvent.VK_E);
+        if (mTableWindow == null) 
+            mRestartUIMenuItem.setEnabled(false);
+        debugMenu.add(mRestartUIMenuItem);
 
         mReloadUIMenuItem = new JMenuItem(MENUCMD_RELOAD_UI);
         mReloadUIMenuItem.addActionListener(this);
@@ -480,9 +498,17 @@ public class JavolinMenuBar extends JMenuBar
             if (mTableWindow != null)
                 mTableWindow.doSuspendTable();
         }
+        else if (source == mRestartUIMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doReloadUI(false);
+        }
         else if (source == mReloadUIMenuItem) {
             if (mTableWindow != null)
-                mTableWindow.doReloadUI();
+                mTableWindow.doReloadUI(true);
+        }
+        else if (source == mSelectUIMenuItem) {
+            if (mTableWindow != null)
+                mTableWindow.doSelectNewUI();
         }
         else if (source == mInvitePlayerMenuItem) {
             if (mTableWindow != null)
