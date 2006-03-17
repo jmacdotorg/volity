@@ -20,6 +20,7 @@ import javax.swing.table.TableColumn;
 import org.volity.client.data.GameUIInfo;
 import org.volity.javolin.BaseDialog;
 import org.volity.javolin.JavolinMenuBar;
+import org.volity.javolin.TableColumnSaver;
 import org.volity.javolin.URLChooser;
 
 /**
@@ -32,8 +33,8 @@ import org.volity.javolin.URLChooser;
 public class ChooseUIDialog extends BaseDialog
 {
     private final static String NODENAME = "ChooseUIDialog";
-    private final static String COLORDER_KEY = "ColOrder";
-    private final static String COLWIDTH_KEY = "ColWidth";
+    private final static String COLORDER_KEY = "ColOrder"; //###
+    private final static String COLWIDTH_KEY = "ColWidth"; //###
 
     private final static String COL_INTERFACE = "Interface";
     private final static String COL_URL = "URL";
@@ -44,6 +45,8 @@ public class ChooseUIDialog extends BaseDialog
     private boolean mEmpty = false;
     private int mLastChoiceIndex = 0;
     private JTable mTable;
+
+    private TableColumnSaver mTableSaver;
     private JButton mCancelButton;
     private JButton mSelectButton;
     private JButton mFileButton;
@@ -93,7 +96,9 @@ public class ChooseUIDialog extends BaseDialog
         // Now that the model is done, build the UI.
         buildUI();
 
-        setSize(450, 350);
+        mTableSaver = new TableColumnSaver(this, mTable, NODENAME);
+
+        setSize(550, 270);
         // Restore saved window position
         mSizePosSaver.restoreSizeAndPosition();
         restoreWindowState();
@@ -179,66 +184,12 @@ public class ChooseUIDialog extends BaseDialog
 
     /** Store the window state preferences. */
     private void saveWindowState() {
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
-        
-        TableColumn col;
-        try {
-            col = mTable.getColumn(COL_INTERFACE);
-            prefs.putInt(COLWIDTH_KEY+COL_INTERFACE, col.getWidth());
-            col = mTable.getColumn(COL_URL);
-            prefs.putInt(COLWIDTH_KEY+COL_URL, col.getWidth());
-        }
-        catch (Exception ex) { }
-
-        String colpref = "";
-        for (int ix=0; ix<mTable.getColumnCount(); ix++) {
-            col = mTable.getColumnModel().getColumn(ix);
-            String colname = (String)col.getIdentifier();
-            colpref += colname + ",";
-        }
-
-        prefs.put(COLORDER_KEY, colpref);
+        mTableSaver.saveState();
     }
 
     /** Load the window state preferences. */
     private void restoreWindowState() {
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
-        
-        TableColumn col;
-        int val;
-        try {
-            col = mTable.getColumn(COL_INTERFACE);
-            val = prefs.getInt(COLWIDTH_KEY+COL_INTERFACE, col.getPreferredWidth());
-            col.setPreferredWidth(val);
-            col = mTable.getColumn(COL_URL);
-            val = prefs.getInt(COLWIDTH_KEY+COL_URL, col.getPreferredWidth());
-            col.setPreferredWidth(val);
-        }
-        catch (Exception ex) { }
-
-        String colpref = prefs.get(COLORDER_KEY, null);
-        if (colpref != null) {
-            String[] cols = colpref.split(",");
-            for (int ix=0; ix<mTable.getColumnCount(); ) {
-                col = mTable.getColumnModel().getColumn(ix);
-                String colname = (String)col.getIdentifier();
-
-                int destix = -1;
-                for (int jx=0; jx<cols.length; jx++) {
-                    if (cols[jx].equals(colname)) {
-                        destix = jx;
-                        break;
-                    }
-                }
-
-                if (destix >= 0 && destix > ix) {
-                    mTable.moveColumn(ix, destix);
-                }
-                else {
-                    ix++;
-                }
-            }
-        }
+        mTableSaver.restoreState();
     }
 
     /**
