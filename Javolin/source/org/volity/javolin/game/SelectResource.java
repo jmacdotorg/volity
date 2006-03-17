@@ -29,7 +29,6 @@ import org.volity.javolin.JavolinApp;
 public class SelectResource
 {
     public final static String NODENAME = "Resource";
-    public final static String NODENAMELAST = NODENAME+"/LastChosen";
     public final static String NODENAMENAMES = NODENAME+"/ResNames";
 
     /**
@@ -110,17 +109,8 @@ public class SelectResource
     public void select(Callback callback) {
         mCallback = callback;
 
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAMELAST);
-        String urlstr = prefs.get(mResURI.toString(), null);
-        if (urlstr != null) {
-            try {
-                mLastChoice = new URL(urlstr);
-            }
-            catch (MalformedURLException ex) {
-                // Don't know why this would happen
-                new ErrorWrapper(ex);
-            }
-        }
+        GameResourcePrefs gameprefs = JavolinApp.getSoleJavolinApp().getGameResourcePrefs();
+        mLastChoice = gameprefs.getURL(mResURI);
 
         // Queue up the first function.
         SwingUtilities.invokeLater(new Runnable() {
@@ -162,29 +152,30 @@ public class SelectResource
             lastname = prefs.get(mLastChoice.toString(), "Game interface");
         }
 
-        //###
-        ChooseUIDialog box = new ChooseUIDialog(mResourceInfoList,
+        ChooseResourceDialog box = new ChooseResourceDialog(mResourceInfoList,
             mLastChoice, lastname);
         box.show();
 
-        URL url = box.getResult();
-        if (url == null) {
+        if (!box.getSuccess()) {
             // cancelled.
             callbackFail();
             return;
         }
 
-        //### if default, set null
-
-        mURL = url;
+        mURL = box.getResult();
         contCheckChoice();
     }
 
     private void contCheckChoice() {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-        assert (mURL != null);
 
         mLocalUI = null;
+
+        if (mURL == null) {
+            // Defaults it is.
+            callbackSucceed();
+            return;
+        }
 
         UIFileCache cache = JavolinApp.getSoleJavolinApp().getUIFileCache();
         try {
@@ -238,7 +229,7 @@ public class SelectResource
         // Look at the metadata, see if it matches
         List rulesets = metadata.getAll(Metadata.VOLITY_PROVIDES_RESOURCE);
         if (rulesets.size() == 0) {
-            // Old UI, no metadata. Accept it at face value.
+            // Sigh, no metadata. Accept it at face value.
         }
         else {
             boolean match = false;
@@ -316,10 +307,12 @@ public class SelectResource
 
     private void callbackSucceed() {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-        assert(mURL != null && mLocalUI != null);
+        if (mURL != null) {
+            assert(mLocalUI != null);
+        }
 
-        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAMELAST);
-        prefs.put(mResURI.toString(), mURL.toString());
+        GameResourcePrefs gameprefs = JavolinApp.getSoleJavolinApp().getGameResourcePrefs();
+        gameprefs.setURL(mResURI, mURL);
 
         if (mCallback != null)
             mCallback.succeed(mURL, mLocalUI);

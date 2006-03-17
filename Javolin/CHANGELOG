@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+For games that use resources (currently Aquarius), "Select New Resource"
+has been added to the Game menu.
+
 "Select New Interface" is now a menu option under the Game menu. It lets
 you choose a new interface for the game you're playing, either from the 
 bookkeeper list, from a disk file, or by typing in a URL. Also added

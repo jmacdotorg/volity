@@ -8,6 +8,9 @@ import java.util.prefs.Preferences;
 import org.volity.client.protocols.volresp.ResourcePrefs;
 import org.volity.javolin.ErrorWrapper;
 
+/**
+ * Provides access to the game-resource preferences.
+ */
 public class GameResourcePrefs implements ResourcePrefs
 {
     public final static String NODENAME = "GameResourcePrefs";
@@ -15,10 +18,27 @@ public class GameResourcePrefs implements ResourcePrefs
 
     UIFileCache mCache;
 
+    /** Constructor. */
     public GameResourcePrefs(UIFileCache cache) {
         mCache = cache;
     }
 
+    /** 
+     * Set the resource URL for the given resource URI. Pass null to specify
+     * the default as the preference.
+     */
+    public void setURL(URI uri, URL url) {
+        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
+        if (url != null)
+            prefs.put(uri.toString(), url.toString());
+        else
+            prefs.remove(uri.toString());
+    }
+
+    /** 
+     * Get the resource URL for the given resource URI. If the preference is
+     * for the default resource, returns null.
+     */
     public URL getURL(URI uri) {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
         String urlstr = prefs.get(uri.toString(), null);
@@ -34,6 +54,12 @@ public class GameResourcePrefs implements ResourcePrefs
         }
     }
 
+    /**
+     * Get the main file of the preferred resource for the given resource URI.
+     * (This downloads the resource if necessary, and returns a reference to
+     * the local cache.) If the preference is for the default resource, returns
+     * null.
+     */
     public File getResource(URI uri) {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
         String urlstr = prefs.get(uri.toString(), null);

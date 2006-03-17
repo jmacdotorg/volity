@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.List;
 import javax.swing.*;
 import org.volity.client.data.GameInfo;
+import org.volity.client.data.Metadata;
 import org.volity.javolin.game.TableWindow;
 
 /**
@@ -34,6 +35,8 @@ public class JavolinMenuBar extends JMenuBar
 {
     private static List menuBarList = new ArrayList();
 
+    private final static String SELECTRESOURCE_PROP = "SelectResource";
+
     private final static String MENUCMD_ABOUT = "About Javolin...";
     private final static String MENUCMD_PREFERENCES = "Preferences...";
     private final static String MENUCMD_CONNECT = "Connect...";
@@ -47,6 +50,8 @@ public class JavolinMenuBar extends JMenuBar
     private final static String MENUCMD_RESTART_UI = "Restart Interface";
     private final static String MENUCMD_RELOAD_UI = "Reload Interface";
     private final static String MENUCMD_SELECT_UI = "Select New Interface...";
+    private final static String MENUCMD_SELECT_RESOURCE = "Select New Resource...";
+    private final static String MENUCMD_SELECT_RESOURCE_MENU = "Select New Resources";
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
@@ -81,6 +86,8 @@ public class JavolinMenuBar extends JMenuBar
     private JMenuItem mRestartUIMenuItem;
     private JMenuItem mReloadUIMenuItem;
     private JMenuItem mSelectUIMenuItem;
+    private JMenuItem mSelectResourceMenuItem;
+    private JMenu mSelectResourceMenu;
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
     private JMenuItem mGameFinderMenuItem;
@@ -220,6 +227,17 @@ public class JavolinMenuBar extends JMenuBar
             mSelectUIMenuItem.setEnabled(false);
         gameMenu.add(mSelectUIMenuItem);
 
+        if (mTableWindow != null) {
+            mSelectResourceMenuItem = new JMenuItem(MENUCMD_SELECT_RESOURCE);
+            mSelectResourceMenuItem.addActionListener(this);
+            gameMenu.add(mSelectResourceMenuItem);
+
+            mSelectResourceMenu = new JMenu(MENUCMD_SELECT_RESOURCE_MENU);
+            gameMenu.add(mSelectResourceMenu);
+        }
+
+        gameMenu.addSeparator();
+        
         mGameInfoMenuItem = new JMenuItem(MENUCMD_GAME_INFO);
         mGameInfoMenuItem.addActionListener(this);
         setPlatformMnemonic(mGameInfoMenuItem, KeyEvent.VK_I);
@@ -324,6 +342,7 @@ public class JavolinMenuBar extends JMenuBar
         // Update everything to the current app state
         updateMenuItems();
         updateWindowMenu();
+        updateResourceMenu();
     }
 
     /**
@@ -350,6 +369,65 @@ public class JavolinMenuBar extends JMenuBar
         mJoinMucMenuItem.setEnabled(isConnected);
 
         mDebugShowRPCsMenuItem.setState(PrefsDialog.getDebugShowRPCs());
+    }
+
+    /**
+     * Update the "Select Resource" item and submenu.
+     */
+    private void updateResourceMenu() {
+        if (mTableWindow == null)
+            return;
+
+        List resList = null;
+        Metadata metadata = mTableWindow.getMetadata();
+        if (metadata != null)
+            resList = metadata.getAllResources();
+
+        if (resList == null || resList.size() == 0) {
+            mSelectResourceMenuItem.setEnabled(false);
+            mSelectResourceMenuItem.setVisible(true);
+
+            mSelectResourceMenu.removeAll();
+            mSelectResourceMenu.setEnabled(false);
+            mSelectResourceMenu.setVisible(false);
+            return;
+        }
+
+        if (resList.size() == 1) {
+            URI uri = (URI)resList.get(0);
+
+            mSelectResourceMenuItem.setEnabled(true);
+            mSelectResourceMenuItem.setVisible(true);
+            mSelectResourceMenuItem.putClientProperty(SELECTRESOURCE_PROP,
+                uri);
+
+            mSelectResourceMenu.removeAll();
+            mSelectResourceMenu.setEnabled(false);
+            mSelectResourceMenu.setVisible(false);
+            return;
+        }
+
+        mSelectResourceMenuItem.setEnabled(false);
+        mSelectResourceMenuItem.setVisible(false);
+        mSelectResourceMenu.removeAll();
+        mSelectResourceMenu.setEnabled(true);
+        mSelectResourceMenu.setVisible(true);
+
+        for (int ix=0; ix<resList.size(); ix++) {
+            URI uri = (URI)resList.get(ix);
+            String title = "Resource";
+            Metadata submeta = metadata.getResource(uri);
+            if (submeta != null) {
+                String val = submeta.get(Metadata.DC_TITLE);
+                if (val != null && !val.equals(""))
+                    title = val;
+            }
+
+            JMenuItem item = new JMenuItem(title);
+            item.putClientProperty(SELECTRESOURCE_PROP, uri);
+            item.addActionListener(this);
+            mSelectResourceMenu.add(item);
+        }
     }
 
     /**
@@ -490,34 +568,6 @@ public class JavolinMenuBar extends JMenuBar
         else if (source == mJoinTableAtMenuItem) {
             mApplication.doJoinTableAt();
         }
-        else if (source == mGameInfoMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doInfoDialog();
-        }
-        else if (source == mSuspendTableMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doSuspendTable();
-        }
-        else if (source == mRestartUIMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doReloadUI(false);
-        }
-        else if (source == mReloadUIMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doReloadUI(true);
-        }
-        else if (source == mSelectUIMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doSelectNewUI();
-        }
-        else if (source == mInvitePlayerMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doInviteDialog(null);
-        }
-        else if (source == mInviteBotMenuItem) {
-            if (mTableWindow != null)
-                mTableWindow.doInviteBot();
-        }
         else if (source == mJoinMucMenuItem) {
             mApplication.doJoinMuc();
         }
@@ -545,6 +595,38 @@ public class JavolinMenuBar extends JMenuBar
         }
         else if (source == mBugReportMenuItem) {
             sendBugReportURL();
+        }
+
+        if (mTableWindow != null) {
+            if (source == mGameInfoMenuItem) {
+                mTableWindow.doInfoDialog();
+            }
+            else if (source == mSuspendTableMenuItem) {
+                mTableWindow.doSuspendTable();
+            }
+            else if (source == mRestartUIMenuItem) {
+                mTableWindow.doReloadUI(false);
+            }
+            else if (source == mReloadUIMenuItem) {
+                mTableWindow.doReloadUI(true);
+            }
+            else if (source == mSelectUIMenuItem) {
+                mTableWindow.doSelectNewUI();
+            }
+            else if (source == mInvitePlayerMenuItem) {
+                mTableWindow.doInviteDialog(null);
+            }
+            else if (source == mInviteBotMenuItem) {
+                mTableWindow.doInviteBot();
+            }
+        }
+
+        if (source instanceof JComponent) {
+            JComponent jsource = (JComponent)source;
+            URI propuri = (URI)jsource.getClientProperty(SELECTRESOURCE_PROP);
+            if (propuri != null && mTableWindow != null) {
+                mTableWindow.doSelectNewResource(propuri);
+            }
         }
     }
 
@@ -643,4 +725,14 @@ public class JavolinMenuBar extends JMenuBar
         }
     }
 
+    /**
+     * Notify one menu bar that the metadata of its table window has changed.
+     */
+    public static void notifyUpdateResourceMenu(TableWindow win) {
+        for (Iterator it = menuBarList.iterator(); it.hasNext(); ) {
+            JavolinMenuBar bar = (JavolinMenuBar)it.next();
+            if (bar.mTableWindow == win)
+                bar.updateResourceMenu();            
+        }
+    }
 }

@@ -314,14 +314,13 @@ public class SelectUI
             mLastChoice, lastname);
         box.show();
 
-        URL url = box.getResult();
-        if (url == null) {
+        if (!box.getSuccess()) {
             // cancelled.
             callbackFail();
             return;
         }
 
-        mURL = url;
+        mURL = box.getResult();
         contCheckChoice();
     }
 

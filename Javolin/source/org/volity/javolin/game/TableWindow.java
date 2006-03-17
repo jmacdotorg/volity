@@ -238,6 +238,11 @@ public class TableWindow extends JFrame
                                 tryFinishInit();
                             }
                         });
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                JavolinMenuBar.notifyUpdateResourceMenu(TableWindow.this);
+                            }
+                        });
                 }
             };
         mGameViewport.addUpdateManagerListener(mViewportUpdateListener);
@@ -898,6 +903,16 @@ public class TableWindow extends JFrame
     }
 
     /**
+     * Return the metadata object of the UI. (Assuming a UI is available.)
+     */
+    public Metadata getMetadata()
+    {
+        if (mMetadataProvider == null)
+            return null;
+        return mMetadataProvider.getMetadata();
+    }
+
+    /**
      * Gets the game token translator belonging to the table.
      *
      * @return   The TranslateToken belonging to the table.
@@ -1038,6 +1053,35 @@ public class TableWindow extends JFrame
                         return;
                     }
                     doReloadUI(ui, false);
+                }
+                public void fail() {
+                    // cancelled.
+                }
+            });
+    }
+
+    /**
+     * Prompt for and select a new game resource.
+     */
+    public void doSelectNewResource(URI resuri) 
+    {
+        SelectResource select;
+
+        try {
+            select = new SelectResource(resuri);
+        }
+        catch (Exception ex) {
+            mErrorHandler.error(ex);
+            return;
+        }
+
+        select.select(new SelectResource.Callback() {
+                public void succeed(URL ui, File localui) {
+                    if (!isTableOpen()) {
+                        return;
+                    }
+                    // restart interface to display change.
+                    doReloadUI(false);
                 }
                 public void fail() {
                     // cancelled.
@@ -1201,9 +1245,9 @@ public class TableWindow extends JFrame
      */
     public void doInfoDialog() {
         if (mInfoDialog == null) {
-            if (mGameViewport == null || mGameViewport.getUI() == null)
+            Metadata metadata = getMetadata();
+            if (metadata == null || mParlor == null)
                 return;
-            Metadata metadata = mGameViewport.getUI().getMetadata();
             mInfoDialog = new InfoDialog(this, mGameTable,
                 mParlor.getGameInfo(), metadata);
 

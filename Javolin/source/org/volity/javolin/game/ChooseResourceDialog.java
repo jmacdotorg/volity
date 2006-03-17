@@ -17,32 +17,32 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
-import org.volity.client.data.GameUIInfo;
+import org.volity.client.data.ResourceInfo;
 import org.volity.javolin.BaseDialog;
 import org.volity.javolin.JavolinMenuBar;
 import org.volity.javolin.TableColumnSaver;
 import org.volity.javolin.URLChooser;
 
 /**
- * The dialog which lets you select a user interface from the list available.
+ * The dialog which lets you select a game resource from the list available.
  *
  * This is a modal dialog; you call show(), let it do its thing, and get
  * control back when the dialog closes. You then call getSuccess() to see
  * whether the user selected something or cancelled; then getResult() to
  * retrieve the URL that was selected.
  */
-public class ChooseUIDialog extends BaseDialog
+public class ChooseResourceDialog extends BaseDialog
 {
-    private final static String NODENAME = "ChooseUIDialog";
+    private final static String NODENAME = "ChooseResourceDialog";
 
-    private final static String COL_INTERFACE = "Interface";
+    private final static String COL_INTERFACE = "Resource";
     private final static String COL_URL = "URL";
+    private final static String DEFAULT_URLSTR = "-";
 
     private boolean mSuccess = false;
     private URL mResult = null;
 
     private DefaultTableModel mModel;
-    private boolean mEmpty = false;
     private int mLastChoiceIndex = 0;
     private JTable mTable;
 
@@ -54,15 +54,15 @@ public class ChooseUIDialog extends BaseDialog
 
     /**
      * Construct a dialog.
-     * @param uiList a list of GameUIInfo objects, representing UI choices
+     * @param resList a list of ResourceInfo objects, representing choices
      *    that have come from the bookkeeper.
      * @param lastChoice the last URL to be chosen by the player. This may
-     *    or may not be on the uiList.
-     * @param lastName the name of the UI that lastChoice refers to. This
-     *    is needed for display purposes.
+     *    or may not be on the resList.
+     * @param lastName the name of the resource that lastChoice refers to. 
+     *    This is needed for display purposes.
      */
-    public ChooseUIDialog(List uiList, URL lastChoice, String lastName) {
-        super(null, "Select a UI", true, NODENAME);
+    public ChooseResourceDialog(List resList, URL lastChoice, String lastName) {
+        super(null, "Select a Resource", true, NODENAME);
 
         // Construct the model.
 
@@ -73,8 +73,8 @@ public class ChooseUIDialog extends BaseDialog
         boolean redundant = false;
 
         Object[] row = new Object[2];
-        for (int ix=0; ix<uiList.size(); ix++) {
-            GameUIInfo info = (GameUIInfo)uiList.get(ix);
+        for (int ix=0; ix<resList.size(); ix++) {
+            ResourceInfo info = (ResourceInfo)resList.get(ix);
             URL url = info.getLocation();
             row[0] = info.getName();
             row[1] = url;
@@ -92,6 +92,15 @@ public class ChooseUIDialog extends BaseDialog
             mModel.insertRow(0, row);
             mLastChoiceIndex = 0;
         }
+
+        // Throw in the default choice
+        row[0] = "(default resource)";
+        row[1] = DEFAULT_URLSTR;
+        mModel.insertRow(0, row);
+        if (lastChoice == null) 
+            mLastChoiceIndex = 0;
+        else 
+            mLastChoiceIndex += 1;
 
         // Now that the model is done, build the UI.
         buildUI();
@@ -122,7 +131,7 @@ public class ChooseUIDialog extends BaseDialog
                     // Put up a standard file-choosing dialog.
 
                     JFileChooser filer = new JFileChooser();
-                    filer.setDialogTitle("Select Local UI");
+                    filer.setDialogTitle("Select Local Resource");
                     filer.setApproveButtonText("Select");
                     filer.addChoosableFileFilter(new FileFilter() {
                             public boolean accept(File file) {
@@ -136,7 +145,7 @@ public class ChooseUIDialog extends BaseDialog
                                 return false;
                             }
                             public String getDescription() {
-                                return "UI Packages (*.zip, *.svg)";
+                                return "Resource Packages (*.zip, *.svg)";
                             }
                         });
                     int val = filer.showOpenDialog(null);
@@ -206,8 +215,13 @@ public class ChooseUIDialog extends BaseDialog
             return;
 
         Object urlo = mModel.getValueAt(rows[0], 1);
-        if (urlo == null || !(urlo instanceof URL))
-            return;
+        if (urlo != null && DEFAULT_URLSTR.equals(urlo)) {
+            urlo = null;
+        }
+        else {
+            if (urlo == null || !(urlo instanceof URL))
+                return;
+        }
 
         mSuccess = true;
         mResult = (URL)urlo;
@@ -215,7 +229,7 @@ public class ChooseUIDialog extends BaseDialog
     }
 
     /**
-     * Check whether the user selected a UI, or hit Cancel.
+     * Check whether the user selected a resource, or hit Cancel.
      */
     public boolean getSuccess() {
         return mSuccess;
@@ -223,7 +237,7 @@ public class ChooseUIDialog extends BaseDialog
 
     /**
      * Retrieve the URL that was selected. Only call this if getSuccess()
-     * returns true.
+     * returns true. If the user selected "default", this returns null.
      */
     public URL getResult() {
         return mResult;
@@ -255,12 +269,6 @@ public class ChooseUIDialog extends BaseDialog
 
     /** Build the dialog UI. */
     private void buildUI() {
-        if (mModel.getRowCount() == 0) {
-            mEmpty = true;
-            Object[] row = new Object[] { "(no UIs are published for this game)" };
-            mModel.addRow(row);
-        }
-
         Container cPane = getContentPane();
         cPane.setLayout(new GridBagLayout());
         GridBagConstraints c;
@@ -347,14 +355,7 @@ public class ChooseUIDialog extends BaseDialog
         mCancelButton.setPreferredSize(dim);
         mSelectButton.setPreferredSize(dim);
 
-
-        if (mEmpty) {
-            mTable.setRowSelectionAllowed(false);
-            mTable.clearSelection();
-            mSelectButton.setEnabled(false);
-        }
-        else {
-            mTable.setRowSelectionInterval(mLastChoiceIndex, mLastChoiceIndex);
-        }
+        // Can't be empty, because "default" is always an option
+        mTable.setRowSelectionInterval(mLastChoiceIndex, mLastChoiceIndex);
     }
 }
