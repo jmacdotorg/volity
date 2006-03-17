@@ -79,7 +79,6 @@ public class SVGCanvas extends JSVGCanvas
         this.linkHandler = linkHandler;
         this.translator = translator;
         setDocumentState(ALWAYS_DYNAMIC);
-        setURI(uiDocument.toString());
 
         // Used to be important, when forceRedraw did something.
         /*
@@ -89,6 +88,9 @@ public class SVGCanvas extends JSVGCanvas
                 }
             });
         */
+
+        // Load the UI. (We do this after the listener is set up.)
+        setURI(uiDocument.toString());
     }
 
     /**
@@ -148,8 +150,10 @@ public class SVGCanvas extends JSVGCanvas
         if (newDocument != null)
             uiDocument = newDocument;
 
-        if (ui != null)
+        if (ui != null) {
             ui.stop();
+            ui = null;
+        }
         setURI(uiDocument.toString());
     }
 
