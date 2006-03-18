@@ -40,6 +40,7 @@ public class SeatChart
 
     Map mSeatPanels;        // maps String IDs to SeatPanel objects
     SeatPanel mUnseatPanel; // for unseated players
+    SeatPanel mNextSeatPanel; // for sitting in a previously unoccupied seat
 
     /* These values are tracked for audio alerts. They are updated from inside
      * SeatPanel.
@@ -75,10 +76,11 @@ public class SeatChart
         mPanel.setBackground(Color.WHITE);
 
         mUnseatPanel = new SeatPanel(this, null, true);
+        mNextSeatPanel = new SeatPanel(this, ANY_SEAT, false);
         /* Conceivably the GameTable already has a list of Seats, in which case
          * we should do createPanels now. If not, this will be a no-op. */
         createPanels();
-        adjustPanelLayout();
+        checkPanelVisibility(true);
         /* Adjust the seats. We iterate over the SeatPanels we've got, not the
          * Seats in the GameTable. This is to guard against new seats arriving
          * in the middle of the operation. */
@@ -227,16 +229,27 @@ public class SeatChart
      * hidden. If so, call adjustPanelLayout.
      *
      * Call this after any event which might have changed panel visibility.
+     *
+     * If the argument is true, call adjustPanelLayout whether or not any
+     * visibility changed. (This is used after createPanels to do the initial
+     * chart layout.)
      */
-    protected void checkPanelVisibility() {
+    protected void checkPanelVisibility(boolean forceAdjust) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
+        boolean anyhidden = false;
         boolean changes = false;
 
         for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
             Seat seat = (Seat)it.next();
             SeatPanel panel = (SeatPanel)mSeatPanels.get(seat.getID());
+            if (panel == null)
+                continue;
+
             boolean flag = (seat.isRequired() || seat.isOccupied());
+
+            if (!flag)
+                anyhidden = true;
 
             if (flag != panel.mVisible) {
                 panel.mVisible = flag;
@@ -244,9 +257,16 @@ public class SeatChart
             }
         }
 
-        if (changes) {
+        boolean shownext = (anyhidden && !mTable.isRefereeStateActive());
+
+        if (shownext != mNextSeatPanel.mVisible) {
+            mNextSeatPanel.mVisible = shownext;
+            changes = true;
+        }
+
+        if (changes || forceAdjust) {
             /* A seat became visible or invisible, so we have to redo the panel
-             * layout. */
+             * layout. (Or the adjustment was requested by the caller.) */
             adjustPanelLayout();
         }
     }
@@ -280,7 +300,18 @@ public class SeatChart
                 c.weighty = 0;
                 mPanel.add(panel, c);
             }
-        }        
+        }
+
+        if (mNextSeatPanel.mVisible) {
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.NORTH;
+            c.weightx = 1;
+            c.weighty = 0;
+            mPanel.add(mNextSeatPanel, c);
+        }
 
         // The stretchy "observer" panel. (It's stretchy so that the whole
         // bottom part of the seating UI is a valid drag target.)
@@ -421,6 +452,8 @@ public class SeatChart
                         Seat seat = (Seat)it.next();
                         adjustOnePanel(seat);
                     }
+                    // check visibility, because the ANY_SEAT panel may vanish
+                    checkPanelVisibility(false);
                 }
             });
     }
@@ -431,7 +464,7 @@ public class SeatChart
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     createPanels();
-                    adjustPanelLayout();
+                    checkPanelVisibility(true);
                 }
             });
     }
@@ -441,7 +474,7 @@ public class SeatChart
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    checkPanelVisibility();
+                    checkPanelVisibility(false);
                 }
             });
     }
@@ -465,7 +498,7 @@ public class SeatChart
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     adjustOnePanel(player);
-                    checkPanelVisibility();
+                    checkPanelVisibility(false);
                 }
             });
     }
@@ -476,7 +509,7 @@ public class SeatChart
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     adjustOnePanel(player);
-                    checkPanelVisibility();
+                    checkPanelVisibility(false);
                 }
             });
     }
@@ -511,7 +544,7 @@ public class SeatChart
                 public void run() {
                     adjustOnePanel(oldseat);
                     adjustOnePanel(newseat);
-                    checkPanelVisibility();
+                    checkPanelVisibility(false);
                     adjustPlayerColor(player, newseat);
                 }
             });

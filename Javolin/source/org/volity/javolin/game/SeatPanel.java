@@ -66,6 +66,8 @@ public class SeatPanel extends JPanel
     SeatChart mChart;
     String mID;
     boolean mIsObserver;
+    boolean mIsNextSeat;
+    boolean mIsRealSeat;
     boolean mVisible; // friend to SeatChart
     DropTarget mDropTarget;
 
@@ -74,7 +76,8 @@ public class SeatPanel extends JPanel
 
     /**
      * @param chart the SeatChart which owns this panel
-     * @param id the ID string of the seat (or null, for the observer panel)
+     * @param id the ID string of the seat (or null, for the observer panel.
+     *    Or ANY_SEAT, for the next-seat panel.)
      * @param visible the initial visibility flag for this panel
      */
     public SeatPanel(SeatChart chart, String id, boolean visible) {
@@ -83,7 +86,16 @@ public class SeatPanel extends JPanel
         mChart = chart;
         mID = id;
         mIsObserver = (mID == null);
+        mIsNextSeat = (mID == SeatChart.ANY_SEAT);
         mVisible = visible;
+
+        if (mIsNextSeat || mIsObserver) {
+            mID = null;
+            mIsRealSeat = false;
+        }
+        else {
+            mIsRealSeat = true;
+        }
 
         setOpaque(true);
         setBackground(Color.WHITE);
@@ -102,7 +114,9 @@ public class SeatPanel extends JPanel
             mDragBorder = mStandardBorder;
         }
         else {
-            Color color = mChart.getSeatColor(mID);
+            Color color = null;
+            if (mID != null)
+                color = mChart.getSeatColor(mID);
 
             if (color == null) {
                 mBorderColor = new Color(0.5f, 0.5f, 0.5f);
@@ -177,8 +191,11 @@ public class SeatPanel extends JPanel
                         if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
                             ev.acceptDrop(DnDConstants.ACTION_MOVE);
                             JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
+                            String destid = SeatPanel.this.mID;
+                            if (mIsNextSeat)
+                                destid = SeatChart.ANY_SEAT;
                             mChart.requestSeatChange(obj.getJID(),
-                                SeatPanel.this.mID);
+                                destid);
                             ev.dropComplete(true);
                             return;
                         }
@@ -212,7 +229,7 @@ public class SeatPanel extends JPanel
      * label. It then adds all the player name labels, or an "<empty>" label.
      *
      * The observer panel has no title label, and it doesn't get an "<empty>"
-     * label either.
+     * label either. The any-seat panel has a special title and content label.
      */
     public void adjustNames(Iterator iter) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
@@ -220,18 +237,20 @@ public class SeatPanel extends JPanel
         removeAll();
 
         boolean gameIsActive = mChart.mTable.isRefereeStateActive();
-        String mark = (String)(mChart.mTable.getSeatMarks().get(mID));
+        String mark = null;
+        if (mID != null) {
+            mark = (String)(mChart.mTable.getSeatMarks().get(mID));
+        }
         Icon markIcon = getIconForMark(mark);
 
         boolean isSelf = false;
-        Color selfColor = null;
 
         GridBagConstraints c;
         JLabel seatlabel = null;
         JLabel label;
         int row = 0;
 
-        if (!mIsObserver) {
+        if (mIsRealSeat) {
             String id;
             id = mChart.getTranslator().translateSeatID(mID);
             if (id == null)
@@ -287,7 +306,6 @@ public class SeatPanel extends JPanel
 
                 if (player.isSelf()) {
                     isSelf = true;
-                    selfColor = col;
                 }
 
                 label = new JLabelPop(player, 
@@ -317,11 +335,27 @@ public class SeatPanel extends JPanel
             }
         }
 
-        if (count == 0 && !mIsObserver) {
+        if (count == 0 && mIsRealSeat) {
             /* We throw in a blank icon so that the panel has exactly the same
              * size when it's empty as it does with one player. The icon has
              * the height of a player icon, but is only one pixel wide. (It
              * looks better that way, that's why.) */
+            label = new JLabel("<empty>", ICON_BLANK, SwingConstants.CENTER);
+            label.setFont(fontName);
+            label.setForeground(Color.GRAY);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.ipady = 1;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            add(label, c);
+        }
+
+        if (mIsNextSeat) {
+            /* We throw in a blank icon -- see above. */
             label = new JLabel("<empty>", ICON_BLANK, SwingConstants.CENTER);
             label.setFont(fontName);
             label.setForeground(Color.GRAY);
@@ -353,13 +387,9 @@ public class SeatPanel extends JPanel
             add(label, c);
         }
 
-        if (isSelf && seatlabel != null) {
-            seatlabel.setForeground(selfColor);
-        }
-
         // The mark icon (real seat panels only)
 
-        if (!mIsObserver) {
+        if (mIsRealSeat) {
             label = new JLabel(markIcon);
             c = new GridBagConstraints();
             c.gridx = 1;
@@ -374,7 +404,7 @@ public class SeatPanel extends JPanel
 
         // Track where the player is
         if (isSelf) {
-            if (mIsObserver) {
+            if (!mIsRealSeat) {
                 mChart.setSeatAndMark(null, GameTable.MARK_NONE);
             }
             else {

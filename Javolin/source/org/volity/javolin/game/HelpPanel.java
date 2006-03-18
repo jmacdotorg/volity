@@ -139,6 +139,7 @@ public class HelpPanel extends JPanel
         int botseated = 0;
         int reqseats = 0;
         int reqseatsempty = 0;
+        boolean optseatmarker = false;
 
         for (Iterator it = mTable.getPlayers(); it.hasNext(); ) {
             Player player = (Player)it.next();
@@ -164,6 +165,8 @@ public class HelpPanel extends JPanel
                 if (!seat.isOccupied())
                     reqseatsempty++;
             }
+            if (!(seat.isRequired() || seat.isOccupied()))
+                optseatmarker = true;
         }
 
         if (refstate == GameTable.STATE_UNKNOWN) {
@@ -211,8 +214,10 @@ public class HelpPanel extends JPanel
             else
                 text.append("\nAt the moment, you are a bystander. To take part in this game");
             text.append(", press the Seat button");
-            if (reqseats > 0)
+            if (reqseats > 0) 
                 text.append(" or drag your name to one of the seats");
+            else if (optseatmarker) 
+                text.append(" or drag your name to the empty seat");
             text.append(".\n");
         }
         else {
@@ -270,6 +275,8 @@ public class HelpPanel extends JPanel
             text.append(". To place a bot into the game, drag it to the Seat button");
             if (reqseats > 0)
                 text.append(" or to one of the seats");
+            else if (optseatmarker) 
+                text.append(" or to the empty seat");
             text.append(".\n");
         }
 
