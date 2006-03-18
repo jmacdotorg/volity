@@ -135,11 +135,25 @@ automatically takes its place.
 
 =over
 
+=item startup_time
+
+Returns the time (in seconds since the epoch) when this palor started.
+
+=item last_activity_time
+
+Returns the time (in seconds since the epoch) when this referee last
+handled a game.* RPC.
+
+=item games_completed
+
+Returns the number of games that have been begun and ended with this
+referee.
+
 =cut
 
 use base qw(Volity::Jabber);
 # See comment below for what all these fields do.
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed);
 # FIELDS:
 # muc_jid
 #   The JID of this game's MUC.
@@ -173,6 +187,12 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 #  Array of seat objects for this table. (It's an array since order matters.)
 # kill_switch
 #  1 if resuming the game at this point would kill it.
+# startup_time
+#  Unix-time when this ref started.
+# last_activity_time
+#  Unix-time of the most recent game.* call.
+# games_completed
+#  The number of games that have come to an end under this referee.
 
 use warnings;  no warnings qw(deprecated);
 use strict;
@@ -268,6 +288,10 @@ sub initialize {
   $self->{seats} = [];
   $self->build_listed_seats;
 
+  $self->startup_time(time);
+
+  $self->games_completed(0);
+
   return $self;
 
 }
@@ -355,9 +379,40 @@ sub handle_rpc_request {
       if ($ok_to_call) {
 	  $$rpc_info{method} = $method;
 	  $self->handle_game_rpc_request($rpc_info);
+	  $self->last_activity_time(time);
       }
+  } elsif (my ($admin_method) = $$rpc_info{'method'} =~ /^admin\.(.*)$/) {
+      # Check that the sender is allowed to make this call.
+      my ($basic_sender_jid) = $$rpc_info{from} =~ /^(.*)\//;
+      if (grep($_ eq $basic_sender_jid, $self->server->admins)) {
+	  my $local_method = "admin_rpc_$admin_method";
+	  if ($self->can($local_method)) {
+	      $self->$local_method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } else {
+	      $self->send_rpc_fault($$rpc_info{from},
+				    $$rpc_info{id},
+				    603,
+				    "Unknown methodName: '$$rpc_info{method}'",
+				    );
+	  }
+      } else {
+	  $self->logger->warn("$$rpc_info{from} attempted to call $$rpc_info{method}. But I don't recognize that JID as an admin, so I'm rejecting it.");
+	  $self->send_rpc_fault($$rpc_info{from},
+				   $$rpc_info{id},
+				   607,
+				   "You are not allowed to make admin calls on this parlor.",
+				   );
+	  return;
+      }
+
   } else {
       $self->logger->warn("Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
+      $self->send_rpc_fault($$rpc_info{from},
+			    $$rpc_info{id},
+			    603,
+			    "Unknown methodName: '$$rpc_info{method}'",
+			    );
+      
   }
 }
 
@@ -1100,6 +1155,8 @@ sub end_game {
   # Create a fresh new game.
   delete($self->{game});
   $self->create_game;
+
+  $self->games_completed($self->games_completed + 1);
 }
 
 # create_game: internal method that simply creates a new game object
@@ -1714,6 +1771,59 @@ sub handle_disco_info_request {
 	items=>\@items,
 	fields=>\@fields,
     });
+}
+
+##########################
+# Admin RPC stuff
+##########################
+
+# These are all dispatched to from the handle_rpc_request method.
+
+# XXX TODO: seats, seat
+
+sub admin_rpc_status {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    my %status = (
+		  startup_time=>scalar(localtime($self->startup_time)),
+		  last_activity_at=>localtime($self->last_activity_time),
+		  players=>scalar($self->players),
+		  bots=>scalar(@{$self->{active_bots}}),
+		  agentstate=>"online",
+		  state=>$self->current_state,
+		  games_completed=>$self->games_completed,
+		  );
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", \%status]);
+}
+
+sub admin_rpc_players {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    my @jids = map($_->jid, $self->players);
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", \@jids]);
+}
+
+sub admin_rpc_bots {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    my @jids = map($_->jid, map($_->active_bots, $self->referees));
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", \@jids]);
+}
+
+sub admin_rpc_shutdown {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    $self->logger->info("Referee shut down via RPC, by $from_jid.");
+    $self->wall("This referee is shutting down NOW. Goodbye!");
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+    $self->stop;
+}
+
+sub admin_rpc_announce {
+    my $self = shift;
+    my ($from_jid, $rpc_id, $message) = @_;
+    $self->grouphat("Admin message: $message");
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
 }
 
 

@@ -48,16 +48,18 @@ Volity::Server - A Volity game server.
 
 =head1 DESCRIPTION
 
-An object of this class is a Volity game server. As the synopsis
-suggests, it's more or less a black-box application class. Construct
-the object with a configuratory hash reference, call the C<start>
-method, and you'd got a running server, unless you don't.
+An object of this class is a Volity parlor. (It's still called
+Volity::Server due to historical tradition.) As the synopsis suggests,
+it's more or less a black-box application class. Construct the object
+with a configuratory hash reference, call the C<start> method, and if
+XMPP worked out, you've got a running server.
 
-See the C<volityd>. In fact, unless you are creating your own
-Perl-based Volity server front end, you can probably do everything you
-need through C<volityd>, with no need to use this module directly. The
-rest of this documentation is intended for programmers who wish to
-create and use Volity servers in their own Perl projects.
+You generally never need to use this class directly, no matter what
+you're doing with Volity. Parlor objects of this class are created and
+managed for you by the C<volityd> program, so unless you want to get
+into the guts of the Volity system you may be more interested in
+L<volityd>. If you want to make your own Volity games in Perl, I
+direct your attention to L<Volity::Game>.
 
 =cut
 
@@ -107,6 +109,10 @@ The version number of the Volity protocol that this server supports.
 Whether or not this parlor is visble to Volity's game finder. Set to 1
 if it is, or 0 if it should go unlisted.
 
+=item admins
+
+A list of JIDs that are allowed to call this server's admin.* RPCs.
+
 =back
 
 =head1 OTHER METHODS
@@ -122,6 +128,10 @@ Starts the server.
 Stops the server, and furthermore calls C<stop> on all its child
 referee objects, if it has any still hanging around.
 
+=item graceful_stop
+
+Stops the parlor, but doesn't affect any live referees. 
+
 =item referees
 
 Returns a list of all server's currently active referee objects. The
@@ -131,12 +141,21 @@ as they come and go.
 You can set this if you want, but it will probably break things and
 you will be sad.
 
+=item startup_time
+
+Returns the time (in seconds since the epoch) when this palor started.
+
+=item wall ( $message )
+
+Every referee will "speak" $message (with the preamble "Server
+message: ") into its table's groupchat.
+
 =back
 
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version visible);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -167,6 +186,9 @@ sub initialize {
       }
   }
   $self->{referees} = [];
+  $self->startup_time(time);
+  $self->{admins} ||= [];
+  $self->referee_count(0);
   return $self;
 }
 
@@ -229,6 +251,7 @@ sub new_table {
   $ref->server($self);
 
   $self->logger->info("New referee (" . $ref->jid . ") initialized, based on table-creation request from $from_jid.");
+  $self->referee_count($self->referee_count + 1);
 }
 
 # start: run the kernel.
@@ -250,17 +273,40 @@ sub stop {
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
-  # For security's sake, we explicitly accept only a few method names.
-  # In fact, the only one we care about right now is 'new_table'.
+  my $ok = 0;
   if ($$rpc_info{'method'} eq 'volity.new_table') {
       $self->new_table($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+      $ok = 1;
+  } elsif (my ($admin_method) = $$rpc_info{'method'} =~ /^admin\.(.*)$/) {
+      # Check that the sender is allowed to make this call.
+      my ($basic_sender_jid) = $$rpc_info{from} =~ /^(.*)\//;
+      if (grep($_ eq $basic_sender_jid, $self->admins)) {
+	  my $local_method = "admin_rpc_$admin_method";
+	  if ($self->can($local_method)) {
+	      $self->$local_method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	      $ok = 1;
+	  } else {
+	      $ok = 0;
+	  }
+      } else {
+	  $self->logger->warn("$basic_sender_jid (as $$rpc_info{from}) attempted to call $$rpc_info{method}. But I don't recognize that JID as an admin, so I'm rejecting it.");
+	  $self->send_rpc_fault($$rpc_info{from},
+				   $$rpc_info{id},
+				   607,
+				   "You are not allowed to make admin calls on this parlor.",
+				   );
+	  return;
+      }
   } else {
-      $self->logger->WARN("Got weird rpc request $$rpc_info{method} from $$rpc_info{from}.");
-      $self->($$rpc_info{from},
-	      $$rpc_info{id},
-	      603,
-	      "Unknown methodName: '$$rpc_info{method}'",
-	      );
+      $ok = 0;
+  }
+  unless ($ok) {
+      $self->logger->warn("Got weird rpc request $$rpc_info{method} from $$rpc_info{from}.");
+      $self->send_rpc_fault($$rpc_info{from},
+			       $$rpc_info{id},
+			       603,
+			       "Unknown methodName: '$$rpc_info{method}'",
+			       );
   }
 }
 
@@ -275,21 +321,38 @@ sub add_referee {
 sub remove_referee {
   my $self = shift;
   my ($referee) = @_;
-#  $self->referees(grep($_ ne $referee, @{$self->{referees}}));
   my @new_referees;
   for (my $i = 0; $i <= $self->referees - 1; $i++) {
       if ($self->{referees}->[$i] eq $referee) {
 	  splice(@{$self->{referees}}, $i, 1);
+	  # If we're admidst a graceful shutdown, and this was the last
+	  # referee, then we stop too.
+	  $self->graceful_shutdown_check;
 	  return;
       }
   }   
   $self->logger->error("I was asked to remove the referee with jid " . $referee->jid . " but I can't find it!!");
 }
 
+sub graceful_shutdown_check {
+    my $self = shift;
+    if ($self->in_graceful_shutdown and not(scalar(@{$self->{referees}}))) {
+	$self->logger->info("No referees left, and we're in graceful-shutdown mode, so I'm going away now.");
+	exit;
+    }
+}
 
 sub new_referee_resource {
   my $self = shift;
   return $$ . "_" . time;
+}
+
+sub wall {
+    my $self = shift;
+    my ($message) = @_;
+    for my $referee ($self->referees) {
+	$referee->groupchat("Server message: $message");
+    }
 }
 
 ####################
@@ -426,6 +489,88 @@ sub handle_disco_items_request {
 			    );
 	
 	
+}
+
+##########################
+# Admin RPC stuff
+##########################
+
+# These are all dispatched to from the handle_rpc_request method.
+
+sub admin_rpc_status {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    my %status = (
+		  online         => 1,
+		  tables_running => scalar(@{$self->{referees}}),
+		  tables_started => $self->referee_count,
+		  startup_time   => scalar(localtime($self->startup_time)),
+		  );
+    my $latest_time = '0';
+    for my $referee_startup_time (map($_->startup_time, $self->referees)) {
+	$latest_time = $referee_startup_time if $referee_startup_time > $latest_time;
+    }
+    if ($latest_time) {
+	$status{last_new_table} = scalar(localtime($latest_time));
+    }
+		  
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", \%status]);
+}
+
+sub admin_rpc_list_tables {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    my @jids = map($_->jid, $self->referees);
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", \@jids]);
+}
+
+sub admin_rpc_list_bots {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    my @jids = map($_->jid, map($_->active_bots, $self->referees));
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok", \@jids]);
+}
+
+sub admin_rpc_shutdown {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    $self->logger->info("Server shut down via RPC, by $from_jid.");
+    $self->wall("This parlor is shutting down NOW. Goodbye!");
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+    exit;
+}
+
+sub admin_rpc_announce {
+    my $self = shift;
+    my ($from_jid, $rpc_id, $message) = @_;
+    $self->wall($message);
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+}
+
+sub admin_rpc_graceful_shutdown {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    $self->logger->info("Graceful shut down via RPC, by $from_jid.");
+    $self->in_graceful_shutdown(1);
+    $self->graceful_stop;
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+}
+
+sub admin_rpc_restart {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    $self->logger->info("Graceful restart via RPC, by $from_jid.");
+    $self->logger->debug("Making system call to launch new process: $0");
+    $self->in_graceful_shutdown(1);
+    $self->graceful_stop;
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+    if (fork) {
+	# I'm the parent.
+	$self->graceful_shutdown_check;
+    } else {
+	# I'm the child. Restart!
+	exec { $0 } ($0, @ARGV);
+    }
 }
 
 1;
