@@ -1,3 +1,12 @@
+0.5.4
+
+	- volityd now supports config files, as well as
+          Getopt::Long-style command-line options.
+
+	- Added support for admin.* RPCs, and some other methods that
+          they use. For the time being I just copied the admin RPCs that
+	  Andrew Plotkin implemented for his own Python-based Volity libs.
+
 0.5.3
 
 	- Added our own fork of POE::Filter::XML::Node.
