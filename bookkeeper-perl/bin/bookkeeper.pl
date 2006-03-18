@@ -7,107 +7,222 @@ use warnings;
 use strict;
 
 use Volity::Bookkeeper;
-use Getopt::Std;
+use Getopt::Long;
 use Volity::GameRecord;
 use Volity::Info;
 
+use YAML;
+
+Getopt::Long::Configure(qw(no_ignore_case no_auto_abbrev));
+
 my %opts;
-getopts('u:p:h:r:l:o:G:D:U:W:f:', \%opts);
+my %valid_options = (
+		     host=>"h",
+		     username=>"u",
+		     password=>"p",
+		     game=>"g",
+		     jabber_id=>"J",
+		     pidfile=>"f",
+		     log_config=>"l",
+		     port=>"o",
+		     resource=>"r",
+		     config=>"C",
+		     db_username=>"U",
+		     db_password=>"W",
+		     db_datasource=>"D",
+		     gpg=>"G",
+		    );
 
-Volity::Info->set_db('Main', $opts{D}, $opts{U}, $opts{W});
+my @getopt_options = map("$_|$valid_options{$_}=s", keys(%valid_options));
 
-foreach ('user', 'host', 'password', 'resource',) {
-  unless (defined($opts{substr($_, 0, 1)})) {
-    die "You must define a $_, with the " . substr($_, 0, 1) . " switch.\n";
+GetOptions(\%opts,
+	   @getopt_options,
+	   );
+
+# Take care of possible config-file loading.
+if ($opts{config}) {
+    my $from_config;
+    eval {
+	$from_config = YAML::LoadFile($opts{config});
+    };
+    if ($@) {
+	die "No data loaded from the config file path '$opts{config}.'\nYAML error:\n$@\n";
+    }
+    if (ref($from_config) eq "HASH") {
+	for my $option_from_config (keys(%$from_config)) {
+	    if ($valid_options{$option_from_config}) {
+		$opts{$option_from_config} = $$from_config{$option_from_config};
+	    }
+	    else {
+		die "Unrecognized option '$option_from_config' in config file $opts{config}.\n";
+	    }
+	}
+    }
+    else {
+	die "The config file must be a YAML file representation of a simple hash. Please see the volityd manpage for more information.\n";
+    }
+
+}
+	   
+# Check to see if there's a J option, with a full login JID. If so,
+# break it up and stuff the parts into other opts. Collisions are bad,
+# though.
+
+if ($opts{jabber_id}) {
+    if ($opts{username} || $opts{host} || $opts{resource}) {
+	die "If you provide a full login JID with the J flag, then you can't use the u, h, or r flags. Make up your mind and use one style or the other!\n";
+    }
+    ($opts{username}, $opts{host}, $opts{resource}) = $opts{jabber_id} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
+    unless ($opts{username}) {
+	die "I couldn't parse '$opts{jabber_id}' as a valid JID. Sorry!\n";
+    }
+}
+
+# getopts('u:p:h:r:l:o:G:D:U:W:f:', \%opts);
+
+Volity::Info->set_db('Main', $opts{db_datasource}, $opts{db_username}, $opts{db_password});
+
+foreach (qw(username host password)) {
+    unless ($opts{$_}) {
+	die "You must define a $_, either on the command line or in a config file.\n";
   }
 }
 
-foreach ('GPG binary path',) {
-  unless (defined($opts{uc(substr($_, 0, 1))})) {
-    die "You must define a $_, with the " . uc(substr($_, 0, 1)) . " switch.\n";
-  }
-}
-
-if (defined($opts{f})) {
-  open (PID, ">$opts{f}") or die "Can't write a PIDfile to $opts{f}: $!";
+if (defined($opts{pidfile})) {
+  open (PID, ">$opts{pidfile}") or die "Can't write a PIDfile to $opts{pidfile}: $!";
   print PID $$;
-  close PID or die "Can't close PIDfile $opts{f}: $!";
+  close PID or die "Can't close PIDfile $opts{pidfile}: $!";
 }
 
-if (defined($opts{l})) {
-    my $logger_config_filename = $opts{l};
+if (defined($opts{log_config})) {
+    my $logger_config_filename = $opts{log_config};
     Log::Log4perl::init_and_watch($logger_config_filename, 5);
     my $logger = Log::Log4perl->get_logger("Volity");
 }
 
 my $bookkeeper = Volity::Bookkeeper->new(
 				 {
-				  user=>$opts{u},
-				  password=>$opts{p},
-				  port=>$opts{o} || 5222,
-				  host=>$opts{h},
-				  resource=>$opts{r},
+				  user=>$opts{username},
+				  password=>$opts{password},
+				  port=>$opts{port} || 5222,
+				  host=>$opts{host},
+				  resource=>$opts{resource},
 				  alias=>'bookkeeper',
 				}
 				);
 
-$Volity::GameRecord::gpg_bin = $opts{G};
+$Volity::GameRecord::gpg_bin = $opts{gpg};
 
 $bookkeeper->start;
 
 =head1 NAME
 
-bookkeeper.pl -- A simple Volity bookkeeper
+bookkeeper.pl -- A Volity bookkeeper daemon
 
 =head1 DESCRIPTION
 
-This is a simple Volity bookkeeper. Unless you are Jason McIntosh, you
-probably have little reason to run this.
+This program is a Volity bookkeeper, meant to be run as a daemon.
 
-At this time, the only way to configure this program is through
-command-line switches. Yes, this is rather unfortunate. We'll support
-a file-based configuration system, in time.
+=head2 Do I need to use this?
 
-You must pass in SQL database information among the arguments. These will
-be passed directly to the underlying Class::DBI-based system.
+The bookkeeper acts as the nerve center of a Volity network, holding
+meta-information about palors, rulesets, UI files and players, and
+helping players' client software find games to play and people to play
+with. Bookkeepers do not talk to each other; each bookkeeper is its
+own Volity network, separate from any other.
+
+The Volity project runs its own bookkeeper, which is continually
+online with the Jabber ID C<bookkeeper@volity.net/volity>. Anyone can
+register rulesets and parlors with it through the Volity.net website
+<http://volity.net> (though this is currently in closed beta; please
+contact Jason McIntosh <jmac@jmac.org> if you'd like to participate).
+
+Therefore, if you wish to write your own Volity games and add them to
+the volity.net network, I<you don't need to run a bookkeeper>. That
+said, you are welcome to mess around with a local copy anyway for
+testing purposes or whatnot.
+
+=head2 Database setup
+
+This program requires MySQL, though it would probably work with other
+SQL-based databases with minimal hacking of the source or table
+descriptions. You feed the program database connection information at
+launch (see L<"CONFIGURATION">).
+
+The tables it requires are defined by the file mysql_tables.sql, which
+should have been distributed with this program (probably in a
+directory marked C<sql>). You don't need to prime the tables with any
+particular data, though admittedly the bookkeeper is of limited value
+until some data exists there. At this time, there are no easy tools to
+add info to the database, even though volity.net does offer a
+web-based solution to add and modify data to the Volity.net
+bookkeeper.
 
 =head1 CONFIGURATION
 
+You can run bookkeeper.pl with a configuration file, or by supplying a
+list of command-line options at runtime. You can also mix the two
+methods, in which case options you specify on the command line will
+override any of their counterparts in the config file. See L<"Config
+file format"> for more about the config file.
+
+In the following documentation, each option has two names listed: its
+one-letter abbreviation followed by its long name. Either is usable on
+the command line, and So, for example, to set the Jabber ID that your
+bookkeeper should use as C<bkp@example.com>, you can either supply
+B<-J foo@bar.com> or B<--jabber_id=bkp@example.com> on the command
+line, or the line C<jabber_id: foo@example.com> in the config file.
+
 =head2 Required parameters
 
-The program will immediately die (with a specific complaint) if any of
-the following parameters are not defined at runtime.
+The program will immediately die (with a specific complaint) if you
+don't specify enough information on the command line to allow the
+parlor to authenticate with the Jabber server, or connect to the
+database. Use an appropriate combination of the following flags to
+achieve this.
 
 =over
 
-=item h
+=item h host
 
-The hostname of the Jabber server that the game server will use.
+The hostname of the Jabber server that the bookkeeper will use.
 
-=item u
+=item u username
 
-The Jabber username that the game server will use when connecting.
+The Jabber username that the bookkeeper will use whean connecting.
 
-=item p
+=item p password
 
-The password that the game server will use when authenticating with
+The password that the bookkeeper will use when authenticating with
 the Jabber server.
 
-=item D
+=item C config
+
+The path to a volityd config file. See L<"Config file format">.
+
+If you specify any command-line options beyond this one, they will
+override any config options specified in the file.
+
+B<Default>: None, and volityd will look for all options to come from
+the command line.
+
+=item D db_datasource
 
 The DBI resource string to use, such as 'dbi:mysql:volity'.
 
-=item U
+=item U db_username
 
 The database username.
 
-=item W
+=item W db_password
 
 The database password.
 
-=item G
+=item G gpg
 
-A filesystem path leading to a GPG executable.
+I<(Optional)> A filesystem path leading to a GPG executable. Note that
+this is no longer required, since the Volity protocol doesn't
+presently make use of secure signatures.
 
 =back
 
@@ -118,14 +233,14 @@ result in default behavior as described.
 
 =over
 
-=item f
+=item f pidfile
 
-The filesystem pathname of the pidfile to be created when the server
-starts.
+The filesystem pathname of the pidfile to be created when the
+bookkeeper starts.
 
 B<Default>: None, and no pidfile is used.
 
-=item l
+=item l log_config
 
 The filesystem pathname of a L<Log::Log4perl> configuration file,
 which defines the behavior of the volityd logger. The logger works
@@ -136,19 +251,17 @@ Volity modules, set at appropriate priority levels, ranging from
 B<Default>: None, and no logging occurs. Showstopping events will
 still trigger descriptive output to STDERR.
 
-B<Default>: conference.volity.net
-
-=item o
+=item o port
 
 The Jabber server's TCP port.
 
 B<Default>: 5222 (the standard Jabber connection port)
 
-=item r
+=item r resource
 
-The Jabber resource string that the game server will use after
+The Jabber resource string that the bookkeeper will use after
 authenticating. The string 'volity' (the default string) is a good
-choice for 'live' game servers; use something like 'testing'
+choice for 'live' bookkeepers; use something like 'testing'
 otherwise.
 
 B<Default>: 'volity'
@@ -161,11 +274,24 @@ B<Default>: 'volity'
 
 =item *
 
-More docs are needed.
+It's a pain in the neck to put any useful information into the
+database, whether using raw SQL statements or the Volity::Info
+modules. Heck, it's not even documented anywhere what the different
+tables are for.
+
+=back
+
+=head1 SEE ALSO
+
+=over
 
 =item *
 
-The server should be launchable with a pointer to a configuration file, as opposed to a giant list of command-line configuration switches.
+L<Volity>
+
+=item *
+
+L<Volity::Game>
 
 =back
 
