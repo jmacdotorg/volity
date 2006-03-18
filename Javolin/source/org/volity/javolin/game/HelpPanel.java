@@ -185,9 +185,11 @@ public class HelpPanel extends JPanel
         }
         else if (refstate == GameTable.STATE_DISRUPTED) {
             text.append("One of the players has disconnected. Unless he or she returns, you will probably not be able to continue playing. Use the Suspend Table command if you want to invite a person or bot into the empty seat. Or you can abandon this table by closing the window.\n");
+            readytime = false;
         }
         else if (refstate == GameTable.STATE_ABANDONED) {
             text.append("All the human players have abandoned this table. If you wait a few minutes, the referee will suspend the game. At that time, you will be able to take over one of the empty seats.\n");
+            readytime = false;
         }
         else {
             text.append("The game is in progress.\n");

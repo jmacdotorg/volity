@@ -670,7 +670,22 @@ public class GameTable
      */
     public void setRefereeState(int newstate) {
         if (newstate != mRefereeState) {
+            int oldstate = mRefereeState;
             mRefereeState = newstate;
+
+            if (newstate == STATE_SETUP) {
+                for (Iterator it = mSeats.iterator(); it.hasNext(); ) {
+                    Seat seat = (Seat)it.next();
+                    seat.setActive(false);
+                }
+            }
+            if (oldstate == STATE_SETUP) {
+                for (Iterator it = mSeats.iterator(); it.hasNext(); ) {
+                    Seat seat = (Seat)it.next();
+                    seat.setActive(seat.isOccupied() || seat.isRequired());
+                }
+            }
+
             fireStatusListeners_stateChanged(mRefereeState);
         }
     }

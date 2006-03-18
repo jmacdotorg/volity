@@ -218,7 +218,7 @@ public class SeatChart
         for (Iterator it = mTable.getSeats(); it.hasNext(); ) {
             Seat seat = (Seat)it.next();
             String id = seat.getID();
-            boolean flag = (seat.isRequired() || seat.isOccupied());
+            boolean flag = (seat.isRequired() || seat.isOccupied() || seat.isActive());
             SeatPanel panel = new SeatPanel(this, id, flag);
             mSeatPanels.put(id, panel);
         }
@@ -246,7 +246,7 @@ public class SeatChart
             if (panel == null)
                 continue;
 
-            boolean flag = (seat.isRequired() || seat.isOccupied());
+            boolean flag = (seat.isRequired() || seat.isOccupied() || seat.isActive());
 
             if (!flag)
                 anyhidden = true;
@@ -257,7 +257,8 @@ public class SeatChart
             }
         }
 
-        boolean shownext = (anyhidden && !mTable.isRefereeStateActive());
+        boolean shownext = (anyhidden 
+            && mTable.getRefereeState() == GameTable.STATE_SETUP);
 
         if (shownext != mNextSeatPanel.mVisible) {
             mNextSeatPanel.mVisible = shownext;
