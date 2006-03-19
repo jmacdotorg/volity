@@ -11,6 +11,13 @@ use Getopt::Long;
 use Volity::GameRecord;
 
 use YAML;
+use Cwd;
+
+my %volityd_info_for_server_object = (
+				      cwd => cwd(),
+				      argv => [@ARGV],
+				      command => $0,
+				      );
 
 Getopt::Long::Configure(qw(no_ignore_case no_auto_abbrev));
 
@@ -169,11 +176,16 @@ if (defined($opts{log_config})) {
 
 $server->bot_classes(@bot_classes);
 
+foreach (keys(%volityd_info_for_server_object)) {
+    my $method = "volityd_$_";
+    $server->$method($volityd_info_for_server_object{$_});
+}
+
 $server->start;
 
 =head1 NAME
 
-volityd -- A simple Volity game server
+volityd -- A daemon for Volity parlors
 
 =head1 SYNOPSIS
 
@@ -188,12 +200,8 @@ volityd -u mygame -p bigsecret -h volity.net -r testing \
 
 =head1 DESCRIPTION
 
-This is a simple Volity game server. It uses the Volity hierarchy of
-Perl modules to run a game module specified at runtime. 
-
-At this time, the only way to configure this program is through
-command-line switches. Yes, this is rather unfortunate. We'll support
-a file-based configuration system, in time.
+This is a program for running Volity parlors. It uses the Volity
+hierarchy of Perl modules to run a game module specified at runtime.
 
 =head1 CONFIGURATION
 
@@ -206,9 +214,9 @@ format"> for more about the config file.
 In the following documentation, each option has two names listed: its
 one-letter abbreviation followed by its long name. Either is usable on
 the command line, and So, for example, to set the Jabber ID that your
-parlor should use as C<foo@bar.com>, you can either supply B<-J
-foo@bar.com> or B<--jabber_id=foo@bar.com> on the command line, or the
-line C<jabber_id: foo@bar.com> in the config file.
+parlor should use as C<foo@example.com>, you can either supply B<-J
+foo@example.com> or B<--jabber_id=foo@example.com> on the command
+line, or the line C<jabber_id: foo@example.com> in the config file.
 
 =head2 Required parameters
 
@@ -222,15 +230,15 @@ achieve this.
 
 =item h host
 
-The hostname of the Jabber server that the game server will use.
+The hostname of the Jabber server that the parlor will use.
 
 =item u username
 
-The Jabber username that the game server will use when connecting.
+The Jabber username that the parlor will use when connecting.
 
 =item p password
 
-The password that the game server will use when authenticating with
+The password that the parlor will use when authenticating with
 the Jabber server.
 
 If you supply this on the command line, volityd will automatically
@@ -239,7 +247,7 @@ like B<ps>.
 
 =item g game
 
-The full Perl package name of the game module that the game server
+The full Perl package name of the game module that the parlor
 will run. It must be visible to @INC.
 
 =item J jabber_id
@@ -319,9 +327,9 @@ B<Default>: 5222 (the standard Jabber connection port)
 
 =item r resource
 
-The Jabber resource string that the game server will use after
+The Jabber resource string that the parlor will use after
 authenticating. The string 'volity' (the default string) is a good
-choice for 'live' game servers; use something like 'testing'
+choice for 'live' parlors; use something like 'testing'
 otherwise.
 
 B<Default>: 'volity'
@@ -385,7 +393,7 @@ format, see L<YAML> or http://yaml.org .
 The Volity developers site: http://volity.org
 
 For information on creating Volity modules in Perl (which you can then
-make into live Volity game servers through this very program), see the
+make into live Volity parlors through this very program), see the
 Volity Developer's Guide: http://www.volity.org/docs/devguide_perl
 
 =head1 BUGS
