@@ -59,7 +59,7 @@ public class JavolinApp extends JFrame
                CloseableWindow.Custom
 {
     private final static String APPNAME = "Javolin";
-    private final static String APPVERSION = "0.2.8";
+    private final static String APPVERSION = "0.3.0";
 
     private final static String PLAYER_STAT_QUERY_URL
         = "http://volity.net/history/player_detail.html?player_jid=";

@@ -1,7 +1,7 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.3.0
 
 Games that take an arbitrary number of players (Fluxx, etc) now display
 a nameless empty seat panel. (If there are indeed any empty hidden seats.)
