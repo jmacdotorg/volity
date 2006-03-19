@@ -1822,7 +1822,7 @@ sub admin_rpc_shutdown {
 sub admin_rpc_announce {
     my $self = shift;
     my ($from_jid, $rpc_id, $message) = @_;
-    $self->grouphat("Admin message: $message");
+    $self->groupchat("Admin message: $message");
     $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
 }
 
