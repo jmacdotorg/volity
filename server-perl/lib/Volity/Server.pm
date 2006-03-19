@@ -155,7 +155,7 @@ message: ") into its table's groupchat.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown volityd_command volityd_cwd volityd_argv);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -355,6 +355,17 @@ sub wall {
     }
 }
 
+sub graceful_stop {
+    my $self = shift;
+    $self->kernel->post($self->alias, 'shutdown_socket', 0);
+}
+
+sub exec_volityd {
+    my $self = shift;
+    chdir($self->volityd_cwd) or die "Can't chdir to " . $self->volityd_cwd . ": $!";
+    exec { $self->volityd_command } ($self->volityd_command, $self->volityd_argv);
+}
+
 ####################
 # Service Discovery
 ####################
@@ -551,12 +562,21 @@ sub admin_rpc_graceful_shutdown {
     my $self = shift;
     my ($from_jid, $rpc_id) = @_;
     $self->logger->info("Graceful shut down via RPC, by $from_jid.");
-    $self->in_graceful_shutdown(1);
     $self->graceful_stop;
     $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
 }
 
 sub admin_rpc_restart {
+    my $self = shift;
+    my ($from_jid, $rpc_id) = @_;
+    $self->logger->info("Graceful restart via RPC, by $from_jid.");
+    $self->logger->info("Making system call to launch new process: $0");
+    $self->wall("This parlor is shutting down NOW. Goodbye!");
+    $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+    $self->exec_volityd;
+}
+
+sub admin_rpc_graceful_restart {
     my $self = shift;
     my ($from_jid, $rpc_id) = @_;
     $self->logger->info("Graceful restart via RPC, by $from_jid.");
@@ -569,7 +589,7 @@ sub admin_rpc_restart {
 	$self->graceful_shutdown_check;
     } else {
 	# I'm the child. Restart!
-	exec { $0 } ($0, @ARGV);
+	$self->exec_volityd;
     }
 }
 
