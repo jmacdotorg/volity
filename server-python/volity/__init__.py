@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.5.8:
+The referee now sends a message-style invitation if you ask it to invite a
+    JID without a resource string.
+
 - 1.5.7:
 The referee now sends the newer game-record format. Also the newer
     volity.game_activity() RPC.

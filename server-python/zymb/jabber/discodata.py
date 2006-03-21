@@ -381,9 +381,9 @@ class TestDiscoData(unittest.TestCase):
 
     def test_extended(self):
         origls = [
-            ('port', '5222', None),
-            ('ip', 'ipv4', None),
-            ('url', 'http://jabber.org/', 'the url'),
+            ('port', '5222', None, None),
+            ('ip', 'ipv4', None, None),
+            ('url', 'http://jabber.org/', 'the url', None),
         ]
         
         form = dataform.DataForm()
@@ -397,4 +397,3 @@ class TestDiscoData(unittest.TestCase):
         ls = form2.getfields()
 
         self.assertEqual(ls, origls)
-        

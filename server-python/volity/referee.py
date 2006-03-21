@@ -1307,6 +1307,34 @@ class Referee(volent.VolEntity):
         }
         if (msg):
             argmap['message'] = msg
+
+        jid = interface.JID(jidstr)
+        if (not jid.getresource()):
+            # Bare JID; we must send a <message> invitation.
+
+            textmsg = ('[' + unicode(sender.getbare())
+                + ' has invited you to join a game of '
+                + argmap['name'] + ' at table ' + argmap['table'] + '.]')
+            if (msg):
+                textmsg = msg + ' ' + textmsg
+            
+            nod = interface.Node('message', attrs={'to':jidstr} )
+            nod.setchilddata('body', textmsg)
+            form = jabber.dataform.DataForm()
+            form.addfield('FORM_TYPE',
+                'http://volity.org/protocol/form/invite',
+                None, 'hidden')
+            for key in argmap.keys():
+                form.addfield(key, argmap[key])
+            formwrap = interface.Node('volity',
+                namespace='http://volity.org/protocol/form')
+            formwrap.addchild(form.makenode())
+            nod.addchild(formwrap)
+            self.conn.send(nod)
+            # There is no feedback to a message; just return success.
+            return
+
+        # JID with resource; we must send an RPC invitation.
         
         # Set up a Deferred handler which will be invoked when the invitation
         # completes.

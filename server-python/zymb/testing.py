@@ -21,6 +21,7 @@ import jabber.interface
 import jabber.rpcdata
 import jabber.rpc
 import jabber.discodata
+import jabber.dataform
 import xml.parsers.expat
 
 class AgentHandler(logging.Handler):
@@ -968,6 +969,7 @@ testlist = [
     ('rpcdata', jabber.rpcdata.TestRpcData),
     ('rpc', jabber.rpc.TestRpc),
     ('discodata', jabber.discodata.TestDiscoData),
+    ('dataform', jabber.dataform.TestDataForm),
 ]
 
 def run(arglist=[]):

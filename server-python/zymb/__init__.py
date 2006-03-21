@@ -30,6 +30,11 @@ simple tasks.
 
 * Version history:
 
+- 1.3.2:
+The dataform module has been upgraded to handle field types. Unfortunately
+    this changes the result format of DataForm.getfields(). Hopefully this
+    won't break anybody's code.
+
 - 1.3.1:
 The priority queue system, which is supposed to ensure that the consequences
     of a Jabber message play out completely before the next message is

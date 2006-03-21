@@ -2,6 +2,7 @@
 JEP-0004.)
 """
 
+import unittest
 import interface
 
 class DataForm:
@@ -15,7 +16,8 @@ class DataForm:
 
     Public methods:
 
-    addfield(var, val, label=None) -- add a field to the form (or modify one).
+    addfield(var, val, label=None, typ=None) -- add a field to the form (or
+        modify one).
     getfields() -- get the list of fields.
     makenode() -- convert the form to a Node tree.
     """
@@ -23,17 +25,18 @@ class DataForm:
     def __init__(self):
         self.fields = []
 
-    def addfield(self, var, val, label=None):
-        """addfield(var, val, label=None) -> None
+    def addfield(self, var, val, label=None, typ=None):
+        """addfield(var, val, label=None, typ=None) -> None
 
         Add a field to the form. The *var* is the variable name; the *val*
-        is the field value; *label* is the optional field label.
+        is the field value. The *label* is the optional field label, and
+        the *typ* is the optional field type.
 
         If a field with the given *var* exists in the form, this field
         replaces it. Otherwise, a new field is added at the end of the list.
         """
         
-        fld = (var, val, label)
+        fld = (var, val, label, typ)
         ls = [ ix for ix in range(len(self.fields))
             if self.fields[ix][0] == var ]
 
@@ -46,8 +49,8 @@ class DataForm:
     def getfields(self):
         """getfields() -> list
 
-        Get the list of fields. The result is a list of (var, val, label)
-        tuples (where *label* may be None).
+        Get the list of fields. The result is a list of (var, val, label, type)
+        tuples (where *label* and *type* may be None).
         """
         
         return self.fields
@@ -63,10 +66,12 @@ class DataForm:
         formnod = interface.Node('x', dic)
         formnod.setnamespace(interface.NS_DATA)
 
-        for (var, val, label) in self.fields:
+        for (var, val, label, typ) in self.fields:
             dic = { 'var':var }
             if (label):
                 dic['label'] = label
+            if (typ):
+                dic['type'] = typ
             nod = interface.Node('field', dic)
             nod.setchilddata('value', val)
             formnod.addchild(nod)
@@ -109,4 +114,36 @@ def parse(nod):
         form.addfield(var, val, label)
 
     return form
-    
+
+# ------------------- unit tests -------------------
+
+class TestDataForm(unittest.TestCase):
+    """Unit tests for the dataform module.
+    """
+
+    def test_forms(self):
+        form = DataForm()
+        form.addfield('a1', 'a1val')
+        form.addfield('a2', 'a2val')
+        xmlequiv = ('<x xmlns="jabber:x:data" type="result">'
+            + '<field var="a1"><value>a1val</value></field>'
+            + '<field var="a2"><value>a2val</value></field>'
+            + '</x>')
+        self.assertEqual(str(form.makenode()), xmlequiv)
+
+        form.addfield('FORM_TYPE', 'wazoo', None, 'hidden')
+        xmlequiv = ('<x xmlns="jabber:x:data" type="result">'
+            + '<field var="a1"><value>a1val</value></field>'
+            + '<field var="a2"><value>a2val</value></field>'
+            + '<field var="FORM_TYPE" type="hidden"><value>wazoo</value></field>'
+            + '</x>')
+        self.assertEqual(str(form.makenode()), xmlequiv)
+
+        form.addfield('b3', 'b3val', 'the label')
+        xmlequiv = ('<x xmlns="jabber:x:data" type="result">'
+            + '<field var="a1"><value>a1val</value></field>'
+            + '<field var="a2"><value>a2val</value></field>'
+            + '<field var="FORM_TYPE" type="hidden"><value>wazoo</value></field>'
+            + '<field var="b3" label="the label"><value>b3val</value></field>'
+            + '</x>')
+        self.assertEqual(str(form.makenode()), xmlequiv)
