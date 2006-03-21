@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+The roster context menu is now consistent with the other popup menus. (The
+code has been moved out to a RosterContextMenu class.)
+
 You can drag any user into a table's seating panel; this pops up an invitation
 dialog. (Unless he's already sitting at the table, in which case it counts
 as a reseating request instead. This is surprising in some strange cases, but

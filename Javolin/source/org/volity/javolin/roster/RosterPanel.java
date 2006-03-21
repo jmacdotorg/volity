@@ -42,7 +42,8 @@ import org.volity.javolin.PrefsDialog;
 /**
  * JPanel subclass which contains the roster list and related controls.
  */
-public class RosterPanel extends JPanel implements RosterListener, TreeSelectionListener
+public class RosterPanel extends JPanel
+    implements RosterListener, TreeSelectionListener
 {
     static DragSource dragSource = DragSource.getDefaultDragSource();
 
@@ -50,6 +51,7 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
     private DefaultTreeModel mTreeModel;
     private List mRosterPanelListeners;
     private Roster mRoster;
+    private RosterContextMenu mPopupMenu;
 
     private ChangeListener mPrefsChangeListener;
 
@@ -146,23 +148,6 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         while (iter.hasNext())
         {
             ((RosterPanelListener)iter.next()).itemDoubleClicked(e);
-        }
-    }
-
-    /**
-     * Notifies all listeners that have registered interest for notification on this
-     * event type.
-     *
-     * @param e  The RosterPanelEvent to be fired; generated when the roster is right-
-     * clicked.
-     */
-    private void fireRosterPanelContextMenuInvoke(RosterPanelEvent e)
-    {
-        Iterator iter = mRosterPanelListeners.iterator();
-
-        while (iter.hasNext())
-        {
-            ((RosterPanelListener)iter.next()).contextMenuInvoked(e);
         }
     }
 
@@ -412,6 +397,12 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
         return false;
     }
 
+    /** Return the RosterEntry for a given user. */
+    public RosterEntry getRosterEntry(String user)
+    {
+        return mRoster.getEntry(user);
+    }
+
     /**
      * Add a user to the roster. If nickname is null, the nickname is parsed
      * from the JID name.
@@ -532,6 +523,8 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             mTree, 
             DnDConstants.ACTION_COPY, 
             new DragSourceThing());
+
+        mPopupMenu = new RosterContextMenu(this);
     }
 
     private class DragSourceThing 
@@ -579,7 +572,12 @@ public class RosterPanel extends JPanel implements RosterListener, TreeSelection
             selectedItem = getSelectedRosterItem();
         }
 
-        fireRosterPanelContextMenuInvoke(
-            new RosterPanelEvent(this, selectedItem, e.getX(), e.getY()));
+        if (selectedItem != null)
+        {
+            String jid = selectedItem.getId();
+            RosterPacket.ItemType subtype = selectedItem.getSubType();
+            boolean avail = selectedItem.isAvailable();
+            mPopupMenu.adjustShow(jid, subtype, avail, e.getX(), e.getY());
+        }
     }
 }

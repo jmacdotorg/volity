@@ -36,11 +36,4 @@ public interface RosterPanelListener
      * @param e  The event that characterizes the action.
      */
     public void itemDoubleClicked(RosterPanelEvent e);
-
-    /**
-     * Called when the user invokes the context menu on the roster.
-     *
-     * @param e  The event that characterizes the action.
-     */
-    public void contextMenuInvoked(RosterPanelEvent e);
 }

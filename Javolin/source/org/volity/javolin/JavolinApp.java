@@ -94,12 +94,6 @@ public class JavolinApp extends JFrame
     private JButton mDelUserBut;
     private JButton mChatBut;
 
-    private JPopupMenu mRosterContextMenu;
-    private JMenuItem mChatContextItem;
-    private JMenuItem mStatsContextItem;
-    private JMenuItem mAddUserContextItem;
-    private JMenuItem mDelUserContextItem;
-
     private RosterPanel mRosterPanel;
     private JLabel mConnectedLabel;
 
@@ -430,23 +424,17 @@ public class JavolinApp extends JFrame
         if (source == null)
             return;
  
-        if ((source == mAddUserBut) || (source == mAddUserContextItem))
+        if (source == mAddUserBut)
         {
             doAddUserBut();
         }
-        else if ((source == mDelUserBut) || (source == mDelUserContextItem))
+        else if (source == mDelUserBut)
         {
             doDeleteUserBut();
         }
-        else if ((source == mChatBut) || (source == mChatContextItem))
+        else if (source == mChatBut)
         {
             doChatBut();
-        }
-        else if (source == mStatsContextItem)
-        {
-            RosterTreeItem selItem = mRosterPanel.getSelectedRosterItem();
-            if (selItem != null)
-                showUserGameStats(selItem.getId());
         }
     }
 
@@ -1090,17 +1078,32 @@ public class JavolinApp extends JFrame
             return;
         }
 
-        // The user name string in the message box will be "Joe Blow (joe@volity.net)" or
-        // "joe@volity.net" depending on whether the user has a nickname
-        String userStr = selUser.getId();
+        doDeleteUser(selUser.getId());
+    }
 
-        if (!selUser.getNickname().equals(""))
+    /**
+     * Request to delete the given user. Prompt for confirmation.
+     */
+    public void doDeleteUser(String userStr) 
+    {
+        RosterEntry entry = mRosterPanel.getRosterEntry(userStr);
+        if (entry == null)
+            return;
+
+        String nickname = entry.getName();
+
+        // The user name string in the message box will be "Joe Blow
+        // (joe@volity.net)" or "joe@volity.net" depending on whether the user
+        // has a nickname
+
+        String showStr = userStr;
+        if (nickname != null && !nickname.equals(""))
         {
-            userStr = selUser.getNickname() + " (" + userStr + ")";
+            showStr = nickname + " (" + userStr + ")";
         }
 
         // Show confrimation dialog
-        String message = "Delete " + userStr + " from your roster?";
+        String message = "Delete " + showStr + " from your roster?";
 
         int result = JOptionPane.showConfirmDialog(this, message,
             JavolinApp.getAppName() + ": Confirm Delete User", JOptionPane.YES_NO_OPTION);
@@ -1109,7 +1112,6 @@ public class JavolinApp extends JFrame
         if (result == JOptionPane.YES_OPTION)
         {
             Roster theRoster = mConnection.getRoster();
-            RosterEntry entry = theRoster.getEntry(selUser.getId());
 
             if (entry != null)
             {
@@ -1333,29 +1335,6 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * RosterPanelListener interface method implementation. Shows the appropriate context
-     * menu.
-     *
-     * @param e  The event received.
-     */
-    public void contextMenuInvoked(RosterPanelEvent e)
-    {
-        // Don't show menu if menu is already visible
-        if (mRosterContextMenu.isVisible())
-        {
-            return;
-        }
-
-        RosterTreeItem item = e.getRosterTreeItem();
-
-        // Enable/disable appropriate items
-        mChatContextItem.setEnabled((item != null) && item.isAvailable());
-        mDelUserContextItem.setEnabled(item != null);
-
-        mRosterContextMenu.show(mRosterPanel, e.getX(), e.getY());
-    }
-
-    /**
      * Handles incoming chat messages.
      */
     public void receiveMessage(Message message)
@@ -1461,39 +1440,6 @@ public class JavolinApp extends JFrame
         public void run(File file);
     }
 
-
-    /**
-     * Creates the contextual menu for the roster.
-     *
-     * @return   The menu to display when the user right-clicks the roster.
-     */
-    private JPopupMenu createRosterContextMenu()
-    {
-        JPopupMenu retVal = new JPopupMenu();
-
-        mChatContextItem = new JMenuItem("Chat");
-        mChatContextItem.addActionListener(this);
-        retVal.add(mChatContextItem);
-
-        mStatsContextItem = new JMenuItem("Game Stats");
-        mStatsContextItem.addActionListener(this);
-        retVal.add(mStatsContextItem);
-        if (!PlatformWrapper.launchURLAvailable())
-            mStatsContextItem.setEnabled(false);
-
-        retVal.addSeparator();
-
-        mAddUserContextItem = new JMenuItem("Add User...");
-        mAddUserContextItem.addActionListener(this);
-        retVal.add(mAddUserContextItem);
-
-        mDelUserContextItem = new JMenuItem("Delete User");
-        mDelUserContextItem.addActionListener(this);
-        retVal.add(mDelUserContextItem);
-
-        return retVal;
-    }
-
     /**
      * Populates the frame with UI controls.
      */
@@ -1539,8 +1485,5 @@ public class JavolinApp extends JFrame
 
         // Create menu bar
         JavolinMenuBar.applyPlatformMenuBar(this);
-
-        // Create contextual menu for roster
-        mRosterContextMenu = createRosterContextMenu();
     }
 }
