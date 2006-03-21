@@ -72,11 +72,13 @@ public class JavolinApp extends JFrame
     private final static String ADDUSER_LABEL = "Add";
     private final static String DELETEUSER_LABEL = "Delete";
     private final static String CHAT_LABEL = "Chat";
+    private final static String STATS_LABEL = "Stats";
     private final static ImageIcon CONNECTED_ICON;
     private final static ImageIcon DISCONNECTED_ICON;
     private final static ImageIcon ADDUSER_ICON;
     private final static ImageIcon DELETEUSER_ICON;
     private final static ImageIcon CHAT_ICON;
+    private final static ImageIcon STATS_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache(PlatformWrapper.isRunningOnMac());
@@ -93,6 +95,7 @@ public class JavolinApp extends JFrame
     private JButton mAddUserBut;
     private JButton mDelUserBut;
     private JButton mChatBut;
+    private JButton mStatsBut;
 
     private RosterPanel mRosterPanel;
     private JLabel mConnectedLabel;
@@ -121,6 +124,7 @@ public class JavolinApp extends JFrame
         DELETEUSER_ICON = 
             new ImageIcon(JavolinApp.class.getResource("DeleteUser_ButIcon.png"));
         CHAT_ICON = new ImageIcon(JavolinApp.class.getResource("Chat_ButIcon.png"));
+        STATS_ICON = new ImageIcon(JavolinApp.class.getResource("Stats_ButIcon.png"));
     }
 
     /**
@@ -435,6 +439,12 @@ public class JavolinApp extends JFrame
         else if (source == mChatBut)
         {
             doChatBut();
+        }
+        else if (source == mStatsBut)
+        {
+            RosterTreeItem selItem = mRosterPanel.getSelectedRosterItem();
+            if (selItem != null)
+                showUserGameStats(selItem.getId());
         }
     }
 
@@ -1169,6 +1179,7 @@ public class JavolinApp extends JFrame
         mAddUserBut.setEnabled(isConnected());
         mDelUserBut.setEnabled(selectedUser != null);
         mChatBut.setEnabled((selectedUser != null) && selectedUser.isAvailable());
+        mStatsBut.setEnabled(selectedUser != null);
     }
 
     /**
@@ -1467,6 +1478,11 @@ public class JavolinApp extends JFrame
         mChatBut.setToolTipText("Chat with user");
         mChatBut.addActionListener(this);
         toolbar.add(mChatBut);
+
+        mStatsBut = new JButton(STATS_LABEL, STATS_ICON);
+        mStatsBut.setToolTipText("Game stats of user");
+        mStatsBut.addActionListener(this);
+        toolbar.add(mStatsBut);
 
         // Create roster panel
         mRosterPanel = new RosterPanel();

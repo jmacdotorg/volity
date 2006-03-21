@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Added a "Stats" button in the roster window titlebar.
+
 The roster context menu is now consistent with the other popup menus. (The
 code has been moved out to a RosterContextMenu class.)
 

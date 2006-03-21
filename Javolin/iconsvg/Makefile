@@ -24,6 +24,9 @@ HelpIcon.png: help-icon.svg
 HelpIconPress.png: help-press-icon.svg
 	$(SVGTOPNG) help-press-icon.svg -a 0,0,100,100 -w 32 -h 32 -d HelpIconPress.png
 
+Stats_ButIcon.png: stats-button.svg
+	$(SVGTOPNG) stats-button.svg -a 0,0,100,100 -w 16 -h 16 -d Stats_ButIcon.png
+
 Ready_ButIcon.png: ready-button.svg
 	$(SVGTOPNG) ready-button.svg -a 0,0,100,100 -w 20 -h 20 -d Ready_ButIcon.png
 
