@@ -24,18 +24,27 @@ public class SendInvitationDialog extends BaseDialog
 {
     private final static String NODENAME = "SendInvitationDialog";
     private final static String USERID_KEY = "UserID";
+    private final static String FULLID_KEY = "FullID";
 
     private TableWindow mOwner;
     private GameTable mGameTable;
 
+    private String mFullJID = null;
     private JTextField mUserIdField;
     private JTextArea mMessageField;
     private JButton mCancelButton;
     private JButton mInviteButton;
 
     /**
-     * The recipient may be the (bare) JID of someone to invite. The dialog
-     * will appear with that JID in the "to" field.
+     * The recipient may be the (bare or full) JID of someone to invite. The
+     * dialog will appear with that JID in the "to" field.
+     *
+     * The handling is stranger than you might imagine, because we want to
+     * route invitations to full JIDs if at all possible, but we don't want to
+     * *display* the full JID. So we keep the resource string hidden.
+     * Furthermore, if the user changes the (bare) JID, we don't want to use
+     * the same hidden resource string. So we also keep a hidden note of what
+     * the JID was that the resource was attached to. Clear?
      *
      * If recipient is null, the dialog will appear showing the last person you
      * invited (on the theory that you play with that person a lot).
@@ -51,15 +60,29 @@ public class SendInvitationDialog extends BaseDialog
         setResizable(false);
         pack();
 
-        mUserIdField.setTransferHandler(new JIDFieldTransferHandler());
+        JIDFieldTransferHandler.Acceptor acceptor = new JIDFieldTransferHandler.Acceptor() {
+                public void accept(String jid) {
+                    if (JIDUtils.hasResource(jid)) {
+                        mFullJID = jid;
+                        jid = StringUtils.parseBareAddress(jid);
+                    }
+                    else {
+                        mFullJID = null;
+                    }
+                    mUserIdField.setText(jid);
+                }
+            };
+        mUserIdField.setTransferHandler(new JIDFieldTransferHandler(acceptor));
 
         // Restore saved window position
         mSizePosSaver.restoreSizeAndPosition();
 
         // Restore default field values
         restoreFieldValues();
-        if (recipient != null)
-            mUserIdField.setText(recipient);
+
+        if (recipient != null) {
+            acceptor.accept(recipient);
+        }
 
         mCancelButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
@@ -73,6 +96,13 @@ public class SendInvitationDialog extends BaseDialog
                     if (jid == null) {
                         mUserIdField.requestFocusInWindow();
                         return;
+                    }
+
+                    // Is this a bare version of our original hidden JID?
+                    if (!JIDUtils.hasResource(jid)
+                        && mFullJID != null
+                        && JIDUtils.bareMatch(jid, mFullJID)) {
+                        jid = mFullJID;
                     }
 
                     String msg = mMessageField.getText().trim();
@@ -99,9 +129,8 @@ public class SendInvitationDialog extends BaseDialog
      * caller knows what resource he wants. If it's a bare JID, we have to do
      * more work.
      *
-     * First, we check the roster. If there's no subscription, the only choice
-     * is to add one. We can't do the invite until the subscription is
-     * confirmed; so, display a message and exit.
+     * First, we check the roster. If there's no subscription, we send out the
+     * invitation with the bare JID. The referee will have to do its best.
      *
      * If we're subscribed to the JID's presence, then we know what resource to
      * use. (Or we know there is no logged-on resource which is a Volity
@@ -111,7 +140,7 @@ public class SendInvitationDialog extends BaseDialog
      * are "quiet".
      */
     protected void doInvitePlayer(String jid, String msg) {
-        final JavolinApp app = JavolinApp.getSoleJavolinApp();
+        JavolinApp app = JavolinApp.getSoleJavolinApp();
         if (app == null)
             return;
 
@@ -131,113 +160,123 @@ public class SendInvitationDialog extends BaseDialog
                 return;
             }
 
-            if (!rpanel.isUserOnRoster(jid)) {
-                int res = JOptionPane.showConfirmDialog(this,
-                    "You may only invite players on your roster.\n"
-                    +"Do you want to add the user " + jid + "?\n",
-                    app.getAppName() + ": Add To Roster",
-                    JOptionPane.OK_CANCEL_OPTION);
-                if (res == JOptionPane.CANCEL_OPTION)
-                    return;
-
-                try {
-                    rpanel.addUserToRoster(jid, null);
-                }
-                catch (Exception ex) {
-                    new ErrorWrapper(ex);
+            if (rpanel.isUserOnRoster(jid)) {
+                List resources = rpanel.listVolityClientResources(jid);
+            
+                if (resources == null) {
+                    // Logged off
                     JOptionPane.showMessageDialog(this, 
-                        "Unable to add to roster:\n" + ex.toString(),
+                        "The user " + jid + "\n"
+                        +"is not presently available on Jabber.",
                         app.getAppName() + ": Error",
                         JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                JOptionPane.showMessageDialog(this, 
-                    "When " + jid + " accepts the subscription,\n"
-                    +"you will be able to invite him or her.",
-                    app.getAppName() + ": Error",
-                    JOptionPane.INFORMATION_MESSAGE);
-                dispose();
-                return;                
-            }
+                if (resources.size() == 0) {
+                    // Logged on, but not with a Volity client.
+                    String[] options = { "Begin Chat", "Cancel" };
+                    int res = JOptionPane.showOptionDialog(this,
+                        "The user " + jid + "\n"
+                        +"is available, but is not using a Volity client.",
+                        app.getAppName() + ": Error",
+                        JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options, options[0]);
 
-            List resources = rpanel.listVolityClientResources(jid);
-            
-            if (resources == null) {
-                // Logged off
-                JOptionPane.showMessageDialog(this, 
-                    "The user " + jid + "\n"
-                    +"is not presently available on Jabber.",
-                    app.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+                    if (res == 0) {
+                        dispose();
+                        app.chatWithUser(jid);
+                    }
 
-            if (resources.size() == 0) {
-                // Logged on, but not with a Volity client.
-                String[] options = { "Begin Chat", "Cancel" };
-                int res = JOptionPane.showOptionDialog(this,
-                    "The user " + jid + "\n"
-                    +"is available, but is not using a Volity client.",
-                    app.getAppName() + ": Error",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options, options[0]);
-
-                if (res == 0) {
-                    dispose();
-                    app.chatWithUser(jid);
+                    return;
                 }
 
-                return;
-            }
+                // We've got a JID.
+                jid = (String)resources.remove(0);
 
-            // We've got a JID.
-            jid = (String)resources.remove(0);
-
-            if (resources.size() > 0) {
-                /*
-                 * Whoops, we've got more than one JID. What to do with the
-                 * remaining ones? We want to send out extra invitations, but
-                 * we don't want them to throw up error dialogs or affect the
-                 * SendInvite box. So we hand them off to a TableWindow API.
-                 */
-                mOwner.sendQuietInvites(resources, msg);
+                if (resources.size() > 0) {
+                    /*
+                     * Whoops, we've got more than one JID. What to do with the
+                     * remaining ones? We want to send out extra invitations,
+                     * but we don't want them to throw up error dialogs or
+                     * affect the SendInvite box. So we hand them off to a
+                     * TableWindow API.
+                     */
+                    mOwner.sendQuietInvites(resources, msg);
+                }
             }
         }
 
-        RPCBackground.Callback callback = new RPCBackground.Callback() {
-                public void run(Object result, Exception err, Object rock) {
-                    if (err == null) {
-                        // success; close dialog
-                        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                        dispose();
-                    }
-                    else if (err instanceof TokenFailure) {
-                        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                        TokenFailure ex = (TokenFailure)err;
-                        String errtext = mOwner.getTranslator().translate(ex);
-                        JOptionPane.showMessageDialog(
-                            SendInvitationDialog.this,
-                            "Unable to send invitation:\n" + errtext,
-                            app.getAppName() + ": Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                    else {
-                        new ErrorWrapper(err);
-                        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                        
-                        JOptionPane.showMessageDialog(
-                            SendInvitationDialog.this, 
-                            "Unable to send invitation:\n" + err.toString(),
-                            app.getAppName() + ": Error",
-                            JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-            };
+        // We now have a JID, which should be full but may not be.
 
+        RPCBackground.Callback callback = new Callback(jid, msg, true);
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         mGameTable.getReferee().invitePlayer(jid, msg, callback, null);
+    }
+
+    private class Callback implements RPCBackground.Callback {
+        String jid;
+        String msg;
+        boolean firsttime;
+
+        public Callback(String jid, String msg, boolean firsttime) {
+            this.jid = jid;
+            this.msg = msg;
+            this.firsttime = firsttime;
+        }
+
+        public void run(Object result, Exception err, Object rock) {
+            JavolinApp app = JavolinApp.getSoleJavolinApp();
+
+            /*
+             * We might want to retry with the resource string trimmed off.
+             * Sorry about the slant code.
+             */
+            if (err != null && err instanceof TokenFailure) {
+                TokenFailure tok = (TokenFailure)err;
+                String watcherr = "volity.relay_failed";
+                List ls = tok.getTokens();
+                if (firsttime 
+                    && ls.size() > 0 && watcherr.equals(ls.get(0))) {
+                    String barejid = StringUtils.parseBareAddress(jid);
+                    if (!jid.equals(barejid)) {
+                        RPCBackground.Callback callback = new Callback(jid, msg, false);
+                        mGameTable.getReferee().invitePlayer(barejid,
+                            msg, callback, null);
+                        return;
+                    }
+                }
+            }
+
+            // No retry. Just report the problem or close the dialog.
+
+            if (err == null) {
+                // success; close dialog
+                setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                dispose();
+            }
+            else if (err instanceof TokenFailure) {
+                setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                TokenFailure ex = (TokenFailure)err;
+                String errtext = mOwner.getTranslator().translate(ex);
+                JOptionPane.showMessageDialog(
+                    SendInvitationDialog.this,
+                    "Unable to send invitation:\n" + errtext,
+                    app.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            else {
+                new ErrorWrapper(err);
+                setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        
+                JOptionPane.showMessageDialog(
+                    SendInvitationDialog.this, 
+                    "Unable to send invitation:\n" + err.toString(),
+                    app.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     /**
@@ -247,7 +286,18 @@ public class SendInvitationDialog extends BaseDialog
     {
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
-        prefs.put(USERID_KEY, mUserIdField.getText());
+        String jid = mUserIdField.getText().trim();
+
+        if (JIDUtils.hasResource(jid))
+            mFullJID = jid;
+        else if (!JIDUtils.bareMatch(jid, mFullJID))
+            mFullJID = null;
+
+        prefs.put(USERID_KEY, jid);
+        if (mFullJID == null)
+            prefs.remove(FULLID_KEY);
+        else
+            prefs.put(FULLID_KEY, mFullJID);
     }
 
     /**
@@ -259,14 +309,30 @@ public class SendInvitationDialog extends BaseDialog
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
 
         mUserIdField.setText(prefs.get(USERID_KEY, ""));
+        mFullJID = prefs.get(FULLID_KEY, null);
     }
 
     /**
      * This class handles dropping JIDs (and regular text) into a JTextField.
      * It may wind up being useful for other dialogs, in which case I'll move
      * it to a separate class.
+     *
+     * When you construct the JIDFieldTransferHandler, you may (optionally)
+     * pass in an Acceptor. This is called when a JID is dragged into the
+     * field. If you don't provide an Acceptor, the default behavior is to set
+     * the field to the bare form of the JID.
      */
     private static class JIDFieldTransferHandler extends TransferHandler {
+        public interface Acceptor {
+            public void accept(String jid);
+        }
+        private Acceptor mAcceptor;
+        public JIDFieldTransferHandler() {
+            mAcceptor = null;
+        }
+        public JIDFieldTransferHandler(Acceptor acceptor) {
+            mAcceptor = acceptor;
+        }
         public boolean canImport(JComponent comp, DataFlavor[] flavors) {
             for (int ix=0; ix<flavors.length; ix++) {
                 DataFlavor flavor = flavors[ix];
@@ -284,8 +350,13 @@ public class SendInvitationDialog extends BaseDialog
                 if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
                     JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
                     String jid = obj.getJID();
-                    jid = StringUtils.parseBareAddress(jid);
-                    field.setText(jid);
+                    if (mAcceptor == null) {
+                        jid = StringUtils.parseBareAddress(jid);
+                        field.setText(jid);
+                    }
+                    else {
+                        mAcceptor.accept(jid);
+                    }
                     return true;
                 }
 

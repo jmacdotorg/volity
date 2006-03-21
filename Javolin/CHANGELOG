@@ -1,6 +1,28 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 SVN repository.
 
+* the present
+
+You can drag any user into a table's seating panel; this pops up an invitation
+dialog. (Unless he's already sitting at the table, in which case it counts
+as a reseating request instead. This is surprising in some strange cases, but
+I don't plan to worry about it.)
+
+The invitation system has been seriously reworked. Invitations can now be
+sent out in Jabber message packets, which means that (1) the message can
+go to any client, and (2) the invitation will show up as plain text if you're
+not using a Volity-aware client. This means that the whole "add user to your
+roster before you invite him" aberration is gone. You can invite anybody.
+(Although if someone is on your roster, inviting him will work *better* in
+some ways.)
+
+User context menus now have an "Invite to Game" submenu, listing the games
+you're currently in. (The roster window menu doesn't have this yet, but I'll
+get to it.)
+
+User context menus now have an "Add to Roster..." item. (Dimmed if the person
+is on your roster already.)
+
 * release 0.3.0
 
 Games that take an arbitrary number of players (Fluxx, etc) now display

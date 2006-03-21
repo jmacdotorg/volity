@@ -2,12 +2,12 @@ package org.volity.javolin.game;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Iterator;
 import javax.swing.*;
+import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.Player;
 import org.volity.javolin.JavolinApp;
 import org.volity.javolin.PlatformWrapper;
-
-//### show stats
 
 /**
  * The popup (contextual) menu that appears for players in the seating chart.
@@ -21,6 +21,8 @@ import org.volity.javolin.PlatformWrapper;
 public class SeatContextMenu extends JPopupMenu
     implements ActionListener
 {
+    static final String TABLEWIN_PROP = "TableWin";
+
     SeatChart mChart;
     Player mPlayer = null;
 
@@ -29,6 +31,8 @@ public class SeatContextMenu extends JPopupMenu
     JMenuItem mSitMenuItem;
     JMenuItem mStandMenuItem;
     JMenuItem mStatsMenuItem;
+    JMenuItem mRosterAddMenuItem;
+    JMenu mInvitesMenu;
 
     public SeatContextMenu(SeatChart chart) {
         super();
@@ -62,19 +66,38 @@ public class SeatContextMenu extends JPopupMenu
 
         mPlayer = player;
         boolean isGameActive = mChart.mTable.isRefereeStateActive();
+        boolean isSelf = mPlayer.isSelf();
+
+        JavolinApp app = JavolinApp.getSoleJavolinApp();
 
         removeAll();
         mChatMenuItem = null;
+        mRosterAddMenuItem = null;
         mRemoveBotMenuItem = null;
         mSitMenuItem = null;
         mStandMenuItem = null;
         mStatsMenuItem = null;
+        mInvitesMenu = null;
 
         mChatMenuItem = new JMenuItem("Chat With User");
         mChatMenuItem.addActionListener(this);
-        if (mPlayer.isSelf() || mPlayer.isBot())
+        if (isSelf || mPlayer.isBot())
             mChatMenuItem.setEnabled(false);
         add(mChatMenuItem);
+
+        mRosterAddMenuItem = new JMenuItem("Add to Roster...");
+        mRosterAddMenuItem.addActionListener(this);
+        if (isSelf || mPlayer.isBot()) {
+            mRosterAddMenuItem.setEnabled(false);
+        }
+        else {
+            String barejid = StringUtils.parseBareAddress(mPlayer.getJID());
+            boolean onroster = (app.getRosterPanel() != null
+                && app.getRosterPanel().isUserOnRoster(barejid));
+            if (onroster)
+                mRosterAddMenuItem.setEnabled(false);
+        }
+        add(mRosterAddMenuItem);
 
         addSeparator();
 
@@ -109,6 +132,26 @@ public class SeatContextMenu extends JPopupMenu
 
         addSeparator();
 
+        mInvitesMenu = new JMenu("Invite to");
+        add(mInvitesMenu);
+        int count = 0;
+        mInvitesMenu.removeAll();
+        if (!isSelf) {
+            String thistablekey = mChart.mTable.getRoom();
+            for (Iterator it = app.getTableWindows(); it.hasNext(); ) {
+                TableWindow win = (TableWindow)it.next();
+                String key = win.getRoom();
+                if (key.equals(thistablekey))
+                    continue;
+                JMenuItem item = new JMenuItem(win.getWindowName());
+                item.addActionListener(this);
+                item.putClientProperty(TABLEWIN_PROP, key);
+                mInvitesMenu.add(item);
+                count++;
+            }
+        }
+        mInvitesMenu.setEnabled(count > 0);
+
         mStatsMenuItem = new JMenuItem("Game Stats");
         mStatsMenuItem.addActionListener(this);
         add(mStatsMenuItem);
@@ -131,6 +174,10 @@ public class SeatContextMenu extends JPopupMenu
             JavolinApp.getSoleJavolinApp().chatWithUser(mPlayer.getJID());
         }
 
+        if (source == mRosterAddMenuItem) {
+            JavolinApp.getSoleJavolinApp().doAddUser(mPlayer.getJID());
+        }
+
         if (source == mRemoveBotMenuItem) {
             mChart.requestRemoveBot(mPlayer.getJID());
         }
@@ -145,6 +192,17 @@ public class SeatContextMenu extends JPopupMenu
 
         if (source == mStatsMenuItem) {
             JavolinApp.getSoleJavolinApp().showUserGameStats(mPlayer.getJID());
+        }
+
+        if (source instanceof JComponent) {
+            JComponent jsource = (JComponent)source;
+            String key = (String)jsource.getClientProperty(TABLEWIN_PROP);
+            if (key != null) {
+                TableWindow win = JavolinApp.getSoleJavolinApp().getTableWindowByRoom(key);
+                if (win != null) {
+                    win.doInviteDialog(mPlayer.getJID(), false);
+                }
+            }
         }
     }
         

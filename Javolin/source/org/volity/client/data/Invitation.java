@@ -1,19 +1,55 @@
 package org.volity.client.data;
 
-import java.util.Map;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import org.jivesoftware.smack.packet.PacketExtension;
+import org.jivesoftware.smackx.FormField;
+import org.jivesoftware.smackx.packet.DelayInformation;
+import org.volity.client.comm.FormPacketExtension;
 
 /**
  * An invitation to join a game table.
  */
 public class Invitation {
-    /** Create an invitation from a struct recieved via RPC. */
+    Map fields;
+    Date timestamp;
+
+    /** Create an invitation from a struct received via RPC. */
     public Invitation(Map invitationStruct) {
         fields = invitationStruct;
+        timestamp = new Date();
     }
 
-    Map fields;
+    /**
+     * Create an invitation from a data form.
+     *
+     * The dateext argument may be null or the result of
+     * message.getExtension("x", "jabber:x:delay"). If present, it will be
+     * parsed for a timestamp.
+     */
+    public Invitation(FormPacketExtension form, PacketExtension dateext) {
+        fields = new HashMap();
+
+        for (Iterator it = form.getFields(); it.hasNext(); ) {
+            FormField field = (FormField)it.next();
+            String key = field.getVariable();
+            String val = (String) field.getValues().next();
+            if (key != null && val != null)
+                fields.put(key, val);
+        }
+
+        timestamp = null;
+        if (dateext != null && dateext instanceof DelayInformation) {
+            timestamp = ((DelayInformation)dateext).getStamp();
+        }
+
+        if (timestamp == null)
+            timestamp = new Date();
+    }
 
     /** The JID of the inviting player. */
     public String getPlayerJID() {
@@ -61,6 +97,13 @@ public class Invitation {
      */
     public String getMessage() {
         return (String) fields.get("message");
+    }
+
+    /**
+     * The time that the message was received.
+     */
+    public Date getTimestamp() {
+        return timestamp;
     }
 
     // Inherited from Object

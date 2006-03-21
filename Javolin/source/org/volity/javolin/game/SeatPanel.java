@@ -191,11 +191,16 @@ public class SeatPanel extends JPanel
                         if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
                             ev.acceptDrop(DnDConstants.ACTION_MOVE);
                             JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
-                            String destid = SeatPanel.this.mID;
-                            if (mIsNextSeat)
-                                destid = SeatChart.ANY_SEAT;
-                            mChart.requestSeatChange(obj.getJID(),
-                                destid);
+                            String jid = obj.getJID();
+                            if (mChart.mTable.getPlayerByJID(jid) == null) {
+                                mChart.doInvitePlayer(jid);
+                            }
+                            else {
+                                String destid = SeatPanel.this.mID;
+                                if (mIsNextSeat)
+                                    destid = SeatChart.ANY_SEAT;
+                                mChart.requestSeatChange(jid, destid);
+                            }
                             ev.dropComplete(true);
                             return;
                         }

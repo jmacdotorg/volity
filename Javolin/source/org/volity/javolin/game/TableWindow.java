@@ -410,7 +410,7 @@ public class TableWindow extends JFrame
 
         mInviteButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
-                    doInviteDialog(null);
+                    doInviteDialog();
                 }
             });
 
@@ -429,7 +429,7 @@ public class TableWindow extends JFrame
                         if (transfer.isDataFlavorSupported(JIDTransfer.JIDFlavor)) {
                             ev.acceptDrop(DnDConstants.ACTION_MOVE);
                             JIDTransfer obj = (JIDTransfer)transfer.getTransferData(JIDTransfer.JIDFlavor);
-                            doInviteDialog(obj.getJID());
+                            doInviteDialog(obj.getJID(), true);
                             ev.dropComplete(true);
                             return;
                         }
@@ -1275,26 +1275,46 @@ public class TableWindow extends JFrame
     /**
      * Bring up an invite dialog. There can be multiple of these at a time,
      * even for the same game.
+     */
+    public void doInviteDialog() {
+        doInviteDialog(null, false);
+    }
+
+    /**
+     * Bring up an invite dialog. There can be multiple of these at a time,
+     * even for the same game.
      *
      * If recipient is null, start an empty dialog. If not null, check to see
      * if the given JID is already present in the game. If it is not, start a
-     * dialog with the bare form of the JID.
+     * dialog with the JID (which may or may not have a resource string).
+     *
+     * If suppressredundancy is false, an error will be displayed if the
+     * recipient is already at the table.
      */
-    public void doInviteDialog(String recipient) {
+    public void doInviteDialog(String recipient, boolean suppressredundancy) {
+        if (!isTableOpen())
+            return;
+
         if (recipient != null) {
-            recipient = StringUtils.parseBareAddress(recipient);
 
             Iterator iter = mGameTable.getPlayers();
             while (iter.hasNext()) {
                 Player player = (Player)iter.next();
-                String jid = StringUtils.parseBareAddress(player.getJID());
-                if (recipient.equals(jid))
+                String jid = player.getJID();
+                if (JIDUtils.bareMatch(recipient, jid)) {
+                    if (!suppressredundancy) {
+                        JOptionPane.showMessageDialog(TableWindow.this,
+                            "This player is already present at the table:\n"
+                            + StringUtils.parseBareAddress(recipient),
+                            JavolinApp.getAppName() + ": Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
                     return;
+                }
             }
         }
 
-        /* The recipient is now a bare address, not present at the table. Or
-         * else it's null.
+        /* The recipient is not present at the table. Or else it's null.
          */
 
         SendInvitationDialog box =

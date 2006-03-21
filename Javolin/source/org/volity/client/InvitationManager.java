@@ -73,4 +73,13 @@ public class InvitationManager implements PacketFilter, RPCHandler {
     for (Iterator it = listeners.iterator(); it.hasNext(); )
       ((InvitationListener) it.next()).invitationReceived(invitation);
   }
+
+  /**
+   * Take an invitation that was pulled from some other source (e.g., a message
+   * packet) and pass it along to the listeners.
+   */
+  public void injectInvitation(Invitation invitation) {
+    for (Iterator it = listeners.iterator(); it.hasNext(); )
+      ((InvitationListener) it.next()).invitationReceived(invitation);
+  }
 }

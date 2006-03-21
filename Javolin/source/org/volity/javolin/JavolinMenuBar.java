@@ -450,7 +450,7 @@ public class JavolinMenuBar extends JMenuBar
         boolean divided = false;
 
         // All the game table windows.
-        for (it = mApplication.mTableWindows.iterator(); it.hasNext(); ) {
+        for (it = mApplication.getTableWindows(); it.hasNext(); ) {
             JFrame win = (JFrame)it.next();
             if (!divided) {
                 mWindowMenu.addSeparator();
@@ -614,7 +614,7 @@ public class JavolinMenuBar extends JMenuBar
                 mTableWindow.doSelectNewUI();
             }
             else if (source == mInvitePlayerMenuItem) {
-                mTableWindow.doInviteDialog(null);
+                mTableWindow.doInviteDialog();
             }
             else if (source == mInviteBotMenuItem) {
                 mTableWindow.doInviteBot();

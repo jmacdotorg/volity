@@ -13,6 +13,7 @@ import org.volity.client.data.Metadata;
 import org.volity.client.translate.TokenFailure;
 import org.volity.client.translate.TranslateToken;
 import org.volity.javolin.ErrorWrapper;
+import org.volity.javolin.JavolinApp;
 import org.volity.javolin.chat.UserColorMap;
 
 /**
@@ -403,6 +404,19 @@ public class SeatChart
         mTable.getReferee().removeBot(jid, mDefaultCallback, null);
     }
     
+    /**
+     * Put up a dialog for inviting the given JID to this table. This is rather
+     * occult, because we don't store a reference to our own TableWindow,
+     * because that makes me nervous.
+     */
+    protected void doInvitePlayer(String jid) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        String key = mTable.getRoom();
+        TableWindow win = JavolinApp.getSoleJavolinApp().getTableWindowByRoom(key);
+        win.doInviteDialog(jid, false);
+    }
+
     /** The pop-up menu (shared among all the items in the chart) */
     public void displayPopupMenu(Player player, int xpos, int ypos) {
         Point pt = mPanel.getLocationOnScreen();

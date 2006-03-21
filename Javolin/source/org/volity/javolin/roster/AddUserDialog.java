@@ -21,7 +21,10 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
-import org.volity.javolin.*;
+import org.jivesoftware.smack.util.StringUtils;
+import org.volity.javolin.BaseDialog;
+import org.volity.javolin.ErrorWrapper;
+import org.volity.javolin.JavolinApp;
 
 /**
  * The dialog for adding a user to the roster.
@@ -42,8 +45,9 @@ public class AddUserDialog extends BaseDialog implements ActionListener
      *
      * @param owner   The Frame from which the dialog is displayed.
      * @param roster  The roster to add a user to.
+     * @param jid     The JID we are adding. (May be null.)
      */
-    public AddUserDialog(Frame owner, Roster roster)
+    public AddUserDialog(Frame owner, Roster roster, String jid)
     {
         super(owner, JavolinApp.getAppName() + ": Add User", true, NODENAME);
 
@@ -53,6 +57,9 @@ public class AddUserDialog extends BaseDialog implements ActionListener
         buildUI();
         setResizable(false);
         pack();
+
+        if (jid != null)
+            mUserIdField.setText(jid);
 
         // Restore saved window position
         mSizePosSaver.restoreSizeAndPosition();
@@ -85,6 +92,8 @@ public class AddUserDialog extends BaseDialog implements ActionListener
             mUserIdField.requestFocusInWindow();
             return;
         }
+
+        jid = StringUtils.parseBareAddress(jid);
 
         try
         {

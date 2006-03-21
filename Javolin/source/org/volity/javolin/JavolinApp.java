@@ -39,10 +39,13 @@ import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryFactory;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
+import org.jivesoftware.smackx.packet.DataForm;
 
 import org.volity.client.*;
 import org.volity.client.comm.CapExtensionProvider;
 import org.volity.client.comm.CapPacketExtension;
+import org.volity.client.comm.FormExtensionProvider;
+import org.volity.client.comm.FormPacketExtension;
 import org.volity.client.data.CommandStub;
 import org.volity.client.data.Invitation;
 import org.volity.client.translate.TranslateToken;
@@ -103,6 +106,7 @@ public class JavolinApp extends JFrame
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
     private Bookkeeper mBookkeeper;
+    private InvitationManager mInviteManager;
     List mMucWindows;
     List mTableWindows;
     List mChatWindows;
@@ -246,6 +250,13 @@ public class JavolinApp extends JFrame
         ProviderManager.addExtensionProvider(
             CapPacketExtension.NAME, CapPacketExtension.NAMESPACE,
             new CapExtensionProvider());
+
+        /*
+         * Set up a packet extension provider for Volity command attachments.
+         */
+        ProviderManager.addExtensionProvider(
+            FormPacketExtension.NAME, FormPacketExtension.NAMESPACE,
+            new FormExtensionProvider());
 
         // Open the Game Finder window
         if (Finder.getFinderWanted())
@@ -585,6 +596,7 @@ public class JavolinApp extends JFrame
             InvitationManager im = new InvitationManager(mConnection);
             im.addInvitationListener(this);
             im.start();
+            mInviteManager = im;
         }
 
         // Update the UI
@@ -697,6 +709,13 @@ public class JavolinApp extends JFrame
         {
             mBookkeeper.close();
             mBookkeeper = null;
+        }
+
+        // Kill the invite manager
+        if (mInviteManager != null)
+        {
+            mInviteManager.stop();
+            mInviteManager = null;
         }
 
         // Close connection if open
@@ -1030,8 +1049,32 @@ public class JavolinApp extends JFrame
      */
     private void doAddUserBut()
     {
-        //### if we have a "from" user selected, prefill it into the dialog box
-        AddUserDialog addUserDlg = new AddUserDialog(this, mConnection.getRoster());
+        String jid = null;
+
+        /* If a FROM (dotted-outline) entry is selected, pass it into the Add
+         * dialog. Otherwise, we want a blank dialog. 
+         */
+        RosterTreeItem selUser = mRosterPanel.getSelectedRosterItem();
+        if (selUser != null 
+            && selUser.getSubType() == RosterPacket.ItemType.FROM) {
+            jid = selUser.getId();
+        }
+
+        doAddUser(jid);
+    }
+
+    /**
+     * Request to add the given user to the roster. If the given JID is null,
+     * this pops up a blank add-user dialog. If the JID has a resource, it is
+     * stripped off.
+     */
+    public void doAddUser(String jid)
+    {
+        if (jid != null) {
+            jid = StringUtils.parseBareAddress(jid);
+        }
+        AddUserDialog addUserDlg = new AddUserDialog(this,
+            mConnection.getRoster(), jid);
         addUserDlg.show();
     }
 
@@ -1174,6 +1217,20 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * Return the TableWindow which corresponds to the given room name (MUC
+     * JID). This is equal to win.getRoom().
+     */
+    public TableWindow getTableWindowByRoom(String key) {
+        for (Iterator it = mTableWindows.iterator(); it.hasNext(); ) {
+            TableWindow win = (TableWindow)it.next();
+            if (key.equals(win.getRoom()))
+                return win;
+        }
+
+        return null;
+    }
+
+    /**
      * Return the RosterPanel. (Which is useful for the invitation mechanism.)
      */
     public RosterPanel getRosterPanel() 
@@ -1306,6 +1363,21 @@ public class JavolinApp extends JFrame
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
         String remoteId = message.getFrom();
+
+        PacketExtension ext = message.getExtension(FormPacketExtension.NAME,
+            FormPacketExtension.NAMESPACE);
+        if (ext != null && ext instanceof FormPacketExtension) {
+            FormPacketExtension formext = (FormPacketExtension)ext;
+            String formtype = formext.getFormType();
+            if (formtype != null 
+                && formtype.equals("http://volity.org/protocol/form/invite")
+                && mInviteManager != null) {
+                PacketExtension dateext = message.getExtension("x", "jabber:x:delay");
+                Invitation invitation = new Invitation(formext, dateext);
+                mInviteManager.injectInvitation(invitation);
+                return;
+            }
+        }
 
         // If there is not already a chat window for the current user,
         // create one and give it the message.
