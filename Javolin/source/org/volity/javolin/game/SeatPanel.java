@@ -361,7 +361,7 @@ public class SeatPanel extends JPanel
 
         if (mIsNextSeat) {
             /* We throw in a blank icon -- see above. */
-            label = new JLabel("<empty>", ICON_BLANK, SwingConstants.CENTER);
+            label = new JLabel("<new seat>", ICON_BLANK, SwingConstants.CENTER);
             label.setFont(fontName);
             label.setForeground(Color.GRAY);
             c = new GridBagConstraints();
