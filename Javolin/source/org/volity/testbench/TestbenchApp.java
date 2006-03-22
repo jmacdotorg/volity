@@ -13,6 +13,7 @@ import org.apache.batik.bridge.*;
 import org.apache.batik.util.gui.JErrorPane;
 import org.volity.client.GameUI;
 import org.volity.client.translate.TranslateToken;
+import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.LogTextPanel;
 import org.volity.javolin.SizeAndPositionSaver;
 import org.volity.javolin.game.UIFileCache;
@@ -164,6 +165,7 @@ public class TestbenchApp extends JFrame
                 public void error(Throwable ex, String prefix) {
                     noticeException(ex);
                     String msg = ex.toString();
+                    msg = ErrorWrapper.fixLineNumbers(msg);
                     if (prefix != null)
                         msg = prefix + ": " + msg;
                     writeMessageText(msg);

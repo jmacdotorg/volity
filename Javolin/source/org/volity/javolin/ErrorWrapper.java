@@ -1,6 +1,8 @@
 package org.volity.javolin;
 
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Encapsulates an exception that was thrown somewhere in the application.
@@ -71,4 +73,41 @@ public class ErrorWrapper
 
     /** Get the Throwable of the error. */
     public Throwable getException() { return mError; }
+
+
+    private static Pattern sFixLines = Pattern.compile(
+        "\\.svg:([0-9]+); line ([0-9]+)\\)",
+        Pattern.CASE_INSENSITIVE);
+    
+    /**
+     * Fix the annoying Batik line numbers in an error dump.
+     *     (Inline <script> file:/x/y/z.svg:23; line 60)
+     * should become
+     *     (Inline <script> file:/x/y/z.svg:23; line 60) [UI line 82]
+     */
+    public static String fixLineNumbers(String msg) {
+        Matcher matcher = sFixLines.matcher(msg);
+
+        int count = 0;
+        StringBuffer buffer = null;
+ 
+        while (matcher.find()) {
+            if (buffer == null)
+                buffer = new StringBuffer();
+            String orig = matcher.group(0);
+            String num1 = matcher.group(1);
+            String num2 = matcher.group(2);
+            int val1 = Integer.parseInt(num1);
+            int val2 = Integer.parseInt(num2);
+            orig += " [UI line " + String.valueOf(val1+val2-1) + "]";
+            matcher.appendReplacement(buffer, orig);
+            count++;
+        }
+
+        if (count == 0)
+            return msg;
+
+        matcher.appendTail(buffer); 
+        return buffer.toString();
+    }
 }

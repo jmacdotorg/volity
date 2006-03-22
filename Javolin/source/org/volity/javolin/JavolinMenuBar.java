@@ -659,6 +659,7 @@ public class JavolinMenuBar extends JMenuBar
                         query += URLEncoder.encode(version, "UTF-8");
                     }
                 }
+
                 URL uiurl = mTableWindow.getUIUrl();
                 if (uiurl != null) {
                     query += "&ui_url=";
@@ -668,6 +669,15 @@ public class JavolinMenuBar extends JMenuBar
                 if (muc != null) {
                     query += "&table_muc=";
                     query += URLEncoder.encode(muc, "UTF-8");
+                }
+
+                Metadata metadata = mTableWindow.getMetadata();
+                if (metadata != null) {
+                    String uivers = metadata.get(Metadata.VOLITY_VERSION);
+                    if (uivers != null) {
+                        query += "&ui_version=";
+                        query += URLEncoder.encode(uivers, "UTF-8");
+                    }
                 }
             }
 
