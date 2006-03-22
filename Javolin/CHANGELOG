@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Finder window has "Top" and "Reload" buttons.
+
 Added a "Stats" button in the roster window titlebar.
 
 The roster context menu is now consistent with the other popup menus. (The

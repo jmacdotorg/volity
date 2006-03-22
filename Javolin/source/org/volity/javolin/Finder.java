@@ -20,7 +20,7 @@ import org.xhtmlrenderer.swing.LinkListener;
 import org.xhtmlrenderer.util.XRRuntimeException;
 
 public class Finder extends JFrame
-    implements CloseableWindow
+    implements ActionListener, CloseableWindow
 {
     public final static String FINDER_URL = "http://www.volity.net/gamefinder/";
     public final static String BUGREPORT_URL = "http://volity.net/bugs/beta_bugform.html";
@@ -70,8 +70,12 @@ public class Finder extends JFrame
     }
 
     private JavolinApp mOwner;
+    private String mCurrent;
+
     private XHTMLFinder mDisplay;
     private SizeAndPositionSaver mSizePosSaver;
+    private JButton mHomeButton;
+    private JButton mReloadButton;
 
     private Finder(JavolinApp owner) 
     {
@@ -85,7 +89,7 @@ public class Finder extends JFrame
          * the creation of the window. */
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    trySetDocument();
+                    trySetDocument(FINDER_URL);
                 }
             });
 
@@ -181,6 +185,7 @@ public class Finder extends JFrame
                     && (url.getHost().equals("www.volity.net") 
                         || url.getHost().equals("volity.net"))
                     && url.getPath().startsWith("/gamefinder")) {
+                    mCurrent = urlstr;
                     super.linkClicked(uri);
                     return;
                 }
@@ -252,12 +257,17 @@ public class Finder extends JFrame
         }
     }
 
-    private void trySetDocument() {
+    /**
+     * Attempt to go to the given URL. If there is a problem, display a
+     * built-in error page.
+     */
+    private void trySetDocument(String urlstr) {
         if (mDisplay == null)
             return;
 
         try {
-            mDisplay.setDocument(FINDER_URL);
+            mCurrent = urlstr;
+            mDisplay.setDocument(urlstr);
         }
         catch (XRRuntimeException ex) {
             new ErrorWrapper(ex);
@@ -277,6 +287,36 @@ public class Finder extends JFrame
         }
     }
 
+    /** ActionListener interface method implementation. */
+    public void actionPerformed(ActionEvent ev)
+    {
+        Object source = ev.getSource();
+        if (source == null)
+            return;
+ 
+        String url = null;
+
+        if (source == mHomeButton) {
+            url = FINDER_URL;
+        }
+        if (source == mReloadButton) {
+            url = mCurrent;
+        }
+
+        /* Several of the above actions could result in launching a new URL. We
+         * collect that work here.
+         */
+        if (url != null) {
+            final String urlref = url;
+            SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        trySetDocument(urlref);
+                    }
+                });
+        }
+    }
+
+    /** Construct the UI. */
     private void buildUI()
     {
         Container cPane = getContentPane();
@@ -284,6 +324,23 @@ public class Finder extends JFrame
         
         mDisplay = new XHTMLFinder();
         cPane.add(new JScrollPane(mDisplay), BorderLayout.CENTER);
+
+
+        // Create toolbar
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        cPane.add(toolbar, BorderLayout.NORTH);
+
+        mHomeButton = new JButton("Top");
+        mHomeButton.setToolTipText("Return to index of games");
+        mHomeButton.addActionListener(this);
+        toolbar.add(mHomeButton);
+
+        mReloadButton = new JButton("Reload");
+        mReloadButton.setToolTipText("Manually reload this page");
+        mReloadButton.addActionListener(this);
+        toolbar.add(mReloadButton);
+
 
         // Necessary for all windows, for Mac support
         JavolinMenuBar.applyPlatformMenuBar(this);
