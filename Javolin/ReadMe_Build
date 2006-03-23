@@ -70,7 +70,7 @@ already using.)
 Name: Smack (modified version in Volity SVN)
 Home page: http://www.jivesoftware.org/smack/
 Version: 2.0.0-v-2
-Download: svn checkout -r 859 https://svn.sourceforge.net/svnroot/volity/trunk/smack-dev-2.0-vol
+Download: svn checkout -r 960 https://svn.sourceforge.net/svnroot/volity/trunk/smack-dev-2.0-vol
     % cd smack-dev-2.0-vol/build
     % ant jar
 Lib files: smack.jar, smackx.jar
