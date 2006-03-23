@@ -26,53 +26,53 @@ Volity::Game - base class for Volity game modules
 
 =head1 SYNOPSIS
 
- package MyGame;
-
- use base qw( Volity::Game );
-
- # Set some configuration information.
-
- __PACKAGE__->min_allowed_seats(2);
- __PACKAGE__->max_allowed_seats(4);
- __PACKAGE__->uri("http://mydomain.com/games/mygame");
- __PACKAGE__->name("MyGame");
- __PACKAGE__->description("This is my awesome game. It's great.");
- __PACKAGE__->ruleset_version("1.2");
-
-# Then we define a bunch of rpc-reacting methods, as described in the
-# developers' guide...!
+See L<Volity::Game::TicTacToe> and its source code for a simple
+but full-featured example.
 
 =head1 DESCRIPTION
 
-This class provides a framework for writing Volity game modules in Perl.
+This class provides a framework for writing Volity game modules in
+Perl. A Volity game module will be a subclass of this class. 
 
 If you downloaded and installed the Frivolity system (all these Perl modules
 under the C<Volity> namespace) primarily so you could write Volity game
 modules in Perl, then this is the class you should show the most interest
-in! If you'd like to I<run> your game as a server once you've written it,
-please direct your subsequent attention to L<Volity::Server>.
+in! 
+
+To turn your subclass into a real-life running Volity parlor, you can
+pass it to the C<volityd> program via its C<game> config option (see
+L<volityd>).
 
 =head1 USAGE
 
-Create your own Perl package for your game, and have it inherit from
-C<Volity::Game>. You can then have it do whatever you like, calling the
-C<end_game> method when you're all done.
+To use this module, subclass it. Create your own Perl package for your
+game, and have it inherit from C<Volity::Game>. You can then have it
+do whatever you like, calling the C<end()> method when you're all
+done.
 
-OK, that's a bit of a simplification. Fortunately, I've written a
-developer's guide that should teach and show you everything you need to know
-about writing Volity games in Perl. You can always find the latest edition
-here:
+L<"SYNOPSIS"> illustrates this with an absurd level of simplicity. You
+can find more sophisticated examples in the C<examples/> directory
+that should have accompanied this module.
 
-http://www.volity.org/docs/devguide_perl/
+Some things to keep in mind when creating your subclass...
 
-The remainder of this manpage serves as a reference to the specific fields
-and methods that this class offers to programmers.
+=head2 It's a pseudohash
+
+The object that results from your class will be a Perl pseudohash that
+makes use of the C<fields> pragma. (See L<fields>.) As the example
+shows, you should declare the the instance variables you intend to use
+with a C<use fields()> invocation.
+
+=head2 Use (but don't abuse) the initialize() method
+
+The C<Volity::Game> base class constructor calls C<initialize()> as a
+final step, and you are welcome to override this in order to give your
+object some final preparations before sending it out into the world.
+
+If you do override this method, however, it I<must> have a return
+value of C<$self->SUPER::initialize(@_)> or untold chaos will result.
 
 =head1 METHODS
-
-First of all, see L<Volity::Jabber/"CALLBACK METHODS"> to learn about all
-the methods you can override. Your game module will probably work by
-overriding some of these.
 
 I<Note> that the message-handling methods described in
 L<Volity::Jabber/"Message handler methods"> can be called as I<either>
@@ -91,18 +91,7 @@ So here are some object methods peculiar to C<Volity::Game>...
 The class that this game's seats belong to. When the game wants to make new
 seats, it calls this class's constructor.
 
-If you don't set this, it defaults to using the C<Volity::Seat> class.
-
-=item referee
-
-Returns the C<Volity::Referee> object that owns this game. Use this object
-to fetch seat information while the game is afoot; see L<Volity::Referee>
-for the salient methods.
-
-I<Shortcut> You can call any of the referee's methods simply by calling them
-on the game object. For example, calling C<$game->seats> is exactly
-equivalent to (and will return exactly the same seat objects as) calling
-C<$game->referee->seats>.
+If you don't set this, it defaults to using the base C<Volity::Seat> class.
 
 =item is_afoot
 
@@ -135,6 +124,9 @@ This is mainly useful if you plan on using the C<rotate_current_seat>
 method (see L<"Other object methods">), which is itself just a
 convenience method for the common case of having a fixed,
 round-the-table turn order, which not every game has.
+
+Note that a game module implementing a ruleset that doesn't use turns
+won't use this.
 
 =item seats_in_play
 
@@ -172,7 +164,7 @@ A longer text description of this game module.
 
 I<Required.> The URI of the ruleset that this particular game module
 implements. Consult the core Volity documentation for more information on
-how this works.
+how this works: http://www.volity.org/wiki/index.cgi?Ruleset_URI
 
 =item ruleset_version
 
@@ -297,6 +289,9 @@ the turn order list.
 If the given seat doesn't exist in the turn order list (as is the case
 when the list is not defined), then the list remains unaffected.
 
+Note that a game module implementing a ruleset that doesn't use turns
+won't use this.
+
 =item rotate_current_seat
 
 Convenience method that simply sets the next seat in the turn order
@@ -314,6 +309,9 @@ where the turn order is stable enough for the C<turn_order> method to
 be useful as well. Game modules can always advance the turn manually
 by calling the C<current_player> accessor with arguments. (And some
 games don't have turns at all...)
+
+Note that a game module implementing a ruleset that doesn't use turns
+won't use this.
 
 =item register_config_variables (@variables)
 
@@ -334,7 +332,50 @@ bookkeeper, then you must use this object to specify the seats'
 winning order I<before> you call the game object's C<end> method. See
 L<Volity::WinnersList> for the list object's API.
 
-=back
+=item bookkeeper_jid
+
+The JID of the network's bookkeeper. Initially set by the server,
+depending upon its own configuration.
+
+=item muc_jid
+
+The JID of the table's MUC. Set by various magic internal
+methods, so you should treat this as read-only; things will probably
+not work well if you reset this value yourself.
+
+=item game_class
+
+I<Important!> The Perl class of the actual game (usually a subclass of
+Volity::Game).
+
+You I<must> set this on object construction though the C<new> method's
+argument hash, as detailed in L<Volity/"Object construction">. Not
+doing so will result in an error.
+
+=item game
+
+The referee superclass already knows how and when to create a game
+object from the class specified by the C<game_class> instance
+variable, and when it does so, it stores that object under C<game>.
+
+You should treat-this as a read-only variable. Generally, it will
+always be defined, as a referee creates a new game object as soon as
+it can. When a game ends, the object is destroyed a new one
+automatically takes its place.
+
+=item startup_time
+
+Returns the time (in seconds since the epoch) when this palor started.
+
+=item last_activity_time
+
+Returns the time (in seconds since the epoch) when this referee last
+handled a game.* RPC.
+
+=item games_completed
+
+Returns the number of games that have been begun and ended with this
+referee.
 
 =cut
 
@@ -374,31 +415,20 @@ sub seats_in_play {
     return grep(not($_->is_eliminated) && $_->registered_player_jids, $self->seats);
 }
 
-=over
-
-=item call_ui_function_on_everyone
+=item call_ui_function_on_everyone ($function, @args)
 
 A convenience method for blasting a game.* call to I<all> players at a
 table, seated and otherwise.
 
-See the C<call_ui_function> method of L<Volity::Player> for arguments and
-return values.
-
-=item call_ui_function_on_observers
+=item call_ui_function_on_observers ($function, @args)
 
 A convenience method for blasting a game.* call to every player at the
 table who is not seated.
 
-See the C<call_ui_function> method of L<Volity::Player> for arguments and
-return values.
-
-=item call_ui_function_on_seats
+=item call_ui_function_on_seats ($function, @args)
 
 A convenience method for blasting a game.* call to every seat, but not to
 players who are standing.
-
-See the C<call_ui_function> method of L<Volity::Player> for arguments and
-return values.
 
 =back
 
@@ -571,7 +601,40 @@ sub end {
 # Callbacks
 ############
 
-=head2 Callback methods
+=head1 CALLBACK METHODS
+
+=head2 Ruleset-level callbacks
+
+You must define a callback in your subclass for every
+player-to-referee method defined in the ruleset that your module
+implements.
+
+The name of the callback method will be exacty the same as the name of
+the RPC, except with the "game." prefix replaced by "rpc_". So, for
+example, the PRC "game.move_piece" would trigger the method
+C<rpc_move_piece()> in your subclass.
+
+The first argument to the method (after the usual reference to the
+object) is the C<Volity::Seat> object that made the call, and any
+remaining arguments are the arguments of the RPC itself. Therefore, if
+the ruleset decrees that the arguments to C<game.move_piece> are
+C<piece_id> and C<destination>, then the first few lines of your
+callback might look like this:
+
+ sub rpc_move_piece {
+     my $self = shift;
+     my ($seat, $piece_id, $destination) = @_;
+     # Game logic here....
+ }
+
+The callback's return value corresponds to a Volity token. (See
+http://www.volity.org/wiki/index.cgi?Token). This will most commonly
+be a ruleset-defined error token to express a rejection of the
+caller's move, or a "volity.ok" token otherwise. See L<"SYNOPSIS"> for
+a silly illustration, and the documents in the C<example/> files for
+more sophisticated examples.
+
+=head2 Volity-level callbacks
 
 C<Volity::Game> provides default handlers for these methods, called on the
 game object by different parts of Frivolity. You may override these methods
@@ -649,6 +712,21 @@ of sending state. This always returns the last seat that the player sat in
 I<while the game was active>, preventing "accidental" snooping of other
 seats' game states while the game is suspended.
 
+=item game_has_resumed ( )
+
+This is called after the players at a table have suspended and then
+resumed the game. Since there's a chance that players have joined or
+switched seats since the last time the game was active, you may wish
+to override this method in order to update players' UIs. This is
+particularly true for games with private information, such as hands of
+cards.
+
+You don't need to do anything else to implement game suspension or
+resumption; the base classes take care of everything for you,
+including updating the table's seat and player objects.
+
+Overriding this method is optional; by default, it does nothing.
+
 =back
 
 =cut
@@ -658,6 +736,8 @@ sub start { }
 sub has_acceptable_config {
     return 1;
 }
+
+sub game_has_resumed { }
 
 sub handle_normal_message    { }
 sub handle_groupchat_message { }
@@ -671,7 +751,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Jason McIntosh.
+Copyright (c) 2003-2006 by Jason McIntosh.
 
 =cut
 
