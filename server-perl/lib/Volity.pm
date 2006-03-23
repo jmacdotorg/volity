@@ -90,22 +90,84 @@ sub expire {
 
 =head1 NAME
 
-Frivolity - A Perl implementation of the Volity game system
+Frivolity - A Perl implementation of the Volity game platform
 
-=head2 DESCRIPTION
+=head1 DESCRIPTION
 
 All the modules under the Volity namespace implement I<Frivolity>, an
-implementation of the Volity Internet game system. The C<Volity> module
-I<per se> holds only a few utility methods (see L<"METHODS">). More
-interesting are its subclasses, which implement other key system components,
-thus:
+implementation of the Volity Internet game system. The C<Volity>
+module I<per se> holds only a few utility methods (see
+L<"METHODS">). More interesting are its subclasses, which implement
+other key system components.
 
 =over
+
+=head2 Modules of interest to game developers
+
+If you are primarily interested in writing your own Volity games in
+Perl, then you really only need a deep understanding of one or two
+modules.
+
+=item Volity::Game
+
+A framework library for creating Volity game modules. You can make
+your own Volity-ready game modules by subclassing C<Volity::Game>.
+
+L<Volity::Game> is a great starting point for learning how to create
+your own Volity games with these libraries.
+
+=item Volity::Seat
+
+The base class for the entities that are actually playing a volity
+game. Each discrete, role-bearing entity at the game table -- "black"
+and "white" at Chess, or "North", "East", "West" and "South" at
+Bridge, for example --is represented by an object of this class.
+
+Creation and destruction of seat objects is handled for you, but
+several methods of Volity::Game (and the subclasses you might make
+from it) return seat objects, so you should know how to work with
+them.
+
+=item Volity::Player
+
+A class that defines individual Volity users from a server-side
+perspective. Active seats contain players, and game observers -- that
+is, users at a table but not sitting down -- are also defined by this
+class.
+
+As with seats, creation and destruction of player objects is handled
+for you, but several methods of both C<Volity::Game> and C<Volity::Seat>
+deal with objects of this class.
+
+=item Volity::WinnersList
+
+This small but important class defines an object that will help you
+create a bookkeeper-ready game record once each of your games is
+finished being played.
+
+=item Volity::Bot
+
+A framework library for creating bots, game-playing automatons that
+users can summon to a Volity table as artificial competition.
+
+Writing bots is a recommended but not completely necessary part of
+creating a Volity game. Therefore, L<Volity::Bot> should be your next
+step in the process of game creation with Frivolity once you've gotten
+your head around C<Volity::Game> and the other modules listed above.
+
+=head2 Modules of interest to deep-voodoo wizards
+
+Should you wish to hack deeper into the system, there's plenty more to
+see. All of these modules are subclasses of C<Volity::Jabber>.
 
 =item Volity::Server
 
 A "black-box" game server engine; tell it what game class to use (probably a
 subclass of C<Volity::Game>), call C<start>, and off you go.
+
+The C<volityd> program, which is distributed with these libraries,
+takes care of setting up and creating this object for you. See
+L<volityd>.
 
 =item Volity::Referee
 
@@ -114,12 +176,6 @@ with some players, and arbitrates the game being played therein.
 
 Frivolity game designers may override this class if they wish. By default, a
 Frivolity server will create base C<Volity::Referee> objects.
-
-=item Volity::Game
-
-A framework library for creating Volity game modules. In frivolity terms, a
-game module is implemented as a Perl object class that inherits from
-C<Volity::Game>.
 
 =item Volity::Bookkeeper
 
@@ -131,21 +187,13 @@ Unless you wish to run your own Volity network (as opposed to running your
 games as part of the worldwide Volity network centered around volity.net),
 you probably don't need to bother with this one.
 
+Due to its separate dependencies, such as the need for a MySQL
+database, this module is distributed separately from the rest of
+Frivolity.
+
 =back
 
 =head1 USAGE
-
-Which modules you use, and how you use them, depends upon what you want to
-do. That said, they all work on a similar principle: Creating any of the
-objects listed above results in a new connection to a Jabber server (whose
-address and authentication info you specify upon construction), and from
-there they call various object methods when different Jabber events are
-received. If you write your own subclasses, you can define their behavior by
-overriding these callback methods.
-
-These callback methods are described in L<Volity::Jabber>. You should read
-that manual page before diving into any of the more specific Volity modules
-(as they all happen to inherit from C<Volity::Jabber>).
 
 =head2 Creating new Volity games
 
@@ -157,20 +205,18 @@ Detailed information about creating new Volity games with these modules can
 be found in the Volity Developer's Guide, at
 L<http://www.volity.org/docs/devguide_perl/>.
 
-=head2 Hosting Volity games
+=head2 Running a Volity parlor
 
 As with any Volity implementation, you don't need to host any Internet
 services of your own to host a game module; you simply need a valid login to
 a Jabber server somewhere. Frivolity includes a Perl program, C<volityd>,
 that creates a Volity server for you, using a C<Volity::Game> subclass that
-you provide it. See the volityd manpage for more information.
+you provide it. See L<volityd> for more information.
 
 =head1 METHODS
 
-First of all, see L<Class::Accessor>, from which this module inherits.
-
-In addition, the following object methods are, available to instances of all
-the classes listed in L<"DESCRIPTION">.
+The following object methods are, available to instances of all the
+classes listed in L<"DESCRIPTION">.
 
 =over
 
@@ -181,6 +227,10 @@ created and initialized as needed. This lets Volity subclasses easily add
 prioritized log and debug output to their code. See L<Log::Log4perl> for
 documentation on this object's use.
 
+You tell the C<volityd> program about a Log4perl-style config file to
+use through its B<log_config> config option. See L<volityd> for
+details.
+
 =item expire ($message)
 
 A convenience method which calls the logger object's C<fatal> method using
@@ -190,8 +240,9 @@ the given C<$message>, and then calls C<Carp:croak()> with the same message.
 
 =head1 SEE ALSO
 
-For more information about Volity from a hacker's point of view, see the
-Volity developers' website at http://www.volity.org.
+The Volity developers' website at http://www.volity.org contains all
+sorts of resources for developers, including a documentation wiki,
+links to mailing lists, and client software downloads.
 
 =head1 AUTHOR
 
