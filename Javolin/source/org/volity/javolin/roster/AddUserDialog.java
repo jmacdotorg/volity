@@ -89,7 +89,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
     {
         String jid = expandJIDField(mUserIdField);
         if (jid == null) {
-            mUserIdField.requestFocusInWindow();
+            complainMustEnter(mUserIdField, "a Volity ID (a Jabber address)");
             return;
         }
 

@@ -97,12 +97,12 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
 
         String serverjid = expandJIDField(mServerIdField);
         if (serverjid == null) {
-            mServerIdField.requestFocusInWindow();
+            complainMustEnter(mServerIdField, "a parlor address");
             return;
         }
 
         if (mNicknameField.getText().equals("")) {
-            mNicknameField.requestFocusInWindow();
+            complainMustEnter(mNicknameField, "a nickname for yourself");
             return;
         }
 

@@ -64,6 +64,21 @@ public class BaseDialog extends JDialog
             });
     }
 
+    /** 
+     * A utility function for the case where someone has failed to fill in an
+     * important field. Display an alert box, and then highlight the field for
+     * input.
+     */
+    public void complainMustEnter(JComponent comp, String desc) {
+        JOptionPane.showMessageDialog(this,
+            "You must enter " + desc + ".",
+            JavolinApp.getAppName() + ": Error",
+            JOptionPane.ERROR_MESSAGE);
+
+        if (comp != null)
+            comp.requestFocusInWindow();
+    }
+
     private final static String DEFAULT_HOST = "volity.net";
 
     /**

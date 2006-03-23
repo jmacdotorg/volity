@@ -97,12 +97,12 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         String mucID = expandJIDField(mMucIdField, "conference.volity.net");
         if (mucID == null) {
-            mMucIdField.requestFocusInWindow();
+            complainMustEnter(mMucIdField, "a MUC address");
             return;
         }
 
         if (mNicknameField.getText().equals("")) {
-            mNicknameField.requestFocusInWindow();
+            complainMustEnter(mNicknameField, "a nickname for yourself");
             return;
         }
 

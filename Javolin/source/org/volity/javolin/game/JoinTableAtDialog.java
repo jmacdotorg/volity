@@ -98,12 +98,12 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
             "conference.volity.net");
 
         if (tableid == null) {
-            mTableIdField.requestFocusInWindow();
+            complainMustEnter(mTableIdField, "a game table (MUC) address");
             return;
         }
 
         if (mNicknameField.getText().equals("")) {
-            mNicknameField.requestFocusInWindow();
+            complainMustEnter(mNicknameField, "a nickname for yourself");
             return;
         }
 

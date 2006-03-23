@@ -94,7 +94,7 @@ public class SendInvitationDialog extends BaseDialog
                 public void actionPerformed(ActionEvent ev) {
                     String jid = expandJIDField(mUserIdField);
                     if (jid == null) {
-                        mUserIdField.requestFocusInWindow();
+                        complainMustEnter(mUserIdField, "a Volity ID (a Jabber address)");
                         return;
                     }
 

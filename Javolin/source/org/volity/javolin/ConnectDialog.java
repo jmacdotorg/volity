@@ -155,7 +155,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         String jid = expandJIDField(mJIDField);
         if (jid == null) {
-            mJIDField.requestFocusInWindow();
+            complainMustEnter(mJIDField, "a Volity ID (a Jabber address)");
             return;
         }
 
@@ -228,15 +228,15 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         // people who set up empty passwords.
         if (mJIDField.getText().equals("")
             || mJIDField.getText().startsWith("/")) {
-            mJIDField.requestFocusInWindow();
+            complainMustEnter(mJIDField, "a Volity ID (a Jabber address)");
             return;
         }
         if (mPasswordField.getPassword().length == 0) {
-            mPasswordField.requestFocusInWindow();
+            complainMustEnter(mPasswordField, "a password");
             return;
         }
         if (mPasswordAgainField.getPassword().length == 0) {
-            mPasswordAgainField.requestFocusInWindow();
+            complainMustEnter(mPasswordAgainField, "your password again");
             return;
         }
 
@@ -249,7 +249,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
          * with a jidhost and no jidname. */
 
         if (jidhost.equals("")) {
-            mJIDField.requestFocusInWindow();
+            complainMustEnter(mJIDField, "a Volity ID with an @ sign");
             return;
         }
 

@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+All dialog boxes now have alerts like "You must enter a user name" if you
+leave an important field blank.
+
 Finder window has "Top" and "Reload" buttons.
 
 Added a "Stats" button in the roster window titlebar.
