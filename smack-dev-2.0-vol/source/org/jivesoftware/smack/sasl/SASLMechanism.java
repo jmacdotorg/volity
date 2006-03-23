@@ -60,7 +60,13 @@ public abstract class SASLMechanism {
         stanza.append("\" xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\">");
         String authenticationText = getAuthenticationText(username, host, password);
         if (authenticationText != null) {
-            stanza.append(StringUtils.encodeBase64(authenticationText));
+            try {
+                byte[] bytes = authenticationText.getBytes("UTF-8");
+                stanza.append(StringUtils.encodeBase64(bytes));
+            }
+            catch (java.io.UnsupportedEncodingException uee) {
+                throw new IOException("encoding error in SASL");
+            }
         }
         stanza.append("</auth>");
 
@@ -78,9 +84,25 @@ public abstract class SASLMechanism {
         // Build the challenge response stanza encoding the response text
         StringBuffer stanza = new StringBuffer();
         stanza.append("<response xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\">");
-        String authenticationText = getChallengeResponse(StringUtils.decodeBase64(challenge));
+
+        byte[] dchallenge;
+        try {
+            byte[] bytes = challenge.getBytes("UTF-8");
+            dchallenge = StringUtils.decodeBase64(bytes).getBytes("UTF-8");
+        }
+        catch (java.io.UnsupportedEncodingException uee) {
+            throw new IOException("encoding error in SASL");
+        }
+
+        String authenticationText = getChallengeResponse(dchallenge);
         if (authenticationText != null) {
-            stanza.append(StringUtils.encodeBase64(authenticationText));
+            try {
+                byte[] bytes = authenticationText.getBytes("UTF-8");
+                stanza.append(StringUtils.encodeBase64(bytes));
+            }
+            catch (java.io.UnsupportedEncodingException uee) {
+                throw new IOException("encoding error in SASL");
+            }
         }
         stanza.append("</response>");
 

@@ -352,7 +352,7 @@ public class StringUtils {
      * @param data a base64 encode byte array to decode.
      * @return the decoded String.
      */
-    private static String decodeBase64(byte[] data) {
+    public static String decodeBase64(byte[] data) {
         int c, c1;
         int len = data.length;
         StringBuffer ret = new StringBuffer((len * 3) / 4);
