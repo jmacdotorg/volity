@@ -24,8 +24,8 @@ Volity::Seat - A Volity seat, containing some players.
 
 =head1 SYNOPSIS
 
- # Given a Volity::Referee object:
- my @seats = $referee->seats;
+ # From within a Volity::Game subclass's code:
+ my @seats = $self->seats;
 
  # Or, given a Volity::Player object:
  my $seat = $player->seat;
@@ -35,24 +35,31 @@ Volity::Seat - A Volity seat, containing some players.
 
 =head1 DESCRIPTION
 
-Objects of this class represent seats of players. Volity players who
-are actually playing a game sit in seats, and referees address
-game-specific RPC calls to seats, not to individual players. See the
-main Volity documentation for more information about the seat concept.
+An objects of this class represents a seat at a Volity table. Volity
+players who are actually playing a game sit in seats, and referees
+address game-specific RPC calls to seats, not to individual
+players. See the main Volity documentation for more information about
+the seat concept:
+http://www.volity.org/wiki/index.cgi?action=browse&id=Seats
 
 =head1 USAGE
 
-As a game programmer, you need never create or modify these objects
-yourself; that is all handled for you by the other objects that make
-up a Frivolity-run table, particularly the referee (see
-L<Volity::Referee>). However, you will interact with seat objects in
-order to perform any sort of game-level function, including the
-all-important C<call_ui_function> method (described below).
+As a game programmer, you need never create, modify, or destroy these
+objects yourself; that is all handled for you by the other objects
+that make up a Frivolity-run table, particularly the referee (see
+L<Volity::Referee>). However, several methods of C<Volity::Game>, the
+module you subclass to create your own Perl-based Volity game, will
+return objects of this class. Several crucial functions of
+communicating with a game's players involve calling methods on these
+objects, including the all-important C<call_ui_function> method
+(described below).
 
-I<Note>: Your Volity::Game subclass must define some variables
-that assist the referee in seat creation (particularly the C<seat_ids>
-and C<required_seat_ids> class variables, as described in
-L<Volity::Game>).
+Your Volity::Game subclass must define some variables that assist the
+referee in seat creation, particularly the C<seat_ids> and
+C<required_seat_ids> class variables. If you wish to extend this class
+for your game, you can speficy a C<Volity::Seat> subclass to use
+through C<Volity::Game>'s C<seat_class> method. All these are
+described in detail within L<Volity::Game>.
 
 =head1 METHODS
 
@@ -215,7 +222,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005 by Jason McIntosh.
+Copyright (c) 2005-2006 by Jason McIntosh.
 
 =cut
 
