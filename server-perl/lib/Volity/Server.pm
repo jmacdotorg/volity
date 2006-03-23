@@ -20,13 +20,13 @@ package Volity::Server;
 
 =head1 NAME
 
-Volity::Server - A Volity game server.
+Volity::Server - A Volity game parlor.
 
 =head1 SYNOPSIS
 
  use Volity::Server;
  
- # Create a new server
+ # Create a new parlor
  my $server = Volity::Server->new(
 				 {
 				  user=>'bob_the_game',
@@ -45,6 +45,12 @@ Volity::Server - A Volity game server.
 
  $server->stop;
 
+However, it is much more likely that you'll be starting a server from
+the C<volityd> program than from within code. Here's how you'd launch
+the above server from the command line (and without using a C<volityd>
+config file):
+
+ $ volityd -J bob_the_game@volity.net/server -G MyGame::Class -p secret
 
 =head1 DESCRIPTION
 
@@ -52,14 +58,18 @@ An object of this class is a Volity parlor. (It's still called
 Volity::Server due to historical tradition.) As the synopsis suggests,
 it's more or less a black-box application class. Construct the object
 with a configuratory hash reference, call the C<start> method, and if
-XMPP worked out, you've got a running server.
+XMPP authentication worked out, you've got a running server.
 
 You generally never need to use this class directly, no matter what
 you're doing with Volity. Parlor objects of this class are created and
 managed for you by the C<volityd> program, so unless you want to get
 into the guts of the Volity system you may be more interested in
-L<volityd>. If you want to make your own Volity games in Perl, I
-direct your attention to L<Volity::Game>.
+L<volityd>. 
+
+If your main goal involves creating Volity games in Perl, I direct
+your attention to L<Volity::Game>, which is far more relevant to such
+pursuits. The rest of this manpage is probably of more interest to
+folks wishing to perform deep voodoo with these libraries.
 
 =cut
 
@@ -69,9 +79,9 @@ use strict;
 =head1 CONFIGURATION
 
 When constructing the object, you can use all the keys described in
-L<Volity::Jabber/"Accessors">, for this class inherits from that one,
-you see. You can also use any of the following keys, which also
-function as simple accessor methods after the object is created:
+L<Volity::Jabber/"Accessors">, for this class inherits from that
+one. You can also use any of the following keys, which also function
+as simple accessor methods after the object is created:
 
 =over
 
@@ -615,6 +625,6 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003-2004 by Jason McIntosh.
+Copyright (c) 2003-2006 by Jason McIntosh.
 
 =cut
