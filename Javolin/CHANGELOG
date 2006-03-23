@@ -1,7 +1,7 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.3.1
 
 All dialog boxes now have alerts like "You must enter a user name" if you
 leave an important field blank.
