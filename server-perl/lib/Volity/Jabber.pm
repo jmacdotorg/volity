@@ -74,6 +74,15 @@ kernel.
 
 =head1 USAGE
 
+=head2 For game authors
+
+You don't need to know much of anything at this level. Here be dragons.
+
+Stick to the modules listed in L<Volity/"Modules of interest to game
+developers">, especially C<Volity::Game>.
+
+=head2 For deep-voodoo wizards
+
 To use this module, write an object class that subclasses
 C<Volity::Jabber>, then override any event-handling methods which
 should perform some action other than the default (which is usually a
@@ -1069,24 +1078,31 @@ sub join_muc {
   my $presence = POE::Filter::XML::Node->new('presence');
   $presence->attr(to=>$muc_jid);
   $presence->insert_tag('x', [xmlns=>'http://jabber.org/protocol/muc']);
-  $self->post_node($presence);
+#  $self->post_node($presence);
+  $self->send_presence({
+      to=>$muc_jid,
+      namespace=>'http://jabber.org/protocol/muc',
+  });
   $self->logger->debug("Presence sent.\n");
   return $muc_jid;
 }
 
 =head2 send_presence ($info_hashref)
 
-Send a simple presence packet. Its optional argument is a hashref containing any of the following keys:
+Send a presence packet. Its optional argument is a hashref containing
+any of the following keys:
 
 =over
 
 =item to
 
-The destination of this presence packet (if it's a directed packet and not just a 'ping' to one's Jabber server).
+The destination of this presence packet (if it's a directed packet and
+not just a 'ping' to one's Jabber server).
 
 =item type
 
-Sets the type attribute. See the XMPP-IM protocol for more information as to their use and legal values.
+Sets the type attribute. See the XMPP-IM protocol for more information
+as to their use and legal values.
 
 =item show
 
@@ -1094,11 +1110,21 @@ Sets the type attribute. See the XMPP-IM protocol for more information as to the
 
 =item priority
 
-These all set sub-elements on the outgoing presence element. See the XMPP-IM protocol for more information as to their use. You may set these to localized values by setting their values to hashrefs instead of strings, as described in L<"Localization">.
+These all set sub-elements on the outgoing presence element. See the
+XMPP-IM protocol for more information as to their use. You may set
+these to localized values by setting their values to hashrefs instead
+of strings, as described in L<"Localization">.
 
 =item caps
 
-This optional key has a value of another hashref containing entity capabilities (JEP-0115) information. Its keys are C<node>, C<ver> and C<ext>.
+This optional key has a value of another hashref containing entity
+capabilities (JEP-0115) information. Its keys are C<node>, C<ver> and
+C<ext>.
+
+=item namespace
+
+If you define this optional key, then the presence packet will include
+an empty <<x/>> element with the given C<xmlns> attribute value.
 
 =back
 
@@ -1117,6 +1143,9 @@ sub send_presence {
   }
   foreach (qw(show status priority)) {
     $self->insert_localized_tags($presence, $_, $$config{$_}) if defined($$config{$_});
+  }
+  if ($$config{namespace}) {
+      $presence->insert_tag('x', [xmlns=>$$config{namespace}]);
   }
   if (my $caps_config = $$config{caps}) {
       if (ref($caps_config) eq 'HASH') {
@@ -2324,7 +2353,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Jason McIntosh.
+Copyright (c) 2003-2006 by Jason McIntosh.
 
 =cut
 
