@@ -8,7 +8,10 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.*;
-import org.volity.client.*;
+import org.volity.client.GameTable;
+import org.volity.client.Player;
+import org.volity.client.Seat;
+import org.volity.client.StatusListener;
 import org.volity.javolin.PrefsDialog;
 
 /**

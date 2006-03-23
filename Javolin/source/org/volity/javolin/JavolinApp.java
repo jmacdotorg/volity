@@ -41,7 +41,9 @@ import org.jivesoftware.smackx.ServiceDiscoveryFactory;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DataForm;
 
-import org.volity.client.*;
+import org.volity.client.Bookkeeper;
+import org.volity.client.InvitationListener;
+import org.volity.client.InvitationManager;
 import org.volity.client.comm.CapExtensionProvider;
 import org.volity.client.comm.CapPacketExtension;
 import org.volity.client.comm.FormExtensionProvider;
