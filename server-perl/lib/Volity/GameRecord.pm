@@ -48,7 +48,10 @@ situation will probably be quite common.)
 Game module designers don't have to worry about using this module at
 all. Records are automatically created by Volity::Referee objects when
 a game wraps up, and incoming records are automatically parsed by the
-bookkeeper.
+bookkeeper. Your main responsibility with game record handling
+involves the winners list, available through the C<winners()> method
+of your C<Volity::Game> subclass and manipulatable through the methods
+described in L<Volity::WinnersList>.
 
 The following documentation is really here for completeness' sake, but
 those wishing to modify the Frivolity referee or bookkeeper behavior
@@ -496,7 +499,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Jason McIntosh.
+Copyright (c) 2003-2006 by Jason McIntosh.
 
 =cut
 
