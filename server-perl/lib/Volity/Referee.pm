@@ -45,44 +45,28 @@ logic in a Volity::Game subclass.
 
 =head1 USAGE
 
-=head2 For game programmers
-
-After being instanced, your game object will have a referee object as
-its C<referee> instance variable, accessible through the C<referee()>
-accessor. You can call all the methods on it defined in this
-manpage. However, you should avoid doing anything that would mess up
-the game, such as having the referee leave the table! It's probably
-more useful for accessing methods like C<groupchat()>.
+After being instanced, your C<Volity::Game> subclass object will have
+a referee object as its C<referee> instance variable, accessible
+through the C<referee()> accessor.
 
 In many cases, you can program your game module without ever directly
-referring to the referee. It's just there if you need it (and for the
-use of the lower-level Volity::Game base class, which does carry on a
-continual conversation with its embedded referee object). Other than
-that, the referee object takes care of all the Volity protocol-level
-stuff for you, letting you concentrate on making your game work.
-
-=head2 For wizardly game programmers
-
-If you feel the need to subclass Volity::Referee, you can run C<volityd> with 
-
-Note that you can use the stock Volity::Referee class for most situations.
-
-=head2 For everyone else
-
-Unless you're writing a game module, you can probably happily ignore
-this module. The game server will use it just fine, all by itself.
+referring to the referee. While this class does make many important
+methods available (such as C<seats()), they are transparently
+available from your game object as well. The referee simply sits in
+the background and takes care of all the Volity protocol-level stuff
+for you, letting you concentrate on making your game work.
 
 =head1 METHODS
-
-The following methods describe this module's public API (insofar as
-Perl modules can say that they have any public/private
-distinction). You are welcome to snoop around in the code to see what
-the other, internal methods do, but you probably wouldn't need to call
-them during a game.
 
 It's worth noting that this module subclasses from Volity::Jabber, and
 therefore enjoys all the methods that it defines, as well as the ones
 listed here.
+
+Furthermore, all of these methods are also available with instances of
+Volity::Game and its subclasses; they transparently pass them up to
+their associated Volity::Referee objects, and pass back the return
+values. For your convenience, the method documentation below also
+appears in L<Volity::Game>.
 
 =head2 Object accessors
 
@@ -1087,7 +1071,6 @@ sub create_bot {
 			     resource=>$resource,
 			     alias=>$resource,
 			     muc_jid=>$self->muc_jid,
-#			     referee=>$self,
 			    }
 			 );
   $self->logger->info("New bot (" . $bot->jid . ") created by referee (" . $self->jid . ").");
@@ -1212,6 +1195,10 @@ sub resume_game {
     $self->quietly_unready_all_players;
 
     foreach ($self->players) { $_->resume_game }
+    
+    # Call the game object's resume-game callback.
+    $self->game->game_has_resumed;
+
 }
 
 # throw_game: Just make a fakey "winners" list out of the current players,
@@ -1386,6 +1373,9 @@ sub handle_ready_player_request {
 	  if (@empty_required_seats) {
 	      # Nope, too many empty seats to start.
 	      $self->send_rpc_response($from_jid, $rpc_id, ["volity.empty_seats"]);
+	  } elsif ($player->is_bot && not(grep($_->seat && not($_->is_bot), $self->players))) {
+	      # Nope, a bot can't ready unless a human is seated.
+	      $self->send_rpc_fault($from_jid, $rpc_id, 609, "A bot can't declare readiness unless there are humans seated.");
 	  } elsif ($self->game->has_acceptable_config) {
 	      # All config is A-OK! Let's ready this player.
 	      $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
@@ -1833,7 +1823,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003 by Jason McIntosh.
+Copyright (c) 2003-2006 by Jason McIntosh.
 
 =cut
 
