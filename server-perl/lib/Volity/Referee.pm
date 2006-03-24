@@ -293,7 +293,7 @@ sub init_finish {
   $kernel->post($self->alias, 'register', qw(iq presence message));
 
   # Join the game MUC.
-  $self->join_muc({jid=>$self->muc_jid, nick=>'volity'});
+  $self->join_muc({jid=>$self->muc_jid, nick=>'referee'});
 
 }
 
