@@ -208,7 +208,7 @@ use List::Util qw(first);
 ###################
 
 our $default_seat_class = "Volity::Seat";
-our $default_internal_timeout = 300;
+our $default_internal_timeout = 180;
 our $default_language = "en";
 
 ###################
@@ -559,8 +559,6 @@ sub jabber_presence {
 		  my $seat = $player->seat;
 		  if ($seat && not($seat->is_under_control)) {
 		      # The seat is uncontrolled!
-		      # Grumble at the table.
-		      # XXX No 18n.
 		      if ($self->game->is_abandoned) {
 			  # Holy crap, _everyone_ has left! Bastards.
 			  # All right, we'll wait for someone to come back.
@@ -571,6 +569,27 @@ sub jabber_presence {
 			  if ($self->game->is_abandoned) {
 			      # OK, give up waiting.
 			      $self->suspend_game;
+			      # But now a new wait begins.
+			      # If no replacement humans show up in 90 seconds,
+			      # I'm outta here.
+			      my $deadline = time + 90;
+			      until (
+				     (time >= $deadline) or
+				     ($self->non_missing_check)
+				     ) {
+				  $self->kernel->run_one_timeslice;
+			      }
+			      if (not($self->non_missing_check)) {
+				  # No humans came. I am unloved.
+				  # I'll just shut down, then.
+				  $self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
+				  if ($self->game->is_afoot) {
+				      $self->logger->debug("But first, I'm sending a game record.");
+				      $self->end_game;
+				  }
+				  $self->stop;
+			      }
+
 			  }
 		      }
 		  }
@@ -881,6 +900,21 @@ sub non_bot_check {
 	}
     }
     # No humans found, if we came this far.
+    return 0;
+}
+
+# non_missing_check: Returns 1 if the MUC contains at least one player who is
+# not a bot _and_ not missing. Observers count. Returns 0 otherwise.
+sub non_missing_check {
+    my $self = shift;
+    for my $nickname (keys(%{$self->{nicks}})) {
+	my $player = $self->look_up_player_with_nickname($nickname);
+	unless ($player->is_bot || $player->is_missing) {
+	    # This is a non-missing human.
+	    return 1;
+	}
+    }
+    # No non-missing humans found, if we came this far.
     return 0;
 }
 
@@ -1670,7 +1704,7 @@ sub current_state {
     } elsif ($self->game->is_suspended) {
 	return 'suspended';
     } elsif ($self->game->is_disrupted) {
-	return 'disrputed';
+	return 'disrupted';
     } elsif ($self->game->is_abandoned) {
 	return 'abandoned';
     } else {
