@@ -61,6 +61,12 @@ public class ErrorWrapper
         mError = ex;
         mDate = new Date();
 
+        if (ex instanceof OutOfMemoryError) {
+            // This is fatal.
+            System.out.println("Detected fatal exception: " + ex.toString());
+            System.exit(-1);
+        }
+
         System.out.println("Detected exception: " + ex.toString());
         synchronized (lastErrorLock) {
             lastError = this;
