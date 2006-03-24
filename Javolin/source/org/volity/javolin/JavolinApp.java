@@ -1038,10 +1038,14 @@ public class JavolinApp extends JFrame
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-        jid = StringUtils.parseBareAddress(jid);
-        String url = PLAYER_STAT_QUERY_URL + jid;
-
-        PlatformWrapper.launchURL(url);
+        try {
+            jid = StringUtils.parseBareAddress(jid);
+            String url = PLAYER_STAT_QUERY_URL + URLEncoder.encode(jid, "UTF-8");
+            PlatformWrapper.launchURL(url);
+        }
+        catch (UnsupportedEncodingException ex) {
+            new ErrorWrapper(ex);
+        }
     }
 
     /**
