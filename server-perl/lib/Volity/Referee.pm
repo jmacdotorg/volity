@@ -1023,7 +1023,9 @@ sub remove_bot {
 
   # Having survived this obstacle course, we have determined that $bot
   # is, in fact a bot. Whom we will now eject from the table.
-  $bot->stop;
+  my ($bot_object) = grep($bot->jid eq $_->jid, $self->active_bots);
+  $bot_object->stop;
+  $self->active_bots(grep($bot->jid ne $_->jid, $self->active_bots));
 }
   
 
