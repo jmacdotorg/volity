@@ -50,9 +50,8 @@ game, and have it inherit from C<Volity::Game>. You can then have it
 do whatever you like, calling the C<end()> method when you're all
 done.
 
-L<"SYNOPSIS"> illustrates this with an absurd level of simplicity. You
-can find more sophisticated examples in the C<examples/> directory
-that should have accompanied this module.
+For a full-featured example of how this works, see
+L<Volity::Game::TicTacToe>.
 
 Some things to keep in mind when creating your subclass...
 
@@ -70,21 +69,54 @@ final step, and you are welcome to override this in order to give your
 object some final preparations before sending it out into the world.
 
 If you do override this method, however, it I<must> have a return
-value of C<$self->SUPER::initialize(@_)> or untold chaos will result.
+value of C<$self-E<gt>SUPER::initialize(@_)> or untold chaos will result.
 
 =head1 METHODS
 
-I<Note> that the message-handling methods described in
-L<Volity::Jabber/"Message handler methods"> can be called as I<either>
-either class or object methods, and you should check the C<ref>ness of the
-first argument if it makes any difference. (This is possibly dumb, and might
-change in future versions of this module.)
+=head2 Class methods
 
-So here are some object methods peculiar to C<Volity::Game>...
+These methods are used to set some general configuration information about
+the game, rather than specific information about any particular instance
+thereof.
 
-=head2 Object accessor methods
+=over
 
-=over 
+=item name
+
+A I<brief> name of this game module, which the game server will use to
+advertise itself through service discovery and other means. If left
+undefined, a boring default value will be used (probably the JID that this
+server is running under.
+
+=item description
+
+A longer text description of this game module.
+
+=item uri
+
+I<Required.> The URI of the ruleset that this particular game module
+implements. Consult the core Volity documentation for more information on
+how this works: http://www.volity.org/wiki/index.cgi?Ruleset_URI
+
+=item ruleset_version
+
+I<Required.> The version number of the ruleset that this particular game
+module implements. A client-side UI file consults this number to determine
+its own compatibility with a game server.
+
+=item seat_ids 
+
+An array reference of strings representing the IDs of I<all> the seats
+that this game implementation supports. Example:
+
+ My::Game->seat_ids([qw(black white)]);
+ my $seat_ids = My::Game->seat_ids; # $seat_ids is now ['black', 'white']
+
+=item required_seat_ids
+
+An array reference of strings representing the IDs of
+role-differentiated seats that players should be aware of, as defined
+by the ruleset.
 
 =item seat_class
 
@@ -92,6 +124,29 @@ The class that this game's seats belong to. When the game wants to make new
 seats, it calls this class's constructor.
 
 If you don't set this, it defaults to using the base C<Volity::Seat> class.
+
+=back
+
+=head2 Object methods
+
+=over 
+
+=item seats
+
+Returns a list of all the seat objects currently at the table.
+
+The objects will be instances of C<Volity::Seat>, unless you specified
+another class to use with the C<seat_class()> method.
+
+=item players
+
+Returns a list of all the player objects currently at the table. This
+includes all seated and standing players, and doesn't disciminate
+between humans and bots. (You can call methods such as C<seat()> and
+C<is_bot()> on the resulting objects to help you sort out which is
+which.)
+
+The objects will be of the C<Volity::Player> class.
 
 =item is_afoot
 
@@ -138,55 +193,6 @@ C<seat_class> accessor method.
 
 This is distinct from the referee object's C<seats> methods, which
 returns I<all> seats at the table, regardless of status or population.
-
-=back
-
-=head2 Class Accessor methods
-
-These methods are used to set some general configuration information about
-the game, rather than specific information about any particular instance
-thereof.
-
-=over
-
-=item name
-
-A I<brief> name of this game module, which the game server will use to
-advertise itself through service discovery and other means. If left
-undefined, a boring default value will be used (probably the JID that this
-server is running under.
-
-=item description
-
-A longer text description of this game module.
-
-=item uri
-
-I<Required.> The URI of the ruleset that this particular game module
-implements. Consult the core Volity documentation for more information on
-how this works: http://www.volity.org/wiki/index.cgi?Ruleset_URI
-
-=item ruleset_version
-
-I<Required.> The version number of the ruleset that this particular game
-module implements. A client-side UI file consults this number to determine
-its own compatibility with a game server.
-
-=item seat_ids 
-
-An array reference of strings representing the IDs of I<all> the seats
-that this game implementation supports. Example:
-
- My::Game->seat_ids([qw(black white)]);
- my $seat_ids = My::Game->seat_ids; # $seat_ids is now ['black', 'white']
-
-=item required_seat_ids
-
-An array reference of strings representing the IDs of
-role-differentiated seats that players should be aware of, as defined
-by the ruleset.
-
-=back
 
 =cut
 
@@ -268,10 +274,6 @@ sub turn_order {
     return @{$self->{turn_order}};
 }
 
-=head2 Other object methods
-
-=over
-
 =item current_seat ($seat)
 
 Called with no arguments, returns the seat whose turn is up.
@@ -331,51 +333,6 @@ do generate proper game records for storage with the Volity
 bookkeeper, then you must use this object to specify the seats'
 winning order I<before> you call the game object's C<end> method. See
 L<Volity::WinnersList> for the list object's API.
-
-=item bookkeeper_jid
-
-The JID of the network's bookkeeper. Initially set by the server,
-depending upon its own configuration.
-
-=item muc_jid
-
-The JID of the table's MUC. Set by various magic internal
-methods, so you should treat this as read-only; things will probably
-not work well if you reset this value yourself.
-
-=item game_class
-
-I<Important!> The Perl class of the actual game (usually a subclass of
-Volity::Game).
-
-You I<must> set this on object construction though the C<new> method's
-argument hash, as detailed in L<Volity/"Object construction">. Not
-doing so will result in an error.
-
-=item game
-
-The referee superclass already knows how and when to create a game
-object from the class specified by the C<game_class> instance
-variable, and when it does so, it stores that object under C<game>.
-
-You should treat-this as a read-only variable. Generally, it will
-always be defined, as a referee creates a new game object as soon as
-it can. When a game ends, the object is destroyed a new one
-automatically takes its place.
-
-=item startup_time
-
-Returns the time (in seconds since the epoch) when this palor started.
-
-=item last_activity_time
-
-Returns the time (in seconds since the epoch) when this referee last
-handled a game.* RPC.
-
-=item games_completed
-
-Returns the number of games that have been begun and ended with this
-referee.
 
 =cut
 
@@ -514,7 +471,7 @@ sub is_active {
 sub is_disrupted {
     my $self = shift;
     if (
-        grep( { not $_->is_under_control }
+        grep( { not $_->is_under_human_control }
             grep( { not $_->is_eliminated } $self->seats ) )
         && not( $self->is_abandoned )
         )
@@ -526,12 +483,12 @@ sub is_disrupted {
     }
 }
 
-# is_abandoned: Return 1 if the game appears to be utterly devoid of controlled
-# seats.
+# is_abandoned: Return 1 if the game appears to be utterly devoid of
+# human-controlled seats.
 sub is_abandoned {
     my $self = shift;
     if (
-        grep( { $_->is_under_control }
+        grep( { $_->is_under_human_control }
             grep( { not $_->is_eliminated } $self->seats ) )
         )
     {
@@ -625,14 +582,14 @@ callback might look like this:
      my $self = shift;
      my ($seat, $piece_id, $destination) = @_;
      # Game logic here....
+     return ("volity.ok");
  }
 
 The callback's return value corresponds to a Volity token. (See
 http://www.volity.org/wiki/index.cgi?Token). This will most commonly
 be a ruleset-defined error token to express a rejection of the
-caller's move, or a "volity.ok" token otherwise. See L<"SYNOPSIS"> for
-a silly illustration, and the documents in the C<example/> files for
-more sophisticated examples.
+caller's move, or a "volity.ok" token otherwise. See
+L<Volity::Game::TicTacToe> for an illustration.
 
 =head2 Volity-level callbacks
 
@@ -670,7 +627,7 @@ for you, before has_acceptable_config is called.
 
 This method should update the given player about the table's current
 game-specific configuration, probably through a series of
-C<$player->call_ui_function> calls. The argument is the Volity::Player
+C<$player-E<gt>call_ui_function> calls. The argument is the Volity::Player
 object who needs to be brought up to speed.
 
 As an example, imagine that your game implements a ruleset where
@@ -680,7 +637,7 @@ C<game.goal_score($score)>. When a player joins a table running this
 game, its client will request the current state, and will ultimately
 fire the C<send_config_state_to_player($player)> method on your game
 object. So it's your responsibility to make sure that it responds by
-calling C<$player->call_ui_function("goal_score", $self->goal_score)>,
+calling C<$player-E<gt>call_ui_function("goal_score", $self->goal_score)>,
 assuming that your Game object has a field called C<goal_score> that
 holds this number.
 
