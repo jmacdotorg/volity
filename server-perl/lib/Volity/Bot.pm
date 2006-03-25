@@ -219,13 +219,19 @@ sub jabber_presence {
         # Aha, someone has joined the table.
         my $affiliation = $x->get_tag('item')->attr('affiliation');
         $self->logger->debug( "I see presence from " . $node->attr('from') );
-        my ($nickname) = $node->attr('from') =~ m|/(.*)$|;
-        if ( $nickname eq $self->nickname ) {
-
-            # Oh, it's me.
-            $self->referee_jid( $self->muc_jid . "/volity" );
-
+	
+	# See if they have a caps (JEP-0115) element in their presence.
+	# If so, this may clue us in to what sort of Volity entity this is.
+	if ((my $c = $node->get_tag('c')) && 
+	    ($node->get_tag('c')->attr('node') eq "http://volity.org/protocol/caps")) {
+	    my $volity_role = $c->attr('ext');
+	    if ($volity_role eq "referee") {
+		# We've found the referee!
+		$self->referee_jid( $node->attr('from') );
+	    }
         }
+	
+	
     }
 }
 
