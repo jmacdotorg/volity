@@ -1288,16 +1288,25 @@ sub send_record_to_bookkeeper {
 
 sub invite_player {
   my $self = shift;
-  my ($from_jid, $rpc_id, @args) = @_;
-  my $invitation_id = $self->last_rpc_id;
-  $invitation_id++; $self->last_rpc_id($invitation_id);
-  $self->invitations->{$invitation_id} = [$rpc_id, $from_jid];
-  $self->logger->debug("$from_jid will invite $args[0]. New ID is $invitation_id. Old id was $rpc_id.");
-  $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);			    
-  $self->make_rpc_request({to=>$args[0],
-			   id=>$invitation_id,
-			   methodname=>'volity.receive_invitation',
-			   args=>[{player=>$from_jid,
+  my ($from_jid, $rpc_id, $to_jid) = @_;
+
+  # Figure out whether to format this invitation as an RPC, or as a message.
+  # Our decision is based on whether or not there's a resource string
+  # in the recipient's JID.
+  if ($to_jid =~ /\//) {
+      # This appears to be a full JID, with a resource string.
+      # So we'll use an RPC-based invitation.
+
+      my $invitation_id = $self->last_rpc_id;
+      $invitation_id++; $self->last_rpc_id($invitation_id);
+      $self->invitations->{$invitation_id} = [$rpc_id, $from_jid];
+      $self->logger->debug("$from_jid will invite $to_jid. New ID is $invitation_id. Old id was $rpc_id.");
+
+      $self->make_rpc_request({to=>$to_jid,
+			       id=>$invitation_id,
+			       methodname=>'volity.receive_invitation',
+			       args=>[{
+				   player=>$from_jid,
 				   table=>$self->muc_jid,
 				   referee=>$self->jid,
 				   server=>$self->server->jid,
@@ -1305,8 +1314,29 @@ sub invite_player {
 				   ruleset=>$self->game_class->uri,
 				   name=>$self->game_class->name,
 			       }],
-			   handler=>'invitation',
-			  });
+			       handler=>'invitation',
+			   });
+  }
+  else {
+      # OK, so the recipient JID had no resource string.
+      # We'll fall back to trying a message-based invitation.
+      # First send back an RPC okey-dokey.
+      $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
+      $self->send_message({
+	  to => $to_jid,
+	  subject => "invitation",
+	  body => "$from_jid has invited you to join a game of " . $self->game_class->name . " at " . $self->muc_jid,
+	  invitation => {
+	      player=>$from_jid,
+	      table=>$self->muc_jid,
+	      referee=>$self->jid,
+	      server=>$self->server->jid,
+	      parlor=>$self->server->jid,
+	      ruleset=>$self->game_class->uri,
+	      name=>$self->game_class->name,
+	  },
+      });
+  }
 }
 
 sub handle_language_request {
