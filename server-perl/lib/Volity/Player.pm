@@ -88,7 +88,7 @@ isn't sitting or missing.
 
 A Volity::Seat object that's most appropriate to use when sending
 state to the player, preventing suspension-mode state-snooping. See
-the C<send_full_state_to_player> method documented in L<Volity::Game>.
+the C<send_game_state_to_player> method documented in L<Volity::Game>.
 
 =item is_missing
 

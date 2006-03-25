@@ -32,14 +32,28 @@ Volity::WinnersList - class for Volity game record winners lists
 =head1 SYNOPSIS
 
 Here's code you might see in a Volity::Game subclass implementing a
-game where there is one winner and a bunch of losers (we assume that
-the methods called in the first two lines are defined elsewhere):
+game where there is one winner and a bunch of losers, the latter of
+whom are all effectively tied for second place (we assume that the
+methods called in the first two lines are defined elsewhere):
 
  if ($self->game_has_been_won) {
      my ($winner, @losers) = $self->get_winning_seat_order;
      $self->winners->add_seat_to_slot($winner, 1);
      $self->winners->add_seat_to_slot(\@losers, 2);
      $self->end;
+ }
+
+And here's what you might see in a subclass defining a score-using
+games where each player has a discrete ordinal place, and ties and
+ties are not possible (again assuming the presence of some magic
+methods defined somewhere else in the subclass):
+
+ if ($self->game_has_been_won) {
+     my @ordered_seats = $self->get_winning_seat_order;
+     for (my $index = 0; $index <= $#ordered_seats; $index++) {
+	 my $place = $index + 1;
+	 $self->winners->add_seat_to_slot($ordered_seats[$index], $place);
+     }
  }
 
 =head1 DESCRIPTION
@@ -144,7 +158,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005 by Jason McIntosh.
+Copyright (c) 2005-2006 by Jason McIntosh.
 
 =cut
 
