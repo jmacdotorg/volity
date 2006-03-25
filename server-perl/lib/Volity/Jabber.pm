@@ -919,15 +919,24 @@ protocol for explanation on what these mean.)
 
 =item thread
 
-I<Optional> A string identifying the thread that this message belongs to.
+I<Optional> A string identifying the thread that this message belongs
+to.
 
 =item subject
 
-I<Optional> The message's subject. Can be either a string, or a hashref of the sort described in L<"Localization">.
+I<Optional> The message's subject. Can be either a string, or a
+hashref of the sort described in L<"Localization">.
 
 =item body
 
-I<Optional> The message's body. Can be either a string, or a hashref of the sort described in L<"Localization">.
+I<Optional> The message's body. Can be either a string, or a hashref
+of the sort described in L<"Localization">.
+
+=item invitation
+
+I<Optional> A hashref describing a Volity message-based
+invitation. Keys include C<referee>, C<name>, C<player>, C<parlor>,
+C<ruleset> and C<table>.
 
 =back
 
@@ -963,6 +972,27 @@ sub send_message {
       }
     }
   }
+
+  if ($$config{invitation}) {
+      unless (ref($$config{invitation}) eq 'HASH') {
+	  $self->expire("The 'invitation' key to the 'send_message' method has to contain a hash reference.");
+      }
+      my $form = Volity::Jabber::Form->new({type=>'result'});
+      my @fields;
+      my $type_field = Volity::Jabber::Form::Field->new({var=>"FORM_TYPE",
+							 type=>"hidden",
+						     });
+      $type_field->values("http://volity.org/protocol/form/invite");
+      push (@fields, $type_field);
+      foreach (keys(%{$$config{invitation}})) {
+	  my $field = Volity::Jabber::Form::Field->new({var=>$_});
+	  $field->values($$config{invitation}{$_});
+	  push (@fields, $field);
+      }
+      $form->fields(@fields);
+      $message->insert_tag("volity", [xmlns=>"http://volity.org/protocol/form"])->insert_tag($form);
+  }
+	  
   $self->post_node($message);
 }
 
@@ -2116,7 +2146,7 @@ sub invalid_fields {
 =head2 Volity::Jabber::Form::Field
 
 Just like Volity::Jabber::Disco::Item, except for JEP-0004 form-field
-elements. Whoah, bet you didn't see that curveball coming, did you?
+elements. 
 
 It contains the following simple accessor methods:
 
