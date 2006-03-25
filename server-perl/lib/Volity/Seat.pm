@@ -214,6 +214,13 @@ sub is_under_control {
     return grep(not($_->is_missing), $self->players) && 1;
 }
 
+# is_under_human_control: Return 1 if the seat contains _human_
+# players who are not missing.
+sub is_under_human_control {
+    my $self = shift;
+    return grep(not($_->is_bot) && not($_->is_missing), $self->players) && 1;
+}
+
 =back
 
 =head1 AUTHOR
