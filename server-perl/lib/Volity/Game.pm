@@ -582,14 +582,19 @@ callback might look like this:
      my $self = shift;
      my ($seat, $piece_id, $destination) = @_;
      # Game logic here....
-     return ("volity.ok");
+     return "volity.ok";
  }
 
-The callback's return value corresponds to a Volity token. (See
+The callback's return value I<must> be a Volity token. (See
 http://www.volity.org/wiki/index.cgi?Token). This will most commonly
 be a ruleset-defined error token to express a rejection of the
-caller's move, or a "volity.ok" token otherwise. See
-L<Volity::Game::TicTacToe> for an illustration.
+caller's move or request, or a "volity.ok" token otherwise.
+
+If the token takes additional arguments, simply add them to the
+return-value list after the token.
+
+See C<Volity::Game::TicTacToe> for an illustration of both successful
+and errorful token returns, particularly in its C<rpc_mark()> method.
 
 =head2 Volity-level callbacks
 
