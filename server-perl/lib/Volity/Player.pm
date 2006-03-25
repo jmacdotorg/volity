@@ -342,6 +342,32 @@ sub required_seat_list {
     });
 }
 
+sub game_is_abandoned {
+    my $self = shift;
+    $self->send_game_activity_rpc("abandoned");
+}
+
+sub game_is_active {
+    my $self = shift;
+    $self->send_game_activity_rpc("active");
+}
+
+sub game_is_disrupted {
+    my $self = shift;
+    $self->send_game_activity_rpc("disrupted");
+}
+
+sub send_game_activity_rpc {
+    my $self = shift;
+    my ($game_state) = @_;
+    $self->referee->send_rpc_request({
+	id=>'game-activity',
+	methodname=>'volity.game_activity',
+	to=>$self->jid,
+	args=>[$game_state],
+    });
+}
+
 sub timeout {
     my $self = shift;
     my ($setting_jid) = @_;

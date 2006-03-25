@@ -560,7 +560,11 @@ sub jabber_presence {
 		  if ($seat && not($seat->is_under_control)) {
 		      # The seat is uncontrolled!
 		      if ($self->game->is_abandoned) {
-			  # Holy crap, _everyone_ has left! Bastards.
+			  # Holy crap, _everyone_ has left!
+			  # Tell the onlookers (and the bots, I guess).
+			  foreach ($self->players) {
+			      $_->game_is_abandoned;
+			  }
 			  # All right, we'll wait for someone to come back.
 			  my $deadline = time + $self->internal_timeout;
 			  until ((time >= $deadline) or (not($self->game->is_abandoned))) {
@@ -590,6 +594,12 @@ sub jabber_presence {
 				  $self->stop;
 			      }
 
+			  }
+		      }
+		      elsif ($self->game->is_disrupted) {
+			  # Tell the players about the disruption.
+			  foreach ($self->players) {
+			      $_->game_is_disrupted;
 			  }
 		      }
 		  }
@@ -639,9 +649,19 @@ sub jabber_presence {
 			      }
 			  }
 			  
+			  # If this player's return shifted saved the game
+			  # from disruption or abandonment, send out the
+			  # good news via RPC.
+			  if (not($self->game->is_disrupted) &&
+			      not($self->game->is_abandoned)) {
+			      foreach ($self->players) {
+				  $_->game_is_active;
+			      }
+			  }
 			  
 			  $rejoined = 1;
 			  last;
+
 		      }
 		  }
 	      }
