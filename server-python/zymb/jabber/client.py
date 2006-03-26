@@ -1360,6 +1360,8 @@ class JabberAuth(JabberConnect):
             (jidpassstr, dummylen) = self.encodelatin1(jidpass)
         except UnicodeEncodeError:
             (jidpassstr, dummylen) = self.encodeunicode(jidpass)
+
+        #(jidpassstr, dummylen) = self.encodeunicode(jidpass) #### ?
         
         ls = [ encoderawdigest(jidpassstr), nonce, cnonce ]
         A1 = ':'.join(ls)
@@ -1390,6 +1392,7 @@ class JabberAuth(JabberConnect):
         resp.append('charset=utf-8')
 
         respstr = (','.join(resp))
+        (respstr, dummylen) = self.encodeunicode(respstr)
         resp64 = base64.encodestring(respstr).replace('\n', '')
         
         msg = interface.Node('response',

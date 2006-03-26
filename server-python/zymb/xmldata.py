@@ -40,6 +40,7 @@ class Node:
 
     escapetext() -- escape <, >, ", and & symbols in a string.
     parse() -- parse a string into a Node tree.
+    parsefile() -- parse a file into a Node tree.
 
     Public methods:
 
@@ -830,6 +831,26 @@ class Node:
         return nod
     parse = staticmethod(parse)
 
+    def parsefile(file, encoding='UTF-8'):
+        """parsefile(file, encoding='UTF-8') -> Node
+
+        Parse the contents of a file into a Node tree. If the data is not
+        well-formed XML, this raises xml.parsers.expat.ExpatError.
+
+        By default, *encoding* is UTF-8, and so the *file* must contain data
+        in that encoding. You can supply other encodings.
+
+        This leaves *file* open, but at EOF.
+        """
+        
+        if (encoding == None):
+            raise Exception('you must give an encoding')
+        parser = FileNodeGenerator(file, encoding=encoding)
+        nod = parser.get()
+        parser.close()
+        return nod
+    parsefile = staticmethod(parsefile)
+
 class NodeGenerator:
     """NodeGenerator: A base class for utilities which parse strings into
     Node trees.
@@ -971,6 +992,40 @@ class StaticNodeGenerator(NodeGenerator):
             self.parsed = True
         return self.result
 
+class FileNodeGenerator(NodeGenerator):
+    """FileNodeGenerator: A NodeGenerator which parses a single string.
+
+    FileNodeGenerator(file, encoding='UTF-8') -- constructor.
+    
+    By default, *encoding* is UTF-8, and so the *file* must contain data
+    in that encoding. You can supply other encodings. If *encoding* is
+    None, bad things will probably happen.
+
+    Public method:
+
+    get() -- return the Node tree.
+    """
+    
+    def __init__(self, file, encoding='UTF-8'):
+        self.file = file
+        NodeGenerator.__init__(self, encoding=encoding)
+
+    def get(self):
+        """get() -> Node
+
+        Return the Node tree. This parses the entire file, reading it in
+        one line at a time. If the data is not well-formed, this raises
+        xml.parsers.expat.ExpatError.
+        """
+        
+        while (True):
+            ln = self.file.readline()
+            if (not ln):
+                break
+            self.parser.Parse(ln)
+        self.parser.Parse('', True)
+        return self.result
+        
 # ------------------- unit tests -------------------
 
 class TestXMLData(unittest.TestCase):

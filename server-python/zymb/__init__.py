@@ -30,6 +30,11 @@ simple tasks.
 
 * Version history:
 
+- unreleased:
+Added a parsefile() utility to the xmldata module.
+Fixed a bug which prevented a Jabber agent from logging in with a Unicode
+    username or password.
+
 - 1.3.2:
 The dataform module has been upgraded to handle field types. Unfortunately
     this changes the result format of DataForm.getfields(). Hopefully this
