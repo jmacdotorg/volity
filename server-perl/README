@@ -30,11 +30,7 @@ The usual incantation should suffice:
 
  perl Makefile.PL
  make
- make test
  sudo make install
-
-You may also need to patch your machine's copy of POE::Filter::XML, as
-detailed under PREREQUISTES above.
 
 It will, by default, install several Perl modules into your site-perl
 location under the Volity namespace, and place a server script
@@ -42,18 +38,29 @@ location under the Volity namespace, and place a server script
 you, edit Makefile.PL appropriately. (See the ExtUtils::MakeMaker
 manpage for instructions on modifying this file.)
 
-You'll note there's not much in the way of testing now... it just
-makes sure everything compiles. We hope to add some nice test suites
-in the future.
+You'll note there's not much in the way of testing now. We hope to add
+some nice test suites in the future.
 
 --- RUNNING YOUR FIRST PARLOR  ---
 
 While no automated testing exists yet, you can manually test your
 installation by attempting to set up a game parlor that runs Tic Tac
-Toe. The examples/ directory contains a configuration file that you
-can modify with a valid Jabber ID and password for your test to
-use. (If you already have a Jabber login from any source, you can just
-plug it in here.)
+Toe. At examples/tictactoe/conf.yml you'll find a configuration file
+that you can modify with a valid Jabber ID and password for your test
+to use. (If you already have a Jabber login from any source, you can
+just plug it in here.)
+
+Once you've updated the file (and installed Frivolity), try feeding it
+to volityd with a command like this (assuming that volityd ended up
+somewhere in your PATH):
+
+ volityd -C examples/tictactoe/conf.yml
+
+If everything worked, you should now be able to create a new table at
+the parlor with any Volity client. In Javolin, this involves the
+Game->New Table At... command. (If you don't already have Javolin, you
+can download it from volity.org:
+http://www.volity.org/projects/javolin/)
 
 --- CONTACT ---
 
