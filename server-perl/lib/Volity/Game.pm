@@ -34,26 +34,20 @@ but full-featured example.
 This class provides a framework for writing Volity game modules in
 Perl. A Volity game module will be a subclass of this class. 
 
-If you downloaded and installed the Frivolity system (all these Perl modules
-under the C<Volity> namespace) primarily so you could write Volity game
-modules in Perl, then this is the class you should show the most interest
-in! 
-
-To turn your subclass into a real-life running Volity parlor, you can
-pass it to the C<volityd> program via its C<game> config option (see
-L<volityd>).
+To turn your subclass into an active Volity parlor, you can pass it to
+the C<volityd> program via its C<game_class> config option (see L<volityd>).
 
 =head1 USAGE
 
 To use this module, subclass it. Create your own Perl package for your
-game, and have it inherit from C<Volity::Game>. You can then have it
-do whatever you like, calling the C<end()> method when you're all
-done.
+game, and have it inherit from C<Volity::Game>. Then define game logic
+and other behavior primarily by writing callback methods, as described in
+L<"CALLBACK METHODS">.
 
-For a full-featured example of how this works, see
-L<Volity::Game::TicTacToe>.
+See L<Volity::Game::TicTacToe> for a simple but complete example of a
+Volity::Game subclass.
 
-Some things to keep in mind when creating your subclass...
+Some things to keep in mind while writing your subclass:
 
 =head2 It's a pseudohash
 
@@ -62,14 +56,17 @@ makes use of the C<fields> pragma. (See L<fields>.) As the example
 shows, you should declare the the instance variables you intend to use
 with a C<use fields()> invocation.
 
+Other than that, an instance if your subclass will work just like a
+hash-based Perl object.
+
 =head2 Use (but don't abuse) the initialize() method
 
 The C<Volity::Game> base class constructor calls C<initialize()> as a
-final step, and you are welcome to override this in order to give your
-object some final preparations before sending it out into the world.
+final step.
 
-If you do override this method, however, it I<must> have a return
-value of C<$self-E<gt>SUPER::initialize(@_)> or untold chaos will result.
+If you override this method to peform game-specific initialization on
+your subclass, it I<must> have a return value of
+C<$self-E<gt>SUPER::initialize(@_)>.
 
 =head1 METHODS
 
@@ -123,7 +120,7 @@ by the ruleset.
 The class that this game's seats belong to. When the game wants to make new
 seats, it calls this class's constructor.
 
-If you don't set this, it defaults to using the base C<Volity::Seat> class.
+It defaults to using the base C<Volity::Seat> class.
 
 =back
 
@@ -141,8 +138,8 @@ another class to use with the C<seat_class()> method.
 =item players
 
 Returns a list of all the player objects currently at the table. This
-includes all seated and standing players, and doesn't disciminate
-between humans and bots. (You can call methods such as C<seat()> and
+includes all seated and standing players, and doesn't discriminate
+between humans and bots. (Call methods such as C<seat()> and
 C<is_bot()> on the resulting objects to help you sort out which is
 which.)
 
