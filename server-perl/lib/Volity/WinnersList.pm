@@ -54,6 +54,7 @@ methods defined somewhere else in the subclass):
 	 my $place = $index + 1;
 	 $self->winners->add_seat_to_slot($ordered_seats[$index], $place);
      }
+     $self->end;
  }
 
 =head1 DESCRIPTION
