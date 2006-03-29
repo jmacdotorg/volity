@@ -14,16 +14,13 @@ use ExtUtils::AutoInstall (
 				       'Class::Data::Inheritable'=>'',
 				       'Time::HiRes'=>'',
 				       'Tie::Exechash'=>'',
-				       'Data::JavaScript::Anon'=>'',
 				       'Date::Parse'=>'',
 				       'Log::Log4perl'=>'',
 				       'LWP'=>'',
-				       'Archive::Zip'=>'',
 				       'Date::Parse'=>'',
 				       'Date::Format'=>'',
 				       'PXR::Node'=>'',
 				       'Locale::Language'=>'',
-#				       'Want'=>'',
 				       ],
 			   );
 
