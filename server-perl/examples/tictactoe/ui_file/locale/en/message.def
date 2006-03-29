@@ -1,0 +1,26 @@
+<!ENTITY elementair "Air">
+<!ENTITY elementearth "Earth">
+<!ENTITY elementfire "Fire">
+<!ENTITY elementwater "Water">
+<!ENTITY elementvoid "Void">
+
+<!ENTITY discards "Discards">
+<!ENTITY gobutton "Go">
+<!ENTITY passbutton "Pass">
+
+<!ENTITY doflip "Flip this card in place?">
+<!ENTITY domove "Move this card? (Click card to flip it.)">
+<!ENTITY doplaycard "Play this card? (Click card to flip it.)">
+<!ENTITY doremove "Remove this card?">
+<!ENTITY doshuffle "Shuffle all the goals?">
+<!ENTITY dotradegoal "Trade goals with this player?">
+<!ENTITY dotradehand "Trade hands with this player?">
+<!ENTITY gameover "Game over.">
+<!ENTITY mustpass "You have no legal moves.">
+<!ENTITY selecthand "Select a card from your hand.">
+<!ENTITY selectmove "Select a card on the board to move.">
+<!ENTITY selectmovespace "Select an empty space to move this card.">
+<!ENTITY selectremove "Select a card to remove from the board.">
+<!ENTITY selectspace "Select an empty space to put this card.">
+<!ENTITY selecttradegoal "Select a seat to trade goals with.">
+<!ENTITY selecttradehand "Select a seat to trade hands with.">

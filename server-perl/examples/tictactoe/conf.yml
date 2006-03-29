@@ -1,0 +1,34 @@
+# Sample config file for volityd
+# This will (with a bit of customization) run a TicTacToe parlor from your
+# computer. 
+# Simply replace the values of the "jabber_id" and "bot_jabber_id" fields
+# with a valid Jabber ID that you own, and put its password into the 
+# "password" field.
+# If you dont have a Jabber ID, you can use a Volity client like Javolin to
+# create one, or use a Jabber client.
+# To use this file with volityd, specify it on the command line through the
+# -C flag, like this (assuming that volityd is in your PATH and your working
+# directly contains this config file):
+# volityd -C conf.yaml &
+# Once the server is running, you should be able to connect to it by running
+# a Volity client such as Javolin, and then sending a table-creation request
+# to the parlor with the Jabber ID "${whatever_you_used_below}/volity".
+---
+jabber_id:      me@example.com/volity
+password:       mySECRETpassword
+game_class:     Volity::Game::TicTacToe
+visibility:     0
+bots:
+        - bot_class:     Volity::Bot::TicTacToe::Random
+          bot_jabber_id: me@example.com
+log_config_info: |
+ # This is a conf file according to Log4perl.
+ # perldoc Log::Log4perl for more information.
+ 
+ log4perl.logger.Volity=DEBUG, myAppender
+ 
+ log4perl.appender.myAppender=Log::Dispatch::Screen
+ log4perl.appender.myAppender.filename=/Users/jmac/volity/friv_debug_log
+ log4perl.appender.myAppender.mode=append
+ log4perl.appender.myAppender.layout=Log::Log4perl::Layout::PatternLayout
+ log4perl.appender.myAppender.layout.ConversionPattern=%d [%p] %C%n%m%n%n

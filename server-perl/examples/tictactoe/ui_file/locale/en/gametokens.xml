@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<volitytokens>
+
+<token>
+  <key>invalid_location</key>
+  <value>The argument to mark() must be an integer between 0 and 8, inclusive.</value> 
+</token>
+<token>
+  <key>not_your_turn</key>
+  <value>It's not your turn.</value> 
+</token>
+<token>
+  <key>already_marked</key>
+  <value>That space is already marked.</value> 
+</token>
+
+</volitytokens>

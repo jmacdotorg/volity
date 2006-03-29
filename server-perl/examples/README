@@ -1,0 +1,8 @@
+The files in this directory demonstrate the subclassing needed to
+create a simple, real Volity parlor in Perl -- in this case, one that
+plays Tic Tac Toe.
+
+An SVG/ECMAScript UI file is also included, even though UI creation
+isn't a part of these Perl modules, and the makefile leaves them
+alone. They're copies of the SVG documents that an SVG-using Volity
+client would download upon joining a Tic Tac Toe table.

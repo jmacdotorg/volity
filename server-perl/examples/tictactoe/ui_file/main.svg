@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" viewBox="0 0 310 310">
+
+<!--
+Hello! This is an SVG file for playing Tic Tac Toe in Volity.
+-->
+
+<!-- Let's set up some metadata. -->
+
+ <metadata
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:volity="http://volity.org/protocol/metadata" >
+   <volity:version>1.0</volity:version>
+   <volity:ruleset>http://volity.org/games/tictactoe</volity:ruleset>
+   <dc:creator>Jason McIntosh</dc:creator>
+   <dc:modified>2006-03-22</dc:modified>
+   <dc:title>Tic Tac Toe example UI</dc:title>
+ </metadata>
+
+<!-- Next comes our ECMAScript code. -->
+<script type="text/ecmascript">
+    <![CDATA[
+
+// For convenience, let's store some useful XML namespace URIs as variables.
+var svg_ns = "http://www.w3.org/2000/svg";
+var xlink_ns = "http://www.w3.org/1999/xlink";
+
+// marks will hold an associative array 
+var marks = new Array;
+
+var seat_whose_turn_it_is = '';
+
+/**************************
+ ** MOUSE EVENT HANDLERS **
+ **************************/
+
+// Click handler.
+// If it's my turn, _and_ the square has not been marked, then we'll
+// send the game.mark() RPC to the referee.
+// You'll note that this document doesn't define the rpc() function.
+// The rpc() function is part of Volity's ECMAScript API, and as such
+// the client embedding this code has already defined it.
+function square_clicked(location_number) {
+    if (it_is_my_turn() && !marks[location_number]) {
+	rpc("mark", location_number);
+    }
+    // Else, we'll just do nothing. No need to punish errant clicks,
+    // in this case.
+}
+
+// Mousedown handler.
+// If it's my turn, _and_ the square has not been marked, the we'll
+// darken the square. This provides some nice, immediate interactivity
+// that shows the user that their clicking will have an effect, even though
+// we haven't talked to the referee yet.
+function square_mousedown(location_number) {
+    if (it_is_my_turn() && !marks[location_number]) {
+	var square = document.getElementById("square-" + location_number);
+	square.setAttribute("fill", "gray");
+    }
+}
+
+// Mouseup handler.
+// If it's my turn, set the square's fill to white.
+// This clears away any graying-out cuased by the mousedown handler.
+function square_mouseup(location_number) {
+    if (it_is_my_turn()) {
+        var square = document.getElementById("square-" + location_number);
+        square.setAttribute("fill", "white");
+    }
+}
+
+// Mouseout handler.
+// Same as the previous handler, but with a different cause;
+// in this case, the user moving their pointer outside of the square should
+// cause it to flip back to white, as a signal that they've stopped
+// interacting with it.
+function square_mouseout(location_number) {
+    square_mouseup(location_number);
+}
+
+
+/***************************
+ ** INCOMING RPC HANDLERS **
+ ***************************/
+
+volity.start_game = function() {
+    // Clear any marks made in the last game.
+    // This is as easy as removing all the children of the "marks-group" group.
+    remove_children(document.getElementById("marks-group"));
+    // Now set the background of all the squares to white, which will erase
+    // any highlights made from a win in the previous game.
+    var squares_group = document.getElementById("squares-group");
+    for (var index = 0; index <= 8; index++) {
+	document.getElementById("square-" + index).setAttribute("fill", "white");
+    }
+    // Empty out the marks array.
+    marks = [];  
+}
+
+volity.resume_game = function() {
+    
+}
+
+game.mark = function(seat_id, location) {
+    // Conveniently, we can fetch both the mark symbol ("X" or "O") and the
+    // grid square object we'll need based on the arguments we've been passed.
+    // This is why we gave our SVG objects the ID values that we did!
+    var mark_symbol_id = seat_id + "-mark";
+    var grid_square_id = "square-" + location;
+    var grid_square = document.getElementById(grid_square_id);
+    
+    // Figure out where the mark goes, based on the grid square's location.
+    // The "- 0" is just to cast the attribute values into integers.
+    var square_x = grid_square.getAttribute("x") - 0;
+    var square_y = grid_square.getAttribute("y") - 0;
+    //  window.alert(square_x + ", " + square_y);
+    
+    // Create the <use> element that makes the mark.
+    var mark = document.createElementNS(svg_ns, "use");
+    mark.setAttributeNS(xlink_ns, "xlink:href", "#" + mark_symbol_id );
+    mark.setAttribute("x", square_x + 20);
+    mark.setAttribute("y", square_y + 20);
+    // Add this new element to the mark group, thus displaying it.
+    document.getElementById("marks-group").appendChild(mark);
+
+    // Note this mark in our internal hash of marks, so that other functions
+    // know that this square has a mark in it now.
+    marks[location] = "seat_id";
+}
+
+// game.must_mark is called when someone's turn begins.
+// We respond to this by calling the seatmark() function. This function is
+// part of Volity's ECMAScript API, and causes the client to mark the given
+// seat in a way we specify. You'll see it used more in the next two functions.
+game.must_mark = function(seat_id) {
+    // By calling seatmark with a single seat ID argument, the client will
+    // take it to mean that it's that seat's turn.
+    seatmark(seat_id);
+    // Also, change the value of seat_whose_turn_it_is as appropriate.
+    // The "info" object is another part of Volity's ECMAScript API,
+    // and its "seat" field contains the ID of my own seat.
+    seat_whose_turn_it_is = seat_id
+}
+
+game.win = function(seat_id, location_1, location_2, location_3) {
+    // Highlight the squares involved in the win.
+    highlight_square("square-" + location_1);
+    highlight_square("square-" + location_2); 
+    highlight_square("square-" + location_3);
+    // Mark the winning seat.
+    // Here we will use the _other_ way you can call seatmark(), where
+    // we'll instead pass a hash argument of the seats to mark, and which
+    // mark (win, turn, first, or other) to mark them with.
+    var seatmarks = [];
+    seatmarks[seat_id] = "win";
+    seatmark( seatmarks );
+    seat_whose_turn_it_is = '';
+}
+
+game.tie = function () {
+    // Mark both seats as winners!
+    var seatmarks = [];
+    seatmarks["x"] = "win";
+    seatmarks["o"] = "win";
+    seatmark(seatmarks);
+    seat_whose_turn_it_is = '';
+}
+
+
+/*********************
+ ** OTHER FUNCTIONS **
+ *********************/
+
+// Here are some custom functions that our handlers call.
+
+function remove_children(parent) {
+    var obj, ls;
+    ls = parent.childNodes;
+    while (ls.length > 0) {
+	obj = ls.item(0);
+	parent.removeChild(obj);
+    }
+}
+
+function highlight_square(square_id) {
+    document.getElementById(square_id).setAttribute("fill", "yellow");
+}
+
+function it_is_my_turn() {
+    return info.seat == seat_whose_turn_it_is;
+}
+
+// ]]>
+</script>
+
+
+
+  <defs>
+    <!--
+    I'm going to give the marks longer names, mostly because "x" would be
+    a potentially confusing name, especially in SVG-land.
+    -->
+    <symbol id="x-mark">
+      <line stroke="blue" stroke-width="10" x1="5" y1="5" x2="55" y2="55" stroke-linecap="round" />
+      <line stroke="blue" stroke-width="10" x1="5" y1="55" x2="55" y2="5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="o-mark">
+      <circle stroke="blue" fill="none" stroke-width="10" cx="30" cy="30" r="25" />
+    </symbol>
+  </defs>
+
+  <!-- Set up the Tic-Tac-Toe grid. -->
+  <!-- First, drop all the grid squares into place. -->
+  <g id="squares-group">
+  <!-- 
+       I could write an ECMAScript loop that creates these nine squares,
+       since they're so similar. But for the purposes of illustration,
+       I'll be explicit about what's in each one.
+  -->
+  <!-- Here is the first square, in the upper-left corner... -->
+  <rect class="grid-square" 
+	height="100" 
+	width="100" 
+	stroke="none"
+	fill="white"
+	id="square-0" 
+	x="0" y="0" 
+	onclick="square_clicked(0)" 
+	onmousedown="square_mousedown(0)"
+	onmouseout="square_mouseout(0)"
+	onmouseup="square_mouseup(0)"
+	/>
+  <!-- 
+       Now here are eight more, all the same as above except for their
+       x and y coordinates, and the arguments to their pointer event
+       handlers. I'll just compress them each to one line for brevity.
+  -->
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-1" x="100" y="0" onclick="square_clicked(1)" onmousedown="square_mousedown(1)" onmouseout="square_mouseout(1)" onmouseup="square_mouseup(1)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-2" x="200" y="0" onclick="square_clicked(2)" onmousedown="square_mousedown(2)" onmouseout="square_mouseout(2)" onmouseup="square_mouseup(2)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-3" x="0" y="100" onclick="square_clicked(3)" onmousedown="square_mousedown(3)" onmouseout="square_mouseout(3)" onmouseup="square_mouseup(3)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-4" x="100" y="100" onclick="square_clicked(4)" onmousedown="square_mousedown(4)" onmouseout="square_mouseout(4)" onmouseup="square_mouseup(4)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-5" x="200" y="100" onclick="square_clicked(5)" onmousedown="square_mousedown(5)" onmouseout="square_mouseout(5)" onmouseup="square_mouseup(5)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-6" x="0" y="200" onclick="square_clicked(6)" onmousedown="square_mousedown(6)" onmouseout="square_mouseout(6)" onmouseup="square_mouseup(6)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-7" x="100" y="200" onclick="square_clicked(7)" onmousedown="square_mousedown(7)" onmouseout="square_mouseout(7)" onmouseup="square_mouseup(7)" />
+  <rect class="grid-square" height="100" width="100" stroke="none" fill="white" id="square-8" x="200" y="200" onclick="square_clicked(8)" onmousedown="square_mousedown(8)" onmouseout="square_mouseout(8)" onmouseup="square_mouseup(8)" />
+  </g> <!-- close of the squares-group group -->
+  <!-- Now for a few lines. -->
+  <line stroke="black" x1="0" y1="100" x2="300" y2="100" stroke-width="5" stroke-linecap="round" />
+  <line stroke="black" x1="0" y1="200" x2="300" y2="200" stroke-width="5" stroke-linecap="round" />
+  <line stroke="black" x1="100" y1="5" x2="100" y2="300" stroke-width="5" stroke-linecap="round" />
+  <line stroke="black" x1="200" y1="5" x2="200" y2="300" stroke-width="5" stroke-linecap="round" />
+  <!-- Define a group for the marks to go in. -->
+  <!-- Putting them all in one group makes them easier to clean up later. -->
+  <g id="marks-group" />
+
+
+</svg>
+
