@@ -105,10 +105,9 @@ The email address of the person responsible for this server.
 
 The Jabber ID of the person responsible for this server.
 
-=item bot_classes
+=item bot_configs
 
-A list of the bot classes that this server's referees can use. See
-L<Volity::Bot>.
+A list of hashrefs containing bot config information. The keys of each hashref include C<username>, C<host>, C<password> and C<class>. The latter should probably be the name of a C<Volity::Bot> subclass.
 
 =item volity_version
 
@@ -165,7 +164,7 @@ message: ") into its table's groupchat.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_classes contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown volityd_command volityd_cwd volityd_argv);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_configs contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown volityd_command volityd_cwd volityd_argv);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -254,9 +253,10 @@ sub new_table {
 				       game_class=>$self->game_class,
 				       alias=>$resource,
 				       bookkeeper_jid=>$self->bookkeeper_jid,
+				       bot_configs=>$self->{bot_configs},
 				      }
 				     );
-  $ref->bot_classes($self->bot_classes);
+
   $self->add_referee($ref);
   $ref->server($self);
 
