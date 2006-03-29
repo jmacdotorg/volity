@@ -127,7 +127,7 @@ use Carp qw( croak );
 use POE;
 use Time::HiRes qw(gettimeofday);
 
-foreach (qw( name description user host )) {
+foreach (qw( name description )) {
     __PACKAGE__->mk_classdata($_);
 }
 
