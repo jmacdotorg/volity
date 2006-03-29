@@ -4,22 +4,15 @@ Frivolity is a free, Perl-based reference implementation of the Volity
 platform for Internet-based game play. It is released under the LGPL
 open-source license. (See the accompanying LICENSE file.)
 
-This release offers some embedded POD documentation. However, you can
-find a more complete reference on the Web here:
+Volity is a complex platform, but I've endeavored to make it easy to
+get started creating games through the embedded perldocs. After
+installing, "perldoc Volity" to get started.
 
-http://www.volity.org/docs/devguide_perl/
-
-Unfortuately, as the webpage says, it's rather outdated. Fortunately,
-this release is (I hope!) the final bugfix release before I publish
-the next version of the dev guide. I hope to have that done sometime
-in 2006.
-
-For more information about Volity:
-Volity Developers' Site:
+Further reading, including more general information about what Volity
+is and how it works, may be found on the Volity Developers' Site:
 http://www.volity.org
 
-Volity at SourceForge:
-http://volity.sf.net
+See especially the Wiki.
 
 --- PREREQUISITES ---
 
@@ -43,45 +36,24 @@ The usual incantation should suffice:
 You may also need to patch your machine's copy of POE::Filter::XML, as
 detailed under PREREQUISTES above.
 
-It will, by default, install several Perl modules into your
-site-perl location under the Volity namespace, and place a server
-script (volityd) and a command-line client (friv) in
-/usr/local/volity/bin. If these locations do not suit you, edit Makefile.PL
-appropriately. (See the ExtUtils::MakeMaker manpage for instructions on
-modifying this file.)
+It will, by default, install several Perl modules into your site-perl
+location under the Volity namespace, and place a server script
+(volityd) in /usr/local/volity/bin. If these locations do not suit
+you, edit Makefile.PL appropriately. (See the ExtUtils::MakeMaker
+manpage for instructions on modifying this file.)
 
 You'll note there's not much in the way of testing now... it just
-makes sure everything compiles. We will add some nice test suites in
-the near future.
+makes sure everything compiles. We hope to add some nice test suites
+in the future.
 
---- TESTING YOUR INSTALLATION WITH A SAMPLE GAME ---
+--- RUNNING YOUR FIRST PARLOR  ---
 
 While no automated testing exists yet, you can manually test your
-installation by attempting to play a game of rock-paper-scissors using
-Friv, a text-based Volity client included with this distribution. Friv
-is located locally in bin/friv, and is installed into wherever you
-specified the Build script to place scripts; by default it goes into
-/usr/local/volity/bin/.
-
-Using a valid Jabber username, host, and password, run Friv like so:
-
- friv -u [username] -h [host] -p [password]
-
-Upon connection, issue the following series of commands to Friv's prompt:
-
-> new_table rps@volity.net/volity
-> add_bot
-> sit
-> ready
-> select rock
-
-As you do so, you should witness an entire game of rock-paper-scissors
-occur between you and an automated opponent. (In fact, it should look
-rather like the "SYNOPSIS" section of Friv's manpage.) If everything
-looks good, congratulations; your Frivolity installation seems to be a
-success! (And you can continue issuing "start_game" and "select
-[hand-shape]" commands for as long as you'd like.) If something goes
-wrong, please notify either me or the mailing list (see below).
+installation by attempting to set up a game parlor that runs Tic Tac
+Toe. The examples/ directory contains a configuration file that you
+can modify with a valid Jabber ID and password for your test to
+use. (If you already have a Jabber login from any source, you can just
+plug it in here.)
 
 --- CONTACT ---
 
