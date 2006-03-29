@@ -51,7 +51,7 @@ through the C<referee()> accessor.
 
 In many cases, you can program your game module without ever directly
 referring to the referee. While this class does make many important
-methods available (such as C<seats()), they are transparently
+methods available (such as C<seats()>), they are transparently
 available from your game object as well. The referee simply sits in
 the background and takes care of all the Volity protocol-level stuff
 for you, letting you concentrate on making your game work.
@@ -137,7 +137,7 @@ referee.
 
 use base qw(Volity::Jabber);
 # See comment below for what all these fields do.
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_classes bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_configs bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed);
 # FIELDS:
 # muc_jid
 #   The JID of this game's MUC.
@@ -151,8 +151,8 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 #   The JID of the person who started the MUC.
 # starting_request_id 
 #   The ID of the MUC-starting request.
-# bot_classes
-#   An array reference of retainer-bot classes.
+# bot_configs
+#   An array reference of retainer-bot config info hashrefs.
 # invitations
 #   Hash of open invitations.
 # ready_players
@@ -226,6 +226,14 @@ sub initialize {
   if ($@) {
     die "Failed to require game class $game_class: $@";
   }
+
+  for my $bot_config ($self->bot_configs) {
+      eval "require $$bot_config{class}";
+      if ($@) {
+	  die "Failed to require bot class $$bot_config{class}: $@";
+      }
+      
+  }      
 
   # Build the JID of our MUC.
   unless (defined($self->muc_host)) {
@@ -1010,15 +1018,15 @@ sub add_bot {
   my ($from_jid, $id, @args) = @_;
 
   # First, check to see that we have bots, and return a fault if we don't.
-  unless ($self->bot_classes) {
+  unless ($self->bot_configs) {
     $self->send_rpc_fault($from_jid, $id, 3, "Sorry, this game server doesn't host any bots.");
     return;
   }
   
   # If we offer only one flavor of bot, then Bob's your uncle.
-  my @bot_classes = $self->bot_classes;
-  if (@bot_classes == 1) {
-    if (my $bot = $self->create_bot(($self->bot_classes)[0])) {
+  my @bot_configs = $self->bot_configs;
+  if (@bot_configs == 1) {
+    if (my $bot = $self->create_bot($self->{bot_configs}->[0])) {
       $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
 #      $bot->kernel->run;
     } else {
@@ -1030,12 +1038,12 @@ sub add_bot {
   # We seem to have more than one bot. Send back a form.
   my @form_options;
   my $default_name_counter;
-  for my $bot_class ($self->bot_classes) {
-    my $label = $bot_class->name || 'Bot' . ++$default_name_counter;
-    if (defined($bot_class->description)) {
-      $label .= ": " . $bot_class->description;
+  for my $bot_config ($self->bot_configs) {
+    my $label = $bot_config->{class}->name || 'Bot' . ++$default_name_counter;
+    if (defined($bot_config->{class}->description)) {
+      $label .= ": " . $bot_config->{class}->description;
     }
-    push (@form_options, [$bot_class, $label]);
+    push (@form_options, [$bot_config, $label]);
   }
   $self->send_form({
 		    fields=>{bot=>{
@@ -1099,7 +1107,7 @@ sub choose_bot {
   }
 
   # Make sure that the chosen class is one that we actually offer...
-  unless (grep($_ eq $chosen_bot_class, $self->bot_classes)) {
+  unless (grep($_->{class} eq $chosen_bot_class, $self->bot_configs)) {
     carp("Got a request for bot class $chosen_bot_class, but I don't offer that?");
     # XXX Send an error message here?
     return;
@@ -1118,15 +1126,18 @@ sub choose_bot {
 
 sub create_bot {
   my $self = shift;
-  my ($bot_class) = @_;
+  my ($bot_config) = @_;
+  my $bot_class = $bot_config->{class};
   # Generate a resource for this bot to use.
   my $resource = $bot_class->name . gettimeofday();
   my $bot = $bot_class->new(
 			    {
-			     password=>$self->password,
+			     password=>$bot_config->{password},
 			     resource=>$resource,
 			     alias=>$resource,
 			     muc_jid=>$self->muc_jid,
+			     user=>$bot_config->{username},
+			     host=>$bot_config->{host},
 			    }
 			 );
   $self->logger->info("New bot (" . $bot->jid . ") created by referee (" . $self->jid . ").");
