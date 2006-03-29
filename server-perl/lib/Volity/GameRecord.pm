@@ -180,19 +180,6 @@ sub game_uri {
 
 # These methods all deal with the attached signature somehow.
 
-=begin unimplemented
-
-=item confirm_record_owner
-
-I<Bookkeeper only.> Confirms that the existing, DB-stored copy of this
-record assets the same parlor relationship as this record, and then
-re-verifies its signature (as per C<verify()>. Returns truth if everything
-looks OK, and falsehood otherwise.
-
-=end unimplemented
-
-=cut
-
 # confirm_record_owner: Make sure that the stored copy of this record agrees
 # with what this record asserts is its parlor, and that the record's signature
 # is valid. This is a necessary step before performing an SQL UPDATE on this
@@ -208,8 +195,6 @@ sub confirm_record_owner {
     return $self->verify_signature;
 }
 
-=over
-
 =item sign
 
 I<Referee only.>Generates a signature for this record, and attaches it.
@@ -217,8 +202,6 @@ I<Referee only.>Generates a signature for this record, and attaches it.
 The signature is based on a specific subset of the record's
 information, which both sender and receiver agree upon. Refer to the
 Volity protocol documentation for more information on this procedure.
-
-=back
 
 =cut
 
@@ -282,14 +265,10 @@ sub sign {
     return $signature;
 }
 
-=over
-
 =item verify
 
 Verifies that the record is signed, and that said signature is
 valid. Returns truth if everything looks OK, and falsehood otherwise.
-
-=back
 
 =cut
 
@@ -360,13 +339,9 @@ sub check_gpg_attributes {
     return 1;
 }
 
-=over
-
 =item unsign
 
 Removes the signature from the record, if it has one.
-
-=back
 
 =cut
 
@@ -448,16 +423,12 @@ sub massage_time {
 # RPC param prep
 #########################
 
-=over
-
 =item render_as_hashref
 
 Returns an unblessed hash reference describing the game record. It
 just so happens that this hash reference is in the very same format
 that the Volity C<record_game> RPC request requires as its
 E<lt>sructE<gt> argument. Fancy that!
-
-=back
 
 =cut
 
@@ -492,6 +463,8 @@ sub new_from_hashref {
 
     return $class->new($hashref);
 }
+
+=back
 
 =head1 AUTHOR
 

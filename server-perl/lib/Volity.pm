@@ -100,13 +100,13 @@ module I<per se> holds only a few utility methods (see
 L<"METHODS">). More interesting are its subclasses, which implement
 other key system components.
 
-=over
-
 =head2 Modules of interest to game developers
 
 If you are primarily interested in writing your own Volity games in
 Perl, then you really only need a deep understanding of the following
 modules.
+
+=over
 
 =item Volity::Game
 
@@ -159,10 +159,14 @@ creating a Volity game. Therefore, L<Volity::Bot> should be your next
 step in the process of game creation with Frivolity once you've gotten
 your head around C<Volity::Game> and the other modules listed above.
 
+=back
+
 =head2 Modules of interest to deep-voodoo wizards
 
 Should you wish to hack deeper into the system, there's plenty more to
 see. All of these modules are subclasses of C<Volity::Jabber>.
+
+=over
 
 =item Volity::Server
 
