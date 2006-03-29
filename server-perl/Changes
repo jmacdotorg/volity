@@ -1,11 +1,24 @@
-0.5.4
+0.6.0
 
-	- volityd now supports config files, as well as
-          Getopt::Long-style command-line options.
+	- Rewrote all the modules' perldocs, based on user feedback. A
+	  newcomer to the system should be able to "perldoc Volity" and go
+	  on from there with little difficulty.
 
-	- Added support for admin.* RPCs, and some other methods that
-          they use. For the time being I just copied the admin RPCs that
-	  Andrew Plotkin implemented for his own Python-based Volity libs.
+	- Volity::Bot was rewritten to be actually useable by people
+	  besides me. Additionally, Bot subclasses no longer define their
+	  JIDs in their code; you now pass this info in when you run
+	  volityd. Unfortunately it is not guaranteed to be backwards
+	  compatible, but I have the sneaking suspicion that nobody else
+	  had been using this module anyways.
+
+	- volityd now supports config files, as well as Getopt::Long-style
+	  command-line options.
+
+	- Added support for admin.* RPCs, and some other methods that they
+	  use. For the time being I just copied the admin RPCs that Andrew
+	  Plotkin implemented for his own Python-based Volity libs.
+
+	- Friv has been removed from the distribution.
 
 0.5.3
 
