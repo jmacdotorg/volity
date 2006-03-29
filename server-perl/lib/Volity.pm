@@ -105,7 +105,7 @@ other key system components.
 =head2 Modules of interest to game developers
 
 If you are primarily interested in writing your own Volity games in
-Perl, then you really only need a deep understanding of one or two
+Perl, then you really only need a deep understanding of the following
 modules.
 
 =item Volity::Game
@@ -127,6 +127,10 @@ Creation and destruction of seat objects is handled for you, but
 several methods of Volity::Game (and the subclasses you might make
 from it) return seat objects, so you should know how to work with
 them.
+
+While the C<Volity::Seat> base class is full-featured enough to use
+as-is, you have the option of subclassing C<Volity::Seat> and
+configuring your game subclass to use it instead of the base class.
 
 =item Volity::Player
 
@@ -171,16 +175,21 @@ L<volityd>.
 
 =item Volity::Referee
 
-A Volity referee is the entity that sits in a MUC (multi-user conference)
-with some players, and arbitrates the game being played therein.
+A Volity referee is the entity that sits in a MUC (multi-user
+conference) with some players, and arbitrates the game being played
+therein. 
 
-Frivolity game designers may override this class if they wish. By default, a
-Frivolity server will create base C<Volity::Referee> objects.
+In this implementation, the C<Volity::Referee> object takes care of
+all referee activities common to all Volity games, and delegates
+game-specific logic to a C<Volity::Game> subclass object that it
+contains. Developers using these modules can therefore put all their
+programming work into this subclass and generally leave the referee
+class alone.
 
 =item Volity::Bookkeeper
 
-Another black-box module, this time for running a Volity bookkeeper, which
-manages game records and the like by acting as a front-end to an SQL
+Another black-box module, this time for running a Volity bookkeeper,
+which manages game records and the like by acting as a front-end to a
 database.
 
 Unless you wish to run your own Volity network (as opposed to running your
@@ -198,12 +207,9 @@ Frivolity.
 =head2 Creating new Volity games
 
 Perl hackers who wish to write Volity game modules can easily do so by
-creating an object class that inherits from C<Volity::Game>, and optionally
-an automated opponent through a C<Volity::Bot> subclass.
-
-Detailed information about creating new Volity games with these modules can
-be found in the Volity Developer's Guide, at
-L<http://www.volity.org/docs/devguide_perl/>.
+creating an object class that inherits from C<Volity::Game>, and
+optionally an automated opponent through a C<Volity::Bot>
+subclass. See those modules' documentation for more information.
 
 =head2 Running a Volity parlor
 
@@ -213,9 +219,15 @@ a Jabber server somewhere. Frivolity includes a Perl program, C<volityd>,
 that creates a Volity server for you, using a C<Volity::Game> subclass that
 you provide it. See L<volityd> for more information.
 
+Fully hooking a parlor into a greater Volity network (such as
+volity.net) involves registering it with that network's
+bookkeeper. Refer to
+http://www.volity.org/wiki/index.cgi?Game_Developer's_Overview for
+information on registering with volity.net.
+
 =head1 METHODS
 
-The following object methods are, available to instances of all the
+The following object methods are available to instances of all the
 classes listed in L<"DESCRIPTION">.
 
 =over
