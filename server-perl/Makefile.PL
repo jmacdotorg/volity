@@ -23,13 +23,8 @@ use ExtUtils::AutoInstall (
 				       'Date::Format'=>'',
 				       'PXR::Node'=>'',
 				       'Locale::Language'=>'',
+#				       'Want'=>'',
 				       ],
-			   "Friv (command-line client)"  => [
-				       'Term::Readkey'=>'',
-				       'JavaScript::SpiderMonkey'=>'',
-				       'YAML'=>'',
-				       ],
-			   
 			   );
 
 WriteMakefile(
@@ -38,6 +33,7 @@ WriteMakefile(
 	      NAME => "Frivolity",
 	      VERSION_FROM => "lib/Volity.pm",
 	      DISTNAME => "Frivolity",
-	      EXE_FILES => ["bin/friv", "bin/volityd"],
-	      INSTALLSCRIPT => "/opt/volity/bin",
+	      EXE_FILES => ["bin/volityd"],
+	      INSTALLSCRIPT => "/usr/local/volity/bin",
 	      );
+
