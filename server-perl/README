@@ -41,6 +41,16 @@ manpage for instructions on modifying this file.)
 You'll note there's not much in the way of testing now. We hope to add
 some nice test suites in the future.
 
+--- DOCUMENTATION ---
+
+Once you've installed this software, type
+
+ perldoc Volity
+
+Frivolity includes a lot of modules and a lot of documentation, but
+I've done my best to arrange it so that the most important stuff,
+especially for people wishing to develop games, is easier to get to.
+
 --- RUNNING YOUR FIRST PARLOR  ---
 
 While no automated testing exists yet, you can manually test your
