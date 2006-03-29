@@ -22,6 +22,8 @@ examples/tictactoe/ui_file/main.svg
 examples/tictactoe/ui_file/locale/en/gametokens.xml
 examples/tictactoe/ui_file/locale/en/message.def
 examples/tictactoe/ui_file/locale/en/seattokens.xml
+t/1.t
+t/pod-test.t
 LICENSE
 MANIFEST			This list of files
 README
