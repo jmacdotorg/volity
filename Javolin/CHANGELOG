@@ -1,6 +1,12 @@
 This is a high-level list of Javolin changes. For a detailed view, see the
 SVN repository.
 
+* the present
+
+If you register a new volity.net account, Javolin now updates your name
+and email address in the Volity database, by sending a VCard. Also reworded
+the connect dialog help text.
+
 * release 0.3.1
 
 All dialog boxes now have alerts like "You must enter a user name" if you

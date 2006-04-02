@@ -27,6 +27,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.volity.client.comm.CapPacketExtension;
+import org.volity.client.comm.VCard;
 
 /**
  * The dialog for establishing a connection to a Jabber server.
@@ -41,17 +42,22 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private final static String EMAIL_KEY = "Email";
     private final static String FULLNAME_KEY = "FullName";
 
-    //### When we can register accounts on the web site, change this text.
-
     private final static String HELP_TEXT_CONNECT = 
         "If you are new to Volity, select this option."       +
-        " If you already have a Jabber account that you"      +
-        " wish to use, you may fill it in and press Connect.";
+        " If you already have a Volity ID, enter it above"    +
+        " and press Connect.\n\n"                             +
+        "If you have a Jabber ID from another service"        +
+        " (such as Gmail.com) and you wish to use that as"    +
+        " your Volity ID, you may enter that instead.";
     private final static String HELP_TEXT_REGISTER = 
-        "If you wish to log into an existing Jabber account," +
-        " turn off this option.\n\nYou may register with any" +
-        " Jabber host that offers open registration. You are" +
-        " welcome to use volity.net.";
+        "If you wish to connect with an existing Volity ID,"  +
+        " turn off this option.\n\n"                          +
+        "Choose a Volity ID and a password.";
+    private final static String HELP_TEXT_ADDITIONAL = 
+        "You may leave the name and email fields blank, if"   +
+        " you wish. However, if you do not enter a valid"     +
+        " email address, we will have no way to remind you"   +
+        " of a forgotten password.";
 
     private static String staticResourceString = null;
 
@@ -61,6 +67,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private JButton mConnectButton;
     private JCheckBox mRegisterCheck;
     private JTextArea mHelpArea;
+    private JTextArea mRegisterHelpArea;
 
     private JPasswordField mPasswordAgainField;
     private JLabel mPasswordAgainLabel;
@@ -142,6 +149,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         {
             mShowRegistration = mRegisterCheck.isSelected();
             adjustUI();
+            pack(); // work around incomprehensible Swing behavior
         }
     }
 
@@ -369,15 +377,32 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             Map attr = new HashMap();
             attr.put("username", jidname);
             attr.put("password", password);
-            if (!mEmailField.getText().equals(""))
-                attr.put("email", mEmailField.getText());
-            if (!mFullNameField.getText().equals(""))
-                attr.put("name", mFullNameField.getText());
+            String email = null;
+            if (!mEmailField.getText().equals("")) {
+                email = mEmailField.getText();
+                attr.put("email", email);
+            }
+            String fullname = null;
+            if (!mFullNameField.getText().equals("")) {
+                fullname = mFullNameField.getText();
+                attr.put("name", fullname);
+            }
 
             manager.createAccount(jidname, password, attr);
 
             mConnection.login(jidname, password, 
                 jidresource);
+
+            /* If this is a new volity.net account, use a VCard to update the
+             * Volity database with the name and email. Note that this is not a
+             * Smack standard VCard object.
+             */
+            if (jidhost.toLowerCase().equals(DEFAULT_HOST)) {
+                if (fullname != null || email != null) {
+                    VCard card = new VCard(mConnection, fullname, email);
+                    mConnection.sendPacket(card);
+                }
+            }
 
             dispose();
         }
@@ -504,6 +529,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             else
                 mHelpArea.setText(HELP_TEXT_CONNECT);
         }
+
+        mRegisterHelpArea.setVisible(mShowRegistration);
 
         pack();
     }
@@ -643,6 +670,24 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         c.insets = new Insets(GAP, SPACING, 0, MARGIN);
         getContentPane().add(mEmailField, c);
         gridY++;
+
+        {
+            mRegisterHelpArea = new JTextArea(HELP_TEXT_ADDITIONAL);
+            mRegisterHelpArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            mRegisterHelpArea.setOpaque(false);
+            mRegisterHelpArea.setEditable(false);
+            mRegisterHelpArea.setLineWrap(true);
+            mRegisterHelpArea.setWrapStyleWord(true);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = gridY;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(SPACING, MARGIN+6, 0, MARGIN);
+            c.anchor = GridBagConstraints.WEST;
+            getContentPane().add(mRegisterHelpArea, c);
+            gridY++;
+        }
 
         // Add panel with Cancel and Connect buttons
         JPanel buttonPanel = new JPanel(new GridBagLayout());
