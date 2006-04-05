@@ -37,7 +37,7 @@ public class JavolinMenuBar extends JMenuBar
 
     private final static String SELECTRESOURCE_PROP = "SelectResource";
 
-    private final static String MENUCMD_ABOUT = "About Javolin...";
+    private final static String MENUCMD_ABOUT = "About Gamut...";
     private final static String MENUCMD_PREFERENCES = "Preferences...";
     private final static String MENUCMD_CONNECT = "Connect...";
     private final static String MENUCMD_DISCONNECT = "Disconnect";

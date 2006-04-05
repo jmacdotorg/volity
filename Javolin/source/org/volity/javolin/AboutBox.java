@@ -22,8 +22,8 @@ public class AboutBox extends JFrame
         "Copyright 2004-2005 by the Volity project contributors:\n"   +
         "Jason McIntosh, Doug Orleans, Andrew Plotkin, Karl\n"        +
         "von Laudermann. Licensed under the Apache License,\n"        +
-        "Version 2.0. See Javolin web site for details.\n\n"          +
-        "Javolin is built with the Batik SVG toolkit (apache.org),\n" +
+        "Version 2.0. See Gamut web site for details.\n\n"          +
+        "Gamut is built with the Batik SVG toolkit (apache.org),\n" +
         "the Rhino JavaScript engine (mozilla.org), the Flying\n"     +
         "Saucer XHTML toolkit (xhtmlrenderer.dev.java.net), the\n"    +
         "MP3SPI MP3 library (javazoom.net), and the Smack\n"          +

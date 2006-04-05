@@ -63,7 +63,7 @@ public class JavolinApp extends JFrame
                RosterPanelListener, InvitationListener,
                CloseableWindow.Custom
 {
-    private final static String APPNAME = "Javolin";
+    private final static String APPNAME = "Gamut";
     private final static String APPVERSION = "0.3.1";
 
     private final static String PLAYER_STAT_QUERY_URL

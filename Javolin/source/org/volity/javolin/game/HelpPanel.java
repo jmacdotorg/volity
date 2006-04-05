@@ -12,6 +12,7 @@ import org.volity.client.GameTable;
 import org.volity.client.Player;
 import org.volity.client.Seat;
 import org.volity.client.StatusListener;
+import org.volity.javolin.JavolinApp;
 import org.volity.javolin.PrefsDialog;
 
 /**
@@ -173,7 +174,8 @@ public class HelpPanel extends JPanel
         }
 
         if (refstate == GameTable.STATE_UNKNOWN) {
-            text.append("Javolin is contacting the game referee. Please wait...\n");
+            text.append(JavolinApp.getAppName()
+                +" is contacting the game referee. Please wait...\n");
             return text.toString();
         }
 

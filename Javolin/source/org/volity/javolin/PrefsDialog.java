@@ -286,7 +286,7 @@ public class PrefsDialog extends JFrame
     private final static String LABEL_SOUNDUSEMESSAGESOUND = "Message in a chat window";
     private final static String LABEL_SOUNDUSEPRESENCESOUNDS = "People arriving and leaving in a chat window";
     private final static String LABEL_SOUNDUSETHREADSOUND = "New chat window";
-    private final static String LABEL_SOUNDUSEERRORSOUND = "Javolin errors";
+    private final static String LABEL_SOUNDUSEERRORSOUND = "Gamut errors";
     private final static String LABEL_DEBUGSHOWRPCS = "Print all RPCs";
 
     private JavolinApp mOwner;

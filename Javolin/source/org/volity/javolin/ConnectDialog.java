@@ -337,7 +337,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             if (otherRequired) {
                 JOptionPane.showMessageDialog(this, 
-                    "Javolin is not smart enough to register\n" +
+                    JavolinApp.getAppName() +
+                    " is not smart enough to register\n" +
                     "at this host. (Additional fields needed:\n" +
                     otherFields + ")",
                     JavolinApp.getAppName() + ": Error", 
