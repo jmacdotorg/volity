@@ -1,9 +1,9 @@
-<project name="Javolin" default="archive" basedir=".">
+<project name="Gamut" default="archive" basedir=".">
     <description>
-        Build file for Javolin app
+        Build file for Gamut app
     </description>
   <!-- project-specific properties; change these -->
-  <property name="jarfilejavolin" value="Javolin.jar"/>
+  <property name="jarfilegamut" value="Gamut.jar"/>
   <property name="jarfiletestbench" value="Testbench.jar"/>
   <!-- set global properties for this build -->
   <property name="src" location="source"/>
@@ -60,7 +60,7 @@
       <map from="${lib.loc}" to="lib"/>
     </pathconvert>
     <!-- Put some of ${build} into the ${jarfile} file -->
-    <jar jarfile="${jarfilejavolin}" basedir="${build}">
+    <jar jarfile="${jarfilegamut}" basedir="${build}">
       <include name="org/volity/javolin/" />
       <include name="org/volity/client/" />
       <include name="org/volity/jabber/" />
@@ -91,7 +91,7 @@
   <target name="doc"
         description="generate Javadocs" >
     <javadoc destdir="${doc}" classpathref="class.path" 
-      windowtitle="Javolin API" source="1.4">
+      windowtitle="Gamut API" source="1.4">
       <packageset dir="${src}"/>
       <link href="http://java.sun.com/j2se/1.4.2/docs/api/"/>
       <link href="http://xml.apache.org/batik/javadoc/"/>
@@ -115,14 +115,14 @@
         description="clean up all but doc tree" >
     <!-- Delete the ${build} directory tree and .jar file -->
     <delete dir="${build}"/>
-    <delete file="${jarfilejavolin}"/>
+    <delete file="${jarfilegamut}"/>
     <delete file="${jarfiletestbench}"/>
   </target>
 
   <target name="libarchive" depends="compile"
         description="generate the jar file, including third-party libs">
     <property name="mainclass" value="org/volity/javolin/JavolinApp"/>
-    <jar jarfile="${jarfilejavolin}">
+    <jar jarfile="${jarfilegamut}">
       <!-- Put some of ${build} into the ${jarfile} file -->
       <fileset dir="${build}">
         <include name="org/volity/javolin/" />
