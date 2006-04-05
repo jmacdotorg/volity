@@ -201,7 +201,7 @@ game.move = function(seat, xpos, ypos, size, dir) {
   board[xpos][ypos] = val + size;
 
   obj = document.createElementNS(svg_ns, "use");
-  obj.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+size+val);
+  obj.setAttributeNS(xlink_ns, "href", "#pyramid"+size+val);
   val = "translate("+xpos+","+ypos+") rotate("+90*dir+")";
   obj.setAttribute("transform", val);
   piecelayer.appendChild(obj);
@@ -373,7 +373,7 @@ dragendlistener.handleEvent = function(ev) {
     else
       val = "bo";
     obj = document.createElementNS(svg_ns, "use");
-    obj.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+worksize+val);
+    obj.setAttributeNS(xlink_ns, "href", "#pyramid"+worksize+val);
     obj.setAttribute("id", "workobject");
     val = "translate("+workx+","+worky+") rotate("+90*workdir+")";
     obj.setAttribute("transform", val);
@@ -436,7 +436,7 @@ function click_board(xpos, ypos, ev) {
     newpt = tmppt.matrixTransform(draglistener.matrix);
 
     dragobject = document.createElementNS(svg_ns, "use");
-    dragobject.setAttributeNS(xlink_ns, "xlink:href", "#rootoutline");
+    dragobject.setAttributeNS(xlink_ns, "href", "#rootoutline");
     val = "translate("+newpt.x+","+newpt.y+")";
     dragobject.setAttribute("transform", val);
     dragobject.setAttribute("id", "dragobject");
@@ -456,7 +456,7 @@ function click_board(xpos, ypos, ev) {
     newpt = tmppt.matrixTransform(draglistener.matrix);
 
     dragobject = document.createElementNS(svg_ns, "use");
-    dragobject.setAttributeNS(xlink_ns, "xlink:href", "#nulloutline");
+    dragobject.setAttributeNS(xlink_ns, "href", "#nulloutline");
     val = "translate("+newpt.x+","+newpt.y+")";
     dragobject.setAttribute("transform", val);
     dragobject.setAttribute("id", "dragobject");
@@ -487,7 +487,7 @@ function click_board(xpos, ypos, ev) {
       val = "bo";
   
     dragobject = document.createElementNS(svg_ns, "use");
-    dragobject.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+worksize+val);
+    dragobject.setAttributeNS(xlink_ns, "href", "#pyramid"+worksize+val);
     val = "translate("+newpt.x+","+newpt.y+") rotate("+dragangle+")";
     dragobject.setAttribute("transform", val);
     dragobject.setAttribute("id", "dragobject");
@@ -542,7 +542,7 @@ function click_stash(color, size, ev) {
     val = "bo";
 
   dragobject = document.createElementNS(svg_ns, "use");
-  dragobject.setAttributeNS(xlink_ns, "xlink:href", "#pyramid"+worksize+val);
+  dragobject.setAttributeNS(xlink_ns, "href", "#pyramid"+worksize+val);
   dragobject.setAttribute("id", "dragobject");
   val = "translate("+newpt.x+","+newpt.y+") rotate("+90*workdir+")";
   dragobject.setAttribute("transform", val);
@@ -563,7 +563,7 @@ function toggle_rules() {
   if (rulesvisible) {
     set_text(showhide, "Hide");
     obj = document.createElementNS(svg_ns, "use");
-    obj.setAttributeNS(xlink_ns, "xlink:href", "#rules");
+    obj.setAttributeNS(xlink_ns, "href", "#rules");
     grp.appendChild(obj);
   }
   else {
@@ -633,7 +633,7 @@ function add_bonus(seat, bonus, xpos, ypos) {
   else
     val = "b";
   obj = document.createElementNS(svg_ns, "use");
-  obj.setAttributeNS(xlink_ns, "xlink:href", "#starburst"+val);
+  obj.setAttributeNS(xlink_ns, "href", "#starburst"+val);
   val = "translate("+xpos+","+ypos+")";
   obj.setAttribute("transform", val);
   scorelayer.appendChild(obj);

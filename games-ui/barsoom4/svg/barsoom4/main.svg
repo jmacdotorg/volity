@@ -539,7 +539,7 @@ function toggle_rules() {
   if (rulesvisible) {
     set_text(showhide, "Hide");
     obj = document.createElementNS(svg_ns, "use");
-    obj.setAttributeNS(xlink_ns, "xlink:href", "#rules");
+    obj.setAttributeNS(xlink_ns, "href", "#rules");
     grp.appendChild(obj);
   }
   else {

@@ -56,7 +56,7 @@ function set_up_boxes() {
 
 function set_up_box(type, x) {
   box = document.createElementNS(svg_ns, "use");
-  box.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  box.setAttributeNS(xlink_ns, "href", "#" + type);
   box.setAttribute("y", 0);
   box.setAttribute("x", x);
   document.firstChild.appendChild(box);
@@ -64,7 +64,7 @@ function set_up_box(type, x) {
 
 function set_up_buttons() {
   button = document.createElementNS(svg_ns, "use");
-  button.setAttributeNS(xlink_ns, "xlink:href", "#start-game");
+  button.setAttributeNS(xlink_ns, "href", "#start-game");
   button.setAttribute("x", 0);
   button.setAttribute("y", 200);
   button.setAttribute("onclick", "start_game()");
@@ -73,7 +73,7 @@ function set_up_buttons() {
 
   if (info.opponents.length == 0) {
     button = document.createElementNS(svg_ns, "use");
-    button.setAttributeNS(xlink_ns, "xlink:href", "#add-bot");
+    button.setAttributeNS(xlink_ns, "href", "#add-bot");
     button.setAttribute("x", 200);
     button.setAttribute("y", 200);
     button.setAttribute("onclick", "add_bot()");
@@ -101,7 +101,7 @@ function remove_hands() {
 
 function set_up_hand(type, x) {
   hand = document.createElementNS(svg_ns, "use");
-  hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  hand.setAttributeNS(xlink_ns, "href", "#" + type);
   hand.setAttribute("y", 200);
   hand.setAttribute("x", x);
   hand.setAttribute("onclick", "choose_hand(evt)");
@@ -137,7 +137,7 @@ function choose_hand(evt) {
   type = clicked_hand.getAttribute("id");
 
   hand = document.createElementNS(svg_ns, "use");
-  hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  hand.setAttributeNS(xlink_ns, "href", "#" + type);
   hand.setAttribute("y", 15);
   hand.setAttribute("x", 15);
   hand.setAttribute("id", "hand-in-box");
@@ -151,7 +151,7 @@ game.player_chose_hand = function(player, type) {
   if (player != info.nickname) {
     status.opponent = type;
     hand = document.createElementNS(svg_ns, "use");
-    hand.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+    hand.setAttributeNS(xlink_ns, "href", "#" + type);
     hand.setAttribute("y", 15);
     hand.setAttribute("x", 215);
     hand.setAttribute("id", "opp-hand");
@@ -200,7 +200,7 @@ game.END = function() {
 
 function declare_end(type) {
   message = document.createElementNS(svg_ns, "use");
-  message.setAttributeNS(xlink_ns, "xlink:href", "#" + type);
+  message.setAttributeNS(xlink_ns, "href", "#" + type);
   message.setAttribute("y", 350);
   message.setAttribute("x", 15);
   message.setAttribute("id", "message");
