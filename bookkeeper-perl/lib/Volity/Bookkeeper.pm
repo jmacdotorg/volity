@@ -146,7 +146,7 @@ sub handle_disco_info_request {
 	    $fields{languages} = \@language_codes;
 	    $fields{ruleset} = [$ruleset_uri];
 	    $fields{reputation} = [$file->reputation || 0];
-	    $fields{"contact-email"} = [$file->player_id->email];
+#	    $fields{"contact-email"} = [$file->player_id->email];
 	    $fields{"contact-jid"} = [$file->player_id->jid];
 	    $fields{description} = [$file->description];
 							
@@ -339,7 +339,7 @@ sub _rpc_record_game {
 
   # Verify the signature!
   # XXX ...or don't. I'm hobbling this action while the whole notion of game
-  # records enters a probationary period.
+  # record signatures enters a probationary period.
 #  unless ($game_record->verify) {
 #    $self->logger->warn("Uh oh... signature on game record doesn't seem to verify!!\n");
 #    # XXX Error response here.
@@ -382,10 +382,131 @@ sub store_record_in_db {
     $game_record->id($game->id);
   }
 
-  # Winners list handling takes of the rest of this method...
+  # Winners list handling takes up the rest of this method...
+
+  if ($game_record->seats) {
+      return $self->record_winners($game_record, $game, $ruleset);
+  }
+  else {
+      return $self->record_winners_legacy($game_record, $game, $ruleset);
+  }
+}
+
+# record_winners: post-200602-style game record reading.
+sub record_winners {
+    my $self = shift;
+    my ($game_record, $game, $ruleset) = @_;
+    
+    # First, make some seat objects, and stick em in a hash, keyed by
+    # seat ID.
+    # NOTE that I call seat IDs $seat_name in this code, to distinguish
+    # the from database IDs.
+    my %seats;
+    unless (ref($game_record->seats) eq "HASH") {
+        warn "B";
+        return ('606', 'Bad game struct: The value of "seats" must be a struct.');
+    }
+    for my $seat_name (keys(%{$game_record->seats})) {
+        unless (ref($game_record->seats->{$seat_name}) eq "ARRAY") {
+            warn "C";
+            return ('606', "Bad game struct: The value of the '$seat_name' key under 'seats' must be an array.");
+        }
+        my @players = map(
+                          Volity::Info::Player->find_or_create({jid=>$_}),
+                          @{$game_record->seats->{$seat_name}}
+                          );
+        my ($seat) = Volity::Info::Seat->search_with_exact_players(@players);
+        unless ($seat) {
+            # This seat is brand new to me! Make some new DB records for it.
+            $seat = Volity::Info::Seat->create({});
+            for my $player (@players) {
+                Volity::Info::PlayerSeat->create({seat_id=>$seat->id, player_id=>$player->id});
+              }
+        }
+        $seats{$seat_name} = $seat;
+    }
+
+    # Now go over the place listings to see who scored what.
+    unless (ref($game_record->{winners}) eq "ARRAY") {
+        warn "D boppa " . ref($game_record->winners) . $game_record->winners;
+        return ('606', "Bad game struct: The value of the 'winners' key must be an array.");
+    }
+
+    # First pass: build a hash that labels the seats with their rank at this
+    # game.
+    my %ranks;
+    my $rank_number = 1;
+    for my $place ($game_record->winners) {
+        unless (ref($place) eq "ARRAY") {
+            warn "A";
+            return ('606', "Bad game struct: Each member of the 'winners' array must be an array.");
+        }
+        for my $seat_name (@$place) {
+            $ranks{$seat_name} = $rank_number;
+        }
+        $rank_number++;
+    }
+
+    # Second pass: Calculate all the seats' new ELO ratings for this ruleset,
+    # and write records to the database.
+    my %new_ratings;            # Keys are seat names.
+    for my $seat_name (keys(%ranks)) {
+        my $my_rank = $ranks{$seat_name};
+        my @other_seat_names = grep ($_ ne $seat_name, keys(%ranks));
+        # Get the seats that beat this one.
+        my @winning_seats = map($seats{$_}, grep($ranks{$_} < $my_rank, @other_seat_names));
+        # Get the seats tied with this one.
+        my @tied_seats = map($seats{$_}, grep($ranks{$_} == $my_rank, @other_seat_names));
+        # Get the seats this one defeated.
+        my @beaten_seats = map($seats{$_}, grep($ranks{$_} > $my_rank, @other_seat_names));
+        
+        my $last_rating = $seats{$seat_name}->current_rating_for_ruleset($ruleset);
+        $new_ratings{$seat_name} ||= $last_rating;
+
+        # Get this seat's 'K' rating, based on the number of games
+        # they have played, of this ruleset.
+        my $k_value;
+        my $number_of_games_played = $seats{$seat_name}->number_of_games_played_for_ruleset($ruleset);
+        if ($number_of_games_played < 20) {
+            $k_value = 30;
+        }
+        else {
+            $k_value = 15;
+        }
+        my $rating_delta = 0;
+        for my $tied_seat (@tied_seats) {
+            my $opponent_rating = $tied_seat->current_rating_for_ruleset($ruleset);
+            $rating_delta += $k_value * (.5 - $self->get_rating_delta($last_rating, $opponent_rating));
+        }
+        for my $beaten_seat (@beaten_seats) {
+            my $opponent_rating = $beaten_seat->current_rating_for_ruleset($ruleset);
+            $rating_delta += $k_value * (1 - $self->get_rating_delta($last_rating, $opponent_rating));
+        }	
+        for my $winning_seat (@winning_seats) {
+            my $opponent_rating = $winning_seat->current_rating_for_ruleset($ruleset);
+            $rating_delta += $k_value * (0 - $self->get_rating_delta($last_rating, $opponent_rating));
+        }
+        $new_ratings{$seat_name} += $rating_delta;
+    }
+
+    use Data::Dumper; warn "Burff.\n" . Dumper(\%new_ratings) . Dumper(\%ranks);
+
+    # Third pass: Write to the DB.
+    for my $seat_name (keys(%new_ratings)) {
+        Volity::Info::GameSeat->create({seat_name=>$seat_name, rating=>$new_ratings{$seat_name}, place=>$ranks{$seat_name}, game_id=>$game, seat_id=>$seats{$seat_name}});
+      }
+    
+    return;			# This results in a volity.ok response.
+    
+}
+
+# record_winners: pre-200602-style game record reading.
+sub record_winners_legacy {
+  my $self = shift;
+  my ($game_record, $game, $ruleset) = @_;
   my $current_place = 1;	# Start with first place, work down.
   my @places = $game_record->winners;
-  my @seats_to_update;
+#  my @seats_to_update;
 
   # First, we will convert the seat descriptions in the winners list
   # to actual seat objects.
@@ -424,21 +545,23 @@ sub store_record_in_db {
 
   # That done, loop through the places a second time, creating the actual
   # result and ranking records (in the game_seat table).
+  my %new_ratings;
 
   for my $place (@places) {
     my @seats = @$place;
     for my $seat (@seats) {
       # Record how this seat placed!
       my $game_seat = Volity::Info::GameSeat->
-	  find_or_create({
-			  game_id=>$game->id,
-			  seat_id=>$seat->id,
-			 });
+	  create({
+              game_id=>$game->id,
+              seat_id=>$seat->id,
+          });
       $game_seat->place($current_place);
-      
+      $game_seat->update;
 
       # Figure out the seat's new ranking for this game.
       my $last_rating = $seat->current_rating_for_ruleset($ruleset);
+      $new_ratings{$seat} ||= $last_rating;
       my @beaten_seats; my @tied_seats; # Volity::Info::Seat objects.
       my @winning_seats;	            # Ibid.
       # Get the seats that beat this one.
@@ -453,40 +576,54 @@ sub store_record_in_db {
 	my $index = $_ - 1;
 	push (@beaten_seats, @{$places[$index]});
       }
+
       # Get this seat's 'K' rating, based on the number of games
       # they have played, of this ruleset.
+      my $k_value;
       my $number_of_games_played = $seat->number_of_games_played_for_ruleset($ruleset);
-      my $k_delta = int($number_of_games_played / 50) * 5;
-      $k_delta = 20 if $k_delta > 20;
-      my $k_value = 30 - $k_delta;
+      if ($number_of_games_played < 20) {
+          $k_value = 30;
+      }
+      else {
+          $k_value = 15;
+      }
       my $rating_delta = 0;
       for my $tied_seat (@tied_seats) {
 	my $opponent_rating = $tied_seat->current_rating_for_ruleset($ruleset);
-	$rating_delta += $k_value * (.5 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
+	$rating_delta += $k_value * (.5 - $self->get_rating_delta($last_rating, $opponent_rating));
       }
       for my $beaten_seat (@beaten_seats) {
 	my $opponent_rating = $beaten_seat->current_rating_for_ruleset($ruleset);
-	$rating_delta += $k_value * (1 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
+	$rating_delta += $k_value * (1 - $self->get_rating_delta($last_rating, $opponent_rating));
       }	
       for my $winning_seat (@winning_seats) {
 	my $opponent_rating = $winning_seat->current_rating_for_ruleset($ruleset);
-	$rating_delta += $k_value * (0 - $self->get_rating_delta($last_rating, $opponent_rating, $k_value));
+	$rating_delta += $k_value * (0 - $self->get_rating_delta($last_rating, $opponent_rating));
       }
-      my $new_rating = $last_rating + $rating_delta;
-      $game_seat->rating($new_rating);
-      push (@seats_to_update, $game_seat);
-#      $game_seat->update;
+      $new_ratings{$seat} += $rating_delta;
+#      $game_seat->rating($new_rating);
+#      push (@seats_to_update, $game_seat);
     }
     $current_place++;
   }
-  map($_->update, @seats_to_update);
+#  map($_->update, @seats_to_update);
+
+  # Write the updates to the DB.
+  for my $seat_id (keys(%new_ratings)) {
+      for my $game_seat (Volity::Info::GameSeat->search(game_id=>$game, seat_id=>$seat_id)) {
+          $game_seat->rating($new_ratings{$seat_id});
+          $game_seat->update;
+      }
+      
+  }
+
   return;			# This results in a volity.ok response.
 }
 
 sub get_rating_delta {
   my $self = shift;
   my ($current_rating, $opponent_rating) = @_;
-  return 1 / (1 + (10 ^ (abs($current_rating - $opponent_rating) / 400)));
+  return 1 / (1 + (10 ** (($opponent_rating - $current_rating) / 400)));
 }
 
 ###############################

@@ -28,6 +28,7 @@ Volity::Info::Game->columns(All=>qw(id start_time end_time server_id signature r
 Volity::Info::Game->has_a(ruleset_id=>"Volity::Info::Ruleset");
 Volity::Info::Game->has_a(server_id=>"Volity::Info::Server");
 Volity::Info::Game->has_many(seats=>["Volity::Info::GameSeat" => 'seat_id'], 'game_id');
+Volity::Info::Game->has_many(game_seats=>"Volity::Info::GameSeat", "game_id");
 
 sub uri {
   my $self = shift;
@@ -43,5 +44,17 @@ sub description {
   my $self = shift;
   return $self->uri_id->description;
 }
+
+Volity::Info::Game->set_sql(with_player =>
+			    "select distinct game_seat.game_id from game_seat, player_seat where game_seat.seat_id = player_seat.seat_id and player_seat.player_id = ?");
+
+Volity::Info::Game->set_sql(with_player_and_limits_by_end_time =>
+			    "select distinct game.id from game, game_seat, player_seat where game.id = game_seat.game_id and game_seat.seat_id = player_seat.seat_id and player_seat.player_id = ? order by game.end_time desc limit ?, ?");
+
+Volity::Info::Game->set_sql(with_player_and_ruleset =>
+			    "select distinct game.id from game, game_seat, player_seat where game.id = game_seat.game_id and game_seat.seat_id = player_seat.seat_id and player_seat.player_id = ? and game.ruleset_id = ?");
+
+Volity::Info::Game->set_sql(with_ruleset_by_end_time =>
+                            "select distinct game.id from ruleset, game where game.ruleset_id = ruleset.id and ruleset.id = ? order by game.end_time desc limit ?, ?");
 
 1;

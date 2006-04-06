@@ -35,9 +35,36 @@ Volity::Info::Seat->set_sql(current_rating_by_uri=>qq{select rating from game_se
 
 Volity::Info::Seat->set_sql(current_rating_by_ruleset=>qq{select rating from game_seat, game where game.id = game_seat.game_id  and game_seat.seat_id = ? and game.ruleset_id = ? order by game.end_time desc});
 
+Volity::Info::Seat->set_sql(current_rounded_rating_by_uri=>qq{select round(rating,0) from game_seat, game, ruleset where game.id = game_seat.game_id and ruleset.id = game.ruleset_id and game_seat.seat_id = ? and ruleset.uri = ? order by game.end_time desc limit 0,1});
+
+Volity::Info::Seat->set_sql(current_rounded_rating_by_ruleset=>qq{select round(rating,0) from game_seat, game where game.id = game_seat.game_id  and game_seat.seat_id = ? and game.ruleset_id = ? order by game.end_time desc});
+
 Volity::Info::Seat->set_sql(number_of_games_played_by_ruleset=>qq{select count(game_seat.game_id) from game_seat, game where game.id = game_seat.game_id and game_seat.seat_id = ? and game.ruleset_id = ?});
 
+Volity::Info::Seat->set_sql(number_of_games_played=>qq{select count(game_seat.game_id) from game_seat, game where game.id = game_seat.game_id and game_seat.seat_id = ?});
+
 Volity::Info::Seat->set_sql(number_of_wins_for_ruleset=>qq{select count(game_seat.game_id) from game_seat, game where game.id = game_seat.game_id and place = 1 and game_seat.seat_id = ? and game.ruleset_id = ?});
+
+Volity::Info::Seat->set_sql(with_player_and_ruleset=>qq{select distinct seat.id from game, seat, game_seat, player_seat where seat.id = game_seat.seat_id and game.id = game_seat.game_id and player_seat.seat_id = game_seat.seat_id and player_seat.player_id = ? and ruleset_id = ?});
+
+Volity::Info::Seat->set_sql(with_ruleset_by_rating =>qq{
+SELECT seat.id, 
+(
+   SELECT rating
+   FROM game_seat
+   INNER JOIN game AS g ON game_seat.game_id=g.id
+   WHERE seat_id=seat.id AND g.ruleset_id = game.ruleset_id
+   ORDER BY end_time DESC
+   LIMIT 0,1
+) AS rating
+FROM game
+INNER JOIN game_seat ON game.id = game_seat.game_id
+INNER JOIN seat ON game_seat.seat_id = seat.id
+WHERE game.ruleset_id = ?
+GROUP BY seat.id
+ORDER BY rating DESC
+LIMIT ?,?
+});
 
 # current_rating_for_uri: Return the seat's current ranking for the given
 # ruleset URI. Defaults to 1500, if the seat has no ranking.
@@ -69,6 +96,16 @@ sub current_rating_for_ruleset {
   return $rating;
 }
 
+sub number_of_games_played {
+    my $self = shift;
+  my $sth = $self->sql_number_of_games_played;
+  $sth->execute($self->id);
+  my ($number) = $sth->fetch;
+  $sth->finish;
+  return $number;
+}
+    
+
 sub number_of_games_played_for_ruleset {
   my $self = shift;
   my ($ruleset) = @_;
@@ -88,6 +125,8 @@ sub number_of_wins_for_ruleset {
     $sth->finish;
     return $number;
 }
+
+
 
 # rulsets: Return Volity::Info::Ruleset objects corresponding to rulesets
 # that this seat has played.

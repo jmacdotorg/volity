@@ -24,8 +24,13 @@ use strict;
 use base qw(Volity::Info);
 
 Volity::Info::Player->table('player');
-Volity::Info::Player->columns(All=>qw(id jid name email));
+Volity::Info::Player->columns(Primary=>qw(id));
+Volity::Info::Player->columns(Essential=>qw(jid));
 Volity::Info::Player->has_many(seats=>["Volity::Info::PlayerSeat" => 'seat_id'], 'player_id');
+Volity::Info::Player->has_many(rulesets_owned=>"Volity::Info::Ruleset" => "player_id");
+Volity::Info::Player->has_many(parlors_owned=>"Volity::Info::Server" => "player_id");
+Volity::Info::Player->has_many(ui_files_owned=>"Volity::Info::File" => "player_id");
+
 
 # rulesets: Return Volity::Info::Ruleset objects corresponding to rulesets
 # that this player has played.
