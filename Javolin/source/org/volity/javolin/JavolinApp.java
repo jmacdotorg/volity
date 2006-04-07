@@ -702,7 +702,7 @@ public class JavolinApp extends JFrame
         }
 
         // Clear the Window menu
-        JavolinMenuBar.notifyUpdateWindowMenu();
+        AppMenuBar.notifyUpdateWindowMenu();
 
         // Kill the bookkeeper object
         if (mBookkeeper != null)
@@ -895,7 +895,7 @@ public class JavolinApp extends JFrame
     {
         tableWin.show();
         mTableWindows.add(tableWin);
-        JavolinMenuBar.notifyUpdateWindowMenu();
+        AppMenuBar.notifyUpdateWindowMenu();
         
         // Remove the table window from the list and menu when it closes
         tableWin.addWindowListener(
@@ -904,7 +904,7 @@ public class JavolinApp extends JFrame
                 public void windowClosed(WindowEvent we)
                 {
                     mTableWindows.remove(we.getWindow());
-                    JavolinMenuBar.notifyUpdateWindowMenu();
+                    AppMenuBar.notifyUpdateWindowMenu();
                 }
             });
     }
@@ -925,7 +925,7 @@ public class JavolinApp extends JFrame
 
         mucWin.show();
         mMucWindows.add(mucWin);
-        JavolinMenuBar.notifyUpdateWindowMenu();
+        AppMenuBar.notifyUpdateWindowMenu();
 
         // Remove the MUC window from the list and menu when it closes
         mucWin.addWindowListener(
@@ -934,7 +934,7 @@ public class JavolinApp extends JFrame
                 public void windowClosed(WindowEvent we)
                 {
                     mMucWindows.remove(we.getWindow());
-                    JavolinMenuBar.notifyUpdateWindowMenu();
+                    AppMenuBar.notifyUpdateWindowMenu();
                 }
             });
     }
@@ -998,7 +998,7 @@ public class JavolinApp extends JFrame
 
             chatWin.show();
             mChatWindows.add(chatWin);
-            JavolinMenuBar.notifyUpdateWindowMenu();
+            AppMenuBar.notifyUpdateWindowMenu();
             mUserChatWinMap.put(userId, chatWin);
 
             Audio.playThread();
@@ -1012,7 +1012,7 @@ public class JavolinApp extends JFrame
                         ChatWindow win = (ChatWindow)we.getWindow();
 
                         mChatWindows.remove(win);
-                        JavolinMenuBar.notifyUpdateWindowMenu();
+                        AppMenuBar.notifyUpdateWindowMenu();
                         mUserChatWinMap.remove(win.getRemoteUserId());
                     }
                 });
@@ -1168,7 +1168,7 @@ public class JavolinApp extends JFrame
         updateToolBarButtons();
 
         // Do menu items
-        JavolinMenuBar.notifyUpdateItems();
+        AppMenuBar.notifyUpdateItems();
     }
 
     /**
@@ -1506,6 +1506,6 @@ public class JavolinApp extends JFrame
         cPane.add(panel, BorderLayout.SOUTH);
 
         // Create menu bar
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 }

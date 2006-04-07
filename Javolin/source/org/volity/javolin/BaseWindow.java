@@ -32,7 +32,7 @@ public class BaseWindow extends JFrame
         mOwner = owner;
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
 
         mSizePosSaver = new SizeAndPositionSaver(this, nodeName);
 
@@ -40,7 +40,7 @@ public class BaseWindow extends JFrame
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         mOwner.mDialogWindows.add(this);
-        JavolinMenuBar.notifyUpdateWindowMenu();
+        AppMenuBar.notifyUpdateWindowMenu();
 
         addWindowListener(
             new WindowAdapter()
@@ -51,7 +51,7 @@ public class BaseWindow extends JFrame
 
                     BaseWindow win = BaseWindow.this;
                     mOwner.mDialogWindows.remove(win);
-                    JavolinMenuBar.notifyUpdateWindowMenu();
+                    AppMenuBar.notifyUpdateWindowMenu();
                 }
             });
     }
@@ -64,6 +64,6 @@ public class BaseWindow extends JFrame
      */
     public void setTitle(String title) {
         super.setTitle(title);
-        JavolinMenuBar.notifyUpdateWindowMenu();
+        AppMenuBar.notifyUpdateWindowMenu();
     }
 }

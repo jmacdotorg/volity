@@ -133,7 +133,7 @@ public class PrefsDialog extends JFrame
         prefDebugShowRPCs = prefs.getBoolean(DEBUGSHOWRPCS_KEY, false);
 
         /* The audio preferences are used by a client library, rather than
-         * being grabbed by another part of Javolin. So we set up the initial
+         * being grabbed by another part of Gamut. So we set up the initial
          * values and the listener now. */
         Audio.setPlayAudio(prefSoundPlayAudio);
         Audio.setShowAltTags(prefSoundShowAltTags);
@@ -159,7 +159,7 @@ public class PrefsDialog extends JFrame
                     if (ev.getSource() == DEBUGSHOWRPCS_KEY) {
                         RPCDispatcherDebug.setDebugOutput(prefDebugShowRPCs);
                         Referee.setDebugOutput(prefDebugShowRPCs);
-                        JavolinMenuBar.notifyUpdateItems();
+                        AppMenuBar.notifyUpdateItems();
                     }
                 }
             });
@@ -1020,7 +1020,7 @@ public class PrefsDialog extends JFrame
         cPane.add(mTabPane);
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 
     static private class ShadeSlider extends JSlider {

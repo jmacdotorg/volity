@@ -343,6 +343,6 @@ public class Finder extends JFrame
 
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 }

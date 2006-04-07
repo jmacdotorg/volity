@@ -491,7 +491,7 @@ public class MUCWindow extends JFrame
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 
 

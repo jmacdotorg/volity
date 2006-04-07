@@ -15,10 +15,10 @@ public class AboutBox extends JFrame
     private final static int MARGIN = 12; // Space to window edge
     private final static int GAP = 4; // Space between controls
 
-    private final static String JAVOLIN_URL = 
+    private final static String APP_URL = 
         "http://www.volity.org/projects/javolin/";
 
-    private final static String JAVOLIN_ABOUT_TEXT = 
+    private final static String APP_ABOUT_TEXT = 
         "Copyright 2004-2005 by the Volity project contributors:\n"   +
         "Jason McIntosh, Doug Orleans, Andrew Plotkin, Karl\n"        +
         "von Laudermann. Licensed under the Apache License,\n"        +
@@ -92,7 +92,7 @@ public class AboutBox extends JFrame
         if (PlatformWrapper.launchURLAvailable()) {
             mUrlLabel.addMouseListener(new MouseAdapter() {
                     public void mouseClicked(MouseEvent ev) {
-                        PlatformWrapper.launchURL(JAVOLIN_URL);
+                        PlatformWrapper.launchURL(APP_URL);
                     }
                 });
         }
@@ -133,7 +133,7 @@ public class AboutBox extends JFrame
         c.ipady = 2;
         cPane.add(label, c);
 
-        mUrlLabel = new JTextField(JAVOLIN_URL);
+        mUrlLabel = new JTextField(APP_URL);
         mUrlLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         if (PlatformWrapper.launchURLAvailable()) {
             // Color the URL blue only if you can click on it.
@@ -160,7 +160,7 @@ public class AboutBox extends JFrame
         StyleConstants.setFontSize(style, 12);
         StyleConstants.setForeground(style, Color.BLACK);
         try {
-            doc.insertString(doc.getLength(), JAVOLIN_ABOUT_TEXT, style);
+            doc.insertString(doc.getLength(), APP_ABOUT_TEXT, style);
         }
         catch (BadLocationException ex) { }
         c = new GridBagConstraints();
@@ -179,6 +179,6 @@ public class AboutBox extends JFrame
         getRootPane().setDefaultButton(mButton);
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 }

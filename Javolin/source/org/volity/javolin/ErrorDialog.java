@@ -158,6 +158,6 @@ public class ErrorDialog extends JFrame
         row++;
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 }

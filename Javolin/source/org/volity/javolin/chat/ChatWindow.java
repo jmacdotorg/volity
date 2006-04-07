@@ -273,6 +273,6 @@ public class ChatWindow extends JFrame
         cPane.add(mChatSplitter, BorderLayout.CENTER);
 
         // Necessary for all windows, for Mac support
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 }

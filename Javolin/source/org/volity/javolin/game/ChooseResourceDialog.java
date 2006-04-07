@@ -19,7 +19,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import org.volity.client.data.ResourceInfo;
 import org.volity.javolin.BaseDialog;
-import org.volity.javolin.JavolinMenuBar;
 import org.volity.javolin.TableColumnSaver;
 import org.volity.javolin.URLChooser;
 

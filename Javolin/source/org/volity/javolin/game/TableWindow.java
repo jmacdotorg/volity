@@ -240,7 +240,7 @@ public class TableWindow extends JFrame
                         });
                     SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
-                                JavolinMenuBar.notifyUpdateResourceMenu(TableWindow.this);
+                                AppMenuBar.notifyUpdateResourceMenu(TableWindow.this);
                             }
                         });
                 }
@@ -1565,6 +1565,6 @@ public class TableWindow extends JFrame
         adjustButtons();
 
         // Add the window menu bar
-        JavolinMenuBar.applyPlatformMenuBar(this);
+        AppMenuBar.applyPlatformMenuBar(this);
     }
 }

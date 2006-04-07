@@ -14,7 +14,7 @@ import org.volity.client.data.Metadata;
 import org.volity.javolin.game.TableWindow;
 
 /**
- * This class is a factory for Javolin menu bars. (They're mostly identical.)
+ * This class is a factory for Gamut menu bars. (They're mostly identical.)
  * Every nonmodal window needs to call applyPlatformMenuBar().
  *
  * The applyPlatformMenuBar() entry point is polymorphic on the window type; it
@@ -30,7 +30,7 @@ import org.volity.javolin.game.TableWindow;
  * When JavolinApp changes state, it notifies this class, which updates all the
  * menu bar instances in parallel.
  */
-public class JavolinMenuBar extends JMenuBar
+public class AppMenuBar extends JMenuBar
     implements ActionListener
 {
     private static List menuBarList = new ArrayList();
@@ -100,7 +100,7 @@ public class JavolinMenuBar extends JMenuBar
      *
      * Do not call this directly. Instead, call applyPlatformMenuBar(win).
      */
-    protected JavolinMenuBar(JFrame win) {
+    protected AppMenuBar(JFrame win) {
         mApplication = JavolinApp.getSoleJavolinApp();
         if (mApplication == null)
             throw new AssertionError("No JavolinApp has been set yet.");
@@ -129,7 +129,7 @@ public class JavolinMenuBar extends JMenuBar
                 public void windowClosed(WindowEvent ev) {
                     // When the window closes, remove its menu bar from the
                     // notification list.
-                    menuBarList.remove(JavolinMenuBar.this);
+                    menuBarList.remove(AppMenuBar.this);
                     mWindow.removeWindowListener(this);
                     mWindow = null;
                     mTableWindow = null;
@@ -694,14 +694,14 @@ public class JavolinMenuBar extends JMenuBar
      * The main (roster) window calls this.
      */
     static public void applyPlatformMenuBar(JavolinApp win) {
-        new JavolinMenuBar(win);
+        new AppMenuBar(win);
     }
 
     /**
      * All table windows call this.
      */
     static public void applyPlatformMenuBar(TableWindow win) {
-        new JavolinMenuBar(win);
+        new AppMenuBar(win);
     }
 
     /**
@@ -711,7 +711,7 @@ public class JavolinMenuBar extends JMenuBar
      */
     static public void applyPlatformMenuBar(JFrame win) {
         if (PlatformWrapper.isRunningOnMac()) {
-            new JavolinMenuBar(win);
+            new AppMenuBar(win);
         }
     }
 
@@ -720,7 +720,7 @@ public class JavolinMenuBar extends JMenuBar
      */
     static void notifyUpdateItems() {
         for (Iterator it = menuBarList.iterator(); it.hasNext(); ) {
-            JavolinMenuBar bar = (JavolinMenuBar)it.next();
+            AppMenuBar bar = (AppMenuBar)it.next();
             bar.updateMenuItems();
         }
     }
@@ -730,7 +730,7 @@ public class JavolinMenuBar extends JMenuBar
      */
     static void notifyUpdateWindowMenu() {
         for (Iterator it = menuBarList.iterator(); it.hasNext(); ) {
-            JavolinMenuBar bar = (JavolinMenuBar)it.next();
+            AppMenuBar bar = (AppMenuBar)it.next();
             bar.updateWindowMenu();            
         }
     }
@@ -740,7 +740,7 @@ public class JavolinMenuBar extends JMenuBar
      */
     public static void notifyUpdateResourceMenu(TableWindow win) {
         for (Iterator it = menuBarList.iterator(); it.hasNext(); ) {
-            JavolinMenuBar bar = (JavolinMenuBar)it.next();
+            AppMenuBar bar = (AppMenuBar)it.next();
             if (bar.mTableWindow == win)
                 bar.updateResourceMenu();            
         }
