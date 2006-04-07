@@ -204,7 +204,7 @@ public class TestButtonBar
             switch (pair.cmd.datatype) {
             case DebugInfo.DATTYP_STRING:
                 /* We must escape quotes and backslashes, and then put quotes
-                 * aorund the whole thing, to create a valid Javascript string
+                 * around the whole thing, to create a valid Javascript string
                  * literal. */
                 Pattern pat = Pattern.compile("([\\\"\\\\])");
                 Matcher matcher = pat.matcher(val);
@@ -269,7 +269,7 @@ public class TestButtonBar
 
     /**
      * Whack together the UI. This BuildUI routine is not quite in line with
-     * the Javolin standard -- sorry. It is called both at construction time,
+     * the Gamut standard -- sorry. It is called both at construction time,
      * and when the UI is reloaded. In the latter case, the toolbar already
      * exists, but its contents must be cleaned out and rebuilt (because
      * testbench.xml might have changed).
