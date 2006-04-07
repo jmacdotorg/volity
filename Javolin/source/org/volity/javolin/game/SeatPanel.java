@@ -421,6 +421,7 @@ public class SeatPanel extends JPanel
         revalidate();
     }
 
+    /** Extension of JLabel which can pop up a contextual menu. */
     private class JLabelPop extends JLabel {
         Player mPlayer;
 

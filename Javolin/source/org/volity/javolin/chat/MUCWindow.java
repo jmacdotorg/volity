@@ -18,6 +18,8 @@
 package org.volity.javolin.chat;
 
 import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
 import java.awt.event.*;
 import java.text.*;
 import java.util.Date;
@@ -35,6 +37,7 @@ import org.jivesoftware.smackx.muc.MultiUserChat;
 import org.jivesoftware.smackx.muc.Occupant;
 import org.jivesoftware.smackx.packet.DelayInformation;
 import org.jivesoftware.smackx.packet.MUCUser;
+import org.volity.client.data.JIDTransfer;
 import org.volity.javolin.*;
 
 /**
@@ -51,11 +54,10 @@ public class MUCWindow extends JFrame
     private JSplitPane mUserListSplitter;
     private ChatLogPanel mLog;
     private JTextArea mInputText;
-    private JTextPanePopup mUserListText;
+    private UserPanel mUserList;
     private AbstractAction mSendMessageAction;
 
     private UserColorMap mColorMap;
-    private SimpleAttributeSet mBaseUserListStyle;
 
     private String mWindowName;
     private SizeAndPositionSaver mSizePosSaver;
@@ -84,10 +86,6 @@ public class MUCWindow extends JFrame
         mColorMap = new UserColorMap();
         // Give user first color
         mColorMap.getUserNameColor(mConnection.getUser());
-
-        mBaseUserListStyle = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(mBaseUserListStyle, "SansSerif");
-        StyleConstants.setFontSize(mBaseUserListStyle, 12);
 
         buildUI();
 
@@ -161,9 +159,9 @@ public class MUCWindow extends JFrame
             mLog.dispose();
         }
 
-        if (mUserListText != null) {
-            mUserListText.dispose();
-            mUserListText = null;
+        if (mUserList != null) {
+            mUserList.dispose();
+            mUserList = null;
         }
 
         mColorMap.removeListener(mColorChangeListener);
@@ -278,11 +276,14 @@ public class MUCWindow extends JFrame
     private void updateUserList()
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-        if (mUserListText == null)
+        if (mUserList == null)
             return;
 
-        mUserListText.setText("");
+        mUserList.removeAll();
         Iterator iter = mMucObject.getOccupants();
+
+        GridBagConstraints c;
+        int row = 0;
 
         while (iter.hasNext()) {
             String jid = (String)iter.next();
@@ -294,22 +295,36 @@ public class MUCWindow extends JFrame
             if (realAddr == null)
                 realAddr = jid;
 
-            SimpleAttributeSet style = new SimpleAttributeSet(mBaseUserListStyle);
-            StyleConstants.setForeground(style,
-                mColorMap.getUserNameColor(realAddr));
-            if (occ.getJid() != null)
-                style.addAttribute(ChatLogPanel.ATTR_JID, occ.getJid());
+            Color col = mColorMap.getUserNameColor(realAddr);
 
-            Document doc = mUserListText.getDocument();
-
-            try
-            {
-                doc.insertString(doc.getLength(), nick + "\n", style);
-            }
-            catch (BadLocationException ex)
-            {
-            }
+            JLabelPop label = new JLabelPop(realAddr, 
+                nick, SwingConstants.LEFT);
+            label.setFont(UserPanel.sLabelFont);
+            label.setForeground(col);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.ipady = 1;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            mUserList.add(label, c);
         }
+
+        // Stretchy blank label
+        JLabel label = new JLabel(" ", SwingConstants.LEFT);
+        c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = row++;
+        c.weightx = 1;
+        c.weighty = 1;
+        c.ipady = 1;
+        c.fill = GridBagConstraints.BOTH;
+        c.anchor = GridBagConstraints.NORTHWEST;
+        mUserList.add(label, c);
+
+        mUserList.revalidate();
     }
 
     /**
@@ -332,7 +347,6 @@ public class MUCWindow extends JFrame
                     else if (packet instanceof Presence)
                     {
                         Presence pres = (Presence)packet;
-                        updateUserList();
 
                         String from = pres.getFrom();
 
@@ -364,9 +378,12 @@ public class MUCWindow extends JFrame
                         if (realAddr != null && nick != null) {
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
-                                mLog.message(realAddr, realjid, null,
-                                    nick+" has joined the chat.");
-                                Audio.playPresenceIn();
+                                boolean already = mUserList.isJIDPresent(realAddr);
+                                if (!already) {
+                                    mLog.message(realAddr, realjid, null,
+                                        nick+" has joined the chat.");
+                                    Audio.playPresenceIn();
+                                }
                             }
                             if (typ == Presence.Type.UNAVAILABLE) {
                                 mLog.message(realAddr, realjid, null,
@@ -374,6 +391,10 @@ public class MUCWindow extends JFrame
                                 Audio.playPresenceOut();
                             }
                         }
+
+                        /* Do this last, because otherwise it would mess up the
+                         * "is user already present?" computation above. */
+                        updateUserList();
                     }
                 }
             });
@@ -483,10 +504,9 @@ public class MUCWindow extends JFrame
 
         mUserListSplitter.setLeftComponent(mChatSplitter);
 
-        mUserListText = new JTextPanePopup();
-        mUserListText.setBorder(BorderFactory.createEmptyBorder(1, 4, 1, 4));
-        mUserListText.setEditable(false);
-        mUserListSplitter.setRightComponent(new JScrollPane(mUserListText));
+        mUserList = new UserPanel();
+        mUserList.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        mUserListSplitter.setRightComponent(new JScrollPane(mUserList));
 
         cPane.add(mUserListSplitter, BorderLayout.CENTER);
 
@@ -494,16 +514,20 @@ public class MUCWindow extends JFrame
         AppMenuBar.applyPlatformMenuBar(this);
     }
 
+    protected static class UserPanel extends JPanel {
+        static public DragSource dragSource = DragSource.getDefaultDragSource();
+        static public Font sLabelFont = new Font("SansSerif", Font.PLAIN, 12);
 
-    /**
-     * Subclass of JTextPane that has a pop-up menu.
-     */
-    protected static class JTextPanePopup extends JTextPane {
         protected UserContextMenu mPopupMenu = null;
 
-        public JTextPanePopup() {
+        public UserPanel() {
+            super(new GridBagLayout());
+
+            setOpaque(true);
+            setBackground(Color.WHITE);
+
             mPopupMenu = new UserContextMenu();
-        }
+        }        
 
         /** Clean up component. */
         public void dispose() {
@@ -513,38 +537,92 @@ public class MUCWindow extends JFrame
             }
         }
 
-        /** Customized mouse handler that knows about popup clicks. */
+        /**
+         * Pop up a contextual menu for the given JID.
+         */
+        protected void displayPopupMenu(String jid, int xp, int yp) {
+            if (mPopupMenu != null) {
+                Point pt = getLocationOnScreen();
+                mPopupMenu.adjustShow(jid, this, xp-pt.x, yp-pt.y);
+            }
+        }
+
+        /**
+         * Check whether this JID is in the current list.
+         */
+        public boolean isJIDPresent(String jid) {
+            Object[] ls = getComponents();
+            for (int ix=0; ix<ls.length; ix++) {
+                if (ls[ix] instanceof JLabelPop) {
+                    JLabelPop label = (JLabelPop)ls[ix];
+                    if (label.mJID.equals(jid))
+                        return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /** Extension of JLabel which can pop up a contextual menu. */
+    protected class JLabelPop extends JLabel {
+
+        String mJID;
+
+        public JLabelPop(String jid,
+            String text, int horizontalAlignment) {
+            super(text, horizontalAlignment);
+            mJID = jid;
+
+            DragGestureRecognizer recognizer = 
+                UserPanel.dragSource.createDefaultDragGestureRecognizer(
+                    this, 
+                    DnDConstants.ACTION_MOVE, 
+                    new DragSourceThing(this, jid));
+        }
+
         protected void processMouseEvent(MouseEvent ev) {
             if (ev.isPopupTrigger()) {
-                if (mPopupMenu != null) {
-                    displayPopupMenu(ev.getX(), ev.getY());
+                if (mUserList != null) {
+                    Point pt = getLocationOnScreen();
+                    mUserList.displayPopupMenu(mJID, pt.x+ev.getX(), pt.y+ev.getY());
                 }
                 return;
             }
             
             super.processMouseEvent(ev);
         }
+        
+    }
 
-        /**
-         * Given a popup-inducing click at a particular location, see if
-         * there's a JID associated with that location. If so, pop up a
-         * contextual menu.
-         */
-        protected void displayPopupMenu(int xp, int yp) {
-            int pos = viewToModel(new Point(xp, yp));
-            StyledDocument doc = getStyledDocument();
-            Element el = doc.getCharacterElement(pos);
-            if (el == null)
-                return;
-            AttributeSet attrs = el.getAttributes();
-            if (attrs == null)
-                return;
-            String jid = (String)attrs.getAttribute(ChatLogPanel.ATTR_JID);
-            if (jid == null)
-                return;
+    protected class DragSourceThing 
+        implements DragGestureListener {
+        JComponent mComponent;
+        String mJID;
+        boolean mWasOpaque;
 
-            mPopupMenu.adjustShow(jid, this, xp, yp);
+        Color mDragColor = new Color(0.866f, 0.866f, 0.92f);
+
+        public DragSourceThing(JComponent obj, String jid) {
+            mComponent = obj;
+            mJID = jid;
         }
 
+        public void dragGestureRecognized(DragGestureEvent ev) {
+            // Highlight the source label.
+            mWasOpaque = mComponent.isOpaque();
+            mComponent.setBackground(mDragColor);
+            mComponent.setOpaque(true);
+
+            Transferable transfer = new JIDTransfer(mJID);
+            UserPanel.dragSource.startDrag(ev, DragSource.DefaultMoveDrop, transfer,
+                new DragSourceAdapter() {
+                    public void dragDropEnd(DragSourceDropEvent ev) {
+                        // Unhighlight drag target.
+                        mComponent.setOpaque(mWasOpaque);
+                        mComponent.setBackground(null);
+                    }
+                });
+        }
     }
+
 }

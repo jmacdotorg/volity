@@ -3,6 +3,11 @@ SVN repository.
 
 * the present
 
+Several improvements to the MUC window. You no longer get redundant "player
+has joined" messages if someone's client sends multiple presence packets.
+Names in the user list no longer wrap if the panel is too narrow; also,
+you can drag them (as per the usual JID drag-drop mechanisms.)
+
 URLs in chat windows are now recognized, colored blue, underlined, and if
 you click on one it's sent to your web brower. (Should this be a preference?)
 
