@@ -113,7 +113,8 @@ public class ChooseResourceDialog extends BaseDialog
 
         mTable.addMouseListener(new MouseAdapter() {
                 public void mouseClicked(MouseEvent ev) {
-                    if (ev.getClickCount() >= 2)
+                    if (ev.getID() == MouseEvent.MOUSE_CLICKED
+                        && ev.getClickCount() >= 2)
                         doSelect();
                 }
             });

@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+URLs in chat windows are now recognized, colored blue, underlined, and if
+you click on one it's sent to your web brower. (Should this be a preference?)
+
 If you register a new volity.net account, Javolin now updates your name
 and email address in the Volity database, by sending a VCard. Also reworded
 the connect dialog help text.

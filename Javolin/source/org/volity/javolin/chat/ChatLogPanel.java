@@ -7,11 +7,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.text.*;
 import org.volity.javolin.LogTextPanel;
+import org.volity.javolin.PlatformWrapper;
 
 /**
  * A subclass of LogTextPanel which is intended for chat transcripts. This
@@ -26,7 +29,12 @@ public class ChatLogPanel extends LogTextPanel
     /* Formatting stuff used by all chat logs */
     private final static Color colorCurrentTimestamp = Color.BLACK;
     private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
+    private final static Color colorHyperlink = new Color(0.0f, 0.0f, 0.8f);
     private final static SimpleDateFormat timeStampFormat = new SimpleDateFormat("HH:mm:ss");
+
+    private static Pattern sURLPattern = Pattern.compile(
+        "(http|https|ftp):[^\\s]*[^\\s.?!,;\">)]+",
+        Pattern.CASE_INSENSITIVE);
 
     public final static String ATTR_JID = "VolityJID";
     public final static String ATTR_REALJID = "VolityRealJID";
@@ -34,6 +42,7 @@ public class ChatLogPanel extends LogTextPanel
     public final static String ATTR_TYPE_NAME = "VolityJID:Name";
     public final static String ATTR_TYPE_TEXT = "VolityJID:Text";
     public final static String ATTR_TYPE_ABOUT = "VolityJID:About";
+    public final static String ATTR_TYPE_HYPERLINK = "VolityJID:Link";
 
     private StyledDocument mDocument;
     private UserColorMap mColorMap;
@@ -45,6 +54,7 @@ public class ChatLogPanel extends LogTextPanel
     protected Style mStyleBase;
     protected Style mStyleCurrentTimestamp;
     protected Style mStyleDelayedTimestamp;
+    protected Style mStyleHyperlink;
 
     /**
      * Constructor. The map may be null, if you don't want name coloring.
@@ -68,6 +78,11 @@ public class ChatLogPanel extends LogTextPanel
         mStyleDelayedTimestamp = mTextPane.addStyle("delayed", mStyleBase);
         StyleConstants.setForeground(mStyleDelayedTimestamp,
             colorDelayedTimestamp);
+        mStyleHyperlink = mTextPane.addStyle("hyperlink", mStyleBase);
+        StyleConstants.setForeground(mStyleHyperlink,
+            colorHyperlink);
+        StyleConstants.setUnderline(mStyleHyperlink, true);
+        mStyleHyperlink.addAttribute(ATTR_TYPE, ATTR_TYPE_HYPERLINK);
 
         mColorChangeListener = new ChangeListener() {
                 public void stateChanged(ChangeEvent ev) {
@@ -182,7 +197,30 @@ public class ChatLogPanel extends LogTextPanel
         }
 
         append(nickText + " ", nameStyle);
-        append(text + "\n", textStyle);
+
+        text = text+"\n";
+
+        Matcher matcher = sURLPattern.matcher(text);
+        int pos = 0;
+        String seq;
+
+        while (matcher.find()) {
+            int start = matcher.start();
+            if (pos < start) {
+                seq = text.substring(pos, start);
+                append(seq, textStyle);
+            }
+            seq = matcher.group();
+            append(seq, mStyleHyperlink);
+            pos = matcher.end();
+        }
+        if (pos == 0) {
+            append(text, textStyle);
+        }
+        else {
+            seq = text.substring(pos);
+            append(seq, textStyle);            
+        }
 
         scrollToBottom();
     }
@@ -297,6 +335,40 @@ public class ChatLogPanel extends LogTextPanel
     }
 
     /**
+     * Given a click at a particular location, see if there's a URL associated
+     * with that location. If so, launch it.
+     *
+     * Returns whether a URL was found.
+     */
+    protected boolean launchURLAt(int xp, int yp) {
+        int pos = mTextPane.viewToModel(new Point(xp, yp));
+        Element el = mDocument.getCharacterElement(pos);
+        if (el == null)
+            return false;
+        
+        AttributeSet attrs = el.getAttributes();
+        if (attrs == null)
+            return false;
+        String jid = (String)attrs.getAttribute(ATTR_TYPE);
+        if (jid == null)
+            return false;
+        if (!jid.equals(ATTR_TYPE_HYPERLINK))
+            return false;
+
+        int start = el.getStartOffset();
+        int end = el.getEndOffset();
+        String link = null;
+        try {
+            link = mDocument.getText(start, end-start);
+        }
+        catch (BadLocationException ex) {
+            return false;
+        }
+
+        return PlatformWrapper.launchURL(link);
+    }
+
+    /**
      * An Entry structure is associated with every JID which appears in the
      * chat. This contains the styles needed to draw the user's text:
      *
@@ -377,6 +449,14 @@ public class ChatLogPanel extends LogTextPanel
                     mOwner.displayPopupMenu(ev.getX(), ev.getY());
                 }
                 return;
+            }
+
+            if (ev.getID() == MouseEvent.MOUSE_CLICKED
+                && ev.getClickCount() == 1
+                && PlatformWrapper.launchURLAvailable()
+                && mOwner != null) {
+                if (mOwner.launchURLAt(ev.getX(), ev.getY()))
+                    return;
             }
             
             super.processMouseEvent(ev);
