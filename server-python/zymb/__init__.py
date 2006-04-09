@@ -30,7 +30,7 @@ simple tasks.
 
 * Version history:
 
-- unreleased:
+- 1.3.3:
 Added a parsefile() utility to the xmldata module.
 Fixed a bug which prevented a Jabber agent from logging in with a Unicode
     username or password.

@@ -819,7 +819,11 @@ class JabberConnect(JabberStream):
         """
         
         if (self.sendingstreamdoc):
-            self.conn.send('</stream:stream>')
+            try:
+                self.conn.send('</stream:stream>')
+            except:
+                # ignore send errors
+                pass 
             self.sendingstreamdoc = False
 
         self.xmldoc = None
@@ -1361,7 +1365,11 @@ class JabberAuth(JabberConnect):
         except UnicodeEncodeError:
             (jidpassstr, dummylen) = self.encodeunicode(jidpass)
 
-        #(jidpassstr, dummylen) = self.encodeunicode(jidpass) #### ?
+        ### Actually, contrary the SASL spec, Jabber servers seem to want
+        #   you to *always* use UTF-8. I posted a query on the Jabber
+        #   mailing list about this; Peter St Andre said he'd look into it.
+        #   For the moment, we will use UTF-8, because that's what works.
+        (jidpassstr, dummylen) = self.encodeunicode(jidpass) 
         
         ls = [ encoderawdigest(jidpassstr), nonce, cnonce ]
         A1 = ':'.join(ls)
