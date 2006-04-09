@@ -153,7 +153,7 @@ class Actor(volent.VolEntity):
 
         # Set up the keepalive service
 
-        sserv = self.parlor.conn.getservice('keepaliveservice')
+        sserv = self.referee.conn.getservice('keepaliveservice')
         if (sserv):
             serv = jabber.keepalive.KeepAliveService(sserv.getinterval())
             self.conn.addservice(serv)
@@ -708,8 +708,7 @@ class BotAdminOpset(rpc.MethodOpset):
         set, then all admin.* RPCs are rejected.
         """
         
-        if ((not self.actor.parlor.adminjid)
-            or (not sender.barematch(self.actor.parlor.adminjid))):
+        if (not ref.actor.parlor.isadminjid(sender)):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
         self.actor.log.warning('admin command from <%s>: %s %s',
             unicode(sender), namehead, unicode(callargs))

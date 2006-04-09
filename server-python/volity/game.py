@@ -43,6 +43,9 @@ class Game:
         (Default: True)
     defaultshowtable -- The initial show-table setting for new tables.
         (Default: True)
+    refereeclass -- The subclass of volity.referee.Referee to use for the game
+        referee. You will probably not need to override this. (Default:
+        volity.referee.Referee)
         
 
     Game(ref) -- constructor.
@@ -121,6 +124,8 @@ class Game:
     defaultlanguage = None
     defaultrecordgames = None
     defaultshowtable = None
+
+    refereeclass = None
     
     def __init__(self, ref):
         """__init__(self, ref)

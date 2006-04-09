@@ -33,11 +33,14 @@ class Parlor(volent.VolEntity):
         jid-resource: Resource string to use (optional, overrides the
             one in *jid*; if no resource is provided in either *jid* or
             *jid-resource*, then "volity" is used)
+        host: Jabber server host to use (optional, overrides the one
+            in *jid*)
         password: Used when connecting to Jabber
         game: Name of Python class which implements the game
         bot: Name of Python class which implements the bot (optional;
             if not provided, then the parlor will not create bots)
         admin: JID which is permitted to send admin commands (optional)
+            (may be comma-separated list of JIDs)
         muchost: JID of Jabber MUC server (optional, defaults to
             "conference.volity.net")
         bookkeeper: JID of Volity bookkeeper (optional, defaults to
@@ -64,12 +67,14 @@ class Parlor(volent.VolEntity):
 
     start() -- begin activity. (inherited)
     stop() -- stop activity. (inherited)
+    requeststop() -- stop activity in a particular way.
+    isadminjid() -- check whether the given JID is an administrator JID.
 
     Significant fields:
 
     jid -- the JID by which this Parlor is connected.
     conn -- the Jabber client agent.
-    adminjid -- the JID which is permitted to send admin commands.
+    adminjids -- the JID which is permitted to send admin commands.
     gameclass -- the Game subclass which implements the game.
     botclass -- the Bot subclass which implements the bot (or None).
     gamename -- the game's human-readable name (taken from gameclass).
@@ -87,7 +92,10 @@ class Parlor(volent.VolEntity):
     refereedied() -- callback invoked when a Referee shuts down.
     actordied() -- callback invoked when an Actor (bot) shuts down.
     listopengames() -- create a DiscoItems list of currently-active games.
+    stopunlessgraceful() -- stop the given entity if we are in the middle
+        of an ungraceful shutdown.
     handlerosterquery() -- accept a request to be added to someone's roster.
+    endwork() -- 'end' state handler.
 
     """
     
@@ -96,8 +104,17 @@ class Parlor(volent.VolEntity):
 
     def __init__(self, config):
         volent.VolEntity.__init__(self, config.get('jid'),
-            config.get('password'), config.get('jid-resource'))
+            config.get('password'), config.get('jid-resource'),
+            config.get('host'))
 
+        # Set the default shutdown conditions
+            
+        self.shutdowngraceful = True
+        self.shutdownrestart = True
+        self.shutdownrestartdelay = True
+        self.canrestart = config.has_key('restart-script')
+        self.restartfunc = config.get('restart-func-')
+        
         # Locate the game class.
         
         ls = config.get('game').split('.')
@@ -149,13 +166,15 @@ class Parlor(volent.VolEntity):
                 
         # Set the administrative JID (if present)
         
-        self.adminjid = None
+        self.adminjids = []
         if (config.get('admin')):
-            self.adminjid = interface.JID(config.get('admin'))
+            val = config.get('admin')
+            ls = [ interface.JID(subval.strip()) for subval in val.split(',') ]
+            self.adminjids = ls
 
         # Various Jabber handlers.
         
-        self.addhandler('end', self.log.warning, 'Parlor stopped.')
+        self.addhandler('end', self.endwork)
         self.conn.adddispatcher(self.handlepresence, name='presence')
         self.conn.adddispatcher(self.handlemessage, name='message')
 
@@ -313,8 +332,13 @@ class Parlor(volent.VolEntity):
         # Create the actual Referee object.
         
         try:
-            ref = referee.Referee(self, self.jid, self.password, refresource,
-                muc)
+            refclass = self.gameclass.refereeclass
+            if (refclass):
+                if (not issubclass(refclass, referee.Referee)):
+                    raise Exception('refereeclass must be a subclass of Referee')
+            else:
+                refclass = referee.Referee
+            ref = refclass(self, self.jid, self.password, refresource, muc)
         except Exception, ex:
             self.log.error('Unable to create referee',
                 exc_info=True)
@@ -327,7 +351,7 @@ class Parlor(volent.VolEntity):
         ref.start()
 
         ref.addhandler('end', self.refereedied, ref)
-        self.addhandler('end', ref.stop)
+        self.addhandler('end', self.stopunlessgraceful, ref)
 
         # Now we wait until the Referee is finished starting up -- which
         # is defined as "successfully connected to the MUC". This requires
@@ -399,6 +423,17 @@ class Parlor(volent.VolEntity):
             self.log.info('actor %s has terminated', resource)
             self.actors.pop(resource)
 
+    def isadminjid(self, sender):
+        """isadminjid(sender) -> bool
+
+        Check whether the given JID is an administrator JID.
+        """
+        
+        for jid in self.adminjids:
+            if (jid.barematch(sender)):
+                return True
+        return False
+
     def listopengames(self):
         """listopengames() -> DiscoItems
 
@@ -412,6 +447,15 @@ class Parlor(volent.VolEntity):
             if (ref.showtable):
                 items.additem(ref.jid, name=self.gamename)
         return items
+
+    def stopunlessgraceful(self, ent):
+        """stopunlessgraceful(ent) -> None
+
+        Stop the given entity if we are in the middle of an ungraceful
+        shutdown. If it's graceful, allow the entity to live.
+        """
+        if (not self.shutdowngraceful):
+            ent.stop()
 
     def handlerosterquery(self, msg):
         """handlerosterquery(msg) -> <stanza outcome>
@@ -435,6 +479,55 @@ class Parlor(volent.VolEntity):
                 self.conn.send(msg, addid=False, addfrom=False)
 
         raise interface.StanzaHandled
+
+    def requeststop(self, graceful=True, restart=True, delay=False):
+        """requeststop(graceful=True, restart=True, delay=False) -> None
+
+        Stop activity in a particular way.
+
+        If *graceful* is false, the parlor and all its referees (and bots)
+        will shut down immediately. If true, the parlor will shut down, but
+        the referees will keep going until they reach their natural shutdown
+        condition.
+
+        If *restart* is false, the process will exit when the parlor and
+        all referees shut down. If true, this is still true; however, the
+        parlor's shutdown will cause the process to exec a new copy of
+        itself, thus restarting itself from scratch. Any remaining referees
+        (in the graceful-restart case) will continue to operate in a fork
+        of the original process.
+
+        If *delay* is true (and *restart* is also), then the parlor will
+        wait a few seconds before starting up. This is used in the case
+        of a broken Jabber connection, to prevent the parlor from going
+        crazy with restart attempts.
+
+        Note that this restart feature must be enabled by passing the
+        --restart-script command-line argument. If that is not available,
+        the *restart* argument is ignored.
+
+        Note that a call to the generic agent stop() method is equivalent
+        to requeststop(True, True, True). (Unless the agent is already 
+        stopping, in which case the originally-requested conditions remain 
+        in place.) This means that if the Jabber connection dies, the parlor 
+        will attempt a graceful restart.
+        """
+        
+        self.shutdowngraceful = graceful
+        self.shutdownrestart = restart
+        self.shutdownrestartdelay = delay
+        self.stop()
+
+    def endwork(self):
+        """endwork() -> None
+
+        The 'end' state handler. This invokes the function (handed in from
+        volityd.py) which execs a new parlor if desired.
+        """
+        
+        self.log.warning('Parlor stopped.')
+        if (self.shutdownrestart):
+            self.restartfunc(self.shutdownrestartdelay)
 
 class ParlorVolityOpset(rpc.MethodOpset):
     """ParlorVolityOpset: The Opset which responds to volity.* namespace
@@ -495,9 +588,8 @@ class ParlorAdminOpset(rpc.MethodOpset):
         is permitted to send admin.* namespace RPCs. If no admin JID was
         set, then all admin.* RPCs are rejected.
         """
-        
-        if ((not self.parlor.adminjid)
-            or (not sender.barematch(self.parlor.adminjid))):
+
+        if (not self.parlor.isadminjid(sender)):        
             raise interface.StanzaNotAuthorized('admin operations are restricted')
         # Log the command that we're about to perform.
         self.parlor.log.warning('admin command from <%s>: %s %s',
@@ -534,8 +626,6 @@ class ParlorAdminOpset(rpc.MethodOpset):
         
         return dic
 
-    ### RPC to change log levels?
-
     def rpc_list_tables(self, sender, *args):
         """rpc_list_tables() -> list
 
@@ -544,7 +634,8 @@ class ParlorAdminOpset(rpc.MethodOpset):
         
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'list_tables: no arguments')
-        return self.parlor.referees.keys()
+        ls = [ ref.jid for ref in self.parlor.referees.values() ]
+        return ls
 
     def rpc_list_bots(self, sender, *args):
         """rpc_list_bots() -> list
@@ -604,16 +695,51 @@ class ParlorAdminOpset(rpc.MethodOpset):
         """rpc_shutdown() -> str
 
         Immediately shut down this Parlor and all tables. This kills all
-        open games, so use it considerately. It is preferable to set the
-        Parlor offline (so no new tables start up), then announce that the
-        system is being shut down, and then wait for everybody to finish
-        their games and leave.
+        open games, so use it considerately.
         """
         
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'shutdown: no arguments')
-        self.parlor.queueaction(sched.stopall)
-        return 'stopping parlor'
+        self.parlor.queueaction(self.parlor.requeststop, False, False)
+        return 'stopping parlor immediately'
+
+    def rpc_graceful_shutdown(self, sender, *args):
+        """rpc_graceful_shutdown() -> str
+
+        Shut down this Parlor, but leave tables operating.
+        """
+        
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'graceful_shutdown: no arguments')
+        self.parlor.queueaction(self.parlor.requeststop, True, False)
+        return 'stopping parlor gracefully'
+
+    def rpc_restart(self, sender, *args):
+        """rpc_restart() -> str
+
+        Immediately shut down this Parlor and all tables. This kills all
+        open games, so use it considerately.
+        """
+        
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'restart: no arguments')
+        if (not self.parlor.canrestart):
+            raise rpc.RPCFault(609, 'restart: no restart-script available')
+        self.parlor.queueaction(self.parlor.requeststop, False, True)
+        return 'restarting parlor immediately'
+
+    def rpc_graceful_restart(self, sender, *args):
+        """rpc_graceful_restart() -> str
+
+        Shut down this Parlor, but leave tables operating.
+        """
+        
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'graceful_restart: no arguments')
+        if (not self.parlor.canrestart):
+            raise rpc.RPCFault(609, 'restart: no restart-script available')
+        self.parlor.queueaction(self.parlor.requeststop, True, True)
+        return 'restarting parlor gracefully'
 
 
 # late imports

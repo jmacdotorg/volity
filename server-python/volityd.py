@@ -56,8 +56,10 @@ name of a Python class that implements a bot. For example, the "Rock Paper
 Scissors" game includes a bot class named games.rps.RPSBot. (Not all games
 include bot implementations.)
 
-The --retry option will attempt to restart the parlor if it shuts down (say,
-if it loses contact with the Jabber server).
+The --restart-script option allows the parlor to restart itself if its
+Jabber connection dies. It also allows you to use the restart admin RPCs.
+You should pass in the location of the script to use to restart the
+service; normally, this will be volityd.py itself.
 
 You may find that your parlor shuts down, or becomes inaccessible, after a
 few minutes of inactivity. This is typically because your computer's
@@ -118,7 +120,9 @@ set the --contact-jid option.
   --jid=JID, -jJID, [jid]
       identity to operate game parlor under
   --resource=RESOURCE, -rRESOURCE, [jid-resource]
-      resource for JID (if not already present) (default: volity)
+      resource for JID (if not given in --jid) (default: volity)
+  --host=HOST, [host]
+      Jabber server to contact (if not given in --jid) (default: as in --jid)
   --password=PASSWORD, -pPASSWORD, [password]
       Jabber password of JID
   --bot=BOTCLASS, -bBOTCLASS, [bot]
@@ -135,9 +139,10 @@ set the --contact-jid option.
       central Volity bookkeeping service (default:
       bookkeeper@volity.net/volity)
   --admin=JID, [admin]
-      identity permitted to send admin messages
-  --retry, [retry]
-      restart parlor if it (and all referees) die
+      identity permitted to send admin messages (or comma-separated list)
+  --restart-script=PATH, [restart-script]
+      location of volityd.py, or whatever script you want to restart dead
+      parlors (default: do not restart)
   --keepalive, [keepalive]
       send periodic messages to exercise Jabber connection
   --keepalive-interval=KEEPALIVEINTERVAL, [keepalive-interval]
@@ -146,6 +151,9 @@ set the --contact-jid option.
       write log info to a file (default: stdout)
   --rotate-logfile=COUNT, [rotate-logfile]
       rotate log files, once per day, keeping given number of old files
+  --delay=INT
+      pause the given number of seconds before starting up (internal use
+      only)
   --debug, -D, [debug-level]
       display more info. (If used twice, even more.)
 
@@ -169,6 +177,9 @@ import zymb.sched
 import volity.config
 from volity import parlor
 
+# Save sys.args for future forking
+originalargs = list(sys.argv)
+
 usage = "usage: %prog [ options ]"
 
 popt = optparse.OptionParser(prog=sys.argv[0],
@@ -186,7 +197,10 @@ popt.add_option('-j', '--jid',
     help='identity to operate game parlor under')
 popt.add_option('-r', '--resource',
     action='store', type='string', dest='jidresource', metavar='RESOURCE',
-    help='resource for JID (if not already present) (default: volity)')
+    help='resource for JID (if not given in --jid) (default: volity)')
+popt.add_option('--host',
+    action='store', type='string', dest='host', metavar='HOST',
+    help='Jabber server to contact (if not given in --jid) (default: as in --jid)')
 popt.add_option('-p', '--password',
     action='store', type='string', dest='password',
     help='Jabber password of JID')
@@ -210,10 +224,10 @@ popt.add_option('--bookkeeper',
     help='central Volity bookkeeping service (default: bookkeeper@volity.net/volity)')
 popt.add_option('--admin',
     action='store', type='string', dest='admin', metavar='JID',
-    help='identity permitted to send admin messages')
-popt.add_option('--retry',
-    action='store_true', dest='retry',
-    help='restart parlor if it (and all referees) die')
+    help='identity permitted to send admin messages (or comma-separated list)')
+popt.add_option('--restart-script',
+    action='store', type='string', dest='restartscript', metavar='PATH',
+    help='location of volityd.py, or whatever script you want to restart dead parlors (default: do not restart)')
 popt.add_option('--keepalive',
     action='store_true', dest='keepalive',
     help='send periodic messages to exercise Jabber connection')
@@ -226,6 +240,9 @@ popt.add_option('--logfile',
 popt.add_option('--rotate-logfile',
     action='store', type='int', dest='rotatelogfile', metavar='COUNT',
     help='rotate log files, once per day, keeping given number of old files')
+popt.add_option('--delay',
+    action='store', type='int', dest='delay', metavar='INT',
+    help='pause the given number of seconds before starting up (internal use only)')
 popt.add_option('-D', '--debug',
     action='count', dest='debuglevel',
     help='display more info. (If used twice, even more.)')
@@ -241,6 +258,7 @@ errors = False
 argmap = {}
 argmap['jid'] = opts.jid
 argmap['jid-resource'] = opts.jidresource
+argmap['host'] = opts.host
 argmap['contact-jid'] = opts.contactjid
 argmap['contact-email'] = opts.contactemail
 argmap['visible'] = opts.visible
@@ -249,8 +267,6 @@ argmap['bot'] = opts.bot
 argmap['password'] = opts.password
 if (opts.debuglevel):
     argmap['debug-level'] = str(opts.debuglevel)
-if (opts.retry):
-    argmap['retry'] = 'True'
 if (opts.rotatelogfile):
     argmap['rotate-logfile'] = str(opts.rotatelogfile)
 argmap['muchost'] = opts.muchost
@@ -260,7 +276,11 @@ if (opts.keepalive):
 if (opts.keepaliveinterval):
     argmap['keepalive-interval'] = str(opts.keepaliveinterval)
 argmap['admin'] = opts.admin
+argmap['restart-script'] = opts.restartscript
 argmap['logfile'] = opts.logfile
+def argmap_restart_func(delay):
+    execself(delay)
+argmap['restart-func-'] = argmap_restart_func
 
 config = volity.config.ConfigFile(opts.configfile, argmap)
 
@@ -283,6 +303,9 @@ if (not config.get('password')):
 if (errors):
     sys.exit(1)
 
+if (opts.delay):
+    time.sleep(opts.delay)
+
 debuglevel = 0
 if (config.get('debug-level')):
     debuglevel = int(config.get('debug-level'))
@@ -300,6 +323,8 @@ elif (debuglevel == 1):
     rootlogger.setLevel(logging.INFO)
     logging.getLogger('zymb').setLevel(logging.WARNING)
 
+isprimary = True
+        
 roothandler = None
 logfilename = config.get('logfile', '-')
 
@@ -309,7 +334,10 @@ def sethandler():
         roothandler.flush()
         roothandler.close()
         rootlogger.removeHandler(roothandler)
-        removeHandler = None
+        roothandler = None
+
+    if (not isprimary):
+        return
         
     if (logfilename == '-'):
         roothandler = logging.StreamHandler(sys.stdout)
@@ -322,9 +350,20 @@ def sethandler():
 lastrotation = time.localtime().tm_yday
 
 def rotatelogs():
-    global lastrotation
+    global lastrotation, roothandler
     assert (logfilename != '-')
     assert (rotatecount)
+
+    if (not isprimary):
+        # We don't want a child process rotating the logs! We also want
+        # to stop logging before the next rotation. We leave a five-minute
+        # safety margin.
+        newrotation = time.localtime(time.time()+300).tm_yday
+        if (newrotation != lastrotation):
+            lastrotation = newrotation
+            rootlogger.warning('giving up on logging so as not to confuse rotation')
+            sethandler()
+        return
     
     newrotation = time.localtime().tm_yday
     if (newrotation != lastrotation):
@@ -343,38 +382,73 @@ def rotatelogs():
     
 sethandler()
 
-retryflag = False
-if (config.get('retry')):
-    retryflag = True
-
 rotatecount = None
 if (logfilename != '-'):
     rotatecount = config.get('rotate-logfile')
     if (rotatecount):
         rotatecount = int(rotatecount)
+
+def execself(delay):
+    global isprimary
     
+    restartscript = config.get('restart-script')
+    if (not restartscript):
+        rootlogger.error('no restart-script available!')
+        return
+
+    if (not isprimary):
+        rootlogger.error('child process cannot fork again!')
+        return
+        
+    rootlogger.warning('will re-exec self...')
+
+    newargs = list(originalargs)
+    try:
+        pos = newargs.index('--delay')
+    except:
+        pos = -1
+    if (delay):
+        if (pos < 0):
+            newargs.extend(['--delay', '5'])
+        else:
+            newargs[pos+1] = '5'
+    else:
+        if (pos < 0):
+            newargs.extend(['--delay', '0'])
+        else:
+            newargs[pos+1] = '0'
+
+    pid = os.fork()
+    if (pid == 0):
+        # child
+        isprimary = False
+        rootlogger.warning('...child forked, continuing')
+    else:
+        # parent
+        os.execv(restartscript, newargs)
+        rootlogger.error('parent should not still exist!')
+        
+serv = parlor.Parlor(config)
+serv.start()
+
+if (rotatecount):
+    serv.addtimer(rotatelogs, delay=119, periodic=True)
+
+# The main doing-stuff loop.
+
 while 1:
-    serv = parlor.Parlor(config)
-    serv.start()
-    
-    if (rotatecount):
-        serv.addtimer(rotatelogs, delay=119, periodic=True)
+    try:
+        res = zymb.sched.process(None)
+        if (not res):
+            break
+    except KeyboardInterrupt, ex:
+        rootlogger.warning('KeyboardInterrupt, shutting down...')
+        if (isprimary):
+            # stop immediately, no restart
+            serv.requeststop(False, False)
+        else:
+            rootlogger.warning('...emergency stop!')
+            zymb.sched.stopall()
 
-    # The main doing-stuff loop.
+rootlogger.warning('game parlor (and all referees) have died.')
 
-    while 1:
-        try:
-            res = zymb.sched.process(None)
-            if (not res):
-                break
-        except KeyboardInterrupt, ex:
-            rootlogger.warning('KeyboardInterrupt, shutting down...')
-            serv.stop()
-            retryflag = False
-
-    if (not retryflag):
-        rootlogger.warning('game parlor (and all referees) have died.')
-        break
-    rootlogger.warning('restarting game parlor...')
-    time.sleep(5)
-    

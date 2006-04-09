@@ -68,6 +68,12 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.6.0:
+The admin.* RPC namespace is up to the current spec for Volity-hosted
+    parlors. Restart and graceful_restart work correctly.
+The --admin option to volityd.py now takes multiple JIDs (separated by
+    commas).
+
 - 1.5.8:
 The referee now sends a message-style invitation if you ask it to invite a
     JID without a resource string.

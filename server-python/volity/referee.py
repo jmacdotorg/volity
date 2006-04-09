@@ -1203,7 +1203,7 @@ class Referee(volent.VolEntity):
 
         act.addhandler('end', self.parlor.actordied, act)
         self.addhandler('end', act.stop)
-        self.parlor.addhandler('end', act.stop)
+        self.parlor.addhandler('end', self.parlor.stopunlessgraceful, act)
 
         # Now we wait until the Actor is finished starting up -- which
         # is defined as "successfully connected to the MUC". This requires
@@ -2239,8 +2239,7 @@ class Validator:
                 raise game.FailureToken('volity.not_seated')
 
         if (self.administrator):
-            if ((not ref.parlor.adminjid)
-                or (not sender.barematch(ref.parlor.adminjid))):
+            if (not ref.parlor.isadminjid(sender)):
                 raise interface.StanzaNotAuthorized('admin operations are restricted')
             ref.log.warning('admin RPC from <%s>: %s %s',
                 unicode(sender), callname, unicode(callargs))
@@ -2551,8 +2550,7 @@ class RefAdminOpset(rpc.MethodOpset):
         set, then all admin.* RPCs are rejected.
         """
         
-        if ((not self.parlor.adminjid)
-            or (not sender.barematch(self.parlor.adminjid))):
+        if (not self.parlor.isadminjid(sender)):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
         self.parlor.log.warning('admin command from <%s>: %s %s',
             unicode(sender), namehead, unicode(callargs))
