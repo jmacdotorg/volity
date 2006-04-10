@@ -2,22 +2,48 @@ This is the Volity bookkeeper software. The bookkeeper serves as
 informational center for the Jabber-based Volity network, acting as
 front-end to a database of player and game information.
 
-This release offers no documentation. It's probably of very little use
-to anyone but the core Volity development team, at present.
+** YOU PROBABLY DON'T NEED TO INSTALL THIS. **
 
-You generally don't need to care about this software anyway. Unless
-you are planning on running your own Volity _network_, you don't need
-to worry about running your own bookkeeper. If you want to create,
-host or simply play games on the central Volity network, then you can
-use the public bookkeeper running at bookkeeper@volity.net/volity
-. See the URLs below for further documentation.
+This is understandably confusing to a lot of new Volity developers,
+but: unless you are planning on running your own Volity _network_, you
+don't need to worry about running your own bookkeeper. 
 
-For more information about Volity:
-Volity Developers' Site:
+In the more likely case that you wish to create, host or simply play
+games on the central Volity network, then you should probably use the
+public bookkeeper running at bookkeeper@volity.net/volity . Volity's
+official client application, Gamut, uses it by default, as do the Perl
+and Python parlor software.
+
+The SEE ALSO section at the bottom this file lists some pertinent
+URLs.
+
+INSTALLING IT ANYWAY
+
+OK, if you insist:
+
+First, you need a copy of Module::Build. Yes, this is annoying. I'll
+undo this requirement later.
+
+Then edit Build.PL to make sure that things will install where you
+expect. By default, the installer will place the bookeeper's daemon
+program into /usr/local/volity/bin/, and will install the libraries
+into your machine's usual site-perl location.
+
+Finally, run these commands:
+
+ perl ./Build.PL
+ ./Build
+ sudo ./Build install
+
+The script bookkeeper.pl features extensive POD documentation, which
+you can view by running the "perldoc" command on it.
+
+SEE ALSO
+
+For more information about Volity, including client and server
+software downloads and general user and developer information. visit
+the Volity developers' Site:
 http://www.volity.org
-
-Volity at SourceForge:
-http://volity.sf.net
 
 Enduser-friendly Volity info:
 http://volity.net
