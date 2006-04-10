@@ -245,8 +245,11 @@ sub AUTOLOAD {
     {
         return $self->referee->$method(@_);
     }
+    elsif ($method eq "DESTROY") {
+	return;
+    }
     else {
-        Carp::confess("Unknown method $method");
+        Carp::cluck("Unknown method $method");
     }
 }
 
