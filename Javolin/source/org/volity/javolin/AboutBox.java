@@ -16,7 +16,7 @@ public class AboutBox extends JFrame
     private final static int GAP = 4; // Space between controls
 
     private final static String APP_URL = 
-        "http://www.volity.org/projects/javolin/";
+        "http://www.volity.org/projects/gamut/";
 
     private final static String APP_ABOUT_TEXT = 
         "Copyright 2004-2005 by the Volity project contributors:\n"   +
