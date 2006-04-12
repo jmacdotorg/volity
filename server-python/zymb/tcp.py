@@ -158,6 +158,7 @@ class TCP(sched.Agent):
         """send(dat) -> int
 
         Send data out through the socket. Return the number of bytes written.
+        (That will be all of them; this is really a sendall method.)
 
         The data is sent raw. If you want to send Unicode data, you must
         encode it to a str -- via utf-8 or whatever -- before calling send().
@@ -300,11 +301,12 @@ class TCPSecure(TCP):
         """send(dat) -> int
 
         Send data out through the socket. Return the number of bytes written.
+        (That will be all of them; this is really a sendall method.)
 
         The data is sent raw. If you want to send Unicode data, you must
         encode it to a str -- via utf-8 or whatever -- before calling send().
 
-        This falls back to TCP.gotactivity when in non-secure mode.
+        This falls back to TCP.send when in non-secure mode.
         """
         
         if (not self.ssl):
@@ -320,7 +322,11 @@ class TCPSecure(TCP):
         self.log.debug('sending (ssl, %d b):  %s', len(dat), dat)
 
         try:
-            res = self.ssl.write(dat)
+            res = 0
+            while (dat):
+                wrote = self.ssl.write(dat)
+                res += wrote
+                dat = dat[wrote:]
         except socket.sslerror, ex:
             (errnum, errstr) = ex
             res = 0
