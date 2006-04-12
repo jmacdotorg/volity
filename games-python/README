@@ -2,5 +2,7 @@ These modules implement sample games for the Volity game system.
 To use them, you will need the Python volity server system
 (module "server-python" in the Volity CVS repository).
 
+The source code of these games is in the public domain.
+
 For more information about Volity: 
     <http://volity.org/>
