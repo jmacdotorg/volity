@@ -112,9 +112,8 @@ Green_4_ColorIcon.png: green-4-coloricon.svg
 	$(SVGTOPNG) green-4-coloricon.svg -a 0,0,100,100 -w 16 -h 16 -d Green_4_ColorIcon.png
 
 
-vollogo-200.png: vollogo.svg
-	$(SVGTOPNG) vollogo.svg -a 0,0,200,200 -w 200 -h 200
-	pngtopnm -mix vollogo.png | ppmquant -meanpixel 253 | pnmtopng > vollogo-200.png
+appicon.png: appicon.svg
+	$(SVGTOPNG) appicon.svg -a 10,10,80,80 -w 200 -h 200
 
 clean:
 	rm -f *~ *.png

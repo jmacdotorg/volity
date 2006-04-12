@@ -29,8 +29,8 @@ public class AboutBox extends JFrame
         "MP3SPI MP3 library (javazoom.net), and the Smack\n"          +
         "XMPP toolkit (jivesoftware.org).";
 
-    static Icon VOLITY_LOGO =
-        new ImageIcon(AboutBox.class.getResource("VolityLogo-200.png"));
+    static Icon APP_LOGO =
+        new ImageIcon(AboutBox.class.getResource("AppLogo-200.png"));
 
     private static AboutBox soleAboutBox = null;
 
@@ -110,7 +110,7 @@ public class AboutBox extends JFrame
 
         int row = 0;
 
-        JLabel logo = new JLabel(VOLITY_LOGO);
+        JLabel logo = new JLabel(APP_LOGO);
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;

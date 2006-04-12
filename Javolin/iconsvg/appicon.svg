@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+
+<defs>
+
+<filter id="shadow" filterUnits="userSpaceOnUse" 
+	x="0" y="0" width="2" height="2">
+
+	<feGaussianBlur in="SourceAlpha" stdDeviation="0.10" result="blur" />
+
+	<feMerge>
+		<feMergeNode in="blur"/>
+		<feMergeNode in="SourceGraphic"/>
+	</feMerge>
+</filter>
+
+<filter id="veeshadow" filterUnits="userSpaceOnUse" 
+	x="-2" y="-2" width="4" height="4">
+
+	<feGaussianBlur in="SourceAlpha" stdDeviation="0.075" result="blur" />
+
+	<feMerge>
+		<feMergeNode in="blur"/>
+		<feMergeNode in="SourceGraphic"/>
+	</feMerge>
+</filter>
+
+<g id="capsule" 
+	transform="scale(0.01) translate(-325,-325)" >
+<path
+	d="M349.082,333.259
+c12.007,12.007,12.007,31.473,0,43.482
+c-12.007,12.006-31.476,12.004-43.481-0.002l-50.665-50.666
+c-12.008-12.007-12.008-31.474,0-43.481
+c12.006-12.005,31.473-12.005,43.478,0L349.082,333.259z"/>
+
+<path
+	d="M359.049,323.294
+c8.142,8.14,12.755,18.861,13.102,30.318
+l27.598-27.538
+c12.005-12.007,12.008-31.473,0.001-43.48
+c-12.008-12.006-31.472-12.006-43.481,0l-18.685,18.685L359.049,323.294z"/>
+
+</g>
+
+<g id="side1">
+
+<rect x="0.6" y="0.8" width="0.65" height="0.4"
+	filter="url(#shadow)"
+	fill="#087828" />
+
+<rect width="1" height="1"
+	filter="url(#shadow)"
+	fill="#138A44" />
+
+<rect x="0.3" y="0.4" width="0.45" height="1.0"
+	filter="url(#shadow)"
+	fill="#1A5" />
+<rect x="0.5" y="0.2" width="0.9" height="0.3"
+	filter="url(#shadow)"
+	fill="#2B4" />
+</g>
+
+<g id="side2">
+<rect width="1" height="1"
+	filter="url(#shadow)"
+	fill="#384B90" />
+
+<rect x="0.25" y="0.5" width="0.55" height="0.8"
+	filter="url(#shadow)"
+	fill="#45B" />
+<rect x="0.5" y="0.15" width="0.9" height="0.3"
+	filter="url(#shadow)"
+	fill="#4860D0" />
+<rect x="0.6" y="0.6" width="0.65" height="0.25"
+	filter="url(#shadow)"
+	fill="#5064D8" />
+</g>
+
+<g id="side3">
+<rect width="1" height="1"
+	filter="url(#shadow)"
+	fill="#007377" />
+<rect x="0.3" y="0.1" width="0.8" height="0.3"
+	filter="url(#shadow)"
+	fill="#108A88" />
+<rect x="0.15" y="0.3" width="0.6" height="0.5"
+	filter="url(#shadow)"
+	fill="#189890" />
+<rect x="0.8" y="0.7" width="0.45" height="0.5"
+	filter="url(#shadow)"
+	fill="#108A88" />
+<rect x="0.1" y="0.9" width="0.5" height="0.25"
+	filter="url(#shadow)"
+	fill="#1CA0A0" />
+</g>
+
+<g id="application">
+<circle r="1.13" fill="#9A9" stroke="#174" stroke-width="0.06" />
+
+<use xlink:href="#side1"
+	transform="scale(1,0.57735026) rotate(45)" />
+<use xlink:href="#side2"
+	transform="rotate(120) scale(1,0.57735026) rotate(45)" />
+<use xlink:href="#side3"
+	transform="rotate(-120) scale(1,0.57735026) rotate(45)" />
+<use xlink:href="#capsule"
+	fill="#000" opacity="0.15"
+	transform="scale(1.1)" />
+<use xlink:href="#capsule"
+	filter="url(#veeshadow)"
+	stroke="#CDC" stroke-width="7.5" fill="none"
+	transform="scale(1.1)" />
+</g>
+
+</defs>
+
+<use xlink:href="#application"
+	transform="translate(50,50) scale(30)" />
+
+</svg>
