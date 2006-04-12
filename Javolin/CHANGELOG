@@ -1,7 +1,10 @@
-This is a high-level list of Javolin changes. For a detailed view, see the
+This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.3.2
+
+Starting with this release, this application is now called Volity
+Gamut. (It remains "Javolin" in earlier release notes.)
 
 Several improvements to the MUC window. You no longer get redundant "player
 has joined" messages if someone's client sends multiple presence packets.
@@ -11,7 +14,7 @@ you can drag them (as per the usual JID drag-drop mechanisms.)
 URLs in chat windows are now recognized, colored blue, underlined, and if
 you click on one it's sent to your web brower. (Should this be a preference?)
 
-If you register a new volity.net account, Javolin now updates your name
+If you register a new volity.net account, Gamut now updates your name
 and email address in the Volity database, by sending a VCard. Also reworded
 the connect dialog help text.
 
