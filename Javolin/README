@@ -1,19 +1,19 @@
 --- WHAT IS THIS? ---
 
-This is Javolin, a Volity client written in Java.
+This is Gamut, a Volity client written in Java.
 
-This also includes the source code for Testbench, a debugging framework for 
-Volity UI files.
+This also includes the source code for Testbench, a debugging framework
+for Volity UI files.
 
 See ReadMe_Build for information on building this application.
 
-Javolin is licensed under the Apache License Version 2.0. See 
+Gamut is licensed under the Apache License Version 2.0. See 
 LICENSE-2.0.txt for details.
 
-Javolin is still in beta, and you are welcome to help test it. For
-more information about Javolin, including a usage guide and links to
+Gamut is still in beta, and you are welcome to help test it. For
+more information about Gamut, including a usage guide and links to
 nightly builds, visit its homepage: 
-http://volity.org/projects/javolin
+http://volity.org/projects/gamut
 
 --- WHAT IS VOLITY? ---
 
