@@ -280,7 +280,8 @@ class TCPSecure(TCP):
                 input = input + instr
             except socket.sslerror, ex:
                 (errnum, errstr) = ex
-                if (errnum == socket.SSL_ERROR_WANT_READ):
+                if (errnum == socket.SSL_ERROR_WANT_READ
+                    or errnum == socket.SSL_ERROR_WANT_WRITE):
                     # no new data to read
                     break
                 if (errnum == socket.SSL_ERROR_EOF):
@@ -324,7 +325,20 @@ class TCPSecure(TCP):
         try:
             res = 0
             while (dat):
-                wrote = self.ssl.write(dat)
+                retry = False
+                try:
+                    wrote = self.ssl.write(dat)
+                except socket.sslerror, ex:
+                    (errnum, errstr) = ex
+                    if (errnum == socket.SSL_ERROR_WANT_READ
+                        or errnum == socket.SSL_ERROR_WANT_WRITE):
+                        self.log.warning('retrying write on ssl socket %s:%d',
+                            self.host, self.port)
+                        retry = True
+                    else:
+                        raise
+                if (retry):
+                    continue
                 res += wrote
                 dat = dat[wrote:]
         except socket.sslerror, ex:
