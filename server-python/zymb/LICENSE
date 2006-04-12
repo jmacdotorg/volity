@@ -1,0 +1,11 @@
+Zymb: An Asynchronous Python Communication Package
+    Designed by Andrew Plotkin <erkyrath@eblong.com>
+    Zymb home page: <http://eblong.com/zarf/zymb/>
+
+The Python source code in this module, and its submodules, is
+copyright 2005 by Andrew Plotkin. You may copy and distribute it
+freely, by any means and under any conditions. You may incorporate
+this code into your own software and distribute that, or modify this
+code and distribute the modified version, as long as you retain a
+notice in your software or documentation which includes this copyright
+notice, this license, and the URL shown above.

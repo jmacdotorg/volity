@@ -1,0 +1,13 @@
+Volity: A Network Standard for Near-Real-Time Gaming
+    Volity home page: <http://volity.org/>
+
+    Python Volity framework designed by Andrew Plotkin <erkyrath@eblong.com>
+    Python Volity home page: <http://eblong.com/zarf/volity/>
+
+The Python source code in this module, and its submodules, is
+copyright 2005 by Andrew Plotkin. You may copy and distribute it
+freely, by any means and under any conditions. You may incorporate
+this code into your own software and distribute that, or modify this
+code and distribute the modified version, as long as you retain a
+notice in your software or documentation which includes this copyright
+notice, this license, and the URL shown above.
