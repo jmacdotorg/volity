@@ -1,4 +1,5 @@
 import socket
+import select
 import sys
 import errno
 import logging
@@ -53,6 +54,7 @@ class TCP(sched.Agent):
     Public methods:
 
     send(str) -- send data out through the socket.
+    sendnb(str) -- send data out through the socket (non-blocking).
     basichandle(str) -- a simple event handler for 'handle'.
 
     Internal methods:
@@ -158,10 +160,12 @@ class TCP(sched.Agent):
         """send(dat) -> int
 
         Send data out through the socket. Return the number of bytes written.
-        (That will be all of them; this is really a sendall method.)
+        (That will be all of them; this is really a sendall method.) If an
+        error occurs, returns None.
 
-        The data is sent raw. If you want to send Unicode data, you must
-        encode it to a str -- via utf-8 or whatever -- before calling send().
+        The data is sent raw. (If it is not a string, it is converted to one
+        before sending.) If you want to send Unicode data, you must encode
+        it to a str -- via utf-8 or whatever -- before calling send().
         """
         
         dat = str(dat)
@@ -171,14 +175,71 @@ class TCP(sched.Agent):
             else:
                 msg = 'socket never opened'
             self.log.warning('unable to send (%s)', msg)
-            return
+            return None
         self.log.debug('sending (%d b):  %s', len(dat), dat)
 
         try:
-            res = self.sock.sendall(dat)
+            res = 0
+            while (dat):
+                block = False
+                try:
+                    wrote = self.sock.send(dat)
+                    res += wrote
+                    dat = dat[wrote:]
+                    if (dat):
+                        block = True
+                except socket.error, ex:
+                    (errnum, errstr) = ex
+                    if (errnum == errno.EAGAIN):
+                        # operation can't even start without blocking
+                        self.log.warning('retrying write on socket %s:%d',
+                            self.host, self.port)
+                        block = True
+                    else:
+                        raise
+                if (block):
+                    # Since this is a blocking send-all, we have to wait
+                    # for the socket. We only block for one second, since
+                    # I'd rather see a serious problem manifest itself as
+                    # a stream of error logs (as opposed to frozen silence).
+                    ls = [ self.sock ]
+                    (inls, outls, exls) = select.select([], ls, [], 1.0)
         except socket.error, ex:
             (errnum, errstr) = ex
-            res = 0
+            res = None
+            self.log.warning('write error on socket %s:%d: %d: %s',
+                self.host, self.port, errnum, errstr)
+            self.perform('error', ex, self)
+        return res
+
+    def sendnb(self, dat):
+        """sendnb(dat) -> int
+
+        Send data out through the socket, but do not block. Return the
+        number of bytes written. (That may be the full count, or less.) On
+        a serious error, None is returned (implying that no bytes were
+        written).
+
+        The data is sent raw. (If it is not a string, it is converted to one
+        before sending.) If you want to send Unicode data, you must encode
+        it to a str -- via utf-8 or whatever -- before calling sendnb().
+        """
+        
+        dat = str(dat)
+        if (not self.sock):
+            if (self.state == 'end'):
+                msg = 'socket already closed'
+            else:
+                msg = 'socket never opened'
+            self.log.warning('unable to send (%s)', msg)
+            return None
+        self.log.debug('sending (%d b):  %s', len(dat), dat)
+
+        try:
+            res = self.sock.send(dat)
+        except socket.error, ex:
+            (errnum, errstr) = ex
+            res = None
             self.log.warning('write error on socket %s:%d: %d: %s',
                 self.host, self.port, errnum, errstr)
             self.perform('error', ex, self)
@@ -243,6 +304,7 @@ class TCPSecure(TCP):
     Public methods:
 
     send(str) -- send data out through the socket.
+    sendnb(str) -- send data out through the socket (non-blocking).
     basichandle(str) -- a simple event handler for 'handle'.
     beginssl() -- begin secure communication.
 
@@ -302,16 +364,19 @@ class TCPSecure(TCP):
         """send(dat) -> int
 
         Send data out through the socket. Return the number of bytes written.
-        (That will be all of them; this is really a sendall method.)
+        (That will be all of them; this is really a sendall method.) If an
+        error occurs, returns None.
 
-        The data is sent raw. If you want to send Unicode data, you must
-        encode it to a str -- via utf-8 or whatever -- before calling send().
+        The data is sent raw. (If it is not a string, it is converted to one
+        before sending.) If you want to send Unicode data, you must encode
+        it to a str -- via utf-8 or whatever -- before calling send().
 
         This falls back to TCP.send when in non-secure mode.
         """
         
         if (not self.ssl):
             return TCP.send(self, dat)
+            
         dat = str(dat)
         if (not self.sock):
             if (self.state == 'end'):
@@ -319,31 +384,77 @@ class TCPSecure(TCP):
             else:
                 msg = 'socket never opened'
             self.log.warning('unable to send (%s)', msg)
-            return
+            return None
         self.log.debug('sending (ssl, %d b):  %s', len(dat), dat)
 
         try:
             res = 0
             while (dat):
-                retry = False
+                block = False
                 try:
                     wrote = self.ssl.write(dat)
+                    res += wrote
+                    dat = dat[wrote:]
+                    if (dat):
+                        block = True
                 except socket.sslerror, ex:
                     (errnum, errstr) = ex
                     if (errnum == socket.SSL_ERROR_WANT_READ
                         or errnum == socket.SSL_ERROR_WANT_WRITE):
+                        # operation can't even start without blocking
                         self.log.warning('retrying write on ssl socket %s:%d',
                             self.host, self.port)
-                        retry = True
+                        block = True
                     else:
                         raise
-                if (retry):
-                    continue
-                res += wrote
-                dat = dat[wrote:]
+                if (block):
+                    # Since this is a blocking send-all, we have to wait
+                    # for the socket. We only block for one second, since
+                    # I'd rather see a serious problem manifest itself as
+                    # a stream of error logs (as opposed to frozen silence).
+                    ls = [ self.sock ]
+                    (inls, outls, exls) = select.select([], ls, [], 1.0)
         except socket.sslerror, ex:
             (errnum, errstr) = ex
-            res = 0
+            res = None
+            self.log.warning('write error on ssl socket %s:%d: %d: %s',
+                self.host, self.port, errnum, errstr)
+            self.perform('error', ex, self)
+        return res        
+
+    def sendnb(self, dat):
+        """sendnb(dat) -> int
+
+        Send data out through the socket, but do not block. Return the
+        number of bytes written. (That may be the full count, or less.) On
+        a serious error, None is returned (implying that no bytes were
+        written).
+
+        The data is sent raw. (If it is not a string, it is converted to one
+        before sending.) If you want to send Unicode data, you must encode
+        it to a str -- via utf-8 or whatever -- before calling sendnb().
+
+        This falls back to TCP.sendnb when in non-secure mode.
+        """
+        
+        if (not self.ssl):
+            return TCP.sendnb(self, dat)
+            
+        dat = str(dat)
+        if (not self.sock):
+            if (self.state == 'end'):
+                msg = 'socket already closed'
+            else:
+                msg = 'socket never opened'
+            self.log.warning('unable to send (%s)', msg)
+            return None
+        self.log.debug('sending (ssl, %d b):  %s', len(dat), dat)
+
+        try:
+            res = self.ssl.write(dat)
+        except socket.sslerror, ex:
+            (errnum, errstr) = ex
+            res = None
             self.log.warning('write error on ssl socket %s:%d: %d: %s',
                 self.host, self.port, errnum, errstr)
             self.perform('error', ex, self)
@@ -442,6 +553,7 @@ class SSL(TCPSecure):
     Public methods:
 
     send(str) -- send data out through the socket.
+    sendnb(str) -- send data out through the socket (non-blocking).
     basichandle(str) -- a simple event handler for 'handle'.
 
     Internal methods:

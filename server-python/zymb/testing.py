@@ -119,6 +119,15 @@ def acceptreflect(sock, host, port):
     cl.addhandler('handle', cl.send)
     cl.start()
 
+def acceptreflectmost(sock, host, port):
+    def sendback(cl, dat):
+        if (len(dat) > 10):
+            dat = str(len(dat))
+        cl.send(dat)
+    cl = tcp.TCP(host, port, sock)
+    cl.addhandler('handle', sendback, cl)
+    cl.start()
+
 class Pocket:
     def __init__(self):
         self.agent = None
@@ -476,6 +485,71 @@ class TestTCP(unittest.TestCase):
         self.assertEqual(ls, ['begin', 'quit'])
         self.assert_(not logbuf.geterrors())
 
+    def test_tcpsendbig(self):
+        logbuf = LoggingBuffer()
+        ag = tcp.TCPListen(4201)
+        ag2 = tcp.TCP('localhost', 4201)
+        ag.addhandler('error', logbuf.handleerror)
+        ag2.addhandler('error', logbuf.handleerror)
+        ag.addhandler('accept', acceptreflectmost)
+        def sendone(self):
+            if (self.seqsendlist):
+                val = self.seqsendlist.pop(0)
+                res = self.send(val)
+                if (res != len(val)):
+                    self.send('badlen')
+        def seqsender(self):
+            self.seqsendlist = ['begin', ('x'*100000), 'quit']
+            self.addtimer(sendone, self, delay=0.1, periodic=True)
+        ag2.addhandler('connected', seqsender, ag2)
+        ag2.addhandler('handle', waitforquit, ag, ag2)
+        ag2.addhandler('handle', dolog, ag2)
+        
+        ag.start()
+        ag2.start()
+
+        schedloop()
+        
+        ls = logbuf.getdologs()
+        self.assertEqual(ls, ['begin', '100000', 'quit'])
+        self.assert_(not logbuf.geterrors())
+
+    def test_tcpsendbignonblock(self):
+        logbuf = LoggingBuffer()
+        ag = tcp.TCPListen(4201)
+        ag2 = tcp.TCP('localhost', 4201)
+        ag.addhandler('error', logbuf.handleerror)
+        ag2.addhandler('error', logbuf.handleerror)
+        ag.addhandler('accept', acceptreflectmost)
+        def sendone(self):
+            if (self.seqsendlist):
+                val = self.seqsendlist.pop(0)
+                res = self.sendnb(val)
+                val = val[res:]
+                if (val):
+                    self.seqsendlist.insert(0, val)
+        def seqsender(self):
+            self.seqsendlist = ['begin', ('x'*100000), 'quit']
+            self.addtimer(sendone, self, delay=0.1, periodic=True)
+        ag2.addhandler('connected', seqsender, ag2)
+        ag2.addhandler('handle', waitforquit, ag, ag2)
+        ag2.addhandler('handle', dolog, ag2)
+        
+        ag.start()
+        ag2.start()
+
+        schedloop()
+        
+        ls = logbuf.getdologs()
+        self.assertNotEqual(ls, ['begin', 'len100000', 'quit'])
+        self.assertEqual(ls[0], 'begin')
+        self.assertEqual(ls[-1], 'quit')
+        sum = 0
+        for val in ls[1:-1]:
+            sum += int(val)
+        self.assertEqual(sum, 100000)
+        self.assert_(not logbuf.geterrors())
+
     def test_tcplistencloseserv(self):
         logbuf = LoggingBuffer()
         ag = tcp.TCPListen(4201)
@@ -730,7 +804,8 @@ class TestParrotAgent(tcp.TCP):
                 if (val == None):
                     self.stop()
                     return
-                self.send(val)
+                wrote = self.send(val)
+                assert (wrote == len(val))
         
 class TestListenParrotAgent(tcp.TCPListen):
     def __init__(self, port, pocket, dic):
