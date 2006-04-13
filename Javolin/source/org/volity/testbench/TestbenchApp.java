@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.prefs.*;
 import java.util.zip.ZipException;
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
 import org.apache.batik.bridge.*;
 import org.apache.batik.util.gui.JErrorPane;
 import org.volity.client.GameUI;
@@ -70,14 +71,36 @@ public class TestbenchApp extends JFrame
     {
         File ui = null;
 
-        if (args.length != 1) {
-            System.err.println("Usage: Testbench UIFILE");
-            System.exit(1);
+        if (args.length >= 1) {
+            ui = new File(args[0]);
+        }
+        else {
+            JFileChooser filer = new JFileChooser();
+            filer.setDialogTitle("Select SVG UI");
+            filer.setApproveButtonText("Select");
+            filer.addChoosableFileFilter(new FileFilter() {
+                    public boolean accept(File file) {
+                        if (file.isDirectory())
+                            return true;
+                        String name = file.getName().toLowerCase();
+                        if (name.endsWith(".svg"))
+                            return true;
+                        return false;
+                    }
+                    public String getDescription() {
+                        return "UI files (*.svg)";
+                    }
+                });
+            int val = filer.showOpenDialog(null);
+
+            if (val != JFileChooser.APPROVE_OPTION) {
+                System.exit(1);
+            }
+            ui = filer.getSelectedFile();
         }
 
-        ui = new File(args[0]);
         if (!ui.exists()) {
-            System.err.println(getAppName() + ": " + args[0] + " does not exist");
+            System.err.println(getAppName() + ": " + ui.getPath() + " does not exist");
             System.exit(1);
         }
 
