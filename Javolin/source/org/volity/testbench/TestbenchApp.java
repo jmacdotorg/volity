@@ -83,12 +83,14 @@ public class TestbenchApp extends JFrame
                         if (file.isDirectory())
                             return true;
                         String name = file.getName().toLowerCase();
+                        if (name.endsWith(".zip"))
+                            return true;
                         if (name.endsWith(".svg"))
                             return true;
                         return false;
                     }
                     public String getDescription() {
-                        return "UI files (*.svg)";
+                        return "UI files (*.zip, *.svg)";
                     }
                 });
             int val = filer.showOpenDialog(null);
