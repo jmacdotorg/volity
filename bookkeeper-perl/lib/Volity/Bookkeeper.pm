@@ -24,7 +24,7 @@ use Data::Dumper;
 
 use base qw(Volity::Jabber);
 
-our $VERSION = '0.5.3';
+our $VERSION = '0.5.4';
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
