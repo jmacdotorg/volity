@@ -6,8 +6,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.volity.client.data.CommandStub;
@@ -20,10 +22,13 @@ import org.xhtmlrenderer.swing.LinkListener;
 import org.xhtmlrenderer.util.XRRuntimeException;
 
 public class Finder extends JFrame
-    implements ActionListener, CloseableWindow
+    implements ActionListener, CloseableWindow, Runnable
 {
-    public final static String FINDER_URL = "http://www.volity.net/gamefinder/";
+    public final static String FINDER_URL = "http://volity.net/gamefinder/";
     public final static String BUGREPORT_URL = "http://volity.net/bugs/beta_bugform.html";
+
+    // Interval to recheck Finder web pages for changes (in seconds)
+    public final static long CHECK_INTERVAL = 30;
 
     private final static String NODENAME = "FinderWin";
     private final static String OPENFINDER_KEY = "WantedOpen";
@@ -71,11 +76,19 @@ public class Finder extends JFrame
 
     private JavolinApp mOwner;
     private String mCurrent;
+    private URL mCurrentURL;
 
     private XHTMLFinder mDisplay;
     private SizeAndPositionSaver mSizePosSaver;
     private JButton mHomeButton;
     private JButton mReloadButton;
+
+    private Object mThreadLock = new Object(); // covers the following:
+    private boolean mWindowClosed = false;
+    private Thread mThread = null;
+    private long mLastDocCheck = 0;
+    private boolean mDocChanged = false;
+    private long mLastModified = 0;
 
     private Finder(JavolinApp owner) 
     {
@@ -83,6 +96,13 @@ public class Finder extends JFrame
 
         setTitle(JavolinApp.getAppName() + " Game Finder");
         buildUI();
+
+        /* We need a thread to periodically wake up and check the web site for
+         * changes. This will be crude, but it will work.
+         */
+        mLastDocCheck = System.currentTimeMillis();
+        mThread = new Thread(this);
+        mThread.start();
 
         /* Push the setDocument into its own event. This doesn't speed up the
          * startup procedure, but it does prevent errors from short-circuiting
@@ -103,6 +123,10 @@ public class Finder extends JFrame
         addWindowListener(
             new WindowAdapter() {
                 public void windowClosed(WindowEvent ev) {
+                    synchronized (mThreadLock) {
+                        mWindowClosed = true;
+                        mThreadLock.notify();
+                    }
                     mSizePosSaver.saveSizeAndPosition();
                     soleFinder = null;
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
@@ -183,9 +207,10 @@ public class Finder extends JFrame
                 // If it's an internal URL, fall through.
                 if (url.getProtocol().equals("http")
                     && (url.getHost().equals("www.volity.net") 
+                        || url.getHost().equals("test.volity.net") 
                         || url.getHost().equals("volity.net"))
                     && url.getPath().startsWith("/gamefinder")) {
-                    mCurrent = urlstr;
+                    setCurrentURL(urlstr, url);
                     super.linkClicked(uri);
                     return;
                 }
@@ -243,11 +268,15 @@ public class Finder extends JFrame
             setDocument(doc, "");
         }
         public void setDocument(Document doc, String url) {
+            resetTimer();
             super.setDocument(doc, url, new XhtmlNamespaceHandler());
+            checkModifiedTime();
         }
         public void setDocument(InputStream stream, String url)
             throws Exception {
+            resetTimer();
             super.setDocument(stream, url, new XhtmlNamespaceHandler());
+            checkModifiedTime();
         }
 
         private void setupListeners() {
@@ -266,7 +295,7 @@ public class Finder extends JFrame
             return;
 
         try {
-            mCurrent = urlstr;
+            setCurrentURL(urlstr, null);
             mDisplay.setDocument(urlstr);
         }
         catch (XRRuntimeException ex) {
@@ -283,6 +312,142 @@ public class Finder extends JFrame
             }
             catch (Exception ex2) {
                 // give up
+            }
+        }
+    }
+
+    /** Set the URL we are looking at. We keep both String and URL forms of it,
+     * for convenience. (But sometimes the URL is null. That suppresses the
+     * last-mod-time checker.)
+     */
+    protected void setCurrentURL(String urlstr, URL url) {
+        if (url == null) {
+            try {
+                url = new URL(urlstr);
+            }
+            catch (MalformedURLException ex) {
+                // never mind
+            }
+        }
+
+        synchronized (mThreadLock) {
+            mCurrent = urlstr;
+            mCurrentURL = url;
+        }
+    }
+
+    /**
+     * Kick the timer we keep for how recently we've checked the document
+     * last-mod-time. We call this just before loading a new document, as a
+     * precaution against having the thread wake up while the document is in
+     * the middle of being loaded.
+     */
+    protected void resetTimer() {
+        synchronized (mThreadLock) {
+            mLastDocCheck = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Set a flag for the checker thread to check the last-mod-time of the
+     * document. This is called after a new document is loaded (or reloaded).
+     */
+    protected void checkModifiedTime() {
+        synchronized (mThreadLock) {
+            mDocChanged = true;
+            mLastModified = 0;
+            mThreadLock.notify();
+        }
+    }
+
+    /**
+     * Implements Runnable interface, for the last-modified checker thread.
+     *
+     * The loop body of this function wakes up periodically to see if there is
+     * last-mod-time checking work to do. This work can take two forms: (1)
+     * Storing the last-mod-time of a document we have just loaded, or (2)
+     * checking the last-mod-time to see if it has changed since (1).
+     *
+     * Note that when the window loads a new document, it calls notify() to
+     * wake this thread up for task (1). Task (2) is purely based on a timer --
+     * CHECK_INTERVAL seconds after the last check.
+     *
+     * If mCurrentURL is null, this thread does no work at all.
+     */
+    public void run() {
+        synchronized (mThreadLock) {
+            while (true) {
+                if (mWindowClosed)
+                    break;
+                
+                if (mDocChanged) {
+                    // Check its last-modified stamp
+
+                    mDocChanged = false;
+
+                    if (mCurrentURL != null) {
+
+                        try {
+                            URLConnection connection = mCurrentURL.openConnection();
+                            connection.setUseCaches(false);
+                            if (connection instanceof HttpURLConnection) {
+                                HttpURLConnection hconn = (HttpURLConnection)connection;
+                                hconn.setRequestMethod("HEAD");
+                            }
+
+                            long srcmodtime = connection.getLastModified();
+                            mLastModified = srcmodtime;
+                            mLastDocCheck = System.currentTimeMillis();
+                        }
+                        catch (IOException ex) {
+                            // never mind
+                        }
+                    }
+                }
+                else {
+                    // We have a last-modified stamp for the displayed version
+                    // of the document. See if it's changed.
+                    long curtime = System.currentTimeMillis();
+                    if (curtime > mLastDocCheck + 1000 * CHECK_INTERVAL
+                        && mCurrentURL != null) {
+                        mLastDocCheck = curtime;
+
+                        try {
+                            URLConnection connection = mCurrentURL.openConnection();
+                            connection.setUseCaches(false);
+                            if (connection instanceof HttpURLConnection) {
+                                HttpURLConnection hconn = (HttpURLConnection)connection;
+                                hconn.setRequestMethod("HEAD");
+                            }
+
+                            long srcmodtime = connection.getLastModified();
+                            if (srcmodtime != mLastModified) {
+                                // prevent rechecks until the reload happens
+                                mCurrentURL = null;
+                                SwingUtilities.invokeLater(new Runnable() {
+                                        public void run() {
+                                            trySetDocument(mCurrent);
+                                        }
+                                    });
+                            }
+                        }
+                        catch (IOException ex) {
+                            // never mind
+                        }
+                    }
+                }
+
+                // Back to sleep for a while
+                try {
+                    /* To prevent lots of clients from smashing the web server
+                     * all at once, we wait a random interval from 4 to 7
+                     * seconds. */
+                    long delay = (long)(Math.random() * 3000) + 4000;
+                    mThreadLock.wait(delay); // msec
+                }
+                catch (InterruptedException ex) {
+                    break;
+                }
             }
         }
     }
