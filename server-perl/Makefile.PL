@@ -13,7 +13,6 @@ use ExtUtils::AutoInstall (
 				       'Class::Fields'=>'',
 				       'Class::Data::Inheritable'=>'',
 				       'Time::HiRes'=>'',
-				       'Tie::Exechash'=>'',
 				       'Date::Parse'=>'',
 				       'Log::Log4perl'=>'',
 				       'LWP'=>'',
