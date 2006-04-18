@@ -30,7 +30,7 @@ Volity::Info::Ruleset->set_sql(with_seat_by_rating => qq {
        ORDER BY game.end_time 
        DESC LIMIT 0,1
        ) 
-    AS rating FROM ruleset ORDER BY rating DESC
+    AS rating FROM ruleset GROUP BY id HAVING rating > 0 ORDER BY rating DESC
 });
 
 # search_with_seat_by_number_of_plays: as above, but ordered by the 
