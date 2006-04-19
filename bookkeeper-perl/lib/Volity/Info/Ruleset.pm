@@ -8,6 +8,7 @@ use Volity::Info::Game;
 __PACKAGE__->table('ruleset');
 __PACKAGE__->columns(All=>qw(id uri name description player_id homepage));
 __PACKAGE__->has_a(player_id=>"Volity::Info::Player");
+__PACKAGE__->has_many(servers=>"Volity::Info::Server", "ruleset_id");
 
 ##########################
 # Ima::DBI class methods
