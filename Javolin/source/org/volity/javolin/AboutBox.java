@@ -19,7 +19,7 @@ public class AboutBox extends JFrame
         "http://www.volity.org/projects/gamut/";
 
     private final static String APP_ABOUT_TEXT = 
-        "Copyright 2004-2005 by the Volity project contributors:\n"   +
+        "Copyright 2004-2006 by the Volity project contributors:\n"   +
         "Jason McIntosh, Doug Orleans, Andrew Plotkin, Karl\n"        +
         "von Laudermann. Licensed under the Apache License,\n"        +
         "Version 2.0. See Gamut web site for details.\n\n"          +
