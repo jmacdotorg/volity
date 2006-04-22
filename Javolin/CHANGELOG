@@ -1,6 +1,15 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
+* release 0.3.4
+
+This release actually has no code changes; it addresses an issue
+specific to the Mac OS X version, where textflow paragraphs would flow
+_up_ instead of down when Gamut is run with Apple's latest Java
+release. A change we've made to the Mac bundle's Info.plist file runs
+Gamut with an older Java instead. We're currently investigating a
+cleaner fix to this problem.
+
 * release 0.3.3
 
 The Finder window now polls the web page periodically (every 30 seconds) to
