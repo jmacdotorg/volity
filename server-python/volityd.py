@@ -425,7 +425,10 @@ def execself(delay):
         rootlogger.warning('...child forked, continuing')
     else:
         # parent
-        os.execv(restartscript, newargs)
+        try:
+            os.execv(restartscript, newargs)
+        except Exception, ex:
+            rootlogger.error('Unable to exec %s: %s', restartscript, ex)
         rootlogger.error('parent should not still exist!')
         
 serv = parlor.Parlor(config)

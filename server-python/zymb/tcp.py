@@ -346,7 +346,8 @@ class TCPSecure(TCP):
                     or errnum == socket.SSL_ERROR_WANT_WRITE):
                     # no new data to read
                     break
-                if (errnum == socket.SSL_ERROR_EOF):
+                if (errnum == socket.SSL_ERROR_EOF
+                    or errnum == socket.SSL_ERROR_ZERO_RETURN):
                     broken = True
                     break
                 self.log.warning('read error on ssl socket %s:%d: %d: %s',

@@ -32,6 +32,7 @@ simple tasks.
 
 - unreleased:
 Fixed several bugs in the send() methods of the tcp module. (Thanks to Phil.)
+Fixed the way I was catching SSL socket closed errors.
 Added sendnb() methods to send in a non-blocking way, since the send()
     methods are de facto blocking (send-all) methods.
 
