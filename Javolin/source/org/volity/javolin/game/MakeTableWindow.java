@@ -528,7 +528,19 @@ public class MakeTableWindow
 
         SelectUI select; 
         try {
-            select = new SelectUI(mParlor.getRuleset(), false);
+            URI ruleset = mParlor.getRuleset();
+            if (ruleset == null)
+                throw new NullPointerException();
+            select = new SelectUI(ruleset, false);
+        }
+        catch (NullPointerException ex) {
+            callbackFail();
+            mGameTable.leave();
+            JOptionPane.showMessageDialog(mParentDialog, 
+                "This table is not supplying a ruleset.",
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
         }
         catch (URISyntaxException ex) {
             callbackFail();
