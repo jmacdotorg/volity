@@ -1260,7 +1260,7 @@ public class TableWindow extends JFrame
                 });
         }
 
-        mInfoDialog.show();
+        mInfoDialog.setVisible(true);
     }
 
     /**
@@ -1319,7 +1319,7 @@ public class TableWindow extends JFrame
 
         SendInvitationDialog box =
             new SendInvitationDialog(TableWindow.this, mGameTable, recipient);
-        box.show();
+        box.setVisible(true);
     }
 
     /**

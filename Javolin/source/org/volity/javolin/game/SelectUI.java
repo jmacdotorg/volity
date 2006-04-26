@@ -312,7 +312,7 @@ public class SelectUI
 
         ChooseUIDialog box = new ChooseUIDialog(mGameUIInfoList,
             mLastChoice, lastname);
-        box.show();
+        box.setVisible(true);
 
         if (!box.getSuccess()) {
             // cancelled.

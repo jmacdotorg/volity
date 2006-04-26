@@ -154,7 +154,7 @@ public class SelectResource
 
         ChooseResourceDialog box = new ChooseResourceDialog(mResourceInfoList,
             mLastChoice, lastname);
-        box.show();
+        box.setVisible(true);
 
         if (!box.getSuccess()) {
             // cancelled.

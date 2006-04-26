@@ -212,7 +212,7 @@ public class JavolinApp extends JFrame
                 }
             });
 
-        show();
+        setVisible(true);
     }
 
     /**
@@ -456,7 +456,7 @@ public class JavolinApp extends JFrame
     void doAbout()
     {
         AboutBox box = AboutBox.getSoleAboutBox();
-        box.show();        
+        box.setVisible(true);        
     }
 
     /**
@@ -465,7 +465,7 @@ public class JavolinApp extends JFrame
     void doPreferences()
     {
         PrefsDialog box = PrefsDialog.getSolePrefsDialog(this);
-        box.show();        
+        box.setVisible(true);        
     }
 
     /**
@@ -475,7 +475,7 @@ public class JavolinApp extends JFrame
     void doGetFinder()
     {
         Finder win = Finder.getSoleFinder(this);
-        win.show();
+        win.setVisible(true);
     }
 
     /**
@@ -512,7 +512,7 @@ public class JavolinApp extends JFrame
             mTryingConnection = true;
 
             ConnectDialog connDlg = new ConnectDialog(this);
-            connDlg.show();
+            connDlg.setVisible(true);
             mConnection = connDlg.getConnection();
         }
         finally {
@@ -870,7 +870,7 @@ public class JavolinApp extends JFrame
     void doNewTableAt()
     {
         NewTableAtDialog newTableDlg = new NewTableAtDialog(this, mConnection);
-        newTableDlg.show();
+        newTableDlg.setVisible(true);
     }
 
     /**
@@ -879,7 +879,7 @@ public class JavolinApp extends JFrame
     void doJoinTableAt()
     {
         JoinTableAtDialog joinTableDlg = new JoinTableAtDialog(this, mConnection);
-        joinTableDlg.show();
+        joinTableDlg.setVisible(true);
     }
 
     /**
@@ -893,7 +893,7 @@ public class JavolinApp extends JFrame
      */
     public void handleNewTableWindow(TableWindow tableWin)
     {
-        tableWin.show();
+        tableWin.setVisible(true);
         mTableWindows.add(tableWin);
         AppMenuBar.notifyUpdateWindowMenu();
         
@@ -915,7 +915,7 @@ public class JavolinApp extends JFrame
     void doJoinMuc()
     {
         JoinMUCDialog joinMucDlg = new JoinMUCDialog(this, mConnection);
-        joinMucDlg.show();
+        joinMucDlg.setVisible(true);
     }
 
     public void handleNewMucWindow(MUCWindow mucWin)
@@ -923,7 +923,7 @@ public class JavolinApp extends JFrame
         if (mucWin == null)
             return;
 
-        mucWin.show();
+        mucWin.setVisible(true);
         mMucWindows.add(mucWin);
         AppMenuBar.notifyUpdateWindowMenu();
 
@@ -996,7 +996,7 @@ public class JavolinApp extends JFrame
         {
             chatWin = new ChatWindow(mConnection, userId);
 
-            chatWin.show();
+            chatWin.setVisible(true);
             mChatWindows.add(chatWin);
             AppMenuBar.notifyUpdateWindowMenu();
             mUserChatWinMap.put(userId, chatWin);
@@ -1079,7 +1079,7 @@ public class JavolinApp extends JFrame
         }
         AddUserDialog addUserDlg = new AddUserDialog(this,
             mConnection.getRoster(), jid);
-        addUserDlg.show();
+        addUserDlg.setVisible(true);
     }
 
     /**
@@ -1306,13 +1306,13 @@ public class JavolinApp extends JFrame
         GetInvitationDialog box = new GetInvitationDialog(this,
             mConnection, invitation);
         Audio.playInvited();
-        box.show();
+        box.setVisible(true);
     }
 
     public void doShowLastError() {
         ErrorWrapper err = ErrorWrapper.getLastError();
         JFrame box = new ErrorDialog(err, true);
-        box.show();
+        box.setVisible(true);
     }
 
     public void doClearCache() {

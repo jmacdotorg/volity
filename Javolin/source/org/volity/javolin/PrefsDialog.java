@@ -538,7 +538,7 @@ public class PrefsDialog extends JFrame
                 }
             });
 
-        show();
+        setVisible(true);
     }
 
     protected void saveWindowState() {

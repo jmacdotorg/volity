@@ -103,7 +103,7 @@ public class MakeMUCWindow
             if (mucID.equals(win.getRoom())) {
                 // We are. Bring up the existing window, and exit.
                 callbackAlreadyConnected(win);
-                win.show();
+                win.setVisible(true);
                 return;
             }
         }

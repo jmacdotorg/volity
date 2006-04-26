@@ -149,7 +149,7 @@ public class Finder extends JFrame
                 }
             });
 
-        show();
+        setVisible(true);
         Preferences prefs = Preferences.userNodeForPackage(getClass()).node(NODENAME);
         prefs.putBoolean(OPENFINDER_KEY, true);
     }

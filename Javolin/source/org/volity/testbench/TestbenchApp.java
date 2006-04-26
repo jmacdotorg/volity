@@ -257,7 +257,7 @@ public class TestbenchApp extends JFrame
                 }
             });
 
-        show();
+        setVisible(true);
     }
 
     /**
@@ -296,7 +296,7 @@ public class TestbenchApp extends JFrame
         else if (source == mMetadataMenuItem) {
             MetadataDialog box = MetadataDialog.getSoleMetadataDialog(mUIFile,
                 errorHandler);
-            box.show();        
+            box.setVisible(true);        
         }
         else if (source == mLastExceptionMenuItem) {
             if (lastException instanceof Exception) {

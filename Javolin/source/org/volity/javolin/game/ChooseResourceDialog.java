@@ -169,7 +169,7 @@ public class ChooseResourceDialog extends BaseDialog
         mURLButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
                     URLChooser urler = new URLChooser(null);
-                    urler.show();
+                    urler.setVisible(true);
                     URL url = urler.getResult();
                     if (url != null) {
                         mSuccess = true;
