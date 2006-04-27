@@ -146,6 +146,12 @@ public class Finder extends JFrame
                 public void componentResized(ComponentEvent e)
                 {
                     mSizePosSaver.saveSizeAndPosition();
+                    /* Due to bugs in Flying Saucer (R5), we have to manually
+                     * refresh the screen after any window resize. Maybe FS
+                     * will get better someday... */
+                    if (PlatformWrapper.isRunningOnWindows()) {
+                        trySetDocument(mCurrent);
+                    }
                 }
             });
 

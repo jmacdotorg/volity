@@ -25,10 +25,7 @@ public class PlatformWrapper
         // Cache this.
         isMac = isRunningOnMac();
 
-        isWin = false;
-        String osName = System.getProperty("os.name");
-        if (osName.startsWith("Windows"))
-            isWin = true;
+        isWin = isRunningOnWindows();
 
         assert (!(isMac && isWin));
     }
@@ -277,6 +274,19 @@ public class PlatformWrapper
     public static boolean isRunningOnMac() {
         // Apple recommended test for Mac
         return (System.getProperty("mrj.version") != null);
+    }
+
+    /**
+     * Tells whether the app is running on a Windows platform.
+     *
+     * @return true if the app is currently running on a Windows, false if
+     * running on another platform.
+     */
+    public static boolean isRunningOnWindows() {
+        String osName = System.getProperty("os.name");
+        if (osName.startsWith("Windows"))
+            return true;
+        return false;
     }
 
 
