@@ -1,11 +1,17 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
+* the present
+
+Added a "Forgot your password?" button to the Connect dialog.
+
+Fixed a bug in resizing the Finder window on Windows.
+
 * release 0.3.4
 
 This release actually has no code changes; it addresses an issue
 specific to the Mac OS X version, where textflow paragraphs would flow
-_up_ instead of down when Gamut is run with Apple's latest Java
+*up* instead of down when Gamut is run with Apple's latest Java
 release. A change we've made to the Mac bundle's Info.plist file runs
 Gamut with an older Java instead. We're currently investigating a
 cleaner fix to this problem.
@@ -13,10 +19,7 @@ cleaner fix to this problem.
 * release 0.3.3
 
 The Finder window now polls the web page periodically (every 30 seconds) to
-see if it has changed. This relies on the Last-Modified header, which the
-main Finder web site does not yet provide, so you will not see any behavior
-change. When the Finder is updated to provide this header, auto-refresh will
-start working.
+see if it has changed.
 
 Andrew Plotkin's new "blue-and-green V" icon debuts with this
 release. It is based on the Volity Games "playing card" logo designed

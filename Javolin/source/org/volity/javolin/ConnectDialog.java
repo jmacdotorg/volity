@@ -35,7 +35,8 @@ import org.volity.client.comm.VCard;
 public class ConnectDialog extends BaseDialog implements ActionListener
 {
     private final static String DEFAULT_HOST = "volity.net";
-
+    private final static String FORGOT_PASSWORD_URL = 
+        "http://volity.net/account/password_recovery.html";
 
     private final static String NODENAME = "ConnectDialog";
     private final static String JID_KEY = "JID";
@@ -66,6 +67,9 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private JButton mCancelButton;
     private JButton mConnectButton;
     private JCheckBox mRegisterCheck;
+    private JPanel mForgotPasswordPanel;
+    private JTextField mForgotPasswordLabel;
+    private JButton mForgotPasswordButton;
     private JTextArea mHelpArea;
     private JTextArea mRegisterHelpArea;
 
@@ -132,24 +136,32 @@ public class ConnectDialog extends BaseDialog implements ActionListener
      *
      * @param e  The action event to handle.
      */
-    public void actionPerformed(ActionEvent e)
+    public void actionPerformed(ActionEvent ev)
     {
-        if (e.getSource() == mConnectButton)
+        Object source = ev.getSource();
+        if (source == null)
+            return;
+
+        if (source == mConnectButton)
         {
             if (mShowRegistration)
                 doRegister();
             else
                 doConnect();
         }
-        else if (e.getSource() == mCancelButton)
+        else if (source == mCancelButton)
         {
             dispose();
         }
-        else if (e.getSource() == mRegisterCheck)
+        else if (source == mRegisterCheck)
         {
             mShowRegistration = mRegisterCheck.isSelected();
             adjustUI();
             pack(); // work around incomprehensible Swing behavior
+        }
+        else if (source == mForgotPasswordButton)
+        {
+            PlatformWrapper.launchURL(FORGOT_PASSWORD_URL);
         }
     }
 
@@ -518,6 +530,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         mEmailField.setVisible(mShowRegistration);
         mFullNameLabel.setVisible(mShowRegistration);
         mFullNameField.setVisible(mShowRegistration);
+        mForgotPasswordPanel.setVisible(PlatformWrapper.launchURLAvailable()
+            && !mShowRegistration);
 
         if (mShowRegistration)
             mConnectButton.setText("Register");
@@ -603,6 +617,45 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         c.insets = new Insets(SPACING, SPACING, 0, MARGIN);
         getContentPane().add(mPasswordAgainField, c);
         gridY++;
+
+        {
+            // Add panel with "Forgot Password" button
+
+            mForgotPasswordPanel = new JPanel(new GridBagLayout());
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = gridY;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
+            c.anchor = GridBagConstraints.CENTER;
+            c.weightx = 0.5;
+            getContentPane().add(mForgotPasswordPanel, c);
+            gridY++;
+
+            // Add "forgot password" link
+            mForgotPasswordLabel = new JTextField("Forgot your password?");
+            mForgotPasswordLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            mForgotPasswordLabel.setEditable(false);
+            mForgotPasswordLabel.setOpaque(false);
+            mForgotPasswordLabel.setBorder(BorderFactory.createEmptyBorder(0,0,0,0));
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = 0;
+            c.insets = new Insets(0, MARGIN, 0, 0);
+            c.anchor = GridBagConstraints.EAST;
+            c.weightx = 0.5;
+            mForgotPasswordPanel.add(mForgotPasswordLabel, c);
+
+            mForgotPasswordButton = new JButton("Recover It");
+            mForgotPasswordButton.addActionListener(this);
+            mForgotPasswordButton.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            c = new GridBagConstraints();
+            c.gridx = 1;
+            c.gridy = 0;
+            c.insets = new Insets(0, SPACING, 0, MARGIN);
+            c.anchor = GridBagConstraints.EAST;
+            mForgotPasswordPanel.add(mForgotPasswordButton, c);
+        }
 
         // Add Register checkbox
         mRegisterCheck = new JCheckBox("Register a new account",
