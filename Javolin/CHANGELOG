@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Changed the way (private) chat messages are sent. Gamut now tries to remember
+the last resource that sent you a message, and sends replies back to that
+resource.
+
 Added a "Forgot your password?" button to the Connect dialog.
 
 Fixed a bug in resizing the Finder window on Windows.

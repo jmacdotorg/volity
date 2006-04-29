@@ -18,6 +18,8 @@ package org.volity.javolin.chat;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import javax.swing.text.*;
@@ -35,6 +37,53 @@ public class ChatWindow extends JFrame
     private final static String NODENAME = "ChatWindow";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
 
+    /* It is desirable to track the last known resource of each JID that
+     * chatted with us. (This helps us send outgoing messages to an appropriate
+     * resource.)
+     *
+     * We do this with a table that maps bare JIDs to full JIDs.
+     *
+     * We're not worrying about thread-safety here, so please only call these
+     * functions from the Swing thread.
+     */
+    static private Map sResourceTracker = new HashMap();
+
+    /** Put this full JID into the mapping. */
+    static public void setLastKnownResource(String jid) {
+        String barejid = StringUtils.parseBareAddress(jid);
+        sResourceTracker.put(barejid, jid);
+    }
+
+    /**
+     * Remove this JID from the mapping. If the JID has a resource, only remove
+     * it if the resource matches.
+     */
+    static public void clearLastKnownResource(String jid) {
+        String barejid = StringUtils.parseBareAddress(jid);
+
+        if (!jid.equals(barejid)) {
+            String fulljid = (String)sResourceTracker.get(barejid);
+            if (fulljid == null)
+                return;
+            if (!fulljid.equals(jid))
+                return;
+        }
+
+        sResourceTracker.remove(barejid);
+    }
+
+    /**
+     * Given a bare JID, if it is in the mapping, return the associated full
+     * JID. If not, return the bare JID.
+     */
+    static public String applyLastKnownResource(String barejid) {
+        String jid = (String)sResourceTracker.get(barejid);
+        if (jid != null)
+            return jid;
+        return barejid;
+    }
+
+
     private JSplitPane mChatSplitter;
     private ChatLogPanel mLog;
     private JTextArea mInputText;
@@ -44,9 +93,10 @@ public class ChatWindow extends JFrame
 
     private SizeAndPositionSaver mSizePosSaver;
     private XMPPConnection mConnection;
-    private Chat mChatObject;
+    private BetterChat mChatObject;
     private String mLocalId;
-    private String mRemoteId;
+    private String mRemoteIdBare;
+    private String mRemoteIdFull;
     private String mRemoteNick;
 
     /*
@@ -59,17 +109,25 @@ public class ChatWindow extends JFrame
      * Constructor.
      *
      * @param connection         The current active XMPPConnection.
-     * @param remoteId           The ID of the user to chat with.
+     * @param remoteId           The ID of the user to chat with. (May have
+     *     a resource, but this will be used only as a hint for sending
+     *     replies.)
      * @exception XMPPException  If an error occurs joining the room.
      */
-    public ChatWindow(XMPPConnection connection, String remoteId) throws XMPPException
+    public ChatWindow(XMPPConnection connection, String remoteId)
+        throws XMPPException
     {
         mConnection = connection;
-        mRemoteId = remoteId;
-        mChatObject = new Chat(mConnection, mRemoteId);
+        mRemoteIdFull = remoteId;
+        mRemoteIdBare = StringUtils.parseBareAddress(remoteId);
+
+        if (!mRemoteIdFull.equals(mRemoteIdBare))
+            setLastKnownResource(mRemoteIdFull);
+
+        mChatObject = new BetterChat(mConnection, mRemoteIdFull);
         
         // Get nickname for remote user and use for window title
-        RosterEntry entry = mConnection.getRoster().getEntry(mRemoteId);
+        RosterEntry entry = mConnection.getRoster().getEntry(mRemoteIdBare);
         
         if (entry != null)
         {
@@ -78,7 +136,7 @@ public class ChatWindow extends JFrame
         
         if (mRemoteNick == null || mRemoteNick.equals(""))
         {
-            mRemoteNick = mRemoteId;
+            mRemoteNick = mRemoteIdBare;
         }
         
         setTitle(JavolinApp.getAppName() + ": Chat with " + mRemoteNick);
@@ -191,13 +249,13 @@ public class ChatWindow extends JFrame
     }
 
     /**
-     * Gets the ID of the remote user involved in the chat.
+     * Gets the bare ID of the remote user involved in the chat.
      *
-     * @return   The ID of the remote user involved in the chat.
+     * @return   The bare ID of the remote user involved in the chat.
      */
     public String getRemoteUserId()
     {
-        return mRemoteId;
+        return mRemoteIdBare;
     }
 
     /**
@@ -205,9 +263,15 @@ public class ChatWindow extends JFrame
      */
     private void doSendMessage()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         try
         {
             String message = mInputText.getText();
+
+            /* Make sure we've got the right resource. */
+            mRemoteIdFull = applyLastKnownResource(mRemoteIdBare);
+            mChatObject.setParticipant(mRemoteIdFull);
 
             mChatObject.sendMessage(message);
             mInputText.setText("");
@@ -243,8 +307,23 @@ public class ChatWindow extends JFrame
         }
         else
         {
-            mLog.message(mRemoteId, mRemoteNick, msg.getBody());
+            String jid = msg.getFrom();
+            if (jid != null) 
+                setUserResource(jid);
+            mLog.message(mRemoteIdFull, mRemoteNick, msg.getBody());
             Audio.playMessage();
+        }
+    }
+
+    /**
+     * If the given JID is a full JID, take its resource to be the resource we
+     * are currently chatting with.
+     */
+    public void setUserResource(String jid) {
+        String bareJid = StringUtils.parseBareAddress(jid);
+        if (!jid.equals(bareJid)) {
+            setLastKnownResource(jid);
+            mRemoteIdFull = jid;
         }
     }
 
@@ -274,5 +353,27 @@ public class ChatWindow extends JFrame
 
         // Necessary for all windows, for Mac support
         AppMenuBar.applyPlatformMenuBar(this);
+    }
+
+
+    /**
+     * Sometimes we want to change the destination of a chat object in mid-chat
+     * -- not the whole JID, just the resource string. (The XMPP RFC says we
+     * "SHOULD" do this when we're replying to a message which had a resource
+     * string.) We need to extend Chat to support this.
+     */
+    static class BetterChat extends Chat {
+        public BetterChat(XMPPConnection connection, String participant) {
+            super(connection, participant);
+        }
+
+        /**
+         * Set a new JID for this chat. It may be a bare or full JID. If full,
+         * it should bare-match the existing JID, although the code does not
+         * currently check that.
+         */
+        public void setParticipant(String jid) {
+            participant = jid;
+        }
     }
 }

@@ -110,7 +110,7 @@ public class JavolinApp extends JFrame
     List mTableWindows;
     List mChatWindows;
     List mDialogWindows;
-    private Map mUserChatWinMap;
+    private Map mUserChatWinMap; /* maps bare JIDs to ChatWindows */
 
     private boolean mTryingConnection = false;
     private List mQueuedCommandStubs = new ArrayList();
@@ -973,20 +973,23 @@ public class JavolinApp extends JFrame
      * Otherwise, it creates a new chat window for communicating with the
      * specified user.
      *
-     * @param userId  The Jabber ID of the user to chat with. (The resource
-     * string is ignored.)
+     * @param userIdFull  The Jabber ID of the user to chat with. (The resource
+     * string is ignored, except as a hint for future replies.)
      * @param toFront If a window exists, move it to the front?
      */
-    public ChatWindow chatWithUser(String userId, boolean toFront)
+    public ChatWindow chatWithUser(String userIdFull, boolean toFront)
     {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-        userId = StringUtils.parseBareAddress(userId);
+        String userId = StringUtils.parseBareAddress(userIdFull);
 
         ChatWindow chatWin = (ChatWindow)mUserChatWinMap.get(userId);
 
         if (chatWin != null)
         {
+            // Apply the new resource string, if there is one.
+            chatWin.setUserResource(userIdFull);
+
             if (toFront)
                 chatWin.toFront();
             return chatWin;
@@ -994,7 +997,7 @@ public class JavolinApp extends JFrame
 
         try
         {
-            chatWin = new ChatWindow(mConnection, userId);
+            chatWin = new ChatWindow(mConnection, userIdFull);
 
             chatWin.setVisible(true);
             mChatWindows.add(chatWin);

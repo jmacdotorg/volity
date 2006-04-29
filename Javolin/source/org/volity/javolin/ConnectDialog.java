@@ -134,7 +134,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     /**
      * ActionListener interface method implementation.
      *
-     * @param e  The action event to handle.
+     * @param ev  The action event to handle.
      */
     public void actionPerformed(ActionEvent ev)
     {

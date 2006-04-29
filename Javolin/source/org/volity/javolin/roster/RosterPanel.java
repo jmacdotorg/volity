@@ -38,6 +38,7 @@ import org.volity.client.comm.CapPacketExtension;
 import org.volity.client.data.JIDTransfer;
 import org.volity.javolin.CapPresenceFactory;
 import org.volity.javolin.PrefsDialog;
+import org.volity.javolin.chat.ChatWindow;
 
 /**
  * JPanel subclass which contains the roster list and related controls.
@@ -358,13 +359,19 @@ public class RosterPanel extends JPanel
      *
      * Called outside Swing thread!
      *
-     * @param XMPPAddress  The XMPP address of the user whose presence has changed.
+     * @param jid  The XMPP address of the user whose presence has changed.
      */
-    public void presenceChanged(String XMPPAddress)
+    public void presenceChanged(final String jid)
     {
+        final Presence packet = mRoster.getPresenceResource(jid);
+
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
+                    if (packet == null) {
+                        System.out.println("### roster lost " + jid);
+                        ChatWindow.clearLastKnownResource(jid);
+                    }
                     repopulate();
                 }
             });
