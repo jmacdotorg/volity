@@ -53,10 +53,11 @@ public abstract class GameUI implements RPCHandler {
      * @throws IllegalStateException if the connection has not been
      *         authenticated
      */
-    public GameUI(URL baseURL, 
+    public GameUI(URI ruleset, URL baseURL, 
         XMPPConnection connection, TranslateToken translator,
         MessageHandler messageHandler, ErrorHandler errorHandler) {
 
+        this.ruleset = ruleset;
         this.baseURL = baseURL;
         this.translator = translator;
         this.errorHandler = errorHandler;
@@ -73,6 +74,7 @@ public abstract class GameUI implements RPCHandler {
         responder.start();
     }
 
+    URI ruleset;
     URL baseURL;
     TranslateToken translator;
     ErrorHandler errorHandler;
@@ -473,6 +475,7 @@ public abstract class GameUI implements RPCHandler {
                 defineProperty("seat", Info.class, PERMANENT);
                 defineProperty("allseats", Info.class, PERMANENT);
                 defineProperty("gameseats", Info.class, PERMANENT);
+                defineProperty("ruleset", Info.class, PERMANENT);
                 defineProperty("versionmatch", Info.class, PERMANENT);
             } catch (PropertyException e) {
                 errorHandler.error(e);
@@ -548,6 +551,9 @@ public abstract class GameUI implements RPCHandler {
                 ls.put(count++, ls, getUISeat(seat));
             }
             return ls;
+        }
+        public String getRuleset() {
+            return ruleset.toString();
         }
         public Callable getVersionmatch() throws JavaScriptException {
             return funcVersionMatch;

@@ -549,6 +549,7 @@ public abstract class TestUI
                 defineProperty("seat", Info.class, PERMANENT);
                 defineProperty("allseats", Info.class, PERMANENT);
                 defineProperty("gameseats", Info.class, PERMANENT);
+                defineProperty("ruleset", Info.class, PERMANENT);
                 defineProperty("versionmatch", Info.class, PERMANENT);
             } catch (PropertyException e) {
                 throw new RuntimeException(e.toString());
@@ -589,6 +590,9 @@ public abstract class TestUI
         }
         public Boolean getRecovery() {
             return Boolean.FALSE; //### track?
+        }
+        public String getRuleset() {
+            return metadata.get(Metadata.VOLITY_RULESET);
         }
         public UISeat getSeat() { 
             if (currentSeat == null)

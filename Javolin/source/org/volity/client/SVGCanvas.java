@@ -2,6 +2,7 @@ package org.volity.client;
 
 import java.awt.Dimension;
 import java.awt.geom.Dimension2D;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import org.apache.batik.bridge.BridgeContext;
@@ -29,6 +30,7 @@ import org.volity.client.translate.TranslateToken;
 public class SVGCanvas extends JSVGCanvas 
     implements InterpreterFactory
 {
+    URI ruleset;
     URL uiDocument;
     XMPPConnection connection;
     GameTable table;
@@ -48,12 +50,12 @@ public class SVGCanvas extends JSVGCanvas
      * @param messageHandler service to display a string to the user
      * @param errorHandler service to display an exception to the user
      */
-    public SVGCanvas(GameTable table, URL uiDocument,
+    public SVGCanvas(GameTable table, URI ruleset, URL uiDocument,
         TranslateToken translator,
         GameUI.MessageHandler messageHandler, 
         GameUI.ErrorHandler errorHandler,
         LinkHandler linkHandler) {
-        this(table.getConnection(), uiDocument, translator,
+        this(table.getConnection(), ruleset, uiDocument, translator,
             messageHandler, errorHandler, linkHandler);
         this.table = table;
     }
@@ -64,7 +66,7 @@ public class SVGCanvas extends JSVGCanvas
      * @param translator service to translate tokens into a string
      * @param messageHandler service to display a string to the user
      */
-    public SVGCanvas(XMPPConnection connection, URL uiDocument,
+    public SVGCanvas(XMPPConnection connection, URI ruleset, URL uiDocument,
         TranslateToken translator,
         GameUI.MessageHandler messageHandler,
         GameUI.ErrorHandler errorHandler,
@@ -72,6 +74,7 @@ public class SVGCanvas extends JSVGCanvas
 
         super(new SVGUserAgentJavolin(linkHandler), true, true);
 
+        this.ruleset = ruleset;
         this.uiDocument = uiDocument;
         this.connection = connection;
         this.messageHandler = messageHandler;
@@ -268,7 +271,8 @@ public class SVGCanvas extends JSVGCanvas
 
     class SVGUI extends GameUI {
         SVGUI() {
-            super(uiDocument, connection, SVGCanvas.this.translator, 
+            super(SVGCanvas.this.ruleset, uiDocument, 
+                connection, SVGCanvas.this.translator, 
                 SVGCanvas.this.messageHandler, SVGCanvas.this.errorHandler);
         }
 

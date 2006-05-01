@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Implemented the info.ruleset field, which returns the game's ruleset URI.
+(This will be helpful for UIs that support several rulesets.) In Testbench,
+info.ruleset will find the first volity:ruleset line in the UI's metadata.
+
 Changed the way (private) chat messages are sent. Gamut now tries to remember
 the last resource that sent you a message, and sends replies back to that
 resource.

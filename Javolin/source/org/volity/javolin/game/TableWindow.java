@@ -223,8 +223,9 @@ public class TableWindow extends JFrame
         mLinkHandler = new TableLinkHandler(mMessageHandler);
 
         // Create the SVG object.
-        mGameViewport = new SVGCanvas(mGameTable, uiMainUrl, mTranslator,
-            mMessageHandler, mErrorHandler, mLinkHandler);
+        mGameViewport = new SVGCanvas(mGameTable, 
+            mParlor.getRuleset(), uiMainUrl, 
+            mTranslator, mMessageHandler, mErrorHandler, mLinkHandler);
 
         mViewportUpdateListener = new UpdateManagerAdapter()
             {
