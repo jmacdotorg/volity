@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Suppressed the Batik defaults of panning the SVG pane when the user types
+arrow keys (and zooming on ctrl-I/ctrl-O, etc.)
+
 Implemented the info.ruleset field, which returns the game's ruleset URI.
 (This will be helpful for UIs that support several rulesets.) In Testbench,
 info.ruleset will find the first volity:ruleset line in the UI's metadata.

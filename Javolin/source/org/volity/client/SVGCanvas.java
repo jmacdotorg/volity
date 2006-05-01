@@ -146,6 +146,14 @@ public class SVGCanvas extends JSVGCanvas
     }
 
     /**
+     * Overrides JSVGCanvas.installKeyboardActions, which wants to install a
+     * bunch of key actions like panning the canvas on arrow keys, or zooming
+     * on ctrl-I/O. We don't want any of that.
+     */
+    protected void installKeyboardActions() {
+    }
+
+    /**
      * Kludge (or maybe it's just a clever way) to force the canvas to reload
      * the SVG file from disk. If newDocument is non-null, reload that instead.
      */
