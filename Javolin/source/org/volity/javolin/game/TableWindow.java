@@ -49,6 +49,7 @@ import org.volity.client.SVGCanvas;
 import org.volity.client.Seat;
 import org.volity.client.comm.RPCBackground;
 import org.volity.client.comm.SwingWorker;
+import org.volity.client.data.CommandStub;
 import org.volity.client.data.GameInfo;
 import org.volity.client.data.JIDTransfer;
 import org.volity.client.data.Metadata;
@@ -220,7 +221,7 @@ public class TableWindow extends JFrame
 
         /* Finally, the SVGCanvas needs a way to handle hyperlink clicks.
          */
-        mLinkHandler = new TableLinkHandler(mMessageHandler);
+        mLinkHandler = new TableLinkHandler(mMessageHandler, mErrorHandler);
 
         // Create the SVG object.
         mGameViewport = new SVGCanvas(mGameTable, 
@@ -775,17 +776,45 @@ public class TableWindow extends JFrame
 
     protected static class TableLinkHandler implements SVGCanvas.LinkHandler
     {
-        GameUI.MessageHandler mMessageHandler;
+        final Class[] arrayCommandStub = new Class[] { CommandStub.class };
 
-        public TableLinkHandler(GameUI.MessageHandler messageHandler) {
+        GameUI.MessageHandler mMessageHandler;
+        GameUI.ErrorHandler mErrorHandler;
+
+        public TableLinkHandler(GameUI.MessageHandler messageHandler,
+            GameUI.ErrorHandler errorHandler) {
             mMessageHandler = messageHandler;
+            mErrorHandler = errorHandler;
         }
 
         public void close() {
             mMessageHandler = null;
+            mErrorHandler = null;
         }
 
         public void link(String uri) {
+            if (uri.startsWith("volity:")) {
+                try {
+                    URL url = new URL(uri);
+                    CommandStub stub = (CommandStub)url.getContent(arrayCommandStub);
+                    if (stub != null) {
+                        // If it's a CommandStub, execute it.
+                        JavolinApp.getSoleJavolinApp().doOpenFile(stub);
+                        return;
+                    }
+                }
+                catch (Exception ex) {
+                    if (mErrorHandler != null) {
+                        mErrorHandler.error(ex);
+                    }
+                    else {
+                        // Best we can do.
+                        new ErrorWrapper(ex);
+                    }
+                }
+                return;
+            }
+
             if (PlatformWrapper.launchURLAvailable()) {
                 PlatformWrapper.launchURL(uri);
             }

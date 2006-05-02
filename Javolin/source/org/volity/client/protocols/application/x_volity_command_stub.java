@@ -29,9 +29,6 @@ public class x_volity_command_stub extends ContentHandler {
         catch (XmlPullParserException ex) {
             throw new IOException(ex.toString());
         }
-        catch (CommandStub.CommandStubException ex) {
-            throw new IOException(ex.toString());
-        }
     }
 
 }

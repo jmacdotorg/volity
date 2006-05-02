@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Added support for volity: URLs in the Finder, and also in game UI SVG.
+These can cause your client to create a new table, join an existing
+table, or join a lobby (MUC).
+
 Suppressed the Batik defaults of panning the SVG pane when the user types
 arrow keys (and zooming on ctrl-I/ctrl-O, etc.)
 

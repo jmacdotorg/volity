@@ -238,6 +238,14 @@ public class Finder extends JFrame
                     JavolinApp.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
             }
+            catch (CommandStub.CommandStubException ex) {
+                new ErrorWrapper(ex);
+                String msg = ex.getMessage();
+                JOptionPane.showMessageDialog(Finder.this,
+                    "Badly-formed link in Finder page:\n" + msg,
+                    JavolinApp.getAppName() + ": Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
             catch (IOException ex) {
                 new ErrorWrapper(ex);
                 JOptionPane.showMessageDialog(Finder.this,

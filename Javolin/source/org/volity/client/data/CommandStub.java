@@ -1,6 +1,7 @@
 package org.volity.client.data;
 
 import java.io.*;
+import java.net.URL;
 import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -57,6 +58,40 @@ public class CommandStub
     }
 
     /**
+     * Parse a URL into a valid CommandStub, or else throw an
+     * appropriate exception.
+     */
+    static public CommandStub parse(URL url)
+        throws CommandStubException {
+        String protocol = url.getProtocol();
+        String query = url.getQuery();
+        String path = url.getPath();
+
+        if (protocol == null || !protocol.equals("volity"))
+            throw new CommandStubException("Not a volity: URL: " + url);
+
+        if (path == null || path.equals(""))
+            throw new CommandStubException("No JID component: " + url);
+        if (!path.contains("@"))
+            throw new CommandStubException("JID component not valid: " + url);
+
+        if (query == null || query.equals(""))
+            throw new CommandStubException("No ?command component: " + url);
+
+        int cmd = COMMAND_UNDEFINED;
+        if (query.equals("create-table"))
+            cmd = COMMAND_CREATE_TABLE;
+        else if (query.equals("join-table"))
+            cmd = COMMAND_JOIN_TABLE;
+        else if (query.equals("join-lobby"))
+            cmd = COMMAND_JOIN_LOBBY;
+        else 
+            throw new CommandStubException("Unrecognized ?command: " + url);
+
+        return new CommandStub(cmd, path);
+    }
+
+    /**
      * For parsing the XML, I found it easiest to declare an object with a
      * bunch of tag-specific methods -- volity(), create(), parlor(). And the
      * easiest way to do *that* was to define an interface with the top-level
@@ -65,16 +100,7 @@ public class CommandStub
      */
     protected interface StubTagParse {
         void volity()
-            throws XmlPullParserException, IOException, CommandStubException;
-    }
-
-    /**
-     * Exception type for a malformed command stub file.
-     */
-    static public class CommandStubException extends Exception {
-        CommandStubException(String st) {
-            super(st);
-        }
+            throws XmlPullParserException, IOException;
     }
 
     /**
@@ -82,7 +108,7 @@ public class CommandStub
      * appropriate exception.
      */
     static public CommandStub parse(Reader reader)
-        throws XmlPullParserException, IOException, CommandStubException {
+        throws XmlPullParserException, IOException {
         final XmlPullParser xpp = new MXParser();
         xpp.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true);
         xpp.setInput(reader);
@@ -99,7 +125,7 @@ public class CommandStub
 
         StubTagParse tagParse = new StubTagParse() {
                 public void volity()
-                    throws XmlPullParserException, IOException, CommandStubException {
+                    throws XmlPullParserException, IOException {
                     int startDepth = xpp.getDepth();
                     xpp.next();
 
@@ -113,8 +139,12 @@ public class CommandStub
                             break;
                         }
                         if (eventType == xpp.START_TAG) {
-                            if (xpp.getName().equals("create")) {
-                                this.create();
+                            if (xpp.getName().equals("create-table")) {
+                                this.createTable();
+                            }
+                            else if (xpp.getName().equals("create")) {
+                                //### backwards compatibility -- delete this
+                                this.createTable();
                             }
                             else if (xpp.getName().equals("join-table")) {
                                 this.joinTable();
@@ -130,8 +160,8 @@ public class CommandStub
                     }
                 }
 
-                public void create()
-                    throws XmlPullParserException, IOException, CommandStubException {
+                public void createTable()
+                    throws XmlPullParserException, IOException {
                     int startDepth = xpp.getDepth();
                     xpp.next();
 
@@ -163,7 +193,7 @@ public class CommandStub
                 }
 
                 public void joinTable()
-                    throws XmlPullParserException, IOException, CommandStubException {
+                    throws XmlPullParserException, IOException {
                     int startDepth = xpp.getDepth();
                     xpp.next();
 
@@ -195,7 +225,7 @@ public class CommandStub
                 }
 
                 public void joinLobby()
-                    throws XmlPullParserException, IOException, CommandStubException {
+                    throws XmlPullParserException, IOException {
                     int startDepth = xpp.getDepth();
                     xpp.next();
 
@@ -253,4 +283,14 @@ public class CommandStub
 
         return result;
     }
+
+    /**
+     * Exception type for a malformed command stub file.
+     */
+    static public class CommandStubException extends IOException {
+        CommandStubException(String st) {
+            super(st);
+        }
+    }
+
 }

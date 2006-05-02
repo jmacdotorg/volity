@@ -815,7 +815,7 @@ public class JavolinApp extends JFrame
      * a file in the Finder (or whatever). Currently, this only handles Volity
      * command stub files.
      */
-    void doOpenFile(CommandStub stub)
+    public void doOpenFile(CommandStub stub)
     {
         try {
             /* Make sure we're connected to Jabber. If we're not, try to
