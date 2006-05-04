@@ -6,6 +6,7 @@ import java.lang.reflect.*;
 //### http://browserlauncher.sourceforge.net/
 //### http://support.microsoft.com/default.aspx?scid=kb;en-us;283225
 //### http://www.centerkey.com/java/browser/myapp/BareBonesBrowserLaunch.java
+//### http://www.javaworld.com/javaworld/javatips/jw-javatip66.html
 
 //### Java6 desktop stuff:
 //### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/systemtray/

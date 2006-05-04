@@ -160,102 +160,6 @@ public class Finder extends JFrame
         prefs.putBoolean(OPENFINDER_KEY, true);
     }
 
-    {
-        /* The current version of xhtmlrenderer has a lot of logging turned on
-         * by default. We do not like it, so we turn it all off. This must be
-         * done before the xhtmlrenderer packages load. */
-        String[] logprops = {
-            "show-config",
-            "xr.util-logging..level",
-            "xr.util-logging.plumbing.level",
-            "xr.util-logging.plumbing.config.level",
-            "xr.util-logging.plumbing.exception.level",
-            "xr.util-logging.plumbing.general.level",
-            "xr.util-logging.plumbing.init.level",
-            "xr.util-logging.plumbing.load.level",
-            "xr.util-logging.plumbing.load.xml-entities.level",
-            "xr.util-logging.plumbing.match.level",
-            "xr.util-logging.plumbing.cascade.level",
-            "xr.util-logging.plumbing.css-parse.level",
-            "xr.util-logging.plumbing.layout.level",
-            "xr.util-logging.plumbing.render.level"
-        };
-        for (int ix=0; ix<logprops.length; ix++) {
-            System.setProperty(logprops[ix], "OFF");
-        }
-    }
-
-    /**
-     * A customized LinkListener. When the user clicks on a URL which returns a
-     * CommandStub, this executes the command. Any other URL does the default
-     * thing -- changes the document display.
-     */
-    private class FinderLinkListener extends LinkListener {
-        final Class[] arrayCommandStub = new Class[] { CommandStub.class };
-
-        BasicPanel mPanel;
-        public FinderLinkListener(BasicPanel panel) {
-            super(panel);
-            mPanel = panel;
-        }
-        public void linkClicked(String uri) {
-            String urlstr = mPanel.getRenderingContext().getUac().resolveURI(uri);
-            URL url = null;
-            try {
-                url = new URL(urlstr);
-                CommandStub stub = (CommandStub)url.getContent(arrayCommandStub);
-                if (stub != null) {
-                    // If it's a CommandStub, execute it.
-                    mOwner.doOpenFile(stub);
-                    return;
-                }
-
-                // If it's an internal URL, fall through.
-                if (url.getProtocol().equals("http")
-                    && (url.getHost().equals("www.volity.net") 
-                        || url.getHost().equals("test.volity.net") 
-                        || url.getHost().equals("volity.net"))
-                    && url.getPath().startsWith("/gamefinder")) {
-                    setCurrentURL(urlstr, url);
-                    super.linkClicked(uri);
-                    return;
-                }
-
-                // Otherwise, kick it to the external browser.
-                boolean res = PlatformWrapper.launchURL(urlstr);
-                if (!res) {
-                    JOptionPane.showMessageDialog(Finder.this,
-                        "Unable to launch URL:\n" + urlstr,
-                        JavolinApp.getAppName() + ": Error",
-                        JOptionPane.ERROR_MESSAGE);
-                }
-                return;
-            }
-            catch (MalformedURLException ex) {
-                new ErrorWrapper(ex);
-                JOptionPane.showMessageDialog(Finder.this,
-                    ex.toString(),
-                    JavolinApp.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-            catch (CommandStub.CommandStubException ex) {
-                new ErrorWrapper(ex);
-                String msg = ex.getMessage();
-                JOptionPane.showMessageDialog(Finder.this,
-                    "Badly-formed link in Finder page:\n" + msg,
-                    JavolinApp.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-            catch (IOException ex) {
-                new ErrorWrapper(ex);
-                JOptionPane.showMessageDialog(Finder.this,
-                    ex.toString(),
-                    JavolinApp.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
     /**
      * A customized XHTML component, which knows about the
      * "application/x-volity-command-stub" MIME type, and triggers the
@@ -264,39 +168,36 @@ public class Finder extends JFrame
      * This is a copy of the standard XHTMLPanel, except that it doesn't have
      * the font-scaling stuff, and it uses our custom LinkListener.
      */
-    private class XHTMLFinder extends BasicPanel {
+    private class XHTMLFinder extends XHTMLPane {
 
         public XHTMLFinder() {
-            super();
-            setupListeners();
-        }
-        public XHTMLFinder(UserAgentCallback uac) {
-            super(uac);
-            setupListeners();
+            super(Finder.this);
         }
 
-        public void setDocument(String uri) {
-            setDocument(loadDocument(uri), uri);
-        }
-        public void setDocument(Document doc) {
-            setDocument(doc, "");
-        }
         public void setDocument(Document doc, String url) {
             resetTimer();
-            super.setDocument(doc, url, new XhtmlNamespaceHandler());
+            super.setDocument(doc, url);
             checkModifiedTime();
         }
         public void setDocument(InputStream stream, String url)
             throws Exception {
             resetTimer();
-            super.setDocument(stream, url, new XhtmlNamespaceHandler());
+            super.setDocument(stream, url);
             checkModifiedTime();
         }
 
-        private void setupListeners() {
-            LinkListener linkListener = new FinderLinkListener(this);
-            addMouseListener(linkListener);
-            addMouseMotionListener(linkListener);
+        public boolean handleLinkInternally(URL url, String urlstr) {
+            // If it's an internal URL, fall through.
+            if (url.getProtocol().equals("http")
+                && (url.getHost().equals("www.volity.net") 
+                    || url.getHost().equals("test.volity.net") 
+                    || url.getHost().equals("volity.net"))
+                && url.getPath().startsWith("/gamefinder")) {
+                setCurrentURL(urlstr, url);
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -502,8 +403,9 @@ public class Finder extends JFrame
         cPane.setLayout(new BorderLayout());
         
         mDisplay = new XHTMLFinder();
-        cPane.add(new JScrollPane(mDisplay), BorderLayout.CENTER);
-
+        JScrollPane scroller = new JScrollPane(mDisplay);
+        scroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        cPane.add(scroller, BorderLayout.CENTER);
 
         // Create toolbar
         JToolBar toolbar = new JToolBar();

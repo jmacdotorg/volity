@@ -3,6 +3,14 @@ SVN repository.
 
 * the present
 
+Added a "Gamut Help" menu item (under the Help menu, which is new for 
+non-Windows users). This goes to:
+<http://volity.net/games/gamut/help/welcome.html>.
+
+Upgraded to R6-pre1 of Flying Saucer (the XHTML widget). There is a
+small code change involved with this, so you must download that version
+of FS in order to build Volity.
+
 Added support for volity: URLs in the Finder, and also in game UI SVG.
 These can cause your client to create a new table, join an existing
 table, or join a lobby (MUC).

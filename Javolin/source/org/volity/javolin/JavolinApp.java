@@ -221,6 +221,31 @@ public class JavolinApp extends JFrame
      */
     private void start()
     {
+        {
+            /* The current version of xhtmlrenderer has a lot of logging turned
+             * on by default. We do not like it, so we turn it all off. This
+             * must be done before the xhtmlrenderer packages load. */
+            String[] logprops = {
+                "show-config",
+                "xr.util-logging..level",
+                "xr.util-logging.plumbing.level",
+                "xr.util-logging.plumbing.config.level",
+                "xr.util-logging.plumbing.exception.level",
+                "xr.util-logging.plumbing.general.level",
+                "xr.util-logging.plumbing.init.level",
+                "xr.util-logging.plumbing.load.level",
+                "xr.util-logging.plumbing.load.xml-entities.level",
+                "xr.util-logging.plumbing.match.level",
+                "xr.util-logging.plumbing.cascade.level",
+                "xr.util-logging.plumbing.css-parse.level",
+                "xr.util-logging.plumbing.layout.level",
+                "xr.util-logging.plumbing.render.level"
+            };
+            for (int ix=0; ix<logprops.length; ix++) {
+                System.setProperty(logprops[ix], "OFF");
+            }
+        }
+
         /* 
          * Set up the static information in ServiceDiscoveryManager. This will
          * be returned to disco queries. To work around a weird Smack
@@ -475,6 +500,16 @@ public class JavolinApp extends JFrame
     void doGetFinder()
     {
         Finder win = Finder.getSoleFinder(this);
+        win.setVisible(true);
+    }
+
+    /**
+     * Handle the Gamut Help item (in the Help menu). Create a HelpWindow
+     * window if there is none; display the one we've got if there is.
+     */
+    void doGetHelp()
+    {
+        HelpWindow win = HelpWindow.getSoleHelpWindow(this);
         win.setVisible(true);
     }
 

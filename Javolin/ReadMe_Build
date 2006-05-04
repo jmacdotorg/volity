@@ -108,8 +108,8 @@ Comments: If you were building the previous version of Javolin, be sure to
 ---
 Name: Flying Saucer (xhtmlrenderer)
 Home page: https://xhtmlrenderer.dev.java.net/
-Version: R5 beta
-Download: http://joshy.org/flyingsaucer/downloads/flyingsaucer.src.zip
+Version: R6
+Download: http://www.pdoubleya.com/projects/flyingsaucer/downloads/r6/flyingsaucer_R6-pre1-src.zip
     (Then, after unpacking the source...)
     % ant jar
 Lib files: core-renderer.jar, cssparser-0-9-4-fs.jar
