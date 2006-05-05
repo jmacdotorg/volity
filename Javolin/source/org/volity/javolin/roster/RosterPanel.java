@@ -369,7 +369,6 @@ public class RosterPanel extends JPanel
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
                     if (packet == null) {
-                        System.out.println("### roster lost " + jid);
                         ChatWindow.clearLastKnownResource(jid);
                     }
                     repopulate();
