@@ -23,6 +23,9 @@ import org.xhtmlrenderer.swing.LinkListener;
  * the font-scaling stuff, and it uses our custom LinkListener.
  */
 class XHTMLPane extends BasicPanel {
+    public static final int HANDLE_EXTERNAL = 1;
+    public static final int HANDLE_INTERNAL = 2;
+    public static final int ALREADY_HANDLED = 3;
 
     protected JFrame mOwner;
 
@@ -37,6 +40,7 @@ class XHTMLPane extends BasicPanel {
         setupListeners();
     }
 
+    /** Override all the setDocument calls we're likely to use */
     public void setDocument(String uri) {
         setDocument(loadDocument(uri), uri);
     }
@@ -51,14 +55,25 @@ class XHTMLPane extends BasicPanel {
         super.setDocument(stream, url, new XhtmlNamespaceHandler());
     }
 
+    /** Add mouse-event handlers for cursor changing and hyperlinks. */
     private void setupListeners() {
         LinkListener linkListener = new VolLinkListener(this);
         addMouseListener(linkListener);
         addMouseMotionListener(linkListener);
     }
 
-    public boolean handleLinkInternally(URL url, String urlstr) {
-        return false;
+    /**
+     * Given a URL, decide how to handle it. This method should return one
+     * of the following:
+     *
+     * - HANDLE_EXTERNAL: pass URL to the user's default browser.
+     * - HANDLE_INTERNAL: change the pane to view this URL.
+     * - ALREADY_HANDLED: do nothing; the URL has been passed elsewhere.
+     *
+     * The default is HANDLE_EXTERNAL.
+     */
+    public int linkDisposition(URL url, String urlstr) {
+        return HANDLE_EXTERNAL;
     }
 
     /**
@@ -86,7 +101,11 @@ class XHTMLPane extends BasicPanel {
                     return;
                 }
 
-                if (handleLinkInternally(url, urlstr)) {
+                int val = linkDisposition(url, urlstr);
+                if (val == ALREADY_HANDLED) {
+                    return;
+                }
+                if (val == HANDLE_INTERNAL) {
                     super.linkClicked(uri);
                     return;
                 }

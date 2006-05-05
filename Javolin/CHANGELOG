@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Added a "Playing This Game" menu item, which goes to a game-specified page
+(via the Finder).
+
 Added a "Gamut Help" menu item (under the Help menu, which is new for 
 non-Windows users). This goes to:
 <http://volity.net/games/gamut/help/welcome.html>.

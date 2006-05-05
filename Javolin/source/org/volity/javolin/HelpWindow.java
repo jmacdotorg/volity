@@ -81,7 +81,7 @@ public class HelpWindow extends JFrame
                 }
             });
 
-        setSize(650, 400);
+        setSize(725, 450);
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         mSizePosSaver.restoreSizeAndPosition();
 
@@ -135,7 +135,7 @@ public class HelpWindow extends JFrame
             super(HelpWindow.this);
         }
 
-        public boolean handleLinkInternally(URL url, String urlstr) {
+        public int linkDisposition(URL url, String urlstr) {
             // If it's an internal URL, fall through.
             if (url.getProtocol().equals("http")
                 && (url.getHost().equals("www.volity.net") 
@@ -144,10 +144,10 @@ public class HelpWindow extends JFrame
                 && (url.getPath().startsWith("/gamefinder")
                     || url.getPath().startsWith("/games/gamut/help"))) {
                 setCurrentURL(urlstr, url);
-                return true;
+                return HANDLE_INTERNAL;
             }
 
-            return false;
+            return HANDLE_EXTERNAL;
         }
     }
 

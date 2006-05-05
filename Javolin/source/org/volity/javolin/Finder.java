@@ -186,18 +186,26 @@ public class Finder extends JFrame
             checkModifiedTime();
         }
 
-        public boolean handleLinkInternally(URL url, String urlstr) {
+        public int linkDisposition(URL url, String urlstr) {
             // If it's an internal URL, fall through.
             if (url.getProtocol().equals("http")
                 && (url.getHost().equals("www.volity.net") 
                     || url.getHost().equals("test.volity.net") 
-                    || url.getHost().equals("volity.net"))
-                && url.getPath().startsWith("/gamefinder")) {
-                setCurrentURL(urlstr, url);
-                return true;
+                    || url.getHost().equals("volity.net"))) {
+
+                if (url.getPath().startsWith("/gamefinder")) {
+                    setCurrentURL(urlstr, url);
+                    return HANDLE_INTERNAL;
+                }
+
+                if (url.getPath().startsWith("/games/gamut/help")) {
+                    // Kick this over to the help window.
+                    JavolinApp.getSoleJavolinApp().doGetHelp();
+                    return ALREADY_HANDLED;
+                }
             }
 
-            return false;
+            return HANDLE_EXTERNAL;
         }
     }
 

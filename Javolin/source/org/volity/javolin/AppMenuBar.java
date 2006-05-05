@@ -63,6 +63,7 @@ public class AppMenuBar extends JMenuBar
     private final static String MENUCMD_BUG_REPORT = "File Bug Report";
     private final static String MENUCMD_DEBUG_SHOW_RPCS = "Print All RPCs";
     private final static String MENUCMD_GAMUT_HELP = "Gamut Help";
+    private final static String MENUCMD_GAME_HELP = "Playing This Game";
 
     private JavolinApp mApplication = null;
     private JFrame mWindow = null;
@@ -96,6 +97,7 @@ public class AppMenuBar extends JMenuBar
     private JMenuItem mBugReportMenuItem;
     private JCheckBoxMenuItem mDebugShowRPCsMenuItem;
     private JMenuItem mGamutHelpMenuItem;
+    private JMenuItem mGameHelpMenuItem;
 
     /**
      * Construct a menu bar and attach it to the given window.
@@ -325,6 +327,13 @@ public class AppMenuBar extends JMenuBar
         mGamutHelpMenuItem.addActionListener(this);
         setPlatformMnemonic(mGamutHelpMenuItem, KeyEvent.VK_G);
         helpMenu.add(mGamutHelpMenuItem);
+
+        mGameHelpMenuItem = new JMenuItem(MENUCMD_GAME_HELP);
+        mGameHelpMenuItem.addActionListener(this);
+        setPlatformMnemonic(mGameHelpMenuItem, KeyEvent.VK_P);
+        helpMenu.add(mGameHelpMenuItem);
+        if (mTableWindow == null) 
+            mGameHelpMenuItem.setEnabled(false);
 
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
             // Only needed if there isn't a built-in About menu
@@ -628,6 +637,9 @@ public class AppMenuBar extends JMenuBar
             }
             else if (source == mInviteBotMenuItem) {
                 mTableWindow.doInviteBot();
+            }
+            else if (source == mGameHelpMenuItem) {
+                mTableWindow.doGetGameHelp();
             }
         }
 

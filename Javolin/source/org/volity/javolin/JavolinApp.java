@@ -499,6 +499,8 @@ public class JavolinApp extends JFrame
      */
     void doGetFinder()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         Finder win = Finder.getSoleFinder(this);
         win.setVisible(true);
     }
@@ -509,6 +511,8 @@ public class JavolinApp extends JFrame
      */
     void doGetHelp()
     {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
         HelpWindow win = HelpWindow.getSoleHelpWindow(this);
         win.setVisible(true);
     }
