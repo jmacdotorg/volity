@@ -95,7 +95,6 @@ public class DiscoBatchBackground extends SwingWorker
         protected void resolve() {
             Object obj = mWorker.get();
             if (obj == null) {
-                System.out.println("### a thread died somehow?");
                 obj = new XMPPException("Disco operation interrupted");
             }
 
