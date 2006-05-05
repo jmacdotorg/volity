@@ -1,7 +1,7 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.3.5
 
 Added a "Playing This Game" menu item, which goes to a game-specified page
 (via the Finder).
@@ -11,12 +11,13 @@ non-Windows users). This goes to:
 <http://volity.net/games/gamut/help/welcome.html>.
 
 Upgraded to R6-pre1 of Flying Saucer (the XHTML widget). There is a
-small code change involved with this, so you must download that version
-of FS in order to build Volity.
+small code change involved with this, so you must download that
+version of FS in order to build Volity. The ReadMe_Build file has been
+updated to reflect this.
 
-Added support for volity: URLs in the Finder, and also in game UI SVG.
-These can cause your client to create a new table, join an existing
-table, or join a lobby (MUC).
+Added support for URLs using the "volity:" scheme in the Finder, and
+also in game UI SVG.  These can cause your client to create a new
+table, join an existing table, or join a lobby (MUC).
 
 Suppressed the Batik defaults of panning the SVG pane when the user types
 arrow keys (and zooming on ctrl-I/ctrl-O, etc.)
