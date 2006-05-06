@@ -268,6 +268,13 @@ public class SeatChart
         if (shownext != mNextSeatPanel.mVisible) {
             mNextSeatPanel.mVisible = shownext;
             changes = true;
+
+            /* Hack for an odd case where next-seat becomes visible. The
+             * contents of mNextSeatPanel won't actually change, but we have to
+             * go through this to make it revalidate properly. */
+            if (mNextSeatPanel.mVisible) {
+                mNextSeatPanel.adjustNames(null);
+            }
         }
 
         if (changes || forceAdjust) {
