@@ -37,6 +37,10 @@ public class PrefsDialog extends JFrame
     public final static String GAMESELECTUIALWAYS_KEY = "SelectUIAlways";
     public final static String GAMESELECTUISOLE_KEY = "SelectUISole";
     public final static String GAMESELECTUIFAMILIAR_KEY = "SelectUIFamiliar";
+    public final static String GAMEFINDERSTARTUP_KEY = "GameFinderStartup";
+    public final static int GAMEFINDERSTARTUP_ALWAYS = 1;
+    public final static int GAMEFINDERSTARTUP_NEVER = 2;
+    public final static int GAMEFINDERSTARTUP_REMEMBER = 3;
 
     public final static String CHATNAMESHADE_KEY = "NameShade";
     public final static String CHATBODYSHADE_KEY = "BodyShade";
@@ -80,6 +84,7 @@ public class PrefsDialog extends JFrame
     private static boolean prefGameSelectUIAlways;
     private static boolean prefGameSelectUISole;
     private static boolean prefGameSelectUIFamiliar;
+    private static int prefGameFinderStartup;
     private static int prefChatBodyShade;
     private static int prefChatNameShade;
     private static boolean prefRosterShowOffline;
@@ -108,6 +113,8 @@ public class PrefsDialog extends JFrame
         prefGameSelectUIAlways = prefs.getBoolean(GAMESELECTUIALWAYS_KEY, true);
         prefGameSelectUISole = prefs.getBoolean(GAMESELECTUISOLE_KEY, false);
         prefGameSelectUIFamiliar = prefs.getBoolean(GAMESELECTUIFAMILIAR_KEY, true);
+        int defaultstartup = (PlatformWrapper.isRunningOnMac()) ? GAMEFINDERSTARTUP_REMEMBER : GAMEFINDERSTARTUP_ALWAYS;
+        prefGameFinderStartup = prefs.getInt(GAMEFINDERSTARTUP_KEY, defaultstartup);
 
         prefs = Preferences.userNodeForPackage(PrefsDialog.class).node(CHAT_COLOR_OPTIONS);
         prefChatBodyShade = prefs.getInt(CHATBODYSHADE_KEY, 30);
@@ -169,6 +176,7 @@ public class PrefsDialog extends JFrame
     public static boolean getGameSelectUIAlways() { return prefGameSelectUIAlways; }
     public static boolean getGameSelectUISole() { return prefGameSelectUISole; }
     public static boolean getGameSelectUIFamiliar() { return prefGameSelectUIFamiliar; }
+    public static int getGameFinderStartup() { return prefGameFinderStartup; }
     public static int getChatBodyShade() { return prefChatBodyShade; }
     public static int getChatNameShade() { return prefChatNameShade; }
     public static boolean getRosterShowOffline() { return prefRosterShowOffline; }
@@ -274,6 +282,10 @@ public class PrefsDialog extends JFrame
     private final static String LABEL_GAMESELECTUIALWAYS = "...always";
     private final static String LABEL_GAMESELECTUISOLE = "...if exactly one is available";
     private final static String LABEL_GAMESELECTUIFAMILIAR = "...if you've played the game before";
+    private final static String LABEL_GAMEFINDERSTARTUP = "At startup, open the Game Finder...";
+    private final static String LABEL_GAMEFINDERSTARTUPALWAYS = "...always";
+    private final static String LABEL_GAMEFINDERSTARTUPNEVER = "...never";
+    private final static String LABEL_GAMEFINDERSTARTUPREMEMBER = "...if you left it open last time";
     private final static String LABEL_ROSTERSHOWOFFLINE = "Display offline buddies";
     private final static String LABEL_ROSTERSHOWREVERSE = "Display people whose roster you are on";
     private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
@@ -297,6 +309,9 @@ public class PrefsDialog extends JFrame
     private JCheckBox mGameSelectUIAlways;
     private JCheckBox mGameSelectUISole;
     private JCheckBox mGameSelectUIFamiliar;
+    private JRadioButton mGameFinderStartupAlways;
+    private JRadioButton mGameFinderStartupNever;
+    private JRadioButton mGameFinderStartupRemember;
     private JCheckBox mRosterShowOffline;
     private JCheckBox mRosterShowReverse;
     private JCheckBox mRosterNotifySubscriptions;
@@ -394,6 +409,39 @@ public class PrefsDialog extends JFrame
                     Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
                     prefs.putBoolean(GAMESELECTUIFAMILIAR_KEY, prefGameSelectUIFamiliar);
                     noticeChange(GAME_OPTIONS, GAMESELECTUIFAMILIAR_KEY);
+                }
+            });
+
+        mGameFinderStartupAlways.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    if (mGameFinderStartupAlways.isSelected()) {
+                        prefGameFinderStartup = GAMEFINDERSTARTUP_ALWAYS;
+                        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                        prefs.putInt(GAMEFINDERSTARTUP_KEY, prefGameFinderStartup);
+                        noticeChange(GAME_OPTIONS, GAMEFINDERSTARTUP_KEY);
+                    }
+                }
+            });
+
+        mGameFinderStartupNever.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    if (mGameFinderStartupNever.isSelected()) {
+                        prefGameFinderStartup = GAMEFINDERSTARTUP_NEVER;
+                        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                        prefs.putInt(GAMEFINDERSTARTUP_KEY, prefGameFinderStartup);
+                        noticeChange(GAME_OPTIONS, GAMEFINDERSTARTUP_KEY);
+                    }
+                }
+            });
+
+        mGameFinderStartupRemember.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    if (mGameFinderStartupRemember.isSelected()) {
+                        prefGameFinderStartup = GAMEFINDERSTARTUP_REMEMBER;
+                        Preferences prefs = Preferences.userNodeForPackage(getClass()).node(GAME_OPTIONS);
+                        prefs.putInt(GAMEFINDERSTARTUP_KEY, prefGameFinderStartup);
+                        noticeChange(GAME_OPTIONS, GAMEFINDERSTARTUP_KEY);
+                    }
                 }
             });
 
@@ -655,6 +703,55 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
             
+            label = new JLabel(LABEL_GAMEFINDERSTARTUP);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
+            pane.add(label, c);
+
+            mGameFinderStartupAlways = new JRadioButton(LABEL_GAMEFINDERSTARTUPALWAYS, (prefGameFinderStartup==GAMEFINDERSTARTUP_ALWAYS));
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mGameFinderStartupAlways, c);
+
+            mGameFinderStartupNever = new JRadioButton(LABEL_GAMEFINDERSTARTUPNEVER, (prefGameFinderStartup==GAMEFINDERSTARTUP_NEVER));
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mGameFinderStartupNever, c);
+
+            mGameFinderStartupRemember = new JRadioButton(LABEL_GAMEFINDERSTARTUPREMEMBER, (prefGameFinderStartup==GAMEFINDERSTARTUP_REMEMBER));
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
+            pane.add(mGameFinderStartupRemember, c);
+
+            ButtonGroup GameFinderStartupGroup = new ButtonGroup();
+            GameFinderStartupGroup.add(mGameFinderStartupAlways);
+            GameFinderStartupGroup.add(mGameFinderStartupNever);
+            GameFinderStartupGroup.add(mGameFinderStartupRemember);
+
             label = new JLabel(LABEL_GAMESELECTUI);
             c = new GridBagConstraints();
             c.gridx = 0;

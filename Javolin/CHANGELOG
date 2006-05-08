@@ -1,6 +1,13 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
+* the present
+
+Added a preference for whether the game finder always opens on startup,
+never opens on startup, or whether it remembers whether you had it open
+last time (the original behavior). The default for this preference is
+"remember" on Mac, "always" on Windows, "always" on Linux.
+
 * release 0.3.5
 
 Added a "Playing This Game" menu item, which goes to a game-specified page

@@ -71,7 +71,14 @@ public class Finder extends JFrame
      */
     public static boolean getFinderWanted() {
         Preferences prefs = Preferences.userNodeForPackage(Finder.class).node(NODENAME);
-        return prefs.getBoolean(OPENFINDER_KEY, true);
+        boolean lasttime = prefs.getBoolean(OPENFINDER_KEY, true);
+        int pref = PrefsDialog.getGameFinderStartup();
+
+        if (pref == PrefsDialog.GAMEFINDERSTARTUP_ALWAYS)
+            return true;
+        if (pref == PrefsDialog.GAMEFINDERSTARTUP_REMEMBER)
+            return lasttime;
+        return false;
     }
 
     private JavolinApp mOwner;
