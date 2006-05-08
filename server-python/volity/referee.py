@@ -686,6 +686,7 @@ class Referee(volent.VolEntity):
             'muc#owner_whois':         'anyone',
             'muc#roomconfig_whois':    'anyone',
             'anonymous':               '0',
+            'muc#roomconfig_presencebroadcast': ['moderator', 'participant', 'visitor'],
         }
     
         if (origform == None):
@@ -718,9 +719,15 @@ class Referee(volent.VolEntity):
                 value = dic[varattr]
                 
             fnod = interface.Node('field', attrs={'var':varattr})
-            valnod = fnod.setchild('value')
-            if (value):
-                valnod.setdata(value)
+            if (type(value) == list):
+                for subval in value:
+                    valnod = interface.Node('value')
+                    valnod.setdata(subval)
+                    fnod.addchild(valnod)
+            else:
+                valnod = fnod.setchild('value')
+                if (value):
+                    valnod.setdata(value)
 
             newform.addchild(fnod)
 
@@ -1900,13 +1907,17 @@ class Referee(volent.VolEntity):
         """
         
         if (self.mucrunning):
-            msg = interface.Node('iq',
-                attrs={'type':'set', 'to':unicode(self.muc)})
-            newqnod = msg.setchild('query',
-                namespace=interface.NS_MUC_OWNER)
-            newqnod.setchild('destroy').setchilddata('reason',
-                self.mucshutdownreason)
-            self.conn.send(msg)
+            try:
+                msg = interface.Node('iq',
+                    attrs={'type':'set', 'to':unicode(self.muc)})
+                newqnod = msg.setchild('query',
+                    namespace=interface.NS_MUC_OWNER)
+                newqnod.setchild('destroy').setchilddata('reason',
+                    self.mucshutdownreason)
+                self.conn.send(msg)
+            except:
+                # ignore send errors
+                pass 
             
         # Tear down everything
         

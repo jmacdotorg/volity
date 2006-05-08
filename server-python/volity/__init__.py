@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- unreleased:
+Improved the MUC configuration code in the referee to work with more
+    MUC servers. (Added a config value for "roomconfig_presencebroadcast".)
+
 - 1.6.0:
 The admin.* RPC namespace is up to the current spec for Volity-hosted
     parlors. Restart and graceful_restart work correctly.
