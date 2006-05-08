@@ -22,7 +22,7 @@ import org.xhtmlrenderer.swing.LinkListener;
  * This is a copy of the standard XHTMLPanel, except that it doesn't have
  * the font-scaling stuff, and it uses our custom LinkListener.
  */
-class XHTMLPane extends BasicPanel {
+class XHTMLPane extends BasicPanel implements Scrollable {
     public static final int HANDLE_EXTERNAL = 1;
     public static final int HANDLE_INTERNAL = 2;
     public static final int ALREADY_HANDLED = 3;
@@ -145,5 +145,29 @@ class XHTMLPane extends BasicPanel {
         }
     }
 
+
+    /* Methods which implement the Scrollable interface: */
+
+    public boolean getScrollableTracksViewportWidth() { return false; }
+    public boolean getScrollableTracksViewportHeight() { return false; }
+    public Dimension getPreferredScrollableViewportSize() {
+        return getPreferredSize();
+    }
+    public int getScrollableBlockIncrement(Rectangle visibleRect,
+        int orientation, int direction) {
+        int val;
+        if (orientation == SwingConstants.VERTICAL)
+            val = visibleRect.height;
+        else
+            val = visibleRect.width;
+        val = val - 12;
+        if (val < 1)
+            return 1;
+        return val;
+    }
+    public int getScrollableUnitIncrement(Rectangle visibleRect,
+        int orientation, int direction) {
+        return 12;
+    }
 }
 

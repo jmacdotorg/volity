@@ -208,6 +208,7 @@ public class HelpWindow extends JFrame
         mDisplay = new XHTMLHelper();
         JScrollPane scroller = new JScrollPane(mDisplay);
         scroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scroller.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         cPane.add(scroller, BorderLayout.CENTER);
 
         // Necessary for all windows, for Mac support

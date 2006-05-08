@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Made scroll-wheel scrolling in the game finder (and help menu) work at a 
+reasonable rate.
+
 Added a preference for whether the game finder always opens on startup,
 never opens on startup, or whether it remembers whether you had it open
 last time (the original behavior). The default for this preference is
