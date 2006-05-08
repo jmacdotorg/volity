@@ -666,6 +666,12 @@ class Game:
 
         That last is a special case. You can only use None in that way,
         as the sole argument meaning "all tie".
+
+        If you have the winners in the form of a list, you should pass them
+        in the form of a * argument:
+
+        ls = [north, east, south, west]
+        self.gameover(*ls)   # Same as self.gameover(north, east, south, west)
         """
 
         winlist = self.referee.parsewinners(winners)
