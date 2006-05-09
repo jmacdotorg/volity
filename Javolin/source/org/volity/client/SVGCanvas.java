@@ -272,6 +272,7 @@ public class SVGCanvas extends JSVGCanvas
         interpreter = null;
 
         // The dispose() call should (eventually) shut down all Batik activity.
+        stopProcessing();
         dispose();
     }
   

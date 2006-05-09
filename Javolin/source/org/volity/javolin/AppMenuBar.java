@@ -602,8 +602,10 @@ public class AppMenuBar extends JMenuBar
             runtime.gc();
             long total = runtime.totalMemory();
             long free = runtime.freeMemory();
+            long max = runtime.maxMemory();
             System.out.println("Memory used: " + String.valueOf(total-free)
-                               + " of " + String.valueOf(total));
+                + " of " + String.valueOf(total)
+                + " (limit " + String.valueOf(max) + ")");
         }
         else if (source == mGameFinderMenuItem
             || source == mShowGameFinderMenuItem) {
