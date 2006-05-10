@@ -103,6 +103,7 @@ public class JavolinApp extends JFrame
     private JLabel mConnectedLabel;
 
     private SizeAndPositionSaver mSizePosSaver;
+    private CommandWatcher mCommandWatcher;
     private XMPPConnection mConnection;
     private Bookkeeper mBookkeeper;
     private InvitationManager mInviteManager;
@@ -246,6 +247,17 @@ public class JavolinApp extends JFrame
             }
         }
 
+        /* Set up the CommandWatcher thread. */
+        try {
+            mCommandWatcher = new CommandWatcher();
+        }
+        catch (IOException ex) {
+            System.out.println("Unable to open command-listening socket on port " 
+                + String.valueOf(CommandWatcher.WATCHER_PORT)
+                + ": " + ex + "\n"
+                + "Command URLs will launch new application instances.");
+        }
+
         /* 
          * Set up the static information in ServiceDiscoveryManager. This will
          * be returned to disco queries. To work around a weird Smack
@@ -317,6 +329,40 @@ public class JavolinApp extends JFrame
             val = val + "|org.volity.client.protocols";
         System.setProperty("java.content.handler.pkgs", val);
 
+        /* See if we've been started with a --url argument. If so, we're going
+         * to have to try launching the command into an existing Gamut process.
+         * We want to do that before we start any UI work.
+         */
+        CommandStub tmpstub = null;
+        String urlarg = null;
+        for (int ix=0; ix<args.length; ix++) {
+            if (args[ix].equals("--url") && (ix < args.length-1)) {
+                urlarg = args[ix+1];
+                break;
+            }
+        }
+
+        if (urlarg != null) {
+            boolean res = CommandWatcher.tryCommand(urlarg);
+            if (res) {
+                System.exit(0);
+            }
+
+            /* Unable to launch URL. We'll start normally, and cache the URL
+             * for use once the player has connected. */
+            try {
+                URL url = new URL(urlarg);
+                tmpstub = CommandStub.parse(url);
+            } 
+            catch (Exception ex) {
+                // forget it.
+                System.out.println("Received invalid URL: " + urlarg);
+            }
+        }
+
+        // Save as a final variable
+        final CommandStub launchedStub = tmpstub;
+
         // Set the look and feel
         try
         {
@@ -360,6 +406,8 @@ public class JavolinApp extends JFrame
                 public void run() {
                     assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
                     JavolinApp mainApp = new JavolinApp();
+                    if (launchedStub != null)
+                        mainApp.mQueuedCommandStubs.add(launchedStub);
                     mainApp.start();
                 }
             });
@@ -790,6 +838,9 @@ public class JavolinApp extends JFrame
         if (confirmCloseTableWindows("Exit"))
         {
             doDisconnect();
+            if (mCommandWatcher != null) 
+                mCommandWatcher.stop();
+
             System.exit(0);
         }
     }

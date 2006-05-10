@@ -3,6 +3,12 @@ SVN repository.
 
 * the present
 
+If you start Gamut with "--url volity:..." in the command-line arguments,
+the command will be executed. (See the wiki for the command forms; there
+are create-table, join-table, and join-lobby commands currently.) If Gamut
+is already running, the Gamut you execute will transmit the command to
+the existing process (and then shut down).
+
 Made scroll-wheel scrolling in the game finder (and help menu) work at a 
 reasonable rate.
 
