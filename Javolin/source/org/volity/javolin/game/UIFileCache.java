@@ -22,6 +22,7 @@ import java.net.*;
 import java.util.*;
 import java.util.zip.*;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.PlatformWrapper;
 
 /**
  * Manages the on-disk cache of the Volity UI files.
@@ -41,36 +42,16 @@ import org.volity.javolin.JavolinApp;
  */
 public class UIFileCache
 {
-    private static String sSep; // File separator character
-
     private Set mDownloadedFiles; // URLs of files downloaded during current session
     private File mFileCacheDir; // Cache of downloaded UI files
     private File mDirCacheDir; // Cache of unzipped UI directories
 
-    static
-    {
-        sSep = System.getProperty("file.separator");
-    }
-
     /**
      * Constructor.
-     *
-     * @param MacStyle    If true, the cache is located in 
-     *                    ~/Library/Caches/Javolin rather 
-     *                    than ~/.Javolin
      */
-    public UIFileCache(boolean MacStyle)
+    public UIFileCache()
     {
-        String cacheDirName = System.getProperty("user.home");
-
-        if (!MacStyle) 
-        {
-            cacheDirName += sSep + "." + JavolinApp.getAppName();
-        }
-        else 
-        {
-            cacheDirName += sSep + "Library" + sSep + "Caches" + sSep + JavolinApp.getAppName();
-        }
+        String cacheDirName = PlatformWrapper.getCacheDir();
         mFileCacheDir = new File(cacheDirName, "UIFileCache");
         mDirCacheDir = new File(cacheDirName, "UIDirCache");
 

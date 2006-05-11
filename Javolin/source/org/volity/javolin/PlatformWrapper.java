@@ -19,6 +19,7 @@ import java.lang.reflect.*;
  */
 public class PlatformWrapper 
 {
+    private static String sSep; // File separator character
     private static boolean isMac;
     private static boolean isWin;
 
@@ -29,6 +30,8 @@ public class PlatformWrapper
         isWin = isRunningOnWindows();
 
         assert (!(isMac && isWin));
+
+        sSep = System.getProperty("file.separator");
     }
 
     /**
@@ -45,6 +48,25 @@ public class PlatformWrapper
             // Put window menu bars at the top of the screen
             System.setProperty("apple.laf.useScreenMenuBar", "true");
         }
+    }
+
+    /**
+     * Determine the location of the cache directory. On a Mac, this will be 
+     * ~/Library/Caches/Gamut. On Linux/Windows, it will be ~/.Gamut.
+     */
+    public static String getCacheDir() {
+        String cacheDirName = System.getProperty("user.home");
+
+        if (!isMac) 
+        {
+            cacheDirName += sSep + "." + JavolinApp.getAppName();
+        }
+        else 
+        {
+            cacheDirName += sSep + "Library" + sSep + "Caches" + sSep + JavolinApp.getAppName();
+        }
+
+        return cacheDirName;
     }
 
     /** 

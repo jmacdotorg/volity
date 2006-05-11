@@ -83,7 +83,7 @@ public class JavolinApp extends JFrame
     private final static ImageIcon STATS_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
-    private static UIFileCache sUIFileCache = new UIFileCache(PlatformWrapper.isRunningOnMac());
+    private static UIFileCache sUIFileCache = new UIFileCache();
 
     private static JavolinApp soleJavolinApp = null;
     private static TranslateToken sTranslator = new TranslateToken(null);
@@ -370,6 +370,7 @@ public class JavolinApp extends JFrame
         }
         catch (Exception e)
         {
+            // never mind.
         }
 
         /*
