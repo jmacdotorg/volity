@@ -25,7 +25,7 @@ import org.volity.javolin.game.UIFileCache;
 public class TestbenchApp extends JFrame
                                   implements ActionListener
 {
-    private static UIFileCache sUIFileCache = new UIFileCache(isRunningOnMac());
+    private static UIFileCache sUIFileCache = new UIFileCache();
 
     private final static String APPNAME = "Testbench";
     private final static String NODENAME = "MainAppWin";
