@@ -158,16 +158,18 @@ sub game_uri {
         elsif ( not( ref( $_[0] ) ) ) {
             my $uri = URI->new( $_[0] );
             unless ( defined($uri) ) {
-                croak(
+                carp (
 "The game_uri method thinks that this doesn't look like a URI: $_[0]"
                     );
+		return;
             }
             $self->game_uri_object($uri);
         }
         else {
-            croak(
+            carp (
 "You must call game_uri() with either a URI string, or a URI-class object."
                 );
+	    return;
         }
     }
     return $self->game_uri_object->as_string
@@ -413,9 +415,10 @@ sub massage_time {
         return ( Date::Format::time2str( "%Y-%m-%dT%H:%M:%S%z", $parsed ) );
     }
     else {
-        croak(
+        carp(
 "I can't parse this timestamp: $time\nPlease use a time string that Date::Parse can understand."
             );
+	return;
     }
 }
 
