@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Better error reporting if the user fails to authenticate with Jabber.
+
 If you start Gamut with "--url volity:..." in the command-line arguments,
 the command will be executed. (See the wiki for the command forms; there
 are create-table, join-table, and join-lobby commands currently.) If Gamut

@@ -224,6 +224,14 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                     break;
                 }
             }
+            else 
+            {
+                if (message.startsWith("SASL authentication failed")) {
+                    message = "Unable to log into Jabber host " +
+                        jidhost +
+                        ".\nMake sure your Volity ID and password are correct.";
+                }
+            }
 
             JOptionPane.showMessageDialog(this,
                 message,
