@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 300 300" preserveAspectRatio="xMidYMid" >
+
+  <line x1="5" y1="100" x2="295" y2="100" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="5" y1="200" x2="295" y2="200" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="100" y1="5" x2="100" y2="295" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="200" y1="5" x2="200" y2="295" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+
+</svg>

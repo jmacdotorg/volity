@@ -1,0 +1,1551 @@
+<?xml version='1.0'?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.2.0//EN" 
+"/sw/share/xml/dtd/docbookx/4.2.0/docbookx.dtd" [
+
+<!ENTITY clientapp "Gamut">
+<!ENTITY testbenchapp "Testbench">
+<!ENTITY emdash "&#x2014;">
+
+]>
+
+<article>
+  <articleinfo>
+    <title>Creating a Volity SVG UI</title>
+    <author>
+      <firstname>Andrew</firstname>
+      <surname>Plotkin</surname>
+      <email>erkyrath@eblong.com</email>
+    </author>
+  </articleinfo>
+
+<para>
+When you create a Volity game, you must create two things: the game logic (which runs inside the referee), and the game's user interface (which is displayed by the client). The user interface is a Scalable Vector Graphics (SVG) document with ECMAScript (Javascript) code embedded in it.
+</para>
+
+<para>
+This is not as scary as it sounds.
+</para>
+
+<section>
+  <title>What You Need To Have Already</title>
+
+<para>
+This guide assumes that you have a game in mind, and you've decided on its ruleset. (You do not need to have written your referee logic.) We will use Tic Tac Toe as a working example.
+</para>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="http://volity.org/games/tictactoe">http://volity.org/games/tictactoe</ulink>
+(TTT ruleset description)
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+We also assumes that you know ECMAScript. This is the officially-standardized version of Javascript. If you know Javascript, you're ready. If not, it looks a lot like Java; nearly as much like C; and rather a lot like every other scripting language.
+</para>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="http://www.w3schools.com/js/default.asp">http://www.w3schools.com/js/default.asp</ulink>
+(ECMAScript tutorial)
+</para>
+</listitem>
+<listitem>
+<para>
+<ulink url="http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference">http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Reference</ulink>
+(ECMAScript reference)
+</para>
+</listitem>
+<listitem>
+<para>
+<ulink url="http://www.ecma-international.org/publications/standards/Ecma-262.htm">http://www.ecma-international.org/publications/standards/Ecma-262.htm</ulink>
+(ECMAScript reference)
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+Finally, we assume that you have some idea of how SVG works. Since SVG is likely to be the Volity language you are least familiar with, this guide will explain the rudiments of SVG, and describe its SVG examples as it goes. However, this is not an SVG tutorial, nor an SVG reference manual.
+</para>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="http://www.w3schools.com/svg/default.asp">http://www.w3schools.com/svg/default.asp</ulink>
+(SVG tutorial)
+</para>
+</listitem>
+<listitem>
+<para>
+<ulink url="http://www.carto.net/papers/svg/manipulating_svg_with_dom_ecmascript/">http://www.carto.net/papers/svg/manipulating_svg_with_dom_ecmascript/</ulink>
+(SVG+Javascript tutorial)
+</para>
+</listitem>
+<listitem>
+<para>
+<ulink url="http://www.w3.org/TR/SVG/">http://www.w3.org/TR/SVG/</ulink>
+(SVG reference)
+</para>
+</listitem>
+</itemizedlist>
+
+</section>
+
+<section>
+  <title>What Is SVG?</title>
+
+<para>
+SVG is a document format, based on XML, for describing vector graphics. An SVG image is fundamentally made of lines, arcs, and areas &emdash; that is, vector shapes &emdash; and not of pixels. Therefore, an SVG image can be displayed at any size without becoming "pixelated" and ugly.
+</para>
+
+<note>
+<para>
+An SVG image can display inline images, just as HTML can. These images can be pixel formats like JPEG, GIF, and PNG. So it is possible to make an SVG document that scales badly. You just have to work at it.
+</para>
+</note>
+
+<para>
+Just like an HTML file, an SVG file in your client is structured as a DOM tree &emdash; a hierarchy of XML tags. (Yes, HTML isn't really XML. Pretend we said XHTML, if the difference is important to you.) Like HTML, an SVG file can contain ECMAScript, which manipulates the DOM tree in response to various events. This is how a Volity UI works. The ECMAScript code in a UI must:
+</para>
+
+<itemizedlist>
+
+<listitem>
+<para>
+Accept move requests from the player, and transmit them off to the referee.
+</para>
+</listitem>
+
+<listitem>
+<para>
+Receive game updates from the referee, and display them to the player (by updating the DOM tree). "Game updates" can include
+</para>
+<itemizedlist>
+<listitem>
+<para>
+moves by other players;
+</para>
+</listitem>
+<listitem>
+<para>
+notifications that the game is starting or ending;
+</para>
+</listitem>
+<listitem>
+<para>
+complete descriptions of a game in progress.
+</para>
+</listitem>
+</itemizedlist>
+</listitem>
+
+</itemizedlist>
+
+<para>
+(That last occurs when a player joins a game table in the middle of the game. His UI then has to accept the entire game so far as a single update.)
+</para>
+
+</section>
+
+<section>
+  <title>Getting Started</title>
+
+<para>
+The ECMAScript of a UI will eventually have to do a lot, but it's easiest to start without it. Most games will have a fixed frame and board image, which will not change over the course of the game; the game will just add things on top of the board. So we will start by drawing this board as a simple SVG file.
+</para>
+
+<para>
+Create a file named <filename>my-ttt.svg</filename>, containing the following:
+</para>
+
+<programlisting>
+<![CDATA[
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 300 300" preserveAspectRatio="xMidYMid" >
+
+  <line x1="5" y1="100" x2="295" y2="100"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="5" y1="200" x2="295" y2="200"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="100" y1="5" x2="100" y2="295"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="200" y1="5" x2="200" y2="295"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+
+</svg>
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-0.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+To explain this, line by line:
+</para>
+
+<para>
+The first line is an XML header.
+</para>
+
+<para>
+The next three lines are the top-level <sgmltag class="element">&lt;svg&gt;</sgmltag> tag, which contains several attributes. The <sgmltag class="attribute">xmlns</sgmltag> and <sgmltag class="attribute">version</sgmltag> attributes are required for any SVG document. The <sgmltag class="attribute">xmlns:xlink</sgmltag> is required for any SVG document which has <sgmltag class="element">&lt;use&gt;</sgmltag> elements; in practical terms, that means all of them. (We will describe the <sgmltag class="element">&lt;use&gt;</sgmltag> element later.)
+</para>
+
+<para>
+The <sgmltag class="attribute">preserveAspectRatio</sgmltag> attribute controls how the SVG image fits into the client window when it is displayed. Declaring <literal>preserveAspectRatio="xMidYMid"</literal> means that the image will be centered, and scaled to the window size, but not distorted. (If the window is wider than it is tall, the image will be displayed with blank space to either side, not stretched.) This is normally what you want for a game UI.
+</para>
+
+<para>
+The <sgmltag class="attribute">viewBox</sgmltag> attribute defines the coordinate system for your image. That sounds mathematically intense, but it merely means you get to decide what values to use to lay out the image. Setting <literal>viewBox="0 0 300 300"</literal> means that the top left corner is (0,0), and the bottom right corner is (300,300). This is a particularly handy way to lay out a Tic Tac Toe board, since it's a three-by-three grid, so each square winds up being 100 by 100 units.
+</para>
+
+<para>
+Note that these measurements are in arbitrary <emphasis>units</emphasis>, not in pixels or centimeters or any other fixed unit. That makes sense, because the whole point is that this image is going to scale to fit in the player's client window. It has no "natural" size.
+</para>
+
+<note>
+<para>
+The four values of viewBox are actually "LEFT TOP WIDTH HEIGHT". If you wanted your image's coordinates to stretch from (-200,-200) to (200,200) &emdash; with the origin in the center &emdash; you would declare <literal>viewBox="-200 -200 400 400"</literal>. But it is generally easier to leave the top left corner at (0,0).
+</para>
+</note>
+
+<para>
+Contained within the <sgmltag class="element">&lt;svg&gt;</sgmltag> element are four <sgmltag class="element">&lt;line&gt;</sgmltag> elements. Each one works the way you might expect: it describes a line stroke drawn from (<sgmltag class="attribute">x1</sgmltag>,<sgmltag class="attribute">y1</sgmltag>) to (<sgmltag class="attribute">x2</sgmltag>,<sgmltag class="attribute">y2</sgmltag>). The four lines have similar attributes (black, 5 units wide, rounded ends) and together they form a Tic Tac Toe grid.
+</para>
+
+<para>
+Note that the lines are drawn slightly short of the edges of the 300-by-300 canvas. For example, the first one is drawn from (5,200) to (295,200). This is because the rounded line-caps are drawn <emphasis>around</emphasis> the mathematical endpoints of each stroke. If the stroke went all the way to the edges &emdash; (0,200) to (300,200) &emdash; then the line-caps would extend outside the image, and possibly outside the client window. We don't want them to be cut off.
+</para>
+
+<para>
+Finally, the last line of the document closes the <sgmltag class="element">&lt;svg&gt;</sgmltag> tag.
+</para>
+
+</section>
+
+<section>
+  <title>Displaying Your UI</title>
+
+<para>
+If you've been following along, you've typed in (or copied and pasted) the short SVG file from the previous section. Now you want to display it.
+</para>
+
+<para>
+There are several SVG interpreters available, both as standalone applications and as web browser plugins. The SVG file we've got should display correctly in all of them. However, we will soon want to go farther; we'll want to test the Volity script code, and simulate moves of a game. &testbenchapp; is a Volity tool which helps with this.
+</para>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="http://volity.org/projects/gamut/">http://volity.org/projects/gamut/</ulink>
+(&testbenchapp; download at end of download list)
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+Run &testbenchapp; as you would any other Java application. A dialog box will appear which prompts you to choose an SVG file. On a command-line OS, you could also supply the SVG file as a command-line argument:
+</para>
+
+<programlisting>
+<![CDATA[
+  java -jar Testbench.jar my-ttt.svg
+]]>
+</programlisting>
+
+<para>
+Either way, you will see a window appear which is rather similar to a &clientapp; client window. The Tic Tac Toe board will be displayed in the main part of the window.
+</para>
+
+<para>
+If there is anything wrong with the SVG file, you will see error messages of greater or lesser helpfulness. You do not need to quit &testbenchapp; to deal with these. Fix them, and then use the <guimenuitem>"Reload"</guimenuitem> menu item (Linux/Windows: <guimenuitem><accel>Ctrl-R</accel></guimenuitem>; Mac: <guimenuitem><accel>Cmd-R</accel></guimenuitem>) to reload the SVG from the file. This is how you will typically develop a UI file; make changes with a text editor, then reload it in &testbenchapp; to see if it worked.
+</para>
+
+<note>
+<para>
+Yes, it would be nice to have a true Volity IDE &emdash; a tool which let you draw SVG elements directly with your mouse. We don't have that yet. There are drawing tools like Illustrator and Inkscape which let you drawn SVG, but they don't have &testbenchapp;'s facilities for testing script code. A possible happy medium is to draw complex (but static) image elements with a drawing tool, include them in the UI file via <sgmltag class="element">&lt;use&gt;</sgmltag> tags, and test the whole in &testbenchapp;.
+</para>
+</note>
+
+</section>
+
+<section>
+  <title>Adding Metadata</title>
+
+<para>
+A polite UI file declares its name, its author, its version number, and its ruleset URI. This allows the Volity bookkeeper to index it tidily, and pass all that information on to clients which are trying to play your game.
+</para>
+
+<para>
+SVG allows this sort of information to be placed in a <sgmltag class="element">&lt;metadata&gt;</sgmltag> element, which must be immediately contained within the top-level <sgmltag class="element">&lt;svg&gt;</sgmltag>. For a Volity UI, it might look like this:
+</para>
+
+<programlisting>
+<![CDATA[
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 300 300" preserveAspectRatio="xMidYMid" >
+
+  <metadata
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:volity="http://volity.org/protocol/metadata" >
+
+    <volity:ruleset>http://volity.org/games/tictactoe</volity:ruleset>
+    <dc:title>Tic Tac Toe example UI</dc:title>
+    <dc:creator>Andrew Plotkin</dc:creator>
+    <volity:version>1.0.example</volity:version>
+    <dc:modified>2006-04-14</dc:modified>
+
+  </metadata>
+
+  <line x1="5" y1="100" x2="295" y2="100"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="5" y1="200" x2="295" y2="200"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="100" y1="5" x2="100" y2="295"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="200" y1="5" x2="200" y2="295"
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+
+</svg>
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-1.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+There are two namespaces declared in the <sgmltag class="element">&lt;metadata&gt;</sgmltag> element. The <sgmltag class="attribute">dc</sgmltag> namespace represents Dublin Core, a standard vocabulary for describing documents. The <sgmltag class="attribute">dc:title</sgmltag>, <sgmltag class="attribute">dc:creator</sgmltag>, and <sgmltag class="attribute">dc:modified</sgmltag> lines give the title, creator's name, and the date the UI was created. (You can use any <sgmltag class="attribute">dc</sgmltag> property, in fact. However, Volity software only pays attention to these and a few others.)
+</para>
+
+<para>
+The <sgmltag class="attribute">volity</sgmltag> namespace represents properties which have special meaning to Volity. The <sgmltag class="attribute">volity:ruleset</sgmltag> should be the URI of the ruleset which the UI supports &emdash; in this case, <literal>http://volity.org/games/tictactoe</literal>. And <sgmltag class="attribute">volity:version</sgmltag> is a version number for the UI. You can put any string here; it is wise to update it every time you release a new version of the UI file. This will reduce confusion when you have players playing your game and encountering UI bugs.
+</para>
+
+<para>
+Add the <sgmltag class="element">&lt;metadata&gt;</sgmltag> section to your SVG file, and reload it in &testbenchapp;. Then try the <guimenuitem>"UI Metadata..."</guimenuitem> menu item (Linux/Windows: <guimenuitem><accel>Ctrl-I</accel></guimenuitem>; Mac: <guimenuitem><accel>Cmd-I</accel></guimenuitem>). A dialog box will appear that displays the metadata, as Volity understands it.
+</para>
+
+</section>
+
+<section>
+  <title>Adding Xs and Os</title>
+
+<para>
+We now want to start doing what a Tic Tac Toe game is all about: drawing X and O on the board.
+</para>
+
+<para>
+Doing this in SVG is easy. We can be a little bit clever by defining an X and an O symbol inside a <sgmltag class="element">&lt;defs&gt;</sgmltag> element:
+</para>
+
+<programlisting>
+<![CDATA[
+  <defs>
+
+    <g id="x-mark">
+      <line x1="25" y1="25" x2="75" y2="75"
+        stroke="blue" stroke-width="10" stroke-linecap="round" />
+      <line x1="25" y1="75" x2="75" y2="25"
+        stroke="blue" stroke-width="10" stroke-linecap="round" />
+    </g>
+
+    <g id="o-mark">
+      <circle cx="50" cy="50" r="25"
+        stroke="blue" fill="none" stroke-width="10" />
+    </g>
+
+  </defs>
+]]>
+</programlisting>
+
+<para>
+The <sgmltag class="element">&lt;defs&gt;</sgmltag> element should be contained within the top-level <sgmltag class="element">&lt;svg&gt;</sgmltag>, right after <sgmltag class="element">&lt;metadata&gt;</sgmltag>. (We will not give the complete SVG file at every stage, but copies of the sample SVG file at each stage of this tutorial are available from the Volity web site.)
+</para>
+
+<para>
+This introduces two more SVG elements: <sgmltag class="element">&lt;circle&gt;</sgmltag> and <sgmltag class="element">&lt;g&gt;</sgmltag>. The <sgmltag class="element">&lt;circle&gt;</sgmltag> is just what it says; it has <sgmltag class="attribute">cx</sgmltag> and <sgmltag class="attribute">cy</sgmltag> attributes to define the center of the circle, and <sgmltag class="attribute">r</sgmltag> is the radius. Note that we also have to specify <literal>fill="none"</literal>. By default, an SVG shape has no outline and is filled with black. (The lines we've seen so far have no interior, so the <sgmltag class="attribute">fill</sgmltag> doesn't matter.)
+</para>
+
+<para>
+The group (<sgmltag class="element">&lt;g&gt;</sgmltag>) element simply contains a bunch of other SVG elements. This lets us draw an X &emdash; two lines &emdash; with a single <sgmltag class="element">&lt;use&gt;</sgmltag> statement later on. Each group has an <sgmltag class="attribute">id</sgmltag> attribute which identifies it for later <sgmltag class="element">&lt;use&gt;</sgmltag>.
+</para>
+
+<para>
+Note that the two symbol groups, <sgmltag class="attvalue">x-mark</sgmltag> and <sgmltag class="attvalue">o-mark</sgmltag>, are defined in a 100-by-100 unit space. The center of each symbol is (50,50). This accords with our original decision to make the board be 300-by-300.
+</para>
+
+<para>
+Now, if you reload, you'll see that adding the <sgmltag class="element">&lt;defs&gt;</sgmltag> hasn't changed the image at all. Elements defined inside <sgmltag class="element">&lt;defs&gt;</sgmltag> are not drawn directly in the image. Instead, they are kept as templates, which may be "stamped" one or many times in the image. We do this with a <sgmltag class="element">&lt;use&gt;</sgmltag> element. Put these lines at the end of the file, after the four <sgmltag class="element">&lt;line&gt;</sgmltag> elements that make up the grid:
+</para>
+
+<programlisting>
+<![CDATA[
+  <use xlink:href="#x-mark" x="100" y="100" />
+  <use xlink:href="#o-mark" x="0" y="200" />
+  <use xlink:href="#x-mark" x="100" y="200" />
+  <use xlink:href="#o-mark" x="100" y="0" />
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-2.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+This puts us four moves into a game. (And X has a decided advantage &emdash; but there's still room for an O comeback!) Each <sgmltag class="element">&lt;use&gt;</sgmltag> statement has an <sgmltag class="attribute">xlink:href</sgmltag> property, which refers to the <sgmltag class="attribute">id</sgmltag> of an element in the <sgmltag class="element">&lt;defs&gt;</sgmltag> section. And it has <sgmltag class="attribute">x</sgmltag> and <sgmltag class="attribute">y</sgmltag> properties, which adjust the overall position of the replicated element. The three columns of our board begin at x="0", x="100", and x="200". The rows, similarly, have y="0", y="100", and y="200". Since the <sgmltag class="attvalue">x-mark</sgmltag> and <sgmltag class="attvalue">o-mark</sgmltag> elements are centered at (50,50) &emdash; relative to the positions they are drawn at &emdash; this puts everything where we want it.
+</para>
+
+</section>
+
+<section>
+  <title>Adding and Erasing Xs and Os</title>
+
+<para>
+Putting Xs and Os directly into the image, as we did in the last section, is not in fact what we need. After all, the first four moves probably won't be the ones we entered. We want an image which <emphasis>doesn't</emphasis> have any marks, but which can acquire them as a game proceeds. 
+</para>
+
+<para>
+This means writing some ECMAScript. At this point, we're not trying to hook the scripts up to game RPCs or to player input. We just want a basic set of routines that can draw and erase game marks.
+</para>
+
+<para>
+First, we need a <sgmltag class="element">&lt;script&gt;</sgmltag> element to put the code into. 
+</para>
+
+<programlisting>
+
+  &lt;script type="text/ecmascript"&gt;
+    &lt;![CDATA[
+// ECMAScript goes here...
+    
+    // ]]&gt;
+  &lt;/script&gt;
+</programlisting>
+
+<para>
+This should be contained in the top-level <sgmltag class="element">&lt;svg&gt;</sgmltag>, between the <sgmltag class="element">&lt;metadata&gt;</sgmltag> and the <sgmltag class="element">&lt;defs&gt;</sgmltag>. The <sgmltag class="element">&lt;![CDATA[ ]]&gt;</sgmltag> lines are an XML construct that let you write literal code, without having to escape &lt; and &gt; signs. Between them goes the ECMAScript code. So far this is only one comment; let us add to that.
+</para>
+
+<para>
+The code to create a new <sgmltag class="element">&lt;use&gt;</sgmltag> element, like the one we had before, is straightforward. Delete the four <sgmltag class="element">&lt;use&gt;</sgmltag> lines from the end, and add this to the ECMAScript section:
+</para>
+
+<programlisting>
+<![CDATA[
+  mark = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  mark.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#x-mark");
+  mark.setAttribute("id", "mark-4");
+  mark.setAttribute("x", 100);
+  mark.setAttribute("y", 100);
+  document.getRootElement().appendChild(mark);
+]]>
+</programlisting>
+
+<para>
+Reload the SVG, and you'll see an X in the center square, which is... not any better than simply having the <sgmltag class="element">&lt;use&gt;</sgmltag> statement. In fact it's exactly the same. (Except that we're setting an <sgmltag class="attribute">id</sgmltag> attribute, which we will make use of presently.) The code runs when the document is loaded, and its effect is to create a <sgmltag class="element">&lt;use&gt;</sgmltag> element with the given attributes, and attach it to the end of the SVG DOM tree.
+</para>
+
+<para>
+Let's change that to a function, and also move the ugly URI strings to global constants:
+</para>
+
+<programlisting>
+<![CDATA[
+  var svg_ns = "http://www.w3.org/2000/svg";
+  var xlink_ns = "http://www.w3.org/1999/xlink";
+  var position_x_values = [ 0, 100, 200, 0, 100, 200, 0, 100, 200 ];
+  var position_y_values = [ 0, 0, 0, 100, 100, 100, 200, 200, 200 ];
+
+  // Add an X or O to the board.
+  // Which is a string, "x" or "o" (lower-case). Pos is a number from 0 to 8.
+  function draw_mark(which, pos) {
+    var mark, grp;
+
+    mark = document.createElementNS(svg_ns, "use");
+    mark.setAttributeNS(xlink_ns, "href", "#"+which+"-mark");
+    mark.setAttribute("id", "mark-"+pos);
+    mark.setAttribute("x", position_x_values[pos]);
+    mark.setAttribute("y", position_y_values[pos]);
+
+    grp = document.getElementById("marks-group");
+    grp.appendChild(mark);
+  }
+]]>
+</programlisting>
+
+<para>
+The arguments to the <function>draw_mark()</function> function follow the conventions laid out in the Tic Tac Toe ruleset. To indicate which player's mark to draw, pass one of the strings "x" or "o"; these are the seat names defined in the ruleset. To indicate a position, we use an integer:
+</para>
+
+<screen>
+  0 1 2
+  3 4 5
+  6 7 8
+</screen>
+
+<para>
+The lookup tables <varname>position_x_values[]</varname> and <varname>position_y_values[]</varname> let us convert a position number to (x,y) coordinates.
+</para>
+
+<para>
+This code doesn't attach the newly-created <sgmltag class="element">&lt;use&gt;</sgmltag> to the end of the document. It attaches it to something called <sgmltag class="attvalue">marks-group</sgmltag>. What is this? Something we need to declare:
+</para>
+
+<programlisting>
+<![CDATA[
+  <g id="marks-group" />
+]]>
+</programlisting>
+
+<para>
+This is an empty group. Put it at the end of the SVG file, after the four lines. Why an empty group? In this case, we're using the group as a "layer" &emdash; a set of elements which are rendered together. SVG is drawn "back to front"; later elements appear on top of earlier ones. Since the group comes after the board-grid, everything in the group will appear on top of the grid.
+</para>
+
+<para>
+(It is also particularly easy to delete everything inside a group. This will be handy for erasing the Xs and Os without destroying the board.)
+</para>
+
+<para>
+Can we test this <function>draw_mark()</function> function? Certainly. Click in the bottommost, empty panel of the &testbenchapp; window. In &clientapp;, this is the chat input pane; in &testbenchapp;, it lets you type in ECMAScript. Anything you type is immediately executed. This makes testing very simple. Type this:
+</para>
+
+<programlisting>
+<![CDATA[
+  draw_mark("x", 4)
+]]>
+</programlisting>
+
+<para>
+An X should appear in the center square. (If you get an error like "'draw_mark' is not defined," you need to reload the SVG that you just edited.)
+</para>
+
+<note>
+<para>
+This function doesn't do any error-checking. You can type <function>draw_mark("q", 17)</function> to see some fascinating error messages. This is, in general, a good tradeoff; it's much easier to catch errors on the referee side, and if the referee is wrong, the players are hosed anyway. You should approach UI creation with the idea that the referee is always right. Of course, players aren't so tidy; you'll have to check player input carefully for validity.
+</para>
+</note>
+
+<para>
+We also want to be able to erase the board. You can do this by hitting Reload, but you don't want the player to have to reload his UI for every new game. To do this in code:
+</para>
+
+<programlisting>
+<![CDATA[
+  // Erase all the Xs and Os from the board.
+  function erase_marks() {
+    var grp;
+    grp = document.getElementById("marks-group");
+    remove_children(grp);
+  }
+
+  // Delete all the child nodes of the given object (usually a group).
+  function remove_children(parent) {
+    var obj, ls;
+    ls = parent.childNodes;
+    while (ls.length > 0) {
+      obj = ls.item(0);
+      parent.removeChild(obj);
+    }
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-3.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+The <function>remove_children()</function> function is a generic tool which you will find useful in most of your UIs. The <function>erase_marks()</function> function uses <function>remove_children()</function> to remove all the children of the <sgmltag class="attvalue">marks-group</sgmltag>. To test this, reload your SVG, and then enter these commands in your script input pane (one at a time):
+</para>
+
+<programlisting>
+<![CDATA[
+  draw_mark("x", 4)
+  draw_mark("o", 3)
+  draw_mark("x", 0)
+  erase_marks()
+]]>
+</programlisting>
+
+</section>
+
+<section>
+  <title>Receiving Updates From the Referee</title>
+
+<para>
+When the client receives RPCs from the referee, it invokes functions in your UI code. For example, when the Tic Tac Toe referee sends <function>game.mark(seat_id, location)</function>, it calls a UI function named <function>game.mark()</function> and passes in those two arguments. There are also functions associated with general game activity. For example, when the game starts, a UI function named <function>volity.start_game()</function> is called.
+</para>
+
+<para>
+(No, an ECMAScript function can't have periods in its name. What actually happens is that the client provides ECMAScript objects named <varname>game</varname> and <varname>volity</varname>. You must create anonymous functions, and assign them to be named properties of these two objects.)
+</para>
+
+<para>
+The ruleset describes just four <varname>game</varname> RPCs that the UI must handle, and we can handle them easily enough:
+</para>
+
+<programlisting>
+<![CDATA[
+  var seat_whose_turn_it_is = null;
+
+  // Referee adds a move to the board.
+  game.mark = function(seat_id, location) {
+    draw_mark(seat_id, location);
+  }
+
+  // Referee says that it's the given seat's turn to play.
+  game.must_mark = function(seat_id) {
+    seat_whose_turn_it_is = seat_id;
+  }
+
+  // Referee declares a win.
+  game.win = function(seat_id, loc_1, loc_2, loc_3) {
+    seat_whose_turn_it_is = null;
+  }
+
+  // Referee declares a tie.
+  game.tie = function() {
+    seat_whose_turn_it_is = null;
+  }
+]]>
+</programlisting>
+
+<para>
+The global variable <varname>seat_whose_turn_it_is</varname> keeps track of whose turn it is. This will be important when we start thinking about letting the player make moves. (Since we only want to allow that when it is, in fact, the player's turn.)
+</para>
+
+<para>
+Aside from setting <varname>seat_whose_turn_it_is</varname>, the only RPC that does anything interesting is <function>game.mark()</function>. We handle that by calling our <function>draw_mark()</function> function.
+</para>
+
+<para>
+We do need to do some work when the game starts; we need to clear the board from any previous game.
+</para>
+
+<programlisting>
+<![CDATA[
+  // Game has begun.
+  volity.start_game = function() {
+    erase_marks();
+    seat_whose_turn_it_is = null;
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-4.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+(We're a little overzealous in keeping <varname>seat_whose_turn_it_is</varname> correct, but that's for the best.)
+</para>
+
+</section>
+
+<section>
+  <title>Seat Marks</title>
+
+<para>
+Seat marks are the little arrows and crown symbols that appear in &clientapp;'s seating panel. The UI is responsible for setting these, and it does this by calling the <function>seatmark()</function> function.
+</para>
+
+<para>
+The simplest case is setting the blue arrow that indicates whose turn it is. You do this by calling <function>seatmark(seat_id)</function>; the argument should be the identifier of a seat. Conveniently, this is just what we have in the <function>game.must_mark()</function> function, so we can write this:
+</para>
+
+<programlisting>
+<![CDATA[
+  game.must_mark = function(seat_id) {
+    seat_whose_turn_it_is = seat_id;
+    seatmark(seat_id);
+  }
+]]>
+</programlisting>
+
+<para>
+(If you test this in &testbenchapp;, you won't see a blue arrow, but the seat mark change will be noted in the chat pane.)
+</para>
+
+<para>
+Setting the crown mark, to indicate the winner of a game, is a bit harder. We must create an ECMAScript array which maps seat identifiers to mark constants.
+</para>
+
+<programlisting>
+<![CDATA[
+  game.win = function(seat_id, loc_1, loc_2, loc_3) {
+    seat_whose_turn_it_is = null;
+
+    var seatmarks = [];
+    seatmarks[seat_id] = "win";
+    seatmark(seatmarks);
+  }
+
+  game.tie = function() {
+    seat_whose_turn_it_is = null;
+
+    var seatmarks = [];
+    seatmarks["x"] = "win";
+    seatmarks["o"] = "win";
+    seatmark(seatmarks);
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-5.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+In <function>game.win()</function>, we create an array with one entry. In <function>game.tie()</function>, we create two &emdash; both seats have won. Both of these use the constant "win", which represents the standard &clientapp; crown mark. (The value constants are "turn", "win", "first", and "other". Calling <function>seatmark()</function> with a seat ID is equivalent to passing an array which maps that ID to "turn".)
+</para>
+
+</section>
+
+<section>
+  <title>Accepting Player Input</title>
+
+<para>
+The player will certainly appreciate all this display technology, but at some point he will want to make a move.
+</para>
+
+<para>
+Nearly all player input will come in the form of mouse events. These work the same as they do in HTML; you can set an <sgmltag class="attribute">onclick</sgmltag> attribute on any SVG element, or any of a large handful of other event properties.
+</para>
+
+<note>
+<para>
+Each SVG element also provides an <function>addEventListener()</function> ECMAScript property. You can call this instead of using the <sgmltag class="attribute">onclick</sgmltag> family of attributes. However, <sgmltag class="attribute">onclick</sgmltag> is simpler, so we will use it in this example.
+</para>
+</note>
+
+<para>
+We will therefore need SVG elements to click on. Nine of them, to make life easier &emdash; one for each grid square the player might click on. (We could instead use a single SVG element, and figure out which grid square the player selected by examining the coordinates of the mouse event. However, that is more work.)
+</para>
+
+<para>
+It would be easy to create nine <sgmltag class="element">&lt;rect&gt;</sgmltag> objects in our SVG by hand. This would be tedious in a more complicated game, however. It is worth demonstrating how to do this in ECMAScript code. In fact, it is not very different from the <function>draw_mark()</function> function we have already written:
+</para>
+
+<programlisting>
+<![CDATA[
+  function initialize() {
+    var pos;
+    var grp = document.getElementById("squares-group");
+
+    for (pos=0; pos<9; pos++) {
+      var square = document.createElementNS(svg_ns, "rect");
+      square.setAttribute("id", "square-"+pos);
+      square.setAttribute("x", position_x_values[pos]);
+      square.setAttribute("y", position_y_values[pos]);
+      square.setAttribute("width", 100);
+      square.setAttribute("height", 100);
+      square.setAttribute("fill", "white");
+      square.setAttribute("onclick", "square_clicked("+pos+")");
+
+      grp.appendChild(square);
+    }
+  }
+
+  initialize();
+]]>
+</programlisting>
+
+<para>
+We must call this <function>initialize()</function> function from the top level of the ECMAScript section, so that it is executed when the document is loaded.
+</para>
+
+<para>
+Like the X and O marks, we are putting all of these square objects into an SVG group. In this case, the sole reason is to confine them to a layer. We want them drawn first &emdash; that is, rearmost in the display order &emdash; so that they don't cover up either the grid lines or the Xs and Os. Place this declaration <emphasis>before</emphasis> the four grid <sgmltag class="element">&lt;line&gt;</sgmltag> objects:
+</para>
+
+<programlisting>
+<![CDATA[
+  <g id="squares-group" />
+]]>
+</programlisting>
+
+<para>
+The <function>initialize()</function> function uses ECMAScript string concatenation to create a different <sgmltag class="attribute">onclick</sgmltag> attribute for each square: <function>"square_clicked(0)"</function>, <function>"square_clicked(1)"</function>, and so on. If you try them out, you'll see a bunch of "'square_clicked' is not defined" errors, so we'd better define one:
+</para>
+
+<programlisting>
+<![CDATA[
+  // onclick handler for squares.
+  function square_clicked(pos) {
+    rpc("mark", pos);
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-6.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+The <function>rpc()</function> function is the gateway to the referee. When you call it, the UI sends an RPC to the referee &emdash; in this case, <function>game.mark()</function>, with the integer pos as the sole argument. This is the correct way, according to the Tic Tac Toe ruleset, for the player to request a move.
+</para>
+
+</section>
+
+<section>
+  <title>Not Accepting Player Input</title>
+
+<para>
+At this point, we have a usable Tic Tac Toe UI. It can display moves and accept them. However, it does not make any attempt to validate player input. It will send off an <function>rpc()</function> call whenever the player clicks, even if it isn't the player's turn. In fact, it will do this even if the game hasn't started yet, or if the player is an observer and not involved in the game at all.
+</para>
+
+<para>
+These erroneous RPCs will not destroy the game; the referee will notice them and return error messages to the client. However, it is better for the UI to pay attention and only send valid RPCs.
+</para>
+
+<para>
+To do this, we will use the <varname>seat_whose_turn_it_is</varname> global variable, which we defined earlier. We will also need to know where the player is sitting. You can find this out by evaluating <varname>info.seat</varname>. This contains the name of your seat, if you are seated, or <constant>null</constant> if you are observing. 
+</para>
+
+<note>
+<para>
+The <varname>info</varname> object is another ECMAScript object provided by the client. It has several fields that you can read for useful information.
+</para>
+</note>
+
+<para>
+With these tools in hand, we can write a function which determines if you are allowed to make a move right at the moment:
+</para>
+
+<programlisting>
+<![CDATA[
+  // Return true if you are a seated player and it is your turn.
+  function it_is_my_turn() {
+    if (!info.seat)
+      return false;
+    if (!seat_whose_turn_it_is)
+      return false;
+    if (info.seat == seat_whose_turn_it_is)
+      return true;
+    else
+      return false;
+  }
+]]>
+</programlisting>
+
+<para>
+We also need a function to determine whether a square is empty or not. The easiest way to do this is to inspect the DOM tree. Recall that our <function>draw_mark()</function> function adds an <sgmltag class="attribute">id</sgmltag> to each <sgmltag class="element">&lt;use&gt;</sgmltag> element it creates: <sgmltag class="attvalue">mark-0</sgmltag> for the mark in square 0, <sgmltag class="attvalue">mark-1</sgmltag> for the mark in square 1, and so on. We can therefore write this function by calling <function>document.getElementById()</function>, and seeing if the result is <constant>null</constant>:
+</para>
+
+<programlisting>
+<![CDATA[
+  // Return true if the given square has an X or O.
+  function is_square_marked(pos) {
+    var obj;
+    obj = document.getElementById("mark-"+pos);
+    if (obj)
+      return true;
+    else
+      return false;
+  }
+]]>
+</programlisting>
+
+<note>
+<para>
+If we needed to know whether the square contained an X or an O, we could call <function>obj.getAttributeNS(xlink_ns, "href")</function> and see whether the resulting value was "#x-mark" or "#o-mark".
+</para>
+</note>
+
+<para>
+With these tools, we can make <function>square_clicked()</function> work more cleanly:
+</para>
+
+<programlisting>
+<![CDATA[
+  // onclick handler for squares.
+  function square_clicked(pos) {
+    if (!it_is_my_turn())
+      return;
+    if (is_square_marked(pos))
+      return;
+    rpc("mark", pos);
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-7.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+After these changes, we find that the UI is not sending RPCs when you click on squares. This is perfectly correct: after a Reload, the UI believes it is displaying a fresh table. No game has started, and therefore no moves should be made.
+</para>
+
+<para>
+You might then wonder how the game code is going to get tested. &testbenchapp;, not surprisingly, has some features to support this. At the top of the window, you'll see buttons labelled "Start Game" and "End Game", and a text field.
+</para>
+
+<para>
+If you hit "Start Game", &testbenchapp; will behave as if the game had begun, with you as an observer. Your <function>volity.start_game()</function> function will be called, with <varname>info.seat</varname> set to <constant>null</constant>. 
+</para>
+
+<para>
+This is not exciting, since the UI's behavior as an observer is the same as its behavior when the game is not in progress &emdash; it ignores mouse clicks. To set a game in motion, fill in the text field at the top of the window with the name of a seat: "x" or "o". (Lower-case, and without the quote marks.) This changes <varname>info.seat</varname> to the string you typed, simulating the playing sitting down. <emphasis>Then</emphasis> hit "Start Game".
+</para>
+
+<para>
+At this point, the UI knows you are seated, but it believes it is not your turn. To notify it that it should begin accepting clicks, you'll have to simulate the RPC call (from the referee) that notifies the players whose turn it is. Type in the text entry area:
+</para>
+
+<programlisting>
+<![CDATA[
+  game.must_mark("x")
+]]>
+</programlisting>
+
+<para>
+After this &emdash; assuming you are "x"; you entered "x" in the top field, right? &emdash; the UI will understand that it is your turn. Clicking on the board squares will trigger (simulated) RPCs to the referee.
+</para>
+
+<para>
+To simulate O's turn, you would type:
+</para>
+
+<programlisting>
+<![CDATA[
+  game.must_mark("o")
+]]>
+</programlisting>
+
+<para>
+(&testbenchapp; lets you hit up-arrow to display the last command you typed. This is handy for repeating commands, which is what most of game testing consists of.)
+</para>
+
+<para>
+The "End Game" button ends the game. This causes a call to <function>volity.end_game()</function>. You don't have a function of that name, so this is not a big deal. But in more complex games, it will be important.
+</para>
+
+<note>
+<para>
+&testbenchapp; doesn't care if you push "Start Game" twice in a row; it will happily call your <function>volity.start_game()</function> function twice, or a dozen times for that matter. In actual Volity play, you would not see <function>volity.start_game()</function> twice without a <function>volity.end_game()</function> in between. 
+</para>
+</note>
+
+</section>
+
+<section>
+  <title>A Little More Feedback</title>
+
+<para>
+We can do a bit more for player comfort. It would be nice if the board squares darkened when you clicked on them &emdash; not permanently darkened, just a momentary "down" state, in the usual manner of buttons.
+</para>
+
+<para>
+The color of each square is controlled by its <sgmltag class="attribute">fill</sgmltag> attribute. We create the squares filled with white, but of course any color is possible. To make this simpler, we'll first create a helper function to set a square's color:
+</para>
+
+<programlisting>
+<![CDATA[
+ // Set a single square's color.
+  function set_square_color(pos, color) {
+    var obj;
+    obj = document.getElementById("square-"+pos);
+    obj.setAttribute("fill", color);
+  }
+]]>
+</programlisting>
+
+<para>
+You can test this, rather startlingly, by typing:
+</para>
+
+<programlisting>
+<![CDATA[
+  set_square_color(4, "red")
+  set_square_color(5, "blue")
+]]>
+</programlisting>
+
+<para>
+(Mondrian simulator comes free!)
+</para>
+
+<note>
+<para>
+SVG colors can be common strings ("white", "black", "red", etc), or three- or six-digit hex strings ("#000", "#FFF", "#7F7F7F").
+</para>
+</note>
+
+<para>
+To highlight the squares when the mouse button is pressed, and unhighlight them when it is unpressed, we'll need to add more event-handling attributes to the square objects.
+</para>
+
+<programlisting>
+<![CDATA[
+  function initialize() {
+    var pos;
+    var grp = document.getElementById("squares-group");
+
+    for (pos=0; pos<9; pos++) {
+      var square = document.createElementNS(svg_ns, "rect");
+      square.setAttribute("id", "square-"+pos);
+      square.setAttribute("x", position_x_values[pos]);
+      square.setAttribute("y", position_y_values[pos]);
+      square.setAttribute("width", 100);
+      square.setAttribute("height", 100);
+      square.setAttribute("fill", "white");
+      square.setAttribute("onclick", "square_clicked("+pos+")");
+      square.setAttribute("onmousedown", "square_mousedown("+pos+")");
+      square.setAttribute("onmouseup", "square_mouseup("+pos+")");
+      square.setAttribute("onmouseout", "square_mouseup("+pos+")");
+
+      grp.appendChild(square);
+    }
+  }
+]]>
+</programlisting>
+
+<para>
+And the handlers:
+</para>
+
+<programlisting>
+<![CDATA[
+  // mousedown handler for squares &emdash; turn the square gray.
+  function square_mousedown(pos) {
+    if (!it_is_my_turn())
+      return;
+    if (is_square_marked(pos))
+      return;
+    set_square_color(pos, "gray");
+  }
+
+  // mouseup/mouseout handler for squares &emdash; turn the square white.
+  function square_mouseup(pos) {
+    if (!it_is_my_turn())
+      return;
+    if (is_square_marked(pos))
+      return;
+    set_square_color(pos, "white");
+  }
+]]>
+</programlisting>
+
+<para>
+We call the highlight function on the <sgmltag class="attribute">mousedown</sgmltag> event, and the unhighlight function on <sgmltag class="attribute">mouseup</sgmltag>. We also call the unhighlight function on <sgmltag class="attribute">mouseout</sgmltag> events. This covers the case where the player moves the mouse outside the square before releasing the button. (The <sgmltag class="attribute">onclick</sgmltag> event only fires when the mouse button is pressed and released in the same SVG object; if the mouse moves outside, it's not a click event. Our highlight code will follow the same rule.)
+</para>
+
+<para>
+Note that we only do highlighting work when it's the player's turn &emdash; just as we only send RPCs to the referee when it's the player's turn. The highlighting effect is supposed to indicate to the player that he is taking a real action. If the highlight occurs when the action is blocked &emdash; or vice versa &emdash; then it won't be meaningful feedback.
+</para>
+
+<note>
+<para>
+Careful coders will notice a small hole in this setup. If the player presses the mouse button, but it stops being his turn before he releases it, then the square will get stuck in the gray state! Similarly, if the square is marked before he releases it, the same thing will happen. These are unlikely cases, but there are a couple of ways they can happen. A more careful implementation would keep track of the highlighted square, and clear it whenever the <varname>seat_whose_turn_it_is</varname> variable changes, or when the square is marked, or when the game ends or suspends.
+</para>
+</note>
+
+<para>
+While we're in the business of coloring squares, let's set up the UI to highlight the winning condition when someone wins the game.
+</para>
+
+<programlisting>
+<![CDATA[
+  // Referee declares a win.
+  game.win = function(seat_id, loc_1, loc_2, loc_3) {
+    seat_whose_turn_it_is = null;
+
+    set_square_color(loc_1, "yellow");
+    set_square_color(loc_2, "yellow");
+    set_square_color(loc_3, "yellow");
+
+    var seatmarks = [];
+    seatmarks[seat_id] = "win";
+    seatmark(seatmarks);
+  }
+]]>
+</programlisting>
+
+<para>
+We don't want those yellow highlights to stick around into the next game, however. We must clear all the squares to white at the beginning of each new game.
+</para>
+
+<programlisting>
+<![CDATA[
+  // Game has begun.
+  volity.start_game = function() {
+    erase_marks();
+    var ix;
+    for (ix=0; ix<9; ix++)
+      set_square_color(ix, "white");
+    seat_whose_turn_it_is = null;
+    seatmark();
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-8.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+To test these, type:
+</para>
+
+<programlisting>
+<![CDATA[
+  game.win("x", 2, 4, 6)
+]]>
+</programlisting>
+
+<para>
+...and then hit "Start Game" to see the yellow highlights vanish.
+</para>
+
+<note>
+<para>
+What if the player clicks on a yellow square? The highlighting code clears a square to white on mouse-up, so you might worry that this would erase the highlight. And it would &emdash; except that the yellow marks only appear when the game ends, and after the game ends, it can't be your turn!
+</para>
+</note>
+
+</section>
+
+<section>
+  <title>Testing For Real</title>
+
+<para>
+&testbenchapp; is a fine thing, but we do want to test the UI against an actual Tic Tac Toe parlor. We have now reached the point where this will work.
+</para>
+
+<para>
+Start up &clientapp;, and create a new table at a Tic Tac Toe parlor. (At the time of writing, Volity maintains a Tic Tac Toe parlor at <literal>tictactoe@volity.net</literal>.)
+</para>
+
+<para>
+If you have never played the game before, and the Volity bookkeeper does not have a default UI registered, you will immediately see a dialog box asking you to choose a UI. Hit "Select File" and choose your SVG file. It will appear in a &clientapp; window, and you will be ready to play the game.
+</para>
+
+<para>
+If there <emphasis>is</emphasis> a default UI available &emdash; either because you've played before, or because the bookkeeper provides one &emdash; then it will appear when you create the table. To switch to your own UI, use the "Select New Interface" menu item (under the Game menu). The selection dialog box will again appear, and you can hit "Select File" as described above.
+</para>
+
+</section>
+
+<section>
+  <title>Translation Tokens</title>
+
+<para>
+In the &clientapp; window's seating panel, you may note that the seats are labelled with the bare seat IDs "x" and "o". This is accurate, but terse.
+</para>
+
+<para>
+The ruleset document (remember the ruleset document?) also defines three "translation tokens". These are errors that can result from the UI's RPC calls. The UI we have created is very careful to avoid making erroneous RPC calls, but it still might happen.
+</para>
+
+<para>
+What connects these two apparently unrelated comments? They are both handled by Volity's token translation system. This is a set of resources, provided by the UI, which translates short ruleset-defined strings (such as seat IDs or errors) into human-readable text. Since humans can read in lots of different languages, we allow a UI to provide several different translation resources.
+</para>
+
+<para>
+The translation resources are not packaged into the SVG file. Instead, you must assemble a directory with files in particular locations.
+</para>
+
+<para>
+Set up a directory structure like this:
+</para>
+
+<itemizedlist>
+
+  <listitem>
+  <para>
+  <filename>ttt-ui</filename> [top-level folder]
+  </para>
+
+    <itemizedlist>
+    
+      <listitem>
+      <para>
+      <filename>main.svg</filename> [your SVG file]
+      </para>
+      </listitem>
+      
+      <listitem>
+      <para>
+      <filename>locale</filename> [subfolder]
+      </para>
+      
+        <itemizedlist>
+        
+          <listitem>
+          <para>
+          <filename>en</filename> [subfolder]
+          </para>
+          
+            <itemizedlist>
+              <listitem>
+              <para>
+              <filename>seattokens.xml</filename> [seat ID translations]
+              </para>
+              </listitem>
+              <listitem>
+              <para>
+              <filename>gametokens.xml</filename> [error token translations]
+              </para>
+              </listitem>
+            </itemizedlist>
+
+          </listitem>
+          
+        </itemizedlist>
+
+      </listitem>
+      
+    </itemizedlist>
+
+  </listitem>
+
+</itemizedlist>
+
+<para>
+The SVG file <emphasis>must</emphasis> be named <filename>main.svg</filename> (or <filename>MAIN.SVG</filename>, but no other variations) in the top directory.
+</para>
+
+<para>
+The <filename>locale</filename> subdirectory contains all the translation resources. It has one sub-subdirectory for each language which the UI supports. In this example, we are only supporting English, in the <filename>en</filename> directory. (Each language is represented by its standard two-letter Internet code.)
+</para>
+
+<para>
+The <filename>en</filename> directory contains two XML files: one translating seat IDs, and one translating error tokens. <filename>seattokens.xml</filename> should look like this:
+</para>
+
+<programlisting>
+<![CDATA[
+<?xml version="1.0"?>
+<volitytokens>
+  <token>
+    <key>x</key>
+    <value>Player X</value>
+  </token>
+  <token>
+    <key>o</key>
+    <value>Player O</value>
+  </token>
+</volitytokens>
+]]>
+</programlisting>
+
+<para>
+And <filename>gametokens.xml</filename> should look like this:
+</para>
+
+<programlisting>
+<![CDATA[
+<?xml version="1.0"?>
+<volitytokens>
+  <token>
+    <key>invalid_location</key>
+    <value>The location \1 was not a valid location.</value>
+  </token>
+  <token>
+    <key>already_marked</key>
+    <value>That location is already marked.</value>
+  </token>
+</volitytokens>
+]]>
+</programlisting>
+
+<para>
+&testbenchapp; can read this directory structure in place. Start &testbenchapp; and select the main SVG file, or pass it in on the command line:
+</para>
+
+<programlisting>
+<![CDATA[
+  java -jar Testbench.jar ttt-ui/main.svg
+]]>
+</programlisting>
+
+<para>
+(You could also simply use the <filename>ttt-ui</filename> directory as the command-line argument.)
+</para>
+
+<para>
+To test the tokens, type:
+</para>
+
+<programlisting>
+<![CDATA[
+  message("game.already_marked")
+  message("game.invalid_location", 5)
+  message("seat.x")
+  message("seat.o")
+]]>
+</programlisting>
+
+<para>
+The message() translates its argument and prints it in the chat output pane. (As you see, some error tokens require further information. That's why the "invalid_location" token entry in <filename>gametokens.xml</filename> contains "\1".)
+</para>
+
+<note>
+<para>
+When you provide seat IDs in this way, &testbenchapp; loads them into the seat field at the top of the window. You can then select "x" or "o" via the pull-down menu, instead of having to type it in.
+</para>
+</note>
+
+<para>
+&clientapp;, on the other hand, does <emphasis>not</emphasis> expect to be handed a tree of directories. If you run &clientapp;, do "Select New Interface", and choose <filename>main.svg</filename>, &clientapp; will not recognize the translation resources.
+</para>
+
+<para>
+Instead, you must wrap the directory tree up as a ZIP file. The mechanism to do this varies on different platforms. In MacOS, you can ctrl-click on the folder in Finder and select "Create Archive..." In Windows, you must use WinZip or a similar tool. On a Unix system, you would type:
+</para>
+
+<programlisting>
+<![CDATA[
+  zip -r ttt-ui ttt-ui
+]]>
+</programlisting>
+
+<para>
+Choose the resulting <filename>ttt-ui.zip</filename> file from &clientapp;, and you will see that the seat panels are properly labelled "Player X" and "Player O".
+</para>
+
+<note>
+<para>
+The multi-language features of Volity are not yet supported by the client software. Both &clientapp; and &testbenchapp; are locked to English (<literal>en</literal>) at the moment. This will change at some point.
+</para>
+</note>
+
+</section>
+
+<section>
+  <title>The Four Sadnesses</title>
+
+<para>
+This is the point when you believe your UI is done. Unfortunately, it isn't quite.
+</para>
+
+<para>
+There are several standard Volity features which can cause trouble for your UI code. You really do have to handle them, because players will inevitably try them. Fortunately, they don't usually cause a <emphasis>lot</emphasis> of trouble. These features are:
+</para>
+
+<itemizedlist>
+
+<listitem>
+<para>
+A player who watches a game, but does not participate.
+</para>
+</listitem>
+
+<listitem>
+<para>
+A player who joins the table in mid-game.
+</para>
+</listitem>
+
+<listitem>
+<para>
+Players who share a seat.
+</para>
+</listitem>
+
+<listitem>
+<para>
+Suspending and unsuspending games.
+</para>
+</listitem>
+
+</itemizedlist>
+
+</section>
+
+<section>
+  <title>Sadness the First: Observation</title>
+
+<para>
+Observation is the easiest problem to consider. Run two instances of the &clientapp; application. From one &clientapp;, start a Tic Tac Toe table. Join the table from the other &clientapp;. (Be sure to select different table nicknames in the two clients; you can't connect twice with the same nickname.)
+</para>
+
+<note>
+<para>
+If your game is not listed in the Game Finder &emdash; most games in development are not &emdash; then you'll have to join the table using the "Join Table At..." menu option. (Unfortunately, you cannot send a Volity game invitation to yourself.) After creating the table window, use the "Game Info" menu option (in the open table window) and copy out the Table ID. Select "Join Table At..." in the second &clientapp;, and paste in the table ID. A second window will appear, displaying the same table.
+</para>
+</note>
+
+<para>
+In one table window, sit down and play a game against a bot. (If you are testing a game that has no bots, you'll probably have to run a <emphasis>third</emphasis> &clientapp; and play against yourself.) 
+</para>
+
+<para>
+Since we have been careful, the UI code in our example does all of this correctly.
+</para>
+
+<sidebar>
+<title>To test:</title> 
+<para>
+Make sure the observer (unseated) table window is properly keeping up with the game. Also make sure that the observer is prevented from making game moves!
+</para>
+</sidebar>
+
+</section>
+
+<section>
+  <title>Sadness the Second: Joining a Table</title>
+
+<para>
+Joining a table in mid-game takes a bit more work. When you join a table, the referee sends you the entire table state at once. (This is called a "state recovery burst".) These will probably be the same RPCs you'd have gotten if you'd been at the table all along. In the case of Tic Tac Toe, this means <function>game.mark()</function> calls. (And <function>game.must_mark()</function>, but only for the most recent turn &emdash; the player who <emphasis>currently</emphasis> must make a move.)
+</para>
+
+<para>
+There is one odd exception, however. The beginning of the game is not marked by a <function>volity.start_game()</function> RPC; that is only sent out when the referee actually begins the game. In a state recovery burst, if the game is already in progress, you receive <function>volity.game_has_started()</function> instead. This is a minor distinction, and most UIs will want to undertake the same work in each function. The easiest way to handle this:
+</para>
+
+<programlisting>
+<![CDATA[
+  // Joining a game which has begin.
+  volity.game_has_started = function() {
+    volity.start_game();
+  }
+]]>
+</programlisting>
+
+<para>
+(This is not crucial in our Tic Tac Toe UI, because the only work done in <function>volity.start_game()</function> is resetting the UI to its initial state. If you're joining a table, your UI is <emphasis>in</emphasis> its initial state already. But it's good practice to handle this RPC in this way anyhow. A more complex game might need to draw an initial board layout &emdash; something not visible during game setup.)
+</para>
+
+<para>
+To test table-joining, you can of course get a game going and then have a new &clientapp; client join it. An easier way to test the same thing is the "Restart Interface" menu option. This restarts your UI from scratch &emdash; all ECMAScript variables return to their initial values, and the initial SVG state is restored. The UI then requests and receives a state recovery burst. If your UI can survive that, it can handle table-joining as well.
+</para>
+
+<sidebar>
+<title>To test:</title> 
+<para>
+Do a "Restart Interface" in at least three situations: an observer, a player whose turn it is, and a player whose turn it is not. Make sure the table is properly restored each time. Also make sure the player whose turn it is is able to take his next turn, and the other two clients are not.
+</para>
+</sidebar>
+
+</section>
+
+<section>
+  <title>Sadness the Third: Sharing Seats</title>
+
+<para>
+Volity permits any number of players (or bots) to occupy the same game seat. Any player in the seat is allowed to make a move for that seat. (If a bot is present, the bot will usually make all that seat's moves, simply because bots think quickly.)
+</para>
+
+<para>
+This means that your UI must be prepared for the possibility that its turn will begin and then end with no interaction from the player. This is why the Tic Tac Toe code does not draw an X or O when the player clicks; it merely sends off a move request. You will almost always want to use this model for your UI code. Mouse clicks can set temporary highlighting, but that highlighting is optional; real game state changes come only from the referee.
+</para>
+
+<sidebar>
+<title>To test:</title> 
+<para>
+Run two &clientapp; instances, and have them share a seat. Make moves in one table window; make sure the other one keeps up with the game state.
+</para>
+</sidebar>
+
+</section>
+
+<section>
+  <title>Sadness the Fourth: Suspend and Resume</title>
+
+<para>
+Any seated player can suspend a Volity game at any time. The UI has to pay attention to this for a couple of reasons. First, when the game is suspended, nobody should be allowed to make any moves. Second, players can stand up and sit down &emdash; or even swap seats &emdash; when the game is suspended. Third, the state recovery bursts sent out during suspension may not be the same as normal state recovery bursts.
+</para>
+
+<para>
+Your UI can provide <function>volity.suspend_game()</function> and <function>volity.resume_game()</function> RPC handlers to keep track of when the game is suspended. However, an easier way to do this is to check the <varname>info.state</varname> variable. This will be "setup", "active", "suspended", "disrupted", or "abandoned". (You don't have to worry about the last two &emdash; they're variants of "active".) We can guard against game suspension by enhancing the <function>it_is_my_turn()</function> function:
+</para>
+
+<programlisting>
+<![CDATA[
+  // Return true if you are a seated player and it is your turn.
+  function it_is_my_turn() {
+    if (!info.seat)
+      return false;
+    if (!seat_whose_turn_it_is)
+      return false;
+    if (info.state == "setup" || info.state == "suspended")
+      return false;
+    if (info.seat == seat_whose_turn_it_is)
+      return true;
+    else
+      return false;
+  }
+]]>
+</programlisting>
+
+<itemizedlist>
+<listitem>
+<para>
+<ulink url="../example-stages/ttt-9.svg.txt">View this SVG file</ulink>
+</para>
+</listitem>
+</itemizedlist>
+
+<para>
+(We really already had the "setup" state covered, because we were careful to ensure that <varname>seat_whose_turn_it_is</varname> is always <constant>null</constant> when the game is not in progress. But it doesn't hurt to check twice.)
+</para>
+
+<para>
+Changing seats and state recovery is not an issue in Tic Tac Toe; the ruleset does not declare anything special about game suspension and unsuspension. However, some game rulesets do. If a game has hidden information &emdash; say, a private hand of cards for each player &emdash; then state recovery bursts during suspension will <emphasis>not</emphasis> include that private information. (That is to say: when the game is suspended, nobody has the privilege of seeing any seat's private information. It's too easy to switch seats during suspension.)
+</para>
+
+<para>
+The flip side is this: when such a game resumes, the referee will send out updates to each player, giving him the private information for the seat he has chosen. A player who stood up during suspension will not receive any private information. The UI must correctly redraw each player's display to reflect his new position.
+</para>
+
+<para>
+Fortunately for us, Tic Tac Toe has no hidden information.
+</para>
+
+<sidebar>
+<title>To test:</title> 
+<para>
+Start a game with two players and an observer. Make a few moves, then suspend the game. Drag the observer to one of the seats, that player to the other seat, and the other player to the observer panel. Then resume the game (by having the two new players hit "Ready"). Make sure that everybody's display is correct. Also make sure that the player whose turn it now is can move, and the player whose turn it was (before he changed seats) <emphasis>cannot</emphasis> make a move.
+</para> 
+</sidebar>
+
+</section>
+
+</article>

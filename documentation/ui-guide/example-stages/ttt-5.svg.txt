@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  viewBox="0 0 300 300" preserveAspectRatio="xMidYMid" >
+
+  <metadata
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:volity="http://volity.org/protocol/metadata" >
+
+    <volity:ruleset>http://volity.org/games/tictactoe</volity:ruleset>
+    <dc:title>Tic Tac Toe example UI</dc:title>
+    <dc:creator>Andrew Plotkin</dc:creator>
+    <volity:version>1.0.example</volity:version>
+    <dc:modified>2006-04-14</dc:modified>
+
+  </metadata>
+
+  <script type="text/ecmascript">
+    <![CDATA[
+
+  var svg_ns = "http://www.w3.org/2000/svg";
+  var xlink_ns = "http://www.w3.org/1999/xlink";
+  var position_x_values = [ 0, 100, 200, 0, 100, 200, 0, 100, 200 ];
+  var position_y_values = [ 0, 0, 0, 100, 100, 100, 200, 200, 200 ];
+
+  var seat_whose_turn_it_is = null;
+
+  // Game has begun.
+  volity.start_game = function() {
+    erase_marks();
+    seat_whose_turn_it_is = null;
+    seatmark();
+  }
+
+  // Referee adds a move to the board.
+  game.mark = function(seat_id, location) {
+    draw_mark(seat_id, location);
+  }
+
+  // Referee says that it's the given seat's turn to play.
+  game.must_mark = function(seat_id) {
+    seat_whose_turn_it_is = seat_id;
+    seatmark(seat_id);
+  }
+
+  // Referee declares a win.
+  game.win = function(seat_id, loc_1, loc_2, loc_3) {
+    seat_whose_turn_it_is = null;
+
+    var seatmarks = [];
+    seatmarks[seat_id] = "win";
+    seatmark(seatmarks);
+  }
+
+  // Referee declares a tie.
+  game.tie = function() {
+    seat_whose_turn_it_is = null;
+
+    var seatmarks = [];
+    seatmarks["x"] = "win";
+    seatmarks["o"] = "win";
+    seatmark(seatmarks);
+  }
+
+  // Add an X or O to the board.
+  // Which is a string, "x" or "o" (lower-case). Pos is a number from 0 to 8.
+  function draw_mark(which, pos) {
+    var mark, grp;
+
+    mark = document.createElementNS(svg_ns, "use");
+    mark.setAttributeNS(xlink_ns, "href", "#"+which+"-mark");
+    mark.setAttribute("id", "mark-"+pos);
+    mark.setAttribute("x", position_x_values[pos]);
+    mark.setAttribute("y", position_y_values[pos]);
+
+    grp = document.getElementById("marks-group");
+    grp.appendChild(mark);
+  }
+
+  // Erase all the Xs and Os from the board.
+  function erase_marks() {
+    var grp;
+    grp = document.getElementById("marks-group");
+    remove_children(grp);
+  }  
+
+  // Delete all the child nodes of the given object (usually a group).
+  function remove_children(parent) {
+    var obj, ls;
+    ls = parent.childNodes;
+    while (ls.length > 0) {
+      obj = ls.item(0);
+      parent.removeChild(obj);
+    }
+  }
+
+
+    // ]]>
+  </script>
+
+  <defs>
+
+    <g id="x-mark">
+      <line x1="25" y1="25" x2="75" y2="75" 
+        stroke="blue" stroke-width="10" stroke-linecap="round" />
+      <line x1="25" y1="75" x2="75" y2="25" 
+        stroke="blue" stroke-width="10" stroke-linecap="round" />
+    </g>
+
+    <g id="o-mark">
+      <circle cx="50" cy="50" r="25"
+        stroke="blue" fill="none" stroke-width="10" />
+    </g>
+
+  </defs>
+
+
+  <line x1="5" y1="100" x2="295" y2="100" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="5" y1="200" x2="295" y2="200" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="100" y1="5" x2="100" y2="295" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+  <line x1="200" y1="5" x2="200" y2="295" 
+    stroke="black" stroke-width="5" stroke-linecap="round" />
+
+  <g id="marks-group" />
+
+</svg>
