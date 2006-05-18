@@ -515,7 +515,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     public String getJIDResource() 
     {
         if (staticResourceString == null) {
-            StringBuffer buf = new StringBuffer("javolin");
+            StringBuffer buf = new StringBuffer("gamut");
             for (int ix=0; ix<6; ix++) {
                 int val = (int)(Math.random() * 25.9999);
                 buf.append((char)('A'+val));
