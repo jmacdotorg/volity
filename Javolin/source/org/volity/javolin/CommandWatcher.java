@@ -28,7 +28,8 @@ public class CommandWatcher
         mSocket = new ServerSocket();
         mSocket.setReuseAddress(true); /* SO_REUSEADDR */
 
-        InetAddress addr = InetAddress.getLocalHost();
+        InetAddress addr = InetAddress.getByAddress(null, new byte[]{ 127,0,0,1 });
+        assert addr.isLoopbackAddress() : "Address is not loopback";
         InetSocketAddress sockaddr = new InetSocketAddress(addr, WATCHER_PORT);
         mSocket.bind(sockaddr);
 
@@ -71,7 +72,7 @@ public class CommandWatcher
                 Socket socket = mSocket.accept();
                 InetAddress addr = socket.getInetAddress();
                 // Only allow connections from ourself
-                if (addr.equals(InetAddress.getLocalHost())) {
+                if (addr.isLoopbackAddress()) {
                     new CommandHandler(socket);
                 }
             }
@@ -207,7 +208,8 @@ public class CommandWatcher
         boolean result = false;
 
         try {
-            addr = InetAddress.getLocalHost();
+            addr = InetAddress.getByAddress(null, new byte[]{ 127,0,0,1 });
+            assert addr.isLoopbackAddress() : "Address is not loopback";
             socket = new Socket(addr, WATCHER_PORT);
             stream = socket.getOutputStream();
             writer = new BufferedWriter(new OutputStreamWriter(stream)); 
