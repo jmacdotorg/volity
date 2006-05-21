@@ -663,6 +663,12 @@ public class AppMenuBar extends JMenuBar
             query += "?javolin_version=";
             query += URLEncoder.encode(JavolinApp.getAppVersion(), "UTF-8");
 
+            String jvmversion = System.getProperty("java.version");
+            if (jvmversion != null) {
+                query += "&jvm_version=";
+                query += URLEncoder.encode(jvmversion, "UTF-8");
+            }
+
             String jid = JavolinApp.getSoleJavolinApp().getSelfJID();
             if (jid != null) {
                 query += "&username=";
