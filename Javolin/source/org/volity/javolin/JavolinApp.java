@@ -217,8 +217,8 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * Performs tasks that should occur immediately after launch, but which don't seem
-     * appropriate to put in the constructor.
+     * Performs tasks that should occur immediately after launch, but which
+     * don't seem appropriate to put in the constructor.
      */
     private void start()
     {
@@ -294,6 +294,31 @@ public class JavolinApp extends JFrame
         ProviderManager.addExtensionProvider(
             FormPacketExtension.NAME, FormPacketExtension.NAMESPACE,
             new FormExtensionProvider());
+
+        /*
+         * If on Mac, set up the callback for the GURL event-handler. (The
+         * handler itself is already running, so we'll have to check for cached
+         * URLs.)
+         */
+        if (GURLHandler.isRegistered()) {
+            GURLHandler.GURLListener thunk = new GURLHandler.GURLListener() {
+                    public void handle(final String url) {
+                        // invoke into the Swing thread.
+                        SwingUtilities.invokeLater(new Runnable() {
+                                public void run() {
+                                    doOpenURL(url);
+                                }
+                            });
+                    }
+                };
+            GURLHandler.addListener(thunk);
+
+            List ls = GURLHandler.getCachedURLs();
+            for (int ix=0; ix<ls.size(); ix++) {
+                String url = (String)ls.get(ix);
+                thunk.handle(url);
+            }
+        }
 
         // Open the Game Finder window
         if (Finder.getFinderWanted())
@@ -875,6 +900,32 @@ public class JavolinApp extends JFrame
         if (!isConnected())
             return null;
         return mConnection.getUser();
+    }
+
+    /**
+     * Handler for volity: URLs, which occur when the user clicks on such a URL
+     * in a web browser.
+     */
+    void doOpenURL(String urlstr) {
+        try {
+            URL url = new URL(urlstr);
+            CommandStub stub = CommandStub.parse(url);
+            doOpenFile(stub);
+        }
+        catch (MalformedURLException ex) {
+            new ErrorWrapper(ex);
+            JOptionPane.showMessageDialog(this,
+                "Received illegal URL:\n" + urlstr,
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+        catch (CommandStub.CommandStubException ex) {
+            new ErrorWrapper(ex);
+            JOptionPane.showMessageDialog(this,
+                "Unable to parse command URL:\n" + urlstr,
+                JavolinApp.getAppName() + ": Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**

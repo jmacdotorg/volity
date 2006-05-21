@@ -72,7 +72,7 @@ public class CommandStub
 
         if (path == null || path.equals(""))
             throw new CommandStubException("No JID component: " + url);
-        if (!path.contains("@"))
+        if (path.indexOf("@") < 0)
             throw new CommandStubException("JID component not valid: " + url);
 
         if (query == null || query.equals(""))

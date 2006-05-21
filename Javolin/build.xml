@@ -158,4 +158,33 @@
     </jar>
   </target>
 
+  <target name="gurljni" description="generate the Mac JNI library for GURL AppleEvents">
+    <apply executable="cc" dest="jnisource" >
+      <arg value="-c" />
+      <arg value="-dynamiclib" />
+      <arg value="-o" />
+      <targetfile />
+      <arg value="-I/System/Library/Frameworks/JavaVM.framework/Headers" />
+      <srcfile />
+      <arg value="-arch" />
+      <arg value="ppc" />
+      <fileset dir="jnisource" includes="*jnilib.c"/>
+      <mapper type="glob" from="*jnilib.c" to="lib*.ppc"/>
+    </apply>
+    <apply executable="cc" dest="jnisource" >
+      <arg value="-dynamiclib" />
+      <arg value="-o" />
+      <targetfile />
+      <srcfile />
+      <arg value="-framework" />
+      <arg value="JavaVM" />
+      <arg value="-framework" />
+      <arg value="Carbon" />
+      <arg value="-arch" />
+      <arg value="ppc" />
+      <fileset dir="jnisource" includes="lib*.ppc"/>
+      <mapper type="glob" from="lib*.ppc" to="lib*.jnilib"/>
+    </apply>
+  </target>
+
 </project>

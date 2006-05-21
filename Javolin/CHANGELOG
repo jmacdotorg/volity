@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+When run as part of a Mac app bundle, Gamut will now receive volity: URL
+events. (Does not work if you run Gamut as a plain JAR file!)
+
 Better error reporting if the user fails to authenticate with Jabber.
 
 If you start Gamut with "--url volity:..." in the command-line arguments,

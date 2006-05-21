@@ -5,7 +5,6 @@ import java.net.*;
 import java.nio.charset.Charset;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import org.volity.client.data.CommandStub;
 
 /**
  * A class which opens a TCP socket and listens for CommandStubs (in the form
@@ -119,26 +118,7 @@ public class CommandWatcher
         /** Do the work of executing a URL that has been received. */
         protected void execute(String val) {
             assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
-
-            try {
-                URL url = new URL(val);
-                CommandStub stub = CommandStub.parse(url);
-                JavolinApp.getSoleJavolinApp().doOpenFile(stub);
-            }
-            catch (MalformedURLException ex) {
-                new ErrorWrapper(ex);
-                JOptionPane.showMessageDialog(null,
-                    "Received illegal URL:\n" + val,
-                    JavolinApp.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
-            catch (CommandStub.CommandStubException ex) {
-                new ErrorWrapper(ex);
-                JOptionPane.showMessageDialog(null,
-                    "Unable to parse command URL:\n" + val,
-                    JavolinApp.getAppName() + ": Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
+            JavolinApp.getSoleJavolinApp().doOpenURL(val);
         }
 
         /**
