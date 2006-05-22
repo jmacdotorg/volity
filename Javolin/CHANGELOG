@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Added nice icons for the two Finder buttons. Also changed the name of
+the first button to "Game List".
+
 When run as part of a Mac app bundle, Gamut will now receive volity: URL
 events. (Does not work if you run Gamut as a plain JAR file!)
 

@@ -16,6 +16,8 @@ seating_treeicons: Standing_TreeIcon.png Seated_TreeIcon.png Ready_TreeIcon.png 
 
 mark_seaticons: Turn_SeatIcon.png Win_SeatIcon.png First_SeatIcon.png Other_SeatIcon.png Blank_SeatIcon.png
 
+finder_toolbar_buttons: Reload_ButIcon.png Home_ButIcon.png
+
 coloricons: Green_0_ColorIcon.png Green_1_ColorIcon.png Green_2_ColorIcon.png Green_3_ColorIcon.png Green_4_ColorIcon.png
 
 HelpIcon.png: help-icon.svg
@@ -23,6 +25,12 @@ HelpIcon.png: help-icon.svg
 
 HelpIconPress.png: help-press-icon.svg
 	$(SVGTOPNG) help-press-icon.svg -a 0,0,100,100 -w 32 -h 32 -d HelpIconPress.png
+
+Home_ButIcon.png: home-button.svg
+	$(SVGTOPNG) home-button.svg -a 0,0,100,100 -w 20 -h 20 -d Home_ButIcon.png
+
+Reload_ButIcon.png: reload-button.svg
+	$(SVGTOPNG) reload-button.svg -a 0,0,100,100 -w 20 -h 20 -d Reload_ButIcon.png
 
 Stats_ButIcon.png: stats-button.svg
 	$(SVGTOPNG) stats-button.svg -a 0,0,100,100 -w 16 -h 16 -d Stats_ButIcon.png

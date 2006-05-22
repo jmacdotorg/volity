@@ -27,6 +27,11 @@ public class Finder extends JFrame
     public final static String FINDER_URL = "http://volity.net/gamefinder/";
     public final static String BUGREPORT_URL = "http://volity.net/bugs/beta_bugform.html";
 
+    static Icon HOME_ICON =
+        new ImageIcon(Finder.class.getResource("Home_ButIcon.png"));
+    static Icon RELOAD_ICON =
+        new ImageIcon(Finder.class.getResource("Reload_ButIcon.png"));
+
     // Interval to recheck Finder web pages for changes (in seconds)
     public final static long CHECK_INTERVAL = 30;
 
@@ -427,12 +432,12 @@ public class Finder extends JFrame
         toolbar.setFloatable(false);
         cPane.add(toolbar, BorderLayout.NORTH);
 
-        mHomeButton = new JButton("Top");
+        mHomeButton = new JButton("Game List", HOME_ICON);
         mHomeButton.setToolTipText("Return to index of games");
         mHomeButton.addActionListener(this);
         toolbar.add(mHomeButton);
 
-        mReloadButton = new JButton("Reload");
+        mReloadButton = new JButton("Reload", RELOAD_ICON);
         mReloadButton.setToolTipText("Manually reload this page");
         mReloadButton.addActionListener(this);
         toolbar.add(mReloadButton);

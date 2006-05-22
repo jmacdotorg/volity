@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	viewBox="0 0 100 100" >
+
+<defs>
+
+</defs>
+
+<path
+	d="M 50 5
+	L 0 40
+	L 20 40
+	L 20 95
+	L 80 95
+	L 80 40
+	L 100 40
+	z"
+	fill="#46E" />
+
+<path transform="scale(0.6) translate(33.3,40)"
+	d="M 17 100
+	C 15 80  20 85  30 75
+	L 35 40
+	L 20 20
+	Q 35 18  50 0
+	Q 65 18  80 20
+	L 65 40
+	L 70 75
+	C 80 85  85 80  83 100
+	z"
+	fill="#4CC" />
+
+</svg>
