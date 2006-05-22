@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Display bots on your roster with a green Bot icon; you can also now invite
+them to games. (This is only relevant for ronin bots.) Also fixed a bug
+where if a parlor had bots running, it could show the wrong roster icon.
+
 Added nice icons for the two Finder buttons. Also changed the name of
 the first button to "Game List".
 

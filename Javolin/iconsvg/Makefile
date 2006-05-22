@@ -83,6 +83,9 @@ Ready_TreeIcon.png: ready-treeicon.svg
 Bot_TreeIcon.png: bot-treeicon.svg
 	$(SVGTOPNG) bot-treeicon.svg -a 0,0,100,100 -w 16 -h 16 -d Bot_TreeIcon.png
 
+BotAvail_TreeIcon.png: botavail-treeicon.svg
+	$(SVGTOPNG) botavail-treeicon.svg -a 0,0,100,100 -w 16 -h 16 -d BotAvail_TreeIcon.png
+
 Referee_TreeIcon.png: paravail-treeicon.svg
 	$(SVGTOPNG) paravail-treeicon.svg -a 0,0,100,100 -w 16 -h 16 -d Referee_TreeIcon.png
 

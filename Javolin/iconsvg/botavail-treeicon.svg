@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink" 
+	viewBox="0 0 100 100" >
+
+<path d="M 7 100
+	L 25 70
+	L 40 70
+	L 48 50
+	L 52 50
+	L 60 70
+	L 75 70
+	L 93 100
+	z"
+	fill="#008C00" />
+
+<path d="M 45 5
+	L 55 5
+	L 75 35
+	L 55 65
+	L 45 65
+	L 25 35
+	z"
+	fill="#008C00" />
+
+</svg>

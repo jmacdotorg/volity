@@ -427,8 +427,8 @@ public class RosterPanel extends JPanel
 
     /**
      * Return a list of the resources of the given user which are Volity player
-     * clients. (A list of full JID strings.) If the user is present but not
-     * with a Volity client, this returns an empty list. If the user is
+     * clients or bots. (A list of full JID strings.) If the user is present
+     * but not with a Volity client, this returns an empty list. If the user is
      * offline, or not on your roster, this returns null.
      *
      * @return the list, or null.
@@ -449,8 +449,8 @@ public class RosterPanel extends JPanel
             {
                 CapPacketExtension extp = (CapPacketExtension)ext;
                 if (extp.getNode().equals(CapPresenceFactory.VOLITY_NODE_URI)
-                    && extp.hasExtString(CapPresenceFactory.VOLITY_ROLE_PLAYER)) 
-                {
+                    && (extp.hasExtString(CapPresenceFactory.VOLITY_ROLE_PLAYER)
+                        || extp.hasExtString(CapPresenceFactory.VOLITY_ROLE_BOT))) {
                     // Whew. It's a Volity client.
                     ls.add(packet.getFrom());
                 }
@@ -477,6 +477,10 @@ public class RosterPanel extends JPanel
 
         String[] roles = CapPresenceFactory.VOLITY_ROLES;
 
+        /* Find the first-listed role that this user has. */
+        String result = CapPresenceFactory.VOLITY_ROLE_NONE;
+        int bestindex = roles.length+1;
+
         while (iter.hasNext())
         {
             Presence packet = (Presence)iter.next();
@@ -489,14 +493,18 @@ public class RosterPanel extends JPanel
                 {
                     for (int ix=0; ix<roles.length; ix++) 
                     {
-                        if (extp.hasExtString(roles[ix]))
-                            return roles[ix];
+                        if (extp.hasExtString(roles[ix])) {
+                            if (ix < bestindex) {
+                                result = roles[ix];
+                                bestindex = ix;
+                            }
+                        }
                     }
                 }
             }
         }
 
-        return CapPresenceFactory.VOLITY_ROLE_NONE;
+        return result;
     }
 
     /**

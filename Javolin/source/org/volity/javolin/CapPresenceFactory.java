@@ -22,6 +22,11 @@ public class CapPresenceFactory extends DefaultPresenceFactory
     public static final String VOLITY_ROLE_PLAYER  = "player";
     public static final String VOLITY_ROLE_BOT     = "bot";
 
+    /*
+     * This array must be in order of precedence, from highest to lowest. That
+     * is: if a JID has two connections with two of these roles, count it as
+     * whichever is listed first.
+     */
     public static final String[] VOLITY_ROLES = {
         VOLITY_ROLE_BOOKKEEPER, VOLITY_ROLE_PARLOR, VOLITY_ROLE_REFEREE,
         VOLITY_ROLE_PLAYER, VOLITY_ROLE_BOT

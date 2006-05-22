@@ -31,6 +31,7 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
     private final static ImageIcon AVAILABLE_ICON;
     private final static ImageIcon VOL_AVAILABLE_ICON;
     private final static ImageIcon PAR_AVAILABLE_ICON;
+    private final static ImageIcon BOT_AVAILABLE_ICON;
     private final static ImageIcon UNAVAILABLE_ICON;
     private final static ImageIcon REVERSE_ICON;
     private final static ImageIcon BUSY_ICON;
@@ -44,6 +45,8 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
             "VolAvail_TreeIcon.png"));
         PAR_AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "ParAvail_TreeIcon.png"));
+        BOT_AVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
+            "BotAvail_TreeIcon.png"));
         UNAVAILABLE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
             "Unavail_TreeIcon.png"));
         REVERSE_ICON = new ImageIcon(RosterTreeCellRenderer.class.getResource(
@@ -98,6 +101,10 @@ public class RosterTreeCellRenderer extends DefaultTreeCellRenderer
                     {
                         setIcon(VOL_AVAILABLE_ICON);
                     }
+                }
+                else if (userItem.getVolityRole() == CapPresenceFactory.VOLITY_ROLE_BOT)
+                {
+                    setIcon(BOT_AVAILABLE_ICON);
                 }
                 else 
                 {
