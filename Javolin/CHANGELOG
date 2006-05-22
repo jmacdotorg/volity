@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Draft of code to launch a browser on Unix platforms.
+
 Display bots on your roster with a green Bot icon; you can also now invite
 them to games. (This is only relevant for ronin bots.) Also fixed a bug
 where if a parlor had bots running, it could show the wrong roster icon.

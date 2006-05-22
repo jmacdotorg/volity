@@ -1,7 +1,12 @@
 package org.volity.javolin;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.*;
+import org.volity.client.comm.SwingWorker;
 
 //### http://browserlauncher.sourceforge.net/
 //### http://support.microsoft.com/default.aspx?scid=kb;en-us;283225
@@ -22,6 +27,8 @@ public class PlatformWrapper
     private static String sSep; // File separator character
     private static boolean isMac;
     private static boolean isWin;
+
+    private static String sBrowserPath = null;
 
     static {
         // Cache this.
@@ -48,6 +55,11 @@ public class PlatformWrapper
             // Put window menu bars at the top of the screen
             System.setProperty("apple.laf.useScreenMenuBar", "true");
         }
+
+        if (!(isMac || isWin)) {
+            // Look through the user's path for a browser binary.
+            sBrowserPath = getBrowserPath();
+        }
     }
 
     /**
@@ -73,15 +85,62 @@ public class PlatformWrapper
      * Test whether we have the capability to send a URL to the user's default
      * browser.
      *
-     * Currently returns true on Mac OS X and Windows.
+     * Currently returns true on Mac OS X and Windows. Returns true on other
+     * OSs if getBrowserPath() succeeded.
      */
     public static boolean launchURLAvailable() {
-        return (isMac || isWin);
+        if (isMac || isWin)
+            return true;
+        if (sBrowserPath != null)
+            return true;
+        return false;
+    }
+
+    /** 
+     * Look through the user's path for a browser. If the system property
+     * "org.volity.browser" is set, check that too.
+     */
+    public static String getBrowserPath() {
+        String[] browserlist = {
+            null, // placeholder for org.volity.browser
+            "netscape", "mozilla", "firefox", "mozilla-firefox",
+            "konqueror", "opera",
+        };
+
+        browserlist[0] = System.getProperty("org.volity.browser");
+
+        for (int ix=0; ix<browserlist.length; ix++) {
+            String browser = browserlist[ix];
+            if (browser == null)
+                continue;
+
+            try {
+                Process process = Runtime.getRuntime().exec(
+                    new String[] {"which", browser});
+
+                InputStream inStream = process.getInputStream();
+                int exitcode = process.waitFor();
+                BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
+                String result = in.readLine();
+                in.close();
+
+                if (result != null && result.startsWith("/")) {
+                    return result;
+                }
+            }
+            catch (IOException ex) {
+                // ignore, try next browser
+            }
+            catch (InterruptedException ex) {
+                // ignore, try next browser
+            }
+        }
+
+        return null;
     }
 
     /**
      * Send a URL to the user's default browser.
-     * Currently implemented only on Mac OS X.
      *
      * @return did the action succeed?
      */
@@ -112,6 +171,14 @@ public class PlatformWrapper
             catch (Exception ex) {
                 new ErrorWrapper(ex);
                 return false;
+            }
+        }
+
+        if (!(isMac || isWin)) {
+            if (sBrowserPath != null) {
+                new BackgroundExecBrowser(url);
+                // Since the call invokes another thread, we don't detect errors.
+                return true;
             }
         }
 
@@ -312,5 +379,49 @@ public class PlatformWrapper
         return false;
     }
 
+
+    /**
+     * This class spawns a background thread, and then execs some commands in
+     * it (to launch an external browser). When the commands are finished, the
+     * finished() method is invoked in the Swing thread, with the exit code as
+     * an Integer result; but this is currently a no-op.
+     */
+    protected static class BackgroundExecBrowser extends SwingWorker {
+        String mURL;
+
+        public BackgroundExecBrowser(String url) {
+            super();
+            mURL = url;
+            start();
+        }
+
+        public Object construct() {
+            int exitcode = 0;
+
+            String[] argls;
+            try {
+
+                argls = new String[] {
+                    sBrowserPath, "-remote", "openURL("+mURL+")"
+                };
+                Process process = Runtime.getRuntime().exec(argls);
+                exitcode = process.waitFor();
+
+                if (exitcode != 0) {
+                    argls = new String[] {
+                        sBrowserPath, mURL
+                    };
+                    process = Runtime.getRuntime().exec(argls);
+                    exitcode = process.waitFor();
+                }
+            }
+            catch (Exception ex) {
+                new ErrorWrapper(ex);
+                exitcode = -1;
+            }
+
+            return new Integer(exitcode);
+        }
+    }
 
 }
