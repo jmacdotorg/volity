@@ -263,7 +263,7 @@ public class HelpPanel extends JPanel
                 else {
                     text.append("\nYou have already pressed the Ready button. The ");
                     text.append(verb);
-                    text.append(" game will begin when all the other seated players have pressed theirs.\n");
+                    text.append(" when all the other seated players have pressed theirs.\n");
                 }
             }
         }
