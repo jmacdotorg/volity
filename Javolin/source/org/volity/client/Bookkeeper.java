@@ -111,12 +111,12 @@ public class Bookkeeper {
     }
 
     /**
-     * Ask the bookkeeper what game servers are available for a
+     * Ask the bookkeeper what game parlors are available for a
      * particular ruleset.
      * Result is a list of JIDs (strings).
      * @param ruleset the URI of a ruleset known by the bookkeeper
      */
-    public void getGameServers(final Callback callback, URI ruleset,
+    public void getGameParlors(final Callback callback, URI ruleset,
         Object rock) {
         DiscoBackground.Callback subback = new DiscoBackground.Callback() {
                 public void run(IQ result, XMPPException err, Object rock) {
@@ -139,7 +139,7 @@ public class Bookkeeper {
 
         DiscoBackground query = new DiscoBackground(connection,
             subback,
-            DiscoBackground.QUERY_ITEMS, jid, (ruleset + "|servers"), rock);
+            DiscoBackground.QUERY_ITEMS, jid, (ruleset + "|parlors"), rock);
     }
 
     /**
