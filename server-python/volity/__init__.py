@@ -69,6 +69,8 @@ config -- parses configuration files
 * Version history:
 
 - unreleased:
+First draft of bot factory module, and some infrastructure changes to
+    support it.
 Improved the MUC configuration code in the referee to work with more
     MUC servers. (Added a config value for "roomconfig_presencebroadcast".)
 

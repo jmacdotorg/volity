@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 """
-volityd.py: Start a Volity game parlor.
+volityd.py: Start a Volity game parlor (or bot factory).
 
     GETTING STARTED
 
@@ -42,6 +42,20 @@ set up. Anyone with a Volity client can request a new table at JABBERID,
 and begin playing on your server.
 
 
+    RUNNING A BOT FACTORY
+
+The volityd.py script can also be used to operate a bot factory. A factory
+is very similar to a parlor; but instead of creating and operating entire
+games, it creates and operates game bots. These bots are requested by
+players in other parlors.
+
+To run a bot factory, you use the arguments described above; except that
+instead of --game, you use --bot, followed by the name of a Python class
+that implements a bot. For example, the "Rock Paper Scissors" game includes
+a bot class named games.rps.RPSBot. (Not all games include bot
+implementations.)
+
+
     MORE CONFIGURATION OPTIONS
 
 Volityd.py offers a great many configuration options (see below) but you
@@ -51,10 +65,9 @@ You will probably want to set --contact-jid, or --contact-email, or both.
 These offer players a way to contact you in case there is a problem with
 your parlor.
 
-If you want your parlor to offer human-vs-computer play, set --bot to the
-name of a Python class that implements a bot. For example, the "Rock Paper
-Scissors" game includes a bot class named games.rps.RPSBot. (Not all games
-include bot implementations.)
+If you want your parlor to offer human-vs-computer play, set both the
+--game and the --bot arguments. The --bot should be the name of a Python
+class that implements a bot. These bots will only be used in your parlor.
 
 The --restart-script option allows the parlor to restart itself if its
 Jabber connection dies. It also allows you to use the restart admin RPCs.
@@ -176,6 +189,7 @@ import logging
 import zymb.sched
 import volity.config
 from volity import parlor
+from volity import factory
 
 # Save sys.args for future forking
 originalargs = list(sys.argv)
@@ -284,8 +298,8 @@ argmap['restart-func-'] = argmap_restart_func
 
 config = volity.config.ConfigFile(opts.configfile, argmap)
 
-if (not config.get('game')):
-    print sys.argv[0] + ': missing required option: --game GAMECLASS'
+if (not (config.get('game') or config.get('bot'))):
+    print sys.argv[0] + ': missing required option: --game GAMECLASS (or --bot BOTCLASS)'
     errors = True
         
 if (not config.get('jid')):
@@ -430,8 +444,15 @@ def execself(delay):
         except Exception, ex:
             rootlogger.error('Unable to exec %s: %s', restartscript, ex)
         rootlogger.error('parent should not still exist!')
-        
-serv = parlor.Parlor(config)
+
+if (config.get('game')):
+    volrole = 'game parlor'
+    subroles = 'referees'
+    serv = parlor.Parlor(config)
+else:
+    volrole = 'bot factory'
+    subroles = 'actors'
+    serv = factory.Factory(config)
 serv.start()
 
 if (rotatecount):
@@ -453,5 +474,5 @@ while 1:
             rootlogger.warning('...emergency stop!')
             zymb.sched.stopall()
 
-rootlogger.warning('game parlor (and all referees) have died.')
+rootlogger.warning('%s (and all %s) have died.', volrole, subroles)
 

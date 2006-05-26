@@ -19,18 +19,19 @@ class Actor(volent.VolEntity):
     
     Actor is a Jabber client (although it is not a subclass of the
     Zymb Jabber client agent; instead, it creates one as a subsidiary
-    object). It is created by a Referee when someone requests a new bot
-    at the table. The Actor acts as a normal player. It has a direct
-    reference to the Referee, but mostly it works by sending out RPCs,
-    the same as a real player.
+    object). It is created by either a Referee or a Factory when someone
+    requests a new bot at the table. The Actor acts as a normal player.
+    If it was created by a Referee, it has a direct reference to that
+    Referee; but mostly it works by sending out RPCs, the same as a real
+    player.
 
-    Actor(referee, jid, password, muc, resource, basenick, botclass) --
+    Actor(creator, jid, password, muc, resource, basenick, botclass) --
         constructor.
 
     All of the constructor arguments are passed in from the Referee. First
-    is the referee itself. The *jid*, *password*, and *resource* are used
-    to connect to the Jabber server. (The Actor connects with the same
-    parameters as the original Referee, except for the *resource* string,
+    is the referee/factory itself. The *jid*, *password*, and *resource* are 
+    used to connect to the Jabber server. (The Actor connects with the same
+    parameters as the original creator, except for the *resource* string,
     which is unique for each Actor.) The *muc* is the JID of the Jabber
     Multi-User Chat room. The *basenick* is a suggestion for the Actor's
     room nickname (although it will take a different one if that is taken).
@@ -60,12 +61,11 @@ class Actor(volent.VolEntity):
 
     Significant fields:
 
-    jid -- the JID by which this Referee is connected.
+    jid -- the JID by which this Actor is connected.
     conn -- the Jabber client agent.
-    referee -- the Referee which created this Actor.
+    creator -- the Referee or Factory which created this Actor.
     bot -- the Bot object.
     refstate -- the referee state (STATE_SETUP, etc).
-    parlor -- the Parlor which created that Referee.
     seat -- the Seat that the bot is sitting in, or None.
     seats -- dict mapping seat IDs to Seat objects.
     seatlist -- list of Seat objects in the game's order.
@@ -95,10 +95,10 @@ class Actor(volent.VolEntity):
     logprefix = 'volity.actor'
     volityrole = 'bot'
 
-    def __init__(self, referee, jid, password, muc, resource, basenick, botclass):
+    def __init__(self, creator, refjid, jid, password, muc, resource, basenick, botclass):
         self.logprefix = Actor.logprefix + '.' + resource
-        self.referee = referee
-        self.parlor = referee.parlor
+        self.creator = creator
+        self.refereejid = refjid
         self.muc = muc
         self.mucnickcount = 0
         self.mucnick = None
@@ -153,7 +153,7 @@ class Actor(volent.VolEntity):
 
         # Set up the keepalive service
 
-        sserv = self.referee.conn.getservice('keepaliveservice')
+        sserv = self.creator.conn.getservice('keepaliveservice')
         if (sserv):
             serv = jabber.keepalive.KeepAliveService(sserv.getinterval())
             self.conn.addservice(serv)
@@ -212,8 +212,7 @@ class Actor(volent.VolEntity):
         self.bot.destroy()
         self.bot.actor = None
         self.bot = None
-        self.referee = None
-        self.parlor = None
+        self.creator = None
 
         self.rpccli = None
         self.gamewrapperopset = None
@@ -362,10 +361,10 @@ class Actor(volent.VolEntity):
         if (not keywords.has_key('timeout')):
             keywords['timeout'] = REFEREE_DEFAULT_RPC_TIMEOUT
             
-        methargs = [ self.referee.resolvemetharg(val, self.bot.makerpcvalue)
+        methargs = [ self.resolvemetharg(val, self.bot.makerpcvalue)
             for val in methargs ]
         
-        self.rpccli.send(op, self.referee.jid,
+        self.rpccli.send(op, self.refereejid,
             methname, *methargs, **keywords)
 
     def defaultcallback(self, tup):
@@ -418,7 +417,9 @@ class Actor(volent.VolEntity):
 
         Handle a Jabber presence stanza. If it signals a failure to join the
         MUC, perform 'tryjoin' again. If it comes from the actor's MUC room,
-        it is passed along to handlemucpresence(). Otherwise, it is ignored.
+        it is passed along to handlemucpresence(). If it is the actor's own
+        JID being unavailable, consider the MUC to be dead. Otherwise, it is
+        ignored.
         """
         
         typestr = msg.getattr('type', '')
@@ -435,15 +436,31 @@ class Actor(volent.VolEntity):
             else:
                 self.log.info('received presence \'%s\' from %s', typestr, unicode(jid))
 
+        if (self.mucnick == jid and typestr == 'unavailable'):
+            self.log.warning('MUC has closed; shutting down')
+            self.queueaction(self.stop)
+            raise interface.StanzaHandled()
+
         if (typestr == 'error'
             and msg.getchild('x', namespace=interface.NS_MUC)
             and self.state == 'joining'):
-            self.log.info('mucnick %s failed; retrying', unicode(self.mucnick))
-            self.perform('tryjoin')
+            errnod = msg.getchild('error')
+            if (errnod
+                and (errnod.getattr('code') == '409'
+                    or errnod.getchild('conflict'))
+                and self.mucnickcount < 15):
+                # nickname conflict
+                self.log.info('mucnick %s failed; retrying',
+                    unicode(self.mucnick))
+                self.perform('tryjoin')
+                raise interface.StanzaHandled()
+            # else, simple join failure
+            self.log.info('unable to join MUC; shutting down')
+            self.queueaction(self.stop)
             raise interface.StanzaHandled()
 
         if (jid
-            and jid.getnode() == self.referee.resource
+            and jid.getnode() == self.refereejid.getresource()
             and jid.getdomain() == self.muc.getdomain()):
             self.handlemucpresence(typestr, jid.getresource(), msg)
             
@@ -463,11 +480,14 @@ class Actor(volent.VolEntity):
         for the table state.
         """
         
-        if (typestr == '' and resource == self.referee.mucnick.getresource()
-            and self.state == 'joining'):
-            self.log.info('detected referee; requesting state')
-            self.jump('running')
-            self.queueaction(self.sendref, 'volity.send_state')
+        if (typestr == '' and self.state == 'joining'):
+            cap = msg.getchild('c', namespace=interface.NS_CAPS,
+                attrs={'node':volent.VOLITY_CAPS_URI})
+            ### should have a fallback if the MUC strips caps tags!
+            if (cap and cap.getattr('ext') == 'referee'):
+                self.log.info('detected referee; requesting state')
+                self.jump('running')
+                self.queueaction(self.sendref, 'volity.send_state')
 
             
 class WrapGameOpset(rpc.WrapperOpset):
@@ -485,7 +505,6 @@ class WrapGameOpset(rpc.WrapperOpset):
     def __init__(self, act, subopset):
         rpc.WrapperOpset.__init__(self, subopset)
         self.actor = act
-        self.referee = self.actor.referee
 
     def precondition(self, sender, namehead, nametail, *callargs):
         """precondition(sender, namehead, nametail, *callargs)
@@ -497,7 +516,7 @@ class WrapGameOpset(rpc.WrapperOpset):
         if (self.actor.state != 'running'):
             raise rpc.RPCFault(609, 'bot not ready for RPCs')
 
-        if (sender != self.referee.jid):
+        if (sender != self.actor.refereejid):
             raise rpc.RPCFault(607, 'sender is not referee')
             
     def __call__(self, sender, callname, *callargs):
@@ -510,7 +529,7 @@ class WrapGameOpset(rpc.WrapperOpset):
         
         try:
             val = rpc.WrapperOpset.__call__(self, sender, callname, *callargs)
-            return self.referee.resolvemetharg(val,
+            return self.actor.resolvemetharg(val,
                 self.actor.bot.makerpcvalue)
         except rpc.CallNotFound:
             # unimplemented methods are assumed to return quietly.
@@ -567,7 +586,6 @@ class BotVolityOpset(rpc.MethodOpset):
     
     def __init__(self, act):
         self.actor = act
-        self.referee = self.actor.referee
                 
     def precondition(self, sender, namehead, nametail, *callargs):
         """precondition(sender, namehead, nametail, *callargs)
@@ -579,7 +597,7 @@ class BotVolityOpset(rpc.MethodOpset):
         if (self.actor.state != 'running'):
             raise rpc.RPCFault(609, 'bot not ready for RPCs')
 
-        if (sender != self.referee.jid):
+        if (sender != self.actor.refereejid):
             raise rpc.RPCFault(607, 'sender is not referee')
             
     def __call__(self, sender, callname, *callargs):
@@ -698,7 +716,6 @@ class BotAdminOpset(rpc.MethodOpset):
     
     def __init__(self, act):
         self.actor = act
-        self.referee = self.actor.referee
 
     def precondition(self, sender, namehead, nametail, *callargs):
         """precondition(sender, namehead, nametail, *callargs)
@@ -708,7 +725,7 @@ class BotAdminOpset(rpc.MethodOpset):
         set, then all admin.* RPCs are rejected.
         """
         
-        if (not ref.actor.parlor.isadminjid(sender)):
+        if (not self.actor.creator.isadminjid(sender)):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
         self.actor.log.warning('admin command from <%s>: %s %s',
             unicode(sender), namehead, unicode(callargs))
@@ -729,7 +746,7 @@ class BotAdminOpset(rpc.MethodOpset):
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'status: no arguments')
         dic = {}
-        dic['referee'] = unicode(self.referee.jid)
+        dic['referee'] = unicode(self.actor.refereejid)
         dic['refstate'] = self.actor.refstate
         dic['seat'] = ''
         if (self.actor.seat):

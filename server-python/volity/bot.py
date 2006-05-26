@@ -75,6 +75,11 @@ class Bot:
     """
     
     gameclass = None
+    botname = None
+    botdescription = 'A Volity game bot.'
+    ruleseturi = None
+    rulesetversion = '1.0'
+    websiteurl = None
 
     def __init__(self, act):
         """__init__(self, act)
@@ -100,6 +105,7 @@ class Bot:
         to change the default.
 
         Default: the *gamename* from the *gameclass*, plus 'Bot'.
+        #### change?
         """
         
         if (self.gameclass and self.gameclass.gamename):

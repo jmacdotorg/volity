@@ -7,6 +7,8 @@ from zymb.jabber import rpc
 import zymb.jabber.dataform
 import zymb.jabber.keepalive
 
+#### reject all-bot games even for ronin/factory bots
+
 # Constants for the five referee states.
 STATE_SETUP     = intern('setup')
 STATE_ACTIVE    = intern('active')
@@ -68,6 +70,7 @@ class Referee(volent.VolEntity):
 
     start() -- begin activity. (inherited)
     stop() -- stop activity. (inherited)
+    isadminjid() -- check whether the given JID is an administrator JID.
 
     Significant fields:
 
@@ -143,10 +146,6 @@ class Referee(volent.VolEntity):
     unsuspendgame() -- game-resume handler.
     endwork() -- 'end' state handler.
 
-    Static methods:
-
-    resolvemetharg() -- convert some Volity objects into Jabber-RPC types.
-    
     """
     
     logprefix = 'volity.referee'
@@ -311,42 +310,6 @@ class Referee(volent.VolEntity):
             ls = [ seat.id for seat in self.seatlist if seat.required ]
             self.game.sendtable('volity.required_seat_list', ls)
 
-    def resolvemetharg(val, gameresolve=None):
-        """resolvemetharg(val) -> val
-
-        Convert some Volity objects into Jabber-RPC types. This is called
-        on all RPC arguments before they are sent out.
-
-        If *gameresolve* is not None, it is invoked on the value (and on each
-        member of list and tuple values). If it returns non-None, then that
-        is the conversion.
-        
-        Otherwise, a Seat object is converted to a string (the seat ID).
-        A Player object is converted to a string (the player's real JID).
-        All other types are left alone.
-        """
-        if (gameresolve):
-            newval = gameresolve(val)
-            if (newval != None):
-                return newval
-
-        selffunc = Referee.resolvemetharg
-                
-        if (isinstance(val, game.Seat) or isinstance(val, actor.Seat)):
-            return val.id
-        if (isinstance(val, Player)):
-            return val.jidstr
-        if (type(val) in [list, tuple]):
-            return [ selffunc(subval, gameresolve) for subval in val ]
-        if (type(val) == dict):
-            newval = {}
-            for key in val.keys():
-                subval = val[key]
-                newval[key] = selffunc(subval, gameresolve)
-            return newval
-        return val
-    resolvemetharg = staticmethod(resolvemetharg)
-            
     def sendone(self, player, methname, *methargs, **keywords):
         """sendone(player, methname, *methargs, **keywords) -> None
 
@@ -867,6 +830,14 @@ class Referee(volent.VolEntity):
         self.log.warning('the game has been abandoned in play for %d seconds -- suspending', ABANDONED_TIMEOUT)
         self.queueaction(self.suspendgame)
 
+    def isadminjid(self, sender):
+        """isadminjid(sender) -> bool
+
+        Check whether the given JID is an administrator JID. This forwards
+        the request to the parlor.
+        """
+        return self.parlor.isadminjid(sender)
+        
     # ---- player request handlers
 
     def playerarrived(self, jid, nick, isbot=False):
@@ -1195,7 +1166,8 @@ class Referee(volent.VolEntity):
         self.botcounter += 1
 
         try:
-            act = actor.Actor(self, self.parlor.jid, self.parlor.password,
+            act = actor.Actor(self, self.jid,
+                self.parlor.jid, self.parlor.password,
                 self.muc, botresource, botnick, botclass)
         except Exception, ex:
             self.log.error('Unable to create bot',

@@ -29,6 +29,7 @@ class VolEntity(zymb.sched.Agent):
     Static methods:
 
     uniquestamp() -- Generate a number which is unique within this process.
+    resolvemetharg() -- convert some Volity objects into Jabber-RPC types.
 
     Agent states and events:
 
@@ -169,6 +170,42 @@ class VolEntity(zymb.sched.Agent):
                 'ver': volityversion,
                 'ext': self.volityrole })
 
+    def resolvemetharg(val, gameresolve=None):
+        """resolvemetharg(val) -> val
+
+        Convert some Volity objects into Jabber-RPC types. This is called
+        on all RPC arguments before they are sent out.
+
+        If *gameresolve* is not None, it is invoked on the value (and on each
+        member of list and tuple values). If it returns non-None, then that
+        is the conversion.
+        
+        Otherwise, a Seat object is converted to a string (the seat ID).
+        A Player object is converted to a string (the player's real JID).
+        All other types are left alone.
+        """
+        if (gameresolve):
+            newval = gameresolve(val)
+            if (newval != None):
+                return newval
+
+        selffunc = VolEntity.resolvemetharg
+                
+        if (isinstance(val, game.Seat) or isinstance(val, actor.Seat)):
+            return val.id
+        if (isinstance(val, referee.Player)):
+            return val.jidstr
+        if (type(val) in [list, tuple]):
+            return [ selffunc(subval, gameresolve) for subval in val ]
+        if (type(val) == dict):
+            newval = {}
+            for key in val.keys():
+                subval = val[key]
+                newval[key] = selffunc(subval, gameresolve)
+            return newval
+        return val
+    resolvemetharg = staticmethod(resolvemetharg)
+            
     def uniquestamp():
         """uniquestamp() -> int
 
@@ -415,6 +452,7 @@ jabber.rpcdata.setvalueparserhook(doubletoint)
 
 
 # ---- late imports
+import referee
 import actor
 import game
 

@@ -229,6 +229,7 @@ class Parlor(volent.VolEntity):
             name='Ruleset URI')
         items.additem(self.jid, node='open_games',
             name='Open games at this parlor')
+        ### and bots
 
         items = disco.additems('ruleset')
         items.additem(
@@ -411,7 +412,7 @@ class Parlor(volent.VolEntity):
             self.referees.pop(resource)
 
     def actordied(self, act):
-        """refereedied(ref) -> None
+        """actordied(ref) -> None
 
         Callback invoked when an Actor shuts down. Remove the Actor from
         our internal table.
@@ -576,6 +577,12 @@ class ParlorAdminOpset(rpc.MethodOpset):
     rpc_online() -- set the Parlor to accept or reject new table requests.
     rpc_announce() -- yell a message on all open tables.
     rpc_shutdown() -- immediately shut down this Parlor and all tables.
+    rpc_graceful_shutdown() -- shut down this Parlor, but leave tables
+        operating.
+    rpc_restart() -- immediately shut down this Parlor and all tables, then
+        restart the Parlor.
+    rpc_graceful_restart() -- shut down this Parlor, but leave tables
+        operating; then restart the Parlor.
     """
     
     def __init__(self, par):
