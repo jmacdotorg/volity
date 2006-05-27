@@ -7,8 +7,6 @@ from zymb.jabber import rpc
 import zymb.jabber.dataform
 import zymb.jabber.keepalive
 
-#### reject all-bot games even for ronin/factory bots
-
 # Constants for the five referee states.
 STATE_SETUP     = intern('setup')
 STATE_ACTIVE    = intern('active')
@@ -113,10 +111,14 @@ class Referee(volent.VolEntity):
     playerstand() -- handle a player stand request.
     playerready() -- handle a player ready request.
     playerunready() -- handle a player unready request.
-    playeraddbot() -- handle a player request for a new bot.
-    playerremovebot() -- handle a player request to remove a bot.
+    playeraddbot() -- handle a player request for a new local bot.
     botready() -- callback invoked when a bot is successfully
         (or unsuccessfully) created.
+    playeraddexternalbot() -- handle a player request for a new factory bot.
+    gotnewbotreply() -- callback invoked when a new_bot RPC is replied to.
+    externalbotready() -- callback which replies to the original add_bot
+        request.
+    playerremovebot() -- handle a player request to remove a bot.
     playersuspend() -- handle a player game-suspend request.
     playerinvite() -- handle a player request to invite another player to the
         table.
@@ -1221,16 +1223,78 @@ class Referee(volent.VolEntity):
         if (res == 'end'):
             self.log.warning('bot %s died before responding', act.resource)
             raise rpc.RPCFault(608, 'bot failed to start up')
-        return
+        return act.jid
     
+    def playeraddexternalbot(self, sender, uri, jid):
+        """playeraddexternalbot(sender, uri, jid) -> None
+
+        Handle a player request for a new bot from a bot factory. The
+        *sender* is the player's JID. The *uri* specifies which bot algorithm
+        is being requested; the *jid* is the (full) JID of the bot factory.
+        """
+
+        # Set up a Deferred handler which will be invoked when the new_bot
+        # request completes.
+        defer = sched.Deferred(self.externalbotready)
+
+        self.rpccli.send((self.gotnewbotreply, defer, jid),
+            jid, 'volity.new_bot', uri, self.muc,
+            timeout=BOT_STARTUP_TIMEOUT)
+        raise defer
+
+    def gotnewbotreply(self, tup, defer, jidstr):
+        """gotnewbotreply(tup, defer, jidstr) -> None
+
+        Callback invoked when a new_bot RPC is replied to. The *tup* contains
+        the RPC result; the *defer* and *jidstr* are passed down from
+        playeraddexternalbot().
+
+        This just extracts the RPC result from *tup*, catching all the
+        possible things which could go wrong. Then it invokes the
+        externalbotready() callback.
+        """
+        
+        try:
+            res = sched.Deferred.extract(tup)
+            # If no exception, then the call succeeded.
+            ac = self.queueaction(defer, jidstr, 'ok', res)
+            defer.addaction(ac)
+        except sched.TimeoutException, ex:
+            ac = self.queueaction(defer, jidstr, 'timeout')
+            defer.addaction(ac)
+        except jabber.interface.StanzaError, ex:
+            ac = self.queueaction(defer, jidstr, 'ex', None, ex)
+            defer.addaction(ac)
+        except Exception, ex:
+            ex = jabber.interface.StanzaInternalServerError(str(ex))
+            ac = self.queueaction(defer, jidstr, 'ex', None, ex)
+            defer.addaction(ac)
+
+    def externalbotready(self, jidstr, res, botjid=None, ex=None):
+        """externalbotready(jidstr, res, botjid=None, ex=None) -> <RPC outcome>
+
+        Callback which replies to the original add_bot request. The *jidstr*
+        is the JID we sent the invitation to; *res* describes whether the
+        invitation succeeded; *botjid* is the JID of the bot, if all went
+        well; and *ex* is the exception that caused the problem, if there
+        was a problem.
+
+        If the invitation succeeded, we just return cleanly to the original
+        invite RPC. If there was any problem, we return a 'relay_failed'
+        failure token, with *jidstr* in the \1 spot.
+        """
+        
+        if (res == 'ok'):
+            return botjid
+        raise game.FailureToken('volity.relay_failed', game.Literal(jidstr))
+            
     def playerremovebot(self, sender, jidstr):
         """playerremovebot(sender, jid) -> None
 
         Handle a player request to remove a bot. The *sender* is the player's
         JID. The *jid* is the bot's JID.
 
-        This only works on bots that were added by playeraddbot. It also
-        only works on unseated bots.
+        This only works on unseated bots.
         """
         
         if (not self.players.has_key(jidstr)):
@@ -1238,17 +1302,21 @@ class Referee(volent.VolEntity):
                 game.Literal(jidstr))
                 
         player = self.players[jidstr]
-
-        if (not player.jid.barematch(self.jid)):
-            raise game.FailureToken('volity.not_bot', game.Literal(jidstr))
-
-        act = self.parlor.actors.get(player.jid.getresource())
-        if (not act):
+        if (not player.isbot):
             raise game.FailureToken('volity.not_bot', game.Literal(jidstr))
 
         if (player.seat):
             raise game.FailureToken('volity.bot_seated')
-        act.stop()
+                
+        act = self.parlor.actors.get(player.jid.getresource())
+        if (act):
+            # Internal bot; stop it directly.
+            act.stop()
+            return
+
+        # External bot; throw it a leave_table() RPC.
+        self.rpccli.send(self.defaultcallback, jidstr,
+            'volity.leave_table', timeout=CLIENT_DEFAULT_RPC_TIMEOUT)
                 
     def playersuspend(self, sender=None):
         """playersuspend(sender=None) -> None
@@ -1922,6 +1990,8 @@ class Player:
     The *ref* is the Referee which created this Player. The *jid* is the
     player's (real) JID; *nick* is his MUC nickname (the resource part only).
     The *isbot* flag indicates whether the player is known to be a robot.
+    (This may be because of entity capabilities, or because the bot was
+    created directly by the referee.)
 
     Public methods:
 
@@ -2414,7 +2484,7 @@ class RefVolityOpset(rpc.MethodOpset):
             argcount=0)
         self.validators['unready'] = Validator(afoot=False,
             argcount=0)
-        self.validators['add_bot'] = Validator(argcount=0)
+        self.validators['add_bot'] = Validator(args=[(str, None), (str, None)])
         self.validators['remove_bot'] = Validator(args=str)
         self.validators['suspend_game'] = Validator(afoot=True,
             argcount=0, seated=True)
@@ -2465,7 +2535,12 @@ class RefVolityOpset(rpc.MethodOpset):
         return self.referee.playerunready(sender)
 
     def rpc_add_bot(self, sender, *args):
-        return self.referee.playeraddbot(sender)
+        if (len(args) != 0 and len(args) != 2):
+            raise rpc.RPCFault(604, 'add_bot takes zero or two arguments')
+        if (len(args) == 0):
+            return self.referee.playeraddbot(sender)
+        else:
+            return self.referee.playeraddexternalbot(sender, args[0], args[1])
     
     def rpc_remove_bot(self, sender, *args):
         return self.referee.playerremovebot(sender, args[0])

@@ -229,7 +229,7 @@ class Parlor(volent.VolEntity):
             name='Ruleset URI')
         items.additem(self.jid, node='open_games',
             name='Open games at this parlor')
-        ### and bots
+        #### "bots": list bot uris, if available
 
         items = disco.additems('ruleset')
         items.additem(
@@ -415,7 +415,8 @@ class Parlor(volent.VolEntity):
         """actordied(ref) -> None
 
         Callback invoked when an Actor shuts down. Remove the Actor from
-        our internal table.
+        our internal table. (Note: this can be called after the Parlor
+        shuts down!)
         """
         
         resource = act.resource

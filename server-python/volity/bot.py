@@ -31,12 +31,15 @@ class Bot:
     This is invoked by the Actor *act*, during the Actor's own constructor.
     You never create Bot objects.
 
+    Classmethods:
+    
+    getname() -- generate a name for this bot.
+    
     Methods your subclass can override:
 
     (You will normally never call these methods. The Actor calls them at the
     appropriate time.)
 
-    getname() -- generate a name for this bot.
     makerpcvalue() -- convert a game value to an RPC value.
     receivestate() -- handle the beginning of a state recovery burst.
     begingame() -- handle the beginning of the game.
@@ -104,13 +107,17 @@ class Bot:
         is used only in the bot's disco information. There is no reason
         to change the default.
 
-        Default: the *gamename* from the *gameclass*, plus 'Bot'.
-        #### change?
+        Default: if the class has a *botname*, use that. Otherwise, if the
+        class has a *gameclass*, use its *gamename* plus 'Bot'. Otherwise,
+        simply use 'Bot'.
         """
-        
+
+        if (self.botname):
+            return self.botname
         if (self.gameclass and self.gameclass.gamename):
             return self.gameclass.gamename + ' Bot'
         return 'Bot'
+    getname = classmethod(getname)
 
     def makerpcvalue(self, val):
         """makerpcvalue(val) -> val

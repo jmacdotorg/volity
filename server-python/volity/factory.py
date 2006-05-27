@@ -11,7 +11,85 @@ from zymb.jabber import rpc
 BOT_STARTUP_TIMEOUT = 60
 
 class Factory(volent.VolEntity):
-    """###
+    """Factory: The implementation of a Volity bot factory.
+
+    This is the central class which offers bots on a system. When you
+    run the volityd.py script with the --bot argument (and not --game),
+    it creates a Factory and starts it running.
+    
+    Factory is a Jabber client (although it is not a subclass of the
+    Zymb Jabber client agent; instead, it creates one as a subsidiary
+    object). It sits around and waits for the "new bot" command,
+    which tells it to start up an Actor. That's nearly all it does,
+    actually, although there are some extra debugging and administration
+    features.
+
+    Factory(config) -- constructor.
+
+    The *config* is a ConfigFile object, containing various options needed
+    to set up the Factory. The volityd.py script creates this. For the
+    record, the significant fields are:
+
+        jid: Used when connecting to Jabber
+        jid-resource: Resource string to use (optional, overrides the
+            one in *jid*; if no resource is provided in either *jid* or
+            *jid-resource*, then "volity" is used)
+        host: Jabber server host to use (optional, overrides the one
+            in *jid*)
+        password: Used when connecting to Jabber
+        bot: Name of Python class which implements the bot
+        admin: JID which is permitted to send admin commands (optional)
+            (may be comma-separated list of JIDs)
+        bookkeeper: JID of Volity bookkeeper (optional, defaults to
+            "bookkeeper@volity.net/volity")
+        contact-email: Contact email address of person hosting this
+            factory (optional)
+        contact-jid: Contact Jabber address of person hosting this
+            factory (optional)
+        keepalive: If present, send periodic messages to exercise the
+            Jabber connection (optional)
+        keepalive-interval: If present, send periodic messages every
+            *keepalive-interval* seconds to exercise the Jabber
+            connection (optional)
+
+    Agent states and events:
+
+    state 'start': Initial state. Start up the Jabber connection process.
+        When Jabber is fully connected, jump to 'ready'.
+    state 'ready': Send out initial presence. In this state, the Factory
+        accepts new_bot requests.
+    state 'end': The connection is closed.
+
+    Public methods:
+
+    start() -- begin activity. (inherited)
+    stop() -- stop activity. (inherited)
+    requeststop() -- stop activity in a particular way.
+    isadminjid() -- check whether the given JID is an administrator JID.
+
+    Significant fields:
+
+    jid -- the JID by which this Factory is connected.
+    conn -- the Jabber client agent.
+    adminjids -- the JID which is permitted to send admin commands.
+    botclass -- the Bot subclass which implements the bot (or None).
+    actors -- dict mapping resource strings to Actors.
+    online -- whether the Factory is accepting new_bot requests.
+
+    Internal methods:
+
+    handlemessage() -- handle a Jabber message stanza.
+    handlepresence() -- handle a Jabber presence stanza.
+    newbot() -- create a new bot.
+    botready() -- callback invoked when an Actor is successfully
+        (or unsuccessfully) created.
+    actordied() -- callback invoked when an Actor (bot) shuts down.
+    listbots() -- create a DiscoItems list of available bot URIs.
+    stopunlessgraceful() -- stop the given entity if we are in the middle
+        of an ungraceful shutdown.
+    handlerosterquery() -- accept a request to be added to someone's roster.
+    endwork() -- 'end' state handler.
+
     """
     
     logprefix = 'volity.factory'
@@ -46,8 +124,6 @@ class Factory(volent.VolEntity):
             or (not issubclass(botclass, bot.Bot))):
             raise ValueError('botclass must be a subclass of volity.bot.Bot')
 
-        if (not botclass.botname):
-            raise TypeError('botclass does not define class.botname')
         if (not botclass.ruleseturi):
             raise TypeError('botclass does not define class.ruleseturi')
 
@@ -72,7 +148,7 @@ class Factory(volent.VolEntity):
 
         # Set up internal state.
         
-        self.botname = botclass.botname
+        self.botname = botclass.getname()
         self.log.warning('Bot factory running: %s', self.botname)
 
         self.actors = {}
@@ -105,12 +181,11 @@ class Factory(volent.VolEntity):
             form.addfield('contact-email', config.get('contact-email'))
         if (config.get('contact-jid')):
             form.addfield('contact-jid', config.get('contact-jid'))
-        ###?
-        #if (self.visibility):
-        #    val = '1'
-        #else:
-        #    val = '0'
-        #form.addfield('visible', val)
+        if (self.visibility):
+            val = '1'
+        else:
+            val = '0'
+        form.addfield('visible', val)
         info.setextendedinfo(form)
 
         # assumes resource didn't change
@@ -218,8 +293,10 @@ class Factory(volent.VolEntity):
 
         if (not self.online):
             raise volent.FailureToken('volity.offline')
-            
-        self.log.info('new bot requested by %s...', unicode(sender))
+
+        #### check URI!
+        
+        self.log.info('new bot requested by %s (%s)...', unicode(sender), uri)
 
         botclass = self.botclass
         if (not botclass):
@@ -323,7 +400,7 @@ class Factory(volent.VolEntity):
         """
         
         items = jabber.disco.DiscoItems()
-        items.additem('###algo_URI', name=self.botname)
+        items.additem('####algo_URI', name=self.botname)
         return items
 
     def stopunlessgraceful(self, ent):

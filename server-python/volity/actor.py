@@ -64,12 +64,17 @@ class Actor(volent.VolEntity):
     jid -- the JID by which this Actor is connected.
     conn -- the Jabber client agent.
     creator -- the Referee or Factory which created this Actor.
+    referee -- the Referee, if in a Parlor; None, if in a Factory.
     bot -- the Bot object.
     refstate -- the referee state (STATE_SETUP, etc).
     seat -- the Seat that the bot is sitting in, or None.
     seats -- dict mapping seat IDs to Seat objects.
     seatlist -- list of Seat objects in the game's order.
 
+    (Note that the referee field is somewhat redundant, since creator has
+    same value if referee is not None. It exists for backwards compatibility,
+    and for bot code that expects to always be run in a Parlor.)
+    
     Internal methods:
 
     beginwork() -- 'ready' state handler.
@@ -98,6 +103,10 @@ class Actor(volent.VolEntity):
     def __init__(self, creator, refjid, jid, password, muc, resource, basenick, botclass):
         self.logprefix = Actor.logprefix + '.' + resource
         self.creator = creator
+        if (isinstance(creator, referee.Referee)):
+            self.referee = creator
+        else:
+            self.referee = None
         self.refereejid = refjid
         self.muc = muc
         self.mucnickcount = 0
@@ -627,6 +636,12 @@ class BotVolityOpset(rpc.MethodOpset):
                 exc_info=True)
             raise rpc.RPCFault(608, st)
 
+    def rpc_leave_table(self, sender, *args):
+        if (self.actor.seat):
+            raise rpc.RPCFault(609, 'actor is seated')
+        self.actor.log.warning('leave_table request; shutting down')
+        self.actor.queueaction(self.actor.stop)
+    
     def rpc_receive_state(self, sender, *args):
         if (len(args) >= 1):
             self.actor.handlereceivestate(args[0])
@@ -811,5 +826,6 @@ class Seat:
         
 # late imports
 import bot
+import referee
 from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED
 from referee import STATE_ABANDONED, STATE_SUSPENDED
