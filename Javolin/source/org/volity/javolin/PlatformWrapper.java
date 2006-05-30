@@ -13,6 +13,8 @@ import org.volity.client.comm.SwingWorker;
 //### http://www.centerkey.com/java/browser/myapp/BareBonesBrowserLaunch.java
 //### http://www.javaworld.com/javaworld/javatips/jw-javatip66.html
 
+//### http://systray.sf.net/
+
 //### Java6 desktop stuff:
 //### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/systemtray/
 //### http://java.sun.com/developer/technicalArticles/J2SE/Desktop/mustang/desktop_api/
