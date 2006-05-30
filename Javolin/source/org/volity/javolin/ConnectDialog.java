@@ -42,6 +42,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private final static String JID_KEY = "JID";
     private final static String EMAIL_KEY = "Email";
     private final static String FULLNAME_KEY = "FullName";
+    private final static String PASSWORD_KEY = "Password";
+    private final static String REMEMBER_KEY = "RememberPW";
 
     private final static String HELP_TEXT_CONNECT = 
         "If you are new to Volity, select this option."       +
@@ -67,8 +69,9 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private JButton mCancelButton;
     private JButton mConnectButton;
     private JCheckBox mRegisterCheck;
+    private JCheckBox mRememberCheck;
     private JPanel mForgotPasswordPanel;
-    private JTextField mForgotPasswordLabel;
+    private JLabel mForgotPasswordLabel;
     private JButton mForgotPasswordButton;
     private JTextArea mHelpArea;
     private JTextArea mRegisterHelpArea;
@@ -475,6 +478,12 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         prefs.put(JID_KEY, mJIDField.getText());
         prefs.put(EMAIL_KEY, mEmailField.getText());
         prefs.put(FULLNAME_KEY, mFullNameField.getText());
+        boolean remember = mRememberCheck.isSelected();
+        prefs.putBoolean(REMEMBER_KEY, remember);
+        String password = "";
+        if (remember)
+            password = new String(mPasswordField.getPassword());
+        prefs.put(PASSWORD_KEY, password);
     }
 
     /**
@@ -488,6 +497,10 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         mJIDField.setText(prefs.get(JID_KEY, ""));
         mEmailField.setText(prefs.get(EMAIL_KEY, ""));
         mFullNameField.setText(prefs.get(FULLNAME_KEY, ""));
+        boolean remember = prefs.getBoolean(REMEMBER_KEY, false);
+        mRememberCheck.setSelected(remember);
+        if (remember)
+            mPasswordField.setText(prefs.get(PASSWORD_KEY, ""));
     }
 
     /**
@@ -626,26 +639,35 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         getContentPane().add(mPasswordAgainField, c);
         gridY++;
 
+        // Add Remember checkbox
+        mRememberCheck = new JCheckBox("Remember password", false);
+        mRememberCheck.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        c = new GridBagConstraints();
+        c.gridx = 1;
+        c.gridy = gridY;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
+        c.anchor = GridBagConstraints.WEST;
+        getContentPane().add(mRememberCheck, c);
+        gridY++;
+
         {
             // Add panel with "Forgot Password" button
 
             mForgotPasswordPanel = new JPanel(new GridBagLayout());
             c = new GridBagConstraints();
-            c.gridx = 0;
+            c.gridx = 1;
             c.gridy = gridY;
             c.gridwidth = GridBagConstraints.REMAINDER;
-            c.insets = new Insets(SPACING, MARGIN, 0, MARGIN);
-            c.anchor = GridBagConstraints.CENTER;
+            c.insets = new Insets(SPACING, 0, 0, 0);
+            c.anchor = GridBagConstraints.WEST;
             c.weightx = 0.5;
             getContentPane().add(mForgotPasswordPanel, c);
             gridY++;
 
             // Add "forgot password" link
-            mForgotPasswordLabel = new JTextField("Forgot your password?");
+            mForgotPasswordLabel = new JLabel("Forgot your password?");
             mForgotPasswordLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            mForgotPasswordLabel.setEditable(false);
-            mForgotPasswordLabel.setOpaque(false);
-            mForgotPasswordLabel.setBorder(BorderFactory.createEmptyBorder(0,0,0,0));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = 0;

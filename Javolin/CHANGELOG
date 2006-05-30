@@ -1,6 +1,10 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
+* the present
+
+Added a "Remember password" option to connect dialog box.
+
 * release 0.3.6
 
 Draft of code to launch a browser on Unix platforms.
