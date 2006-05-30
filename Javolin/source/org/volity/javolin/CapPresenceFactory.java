@@ -18,6 +18,7 @@ public class CapPresenceFactory extends DefaultPresenceFactory
     public static final String VOLITY_ROLE_NONE    = "";
     public static final String VOLITY_ROLE_BOOKKEEPER = "bookkeeper";
     public static final String VOLITY_ROLE_PARLOR  = "parlor";
+    public static final String VOLITY_ROLE_FACTORY = "factory";
     public static final String VOLITY_ROLE_REFEREE = "referee";
     public static final String VOLITY_ROLE_PLAYER  = "player";
     public static final String VOLITY_ROLE_BOT     = "bot";
@@ -28,8 +29,12 @@ public class CapPresenceFactory extends DefaultPresenceFactory
      * whichever is listed first.
      */
     public static final String[] VOLITY_ROLES = {
-        VOLITY_ROLE_BOOKKEEPER, VOLITY_ROLE_PARLOR, VOLITY_ROLE_REFEREE,
-        VOLITY_ROLE_PLAYER, VOLITY_ROLE_BOT
+        VOLITY_ROLE_BOOKKEEPER,
+        VOLITY_ROLE_PARLOR,
+        VOLITY_ROLE_FACTORY,
+        VOLITY_ROLE_REFEREE,
+        VOLITY_ROLE_PLAYER,
+        VOLITY_ROLE_BOT
     };
 
     public Presence create(Presence.Type type, String status, int priority, Presence.Mode mode) {
