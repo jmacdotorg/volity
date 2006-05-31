@@ -544,6 +544,7 @@ public class TranslateToken {
         "not_your_turn", "It's not your turn.",
         "relay_failed", "Your message could not be delivered to \\1.",
         "no_bots_provided", "This game parlor does not provide bots.",
+        "bot_not_available", "That bot is not available.",
         "not_bot", "The player \\1 is not a bot.",
         "bot_seated", "That bot is seated.",
     };
