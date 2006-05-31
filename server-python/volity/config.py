@@ -37,7 +37,10 @@ class ConfigFile:
 
     Public methods:
 
-    get(key) -- get a config value.
+    get(key, default=None) -- get a config value.
+    getall(key) -- get a list of config values.
+    getbool(key, default=False) -- get a config value and parse it as true
+        or false.
     has_key(key) -- check whether a config value exists.
 
     Internal methods:
@@ -50,6 +53,8 @@ class ConfigFile:
         self.filename = filename
         if (not argmap):
             argmap = {}
+        else:
+            argmap = dict(argmap)
         self.argmap = argmap
         self.envprefix = envprefix
         
@@ -91,7 +96,14 @@ class ConfigFile:
                     self.parse(subfl, val)
                     subfl.close()
             else:
-                self.map[key] = val
+                if (not self.map.has_key(key)):
+                    self.map[key] = val
+                else:
+                    oldval = self.map[key]
+                    if (type(oldval) != list):
+                        self.map[key] = [ oldval, val ]
+                    else:
+                        oldval.append(val)
             
     def makeenvname(self, key):
         """makeenvname(key) -- convert a key name to a possible environment
@@ -110,20 +122,58 @@ class ConfigFile:
         or an environment variable). If the entry cannot be found by any
         means, this returns None. (Unless another default is specified.)
         
+        If the config file contains several lines with the same key, only
+        the last one counts. The same is true if the *argmap* maps the key
+        to a list of entries.
+
         *argmap* entries override environment variables override config file
         lines.
         """
                 
         val = self.argmap.get(key)
         if (val != None):
+            if (type(val) == list):
+                return val[-1]
             return val
         val = os.getenv(self.makeenvname(key))
         if (val != None):
             return val
         val = self.map.get(key)
         if (val != None):
+            if (type(val) == list):
+                return val[-1]
             return val
         return default
+        
+    def getall(self, key):
+        """getall(key) -> list
+
+        Get all entries which match the key from the config file (or the
+        command-line arguments, or an environment variable). If the entry
+        cannot be found by any means, this returns the empty list.
+
+        Note that an environment variable can contain only one entry. The
+        other sources can provide more than one.
+        
+        *argmap* entries override environment variables override config file
+        lines. Entries from multiple sources do not accumulate; a single
+        argmap entry will cause all matching config lines to be ignored.
+        """
+                
+        val = self.argmap.get(key)
+        if (val != None):
+            if (type(val) == list):
+                return val
+            return [val]
+        val = os.getenv(self.makeenvname(key))
+        if (val != None):
+            return [val]
+        val = self.map.get(key)
+        if (val != None):
+            if (type(val) == list):
+                return val
+            return [val]
+        return []
 
     def getbool(self, key, default=False):
         """getbool(key, default=False) -> bool
@@ -139,7 +189,7 @@ class ConfigFile:
 
         val = self.get(key, None)
         if (val == None):
-            return default
+            return bool(default)
         if (not val):
             return False
         val = val.lower()
@@ -246,7 +296,64 @@ cae: cae
         self.assert_(conf.has_key('cae'))
         self.assert_(not conf.has_key('sporkle'))
 
-        
+    def test_multilines(self):
+        configfile = """
+one: 1
+two: 2
+two: 2-prime
+two: II
+three: 3
+5: dummy-5
+5: dummy2-5
+eight: VII
+eight: VII'
+"""
+        map = { '4':['four', 'IV'], '5':['real-5', 'real2-5'], '6':'6' }
+        os.environ['VOLITY_SEVEN'] = '77'
+        os.environ['VOLITY_EIGHT'] = '88'
+
+        fl = StringIO.StringIO(configfile)
+        conf = ConfigFile(fl, map)
+        self.assertEqual(conf.get('two'), 'II')
+        self.assertEqual(conf.get('4'), 'IV')
+        self.assertEqual(conf.get('5'), 'real2-5')
+
+        self.assertEqual(conf.getall('zero'), [])
+        self.assertEqual(conf.getall('one'), ['1'])
+        self.assertEqual(conf.getall('two'), ['2', '2-prime', 'II'])
+        self.assertEqual(conf.getall('4'), ['four', 'IV'])
+        self.assertEqual(conf.getall('5'), ['real-5', 'real2-5'])
+        self.assertEqual(conf.getall('6'), ['6'])
+        self.assertEqual(conf.getall('seven'), ['77'])
+        self.assertEqual(conf.getall('eight'), ['88'])
+
+    def test_booleans(self):
+        configfile = """
+1: true
+2: TRUE
+3: 1
+4: yes
+5: YES
+6: t
+7: y
+
+11: false
+12: FALSE
+13: 0
+14: no
+15: NO
+16: f
+17: n
+"""
+        fl = StringIO.StringIO(configfile)
+        conf = ConfigFile(fl)
+        for ix in range(1, 8):
+            self.assertEqual(conf.getbool(str(ix)), True)
+        for ix in range(11, 18):
+            self.assertEqual(conf.getbool(str(ix)), False)
+        self.assertEqual(conf.getbool('zero', False), False)
+        self.assertEqual(conf.getbool('zero', True), True)
+        self.assertEqual(conf.getbool('zero', 2), True)
 
 if __name__ == '__main__':
     unittest.main()
