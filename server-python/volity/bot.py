@@ -80,6 +80,7 @@ class Bot:
     gameclass = None
     botname = None
     botdescription = 'A Volity game bot.'
+    boturi = None
     ruleseturi = None
     rulesetversion = '1.0'
     websiteurl = None

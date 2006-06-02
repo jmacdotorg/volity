@@ -139,7 +139,13 @@ set the --contact-jid option.
   --password=PASSWORD, -pPASSWORD, [password]
       Jabber password of JID
   --bot=BOTCLASS, -bBOTCLASS, [bot]
-      bot class to use, if requested
+      bot class to use, if requested (may be repeated)
+  --bot-factory=JID, [bot-factory]
+      external bot factory to recommend (may be repeated)
+  --entity-name=ENTITYNAME [entity-name]
+      name for parlor to publish
+  --entity-description=ENTITYDESC [entity-desc]
+      description for parlor to publish
   --contact-jid=JID, [contact-jid]
       identity which is operating this parlor
   --contact-email=EMAIL, [contact-email]
@@ -219,8 +225,17 @@ popt.add_option('-p', '--password',
     action='store', type='string', dest='password',
     help='Jabber password of JID')
 popt.add_option('-b', '--bot',
-    action='store', type='string', dest='bot', metavar='BOTCLASS',
-    help='bot class to use, if requested')
+    action='append', type='string', dest='bot', metavar='BOTCLASS',
+    help='bot class to use, if requested (may be repeated)')
+popt.add_option('--bot-factory',
+    action='append', type='string', dest='botfactoryjid', metavar='JID',
+    help='external bot factory to recommend (may be repeated)')
+popt.add_option('--entity-name',
+    action='store', type='string', dest='entityname',
+    help='name for parlor to publish')
+popt.add_option('--entity-description',
+    action='store', type='string', dest='entitydesc',
+    help='description for parlor to publish')
 popt.add_option('--contact-jid',
     action='store', type='string', dest='contactjid', metavar='JID',
     help='identity which is operating this parlor')
@@ -273,11 +288,14 @@ argmap = {}
 argmap['jid'] = opts.jid
 argmap['jid-resource'] = opts.jidresource
 argmap['host'] = opts.host
+argmap['entity-name'] = opts.entityname
+argmap['entity-desc'] = opts.entitydesc
 argmap['contact-jid'] = opts.contactjid
 argmap['contact-email'] = opts.contactemail
 argmap['visible'] = opts.visible
 argmap['game'] = opts.game
-argmap['bot'] = opts.bot
+argmap['bot'] = opts.bot  # list
+argmap['bot-factory'] = opts.botfactoryjid  # list
 argmap['password'] = opts.password
 if (opts.debuglevel):
     argmap['debug-level'] = str(opts.debuglevel)

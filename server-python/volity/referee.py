@@ -1141,11 +1141,12 @@ class Referee(volent.VolEntity):
         player.ready = False
         self.queueaction(self.reportreadiness, player)
 
-    def playeraddbot(self, sender):
-        """playeraddbot(sender) -> None
+    def playeraddbot(self, sender, uri=None):
+        """playeraddbot(sender, uri=None) -> None
 
-        Handle a player request for a new bot. The *sender* is the player's
-        JID.
+        Handle a player request for a new (internal) bot. The *sender* is
+        the player's JID. The *uri* is a bot algorithm URI, if a specific
+        one is desired.
 
         This creates an Actor, which is a Volity entity that connects to
         the Jabber server and plays as a player would. (The Bot is the game-
@@ -1153,10 +1154,23 @@ class Referee(volent.VolEntity):
         game-specific part of the Referee.)
         """
         
-        botclass = self.parlor.botclass
-        if (not botclass):
+        if (not self.parlor.botclasses):
             raise game.FailureToken('volity.no_bots_provided')
 
+        if (not uri):
+            botclass = self.parlor.botclasses[0]
+        else:
+            found = False
+            for botclass in self.parlor.botclasses:
+                if (botclass.boturi == uri):
+                    found = True
+                    break
+            if (not found):
+                raise volent.FailureToken('volity.bot_not_available')
+
+        self.log.info('new bot requested by %s (%s)...', unicode(sender),
+            botclass.boturi)
+        
         botresource = 'bot_' + str(os.getpid()) + '_' + str(self.uniquestamp())
         
         # The player-visible name of the bot shouldn't conflict with existing
@@ -2537,10 +2551,22 @@ class RefVolityOpset(rpc.MethodOpset):
     def rpc_add_bot(self, sender, *args):
         if (len(args) != 0 and len(args) != 2):
             raise rpc.RPCFault(604, 'add_bot takes zero or two arguments')
-        if (len(args) == 0):
-            return self.referee.playeraddbot(sender)
+        uri = None
+        jid = None
+        if (len(args) >= 1):
+            uri = args[0]
+        if (len(args) >= 2):
+            jid = args[1]
+            if (jid):
+                jid = interface.JID(jid)
+        if ((not jid) or (self.referee.jid == jid)
+            or (self.referee.parlor.jid == jid)):
+            jid = None
+            
+        if (not jid):
+            return self.referee.playeraddbot(sender, uri)
         else:
-            return self.referee.playeraddexternalbot(sender, args[0], args[1])
+            return self.referee.playeraddexternalbot(sender, uri, jid)
     
     def rpc_remove_bot(self, sender, *args):
         return self.referee.playerremovebot(sender, args[0])

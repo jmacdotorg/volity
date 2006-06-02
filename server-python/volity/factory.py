@@ -72,7 +72,7 @@ class Factory(volent.VolEntity):
     jid -- the JID by which this Factory is connected.
     conn -- the Jabber client agent.
     adminjids -- the JID which is permitted to send admin commands.
-    botclass -- the Bot subclass which implements the bot (or None).
+    botclasses -- list of Bot subclasses which implement the bot.
     actors -- dict mapping resource strings to Actors.
     online -- whether the Factory is accepting new_bot requests.
 
@@ -108,24 +108,39 @@ class Factory(volent.VolEntity):
         self.canrestart = config.has_key('restart-script')
         self.restartfunc = config.get('restart-func-')
         
-        # Locate the bot class (if there is one).
-        
-        ls = config.get('bot').split('.')
-        if (len(ls) < 2):
-            raise ValueError('botclass must be of the form module.botclass')
-        classname = ls[-1]
-        modpath = '.'.join(ls[ : -1 ])
-        mod = __import__(modpath, globals(), locals(), [classname])
-        botclass = getattr(mod, classname)
-        self.botclass = botclass
-    
-        if (botclass == bot.Bot
-            or (type(botclass) != types.ClassType)
-            or (not issubclass(botclass, bot.Bot))):
-            raise ValueError('botclass must be a subclass of volity.bot.Bot')
+        # Locate the bot classes.
+        self.botclasses = []
 
-        if (not botclass.ruleseturi):
-            raise TypeError('botclass does not define class.ruleseturi')
+        botls = config.getall('bot')
+        for botclassname in botls:
+            ls = botclassname.split('.')
+            if (len(ls) < 2):
+                raise ValueError('botclass must be of the form module.botclass')
+            classname = ls[-1]
+            modpath = '.'.join(ls[ : -1 ])
+            mod = __import__(modpath, globals(), locals(), [classname])
+            botclass = getattr(mod, classname)
+            self.botclasses.append(botclass)
+    
+            if (botclass == bot.Bot
+                or (type(botclass) != types.ClassType)
+                or (not issubclass(botclass, bot.Bot))):
+                raise ValueError('botclass must be a subclass of volity.bot.Bot')
+
+            if (not botclass.ruleseturi):
+                raise TypeError('botclass does not define class.ruleseturi')
+
+            if (botclass.ruleseturi != self.botclasses[0].ruleseturi):
+                raise ValueError('all botclasses must have the same ruleset URI')
+            if (botclass.rulesetversion != self.botclasses[0].rulesetversion):
+                raise ValueError('all botclasses must have the same ruleset version')
+
+            if (not botclass.boturi):
+                raise TypeError('botclass does not define class.boturi')
+
+            if (botclass.boturi in
+                [bc.boturi for bc in self.botclasses[:-1]]):
+                raise TypeError('class.boturi used more than once')
 
         bookjidstr = config.get('bookkeeper', 'bookkeeper@volity.net/volity')
         self.bookkeeperjid = interface.JID(bookjidstr)
@@ -148,7 +163,12 @@ class Factory(volent.VolEntity):
 
         # Set up internal state.
         
-        self.botname = botclass.getname()
+        botclass = self.botclasses[0]
+
+        val = config.get('entity-name')
+        if (not val):
+            val = botclass.getname()
+        self.botname = val
         self.log.warning('Bot factory running: %s', self.botname)
 
         self.actors = {}
@@ -169,7 +189,10 @@ class Factory(volent.VolEntity):
         info.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
-        form.addfield('description', botclass.botdescription)
+        val = config.get('entity-desc')
+        if (not val):
+            val = botclass.botdescription
+        form.addfield('description', val)
         form.addfield('ruleset', botclass.ruleseturi)
         form.addfield('volity-role', self.volityrole)
         form.addfield('ruleset-version', botclass.rulesetversion)
@@ -294,13 +317,16 @@ class Factory(volent.VolEntity):
         if (not self.online):
             raise volent.FailureToken('volity.offline')
 
-        #### check URI!
+        found = False
+        for botclass in self.botclasses:
+            if (botclass.boturi == uri):
+                found = True
+                break
+        if (not found):
+            raise volent.FailureToken('volity.bot_not_available')
         
-        self.log.info('new bot requested by %s (%s)...', unicode(sender), uri)
-
-        botclass = self.botclass
-        if (not botclass):
-            raise game.FailureToken('volity.no_bots_provided')
+        self.log.info('new bot requested by %s (%s)...', unicode(sender),
+            botclass.boturi)
 
         botresource = 'bot_' + str(os.getpid()) + '_' + str(self.uniquestamp())
         
@@ -400,7 +426,8 @@ class Factory(volent.VolEntity):
         """
         
         items = jabber.disco.DiscoItems()
-        items.additem('####algo_URI', name=self.botname)
+        for botclass in self.botclasses:
+            items.additem(self.jid, node=botclass.boturi, name=botclass.getname())
         return items
 
     def stopunlessgraceful(self, ent):

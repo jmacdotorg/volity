@@ -76,7 +76,9 @@ class Parlor(volent.VolEntity):
     conn -- the Jabber client agent.
     adminjids -- the JID which is permitted to send admin commands.
     gameclass -- the Game subclass which implements the game.
-    botclass -- the Bot subclass which implements the bot (or None).
+    botclasses -- list of Bot subclasses which implement the bots (may be
+        empty).
+    botfactories -- list of factory JIDs which the parlor recommends.
     gamename -- the game's human-readable name (taken from gameclass).
     referees -- dict mapping resource strings to Referees.
     actors -- dict mapping resource strings to Actors.
@@ -92,6 +94,7 @@ class Parlor(volent.VolEntity):
     refereedied() -- callback invoked when a Referee shuts down.
     actordied() -- callback invoked when an Actor (bot) shuts down.
     listopengames() -- create a DiscoItems list of currently-active games.
+    listbots() -- create a DiscoItems list of available bot URIs.
     stopunlessgraceful() -- stop the given entity if we are in the middle
         of an ungraceful shutdown.
     handlerosterquery() -- accept a request to be added to someone's roster.
@@ -136,18 +139,19 @@ class Parlor(volent.VolEntity):
         if (not gameclass.ruleseturi):
             raise TypeError('gameclass does not define class.ruleseturi')
 
-        # Locate the bot class (if there is one).
-        
-        self.botclass = None
-        if (config.get('bot')):
-            ls = config.get('bot').split('.')
+        # Locate the bot classes (if there are any).
+        self.botclasses = []
+
+        botls = config.getall('bot')
+        for botclassname in botls:
+            ls = botclassname.split('.')
             if (len(ls) < 2):
                 raise ValueError('botclass must be of the form module.botclass')
             classname = ls[-1]
             modpath = '.'.join(ls[ : -1 ])
             mod = __import__(modpath, globals(), locals(), [classname])
             botclass = getattr(mod, classname)
-            self.botclass = botclass
+            self.botclasses.append(botclass)
         
             if (botclass == bot.Bot
                 or (type(botclass) != types.ClassType)
@@ -158,6 +162,17 @@ class Parlor(volent.VolEntity):
                 or (type(botclass.gameclass) != types.ClassType)
                 or (not issubclass(self.gameclass, botclass.gameclass))):
                 raise ValueError('botclass does not play '+config.get('game'))
+
+            if (not botclass.boturi):
+                raise TypeError('botclass does not define class.boturi')
+
+            if (botclass.boturi in
+                [bc.boturi for bc in self.botclasses[:-1]]):
+                raise TypeError('class.boturi used more than once')
+
+        self.botfactories = []
+        for jidstr in config.getall('bot-factory'):
+            self.botfactories.append(interface.JID(jidstr))
 
         bookjidstr = config.get('bookkeeper', 'bookkeeper@volity.net/volity')
         self.bookkeeperjid = interface.JID(bookjidstr)
@@ -179,8 +194,11 @@ class Parlor(volent.VolEntity):
         self.conn.adddispatcher(self.handlemessage, name='message')
 
         # Set up internal state.
-        
-        self.gamename = gameclass.gamename
+
+        val = config.get('entity-name')
+        if (not val):
+            val = gameclass.gamename        
+        self.gamename = val
         self.log.warning('Game parlor running: %s', self.gamename)
 
         self.referees = {}
@@ -203,7 +221,10 @@ class Parlor(volent.VolEntity):
         info.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
-        form.addfield('description', gameclass.gamedescription)
+        val = config.get('entity-desc')
+        if (not val):
+            val = gameclass.gamedescription
+        form.addfield('description', val)
         form.addfield('ruleset', gameclass.ruleseturi)
         form.addfield('volity-role', self.volityrole)
         form.addfield('ruleset-version', gameclass.rulesetversion)
@@ -229,7 +250,8 @@ class Parlor(volent.VolEntity):
             name='Ruleset URI')
         items.additem(self.jid, node='open_games',
             name='Open games at this parlor')
-        #### "bots": list bot uris, if available
+        items.additem(self.jid, node='bots',
+            name='Bots available from this parlor')
 
         items = disco.additems('ruleset')
         items.additem(
@@ -238,6 +260,7 @@ class Parlor(volent.VolEntity):
             name='Ruleset information (%s)' % gameclass.ruleseturi)
 
         items = disco.additems('open_games', self.listopengames)
+        items = disco.additems('bots', self.listbots)
 
         # Set up the RPC service
         
@@ -448,6 +471,20 @@ class Parlor(volent.VolEntity):
             ref = self.referees[jid]
             if (ref.showtable):
                 items.additem(ref.jid, name=self.gamename)
+        return items
+
+    def listbots(self):
+        """listbots() -> DiscoItems
+
+        Create a DiscoItems list of available bot algorithms. This is used
+        when responding to disco#items queries.
+        """
+        
+        items = jabber.disco.DiscoItems()
+        for botclass in self.botclasses:
+            items.additem(self.jid, node=botclass.boturi, name=botclass.getname())
+        for jid in self.botfactories:
+            items.additem(jid)
         return items
 
     def stopunlessgraceful(self, ent):
