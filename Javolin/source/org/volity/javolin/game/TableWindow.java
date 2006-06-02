@@ -140,6 +140,7 @@ public class TableWindow extends JFrame
     private TableLinkHandler mLinkHandler;
     private TableDefaultCallback mDefaultCallback;
     private TableMetadataProvider mMetadataProvider;
+    private List mAvailableBots = null;
 
     private boolean mGameTableStarted = false;
     private boolean mGameViewportStarted = false;
@@ -528,6 +529,33 @@ public class TableWindow extends JFrame
             // Re-raise exception, so that the constructor fails
             throw ex;
         }
+
+        // And, as an afterthought, check the list of available bots.
+        mParlor.getAvailableBots(new GameServer.AvailableBotCallback() {
+                public void run(List bots) {
+                    assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+                    mAvailableBots = bots;
+                    AppMenuBar.notifyUpdateInviteBotMenu(TableWindow.this);
+                    if (bots == null)
+                        return;
+
+                    // Now check any factories in that list.
+                    for (int ix=0; ix<bots.size(); ix++) {
+                        Object obj = bots.get(ix);
+                        if (obj instanceof GameServer.AvailableFactory) {
+                            GameServer.AvailableFactory factory = (GameServer.AvailableFactory)obj;
+                            if (factory.getList() == null) {
+                                mParlor.getFactoryAvailableBots(factory, new Runnable() {
+                                        public void run() {
+                                            assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+                                            AppMenuBar.notifyUpdateInviteBotMenu(TableWindow.this);
+                                        }
+                                    });
+                            }
+                        }
+                    }
+                }
+            });
     }
 
     /**
@@ -956,6 +984,16 @@ public class TableWindow extends JFrame
     }
 
     /**
+     * Get the list of bot (algorithm) URIs that the table has gleaned from the
+     * parlor. If no bots are available, returns an empty list. If we haven't
+     * managed to ask the parlor, returns null.
+     */
+    public List getAvailableBots() 
+    {
+        return mAvailableBots;
+    }
+
+    /**
      * Saves window state to the preferences storage, including window size and position,
      * and splitter bar positions.
      */
@@ -1381,10 +1419,28 @@ public class TableWindow extends JFrame
     }
 
     /**
-     * Send a request for a retainer bot.
+     * Send a request for a retainer bot, created by the parlor. If the parlor
+     * offers multiple bots, a default bot will be chosen.
      */
     public void doInviteBot() {
         mGameTable.getReferee().addBot(mDefaultCallback, null);
+    }
+
+    /**
+     * Send a request for a retainer bot from the given factory, with the given
+     * bot URI. If jid is null (or the parlor or referee JID), the bot will be
+     * created by the parlor. If both arguments are null, this is equivalent to
+     * doInviteBot().
+     */
+    public void doInviteBot(String uri, String jid) {
+        if (jid == null && uri == null) {
+            doInviteBot();
+            return;
+        }
+
+        if (jid == null)
+            jid = "";
+        mGameTable.getReferee().addBot(uri, jid, mDefaultCallback, null);
     }
 
     /**

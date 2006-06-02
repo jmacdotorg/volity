@@ -127,6 +127,19 @@ public class Referee extends TokenRequester {
     }
 
     /**
+     * Ask the referee to add a bot to this game, with a particular URI and
+     * JID.
+     */
+    public void addBot(String uri, String jid,
+        RPCBackground.Callback callback, Object rock) 
+    {
+        List args = Arrays.asList(new String[] { uri, jid });
+
+        new RPCBackground(this, callback, 
+            "volity.add_bot", args, rock);
+    }
+
+    /**
      * Ask the referee to remove a bot from this game.
      * @param jid the (real) JID of the bot to remove.
      */

@@ -9,6 +9,7 @@ import java.net.URLEncoder;
 import java.util.*;
 import java.util.List;
 import javax.swing.*;
+import org.volity.client.GameServer;
 import org.volity.client.data.GameInfo;
 import org.volity.client.data.Metadata;
 import org.volity.javolin.game.TableWindow;
@@ -35,7 +36,12 @@ public class AppMenuBar extends JMenuBar
 {
     private static List menuBarList = new ArrayList();
 
+    private final static String MENUTYPE_PROP = "MenuType";
+    private final static String MENUTYPE_PROP_RESOURCE = "MenuType_Resource";
+    private final static String MENUTYPE_PROP_INVITEBOT = "MenuType_InviteBot";
     private final static String SELECTRESOURCE_PROP = "SelectResource";
+    private final static String INVITEBOT_JID_PROP = "InviteBot_JID";
+    private final static String INVITEBOT_URI_PROP = "InviteBot_URI";
 
     private final static String MENUCMD_ABOUT = "About Gamut...";
     private final static String MENUCMD_PREFERENCES = "Preferences...";
@@ -54,6 +60,7 @@ public class AppMenuBar extends JMenuBar
     private final static String MENUCMD_SELECT_RESOURCE_MENU = "Select New Resources";
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
+    private final static String MENUCMD_INVITE_BOT_MENU = "Request Bot";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
     private final static String MENUCMD_CLEAR_CACHE = "Clear Interface Cache";
@@ -92,6 +99,7 @@ public class AppMenuBar extends JMenuBar
     private JMenu mSelectResourceMenu;
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
+    private JMenu mInviteBotMenu;
     private JMenuItem mGameFinderMenuItem;
     private JMenuItem mShowGameFinderMenuItem;
     private JMenuItem mBugReportMenuItem;
@@ -270,6 +278,11 @@ public class AppMenuBar extends JMenuBar
             mInviteBotMenuItem.setEnabled(false);
         gameMenu.add(mInviteBotMenuItem);
 
+        if (mTableWindow != null) {
+            mInviteBotMenu = new JMenu(MENUCMD_INVITE_BOT_MENU);
+            gameMenu.add(mInviteBotMenu);
+        }
+
         // Window menu
         mWindowMenu = new WindowMenu();
 
@@ -359,6 +372,7 @@ public class AppMenuBar extends JMenuBar
         updateMenuItems();
         updateWindowMenu();
         updateResourceMenu();
+        updateInviteBotMenu();
     }
 
     /**
@@ -388,6 +402,137 @@ public class AppMenuBar extends JMenuBar
     }
 
     /**
+     * Update the "Invite Bot" item and submenu.
+     */
+    private void updateInviteBotMenu() {
+        if (mTableWindow == null)
+            return;
+
+        List resList = mTableWindow.getAvailableBots();
+
+        if (resList == null) {
+            // Offer an invite option, for the default bot.
+            mInviteBotMenuItem.setEnabled(true);
+            mInviteBotMenuItem.setVisible(true);
+            mInviteBotMenuItem.putClientProperty(MENUTYPE_PROP,
+                MENUTYPE_PROP_INVITEBOT);
+            mInviteBotMenuItem.putClientProperty(INVITEBOT_URI_PROP,
+                null);
+            mInviteBotMenuItem.putClientProperty(INVITEBOT_JID_PROP,
+                null);
+
+            mInviteBotMenu.removeAll();
+            mInviteBotMenu.setEnabled(false);
+            mInviteBotMenu.setVisible(false);
+            return;
+        }
+
+        if (resList.size() == 0) {
+            // Display a greyed-out invite option.
+            mInviteBotMenuItem.setEnabled(false);
+            mInviteBotMenuItem.setVisible(true);
+
+            mInviteBotMenu.removeAll();
+            mInviteBotMenu.setEnabled(false);
+            mInviteBotMenu.setVisible(false);
+            return;
+        }
+
+        mInviteBotMenuItem.setEnabled(false);
+        mInviteBotMenuItem.setVisible(false);
+        mInviteBotMenu.removeAll();
+        mInviteBotMenu.setEnabled(true);
+        mInviteBotMenu.setVisible(true);
+
+        /* This ordering algorithm assumes that factory entries are grouped at
+         * the end of the list. */
+
+        for (int ix=0; ix<resList.size(); ix++) {
+            Object obj = resList.get(ix);
+            if (obj instanceof GameServer.AvailableBot) {
+                GameServer.AvailableBot bot = (GameServer.AvailableBot)obj;
+                String title = bot.name;
+                if (title == null || title.equals(""))
+                    title = bot.uri;
+
+                JMenuItem item = new JMenuItem(title);
+                item.putClientProperty(MENUTYPE_PROP, MENUTYPE_PROP_INVITEBOT);
+                item.putClientProperty(INVITEBOT_URI_PROP, bot.uri);
+                item.putClientProperty(INVITEBOT_JID_PROP, bot.jid);
+                item.addActionListener(this);
+                mInviteBotMenu.add(item);
+            }
+            else {
+                GameServer.AvailableFactory factory = (GameServer.AvailableFactory)obj;
+                
+                if (mInviteBotMenu.getMenuComponentCount() != 0)
+                    mInviteBotMenu.addSeparator();
+
+                List subList = factory.getList();
+                if (subList == null) {
+                    String title = factory.name;
+                    if (title == null || title.equals(""))
+                        title = "Factory " + factory.jid;
+                    JMenuItem item = new JMenuItem(title);
+                    item.setEnabled(false);
+                    mInviteBotMenu.add(item);
+                }
+                else {
+                    for (int jx=0; jx<subList.size(); jx++) {
+                        Object obj2 = subList.get(jx);
+                        GameServer.AvailableBot bot = (GameServer.AvailableBot)obj2;
+                        String title = bot.name;
+                        if (title == null || title.equals(""))
+                            title = bot.uri;
+
+                        JMenuItem item = new JMenuItem(title);
+                        item.putClientProperty(MENUTYPE_PROP, MENUTYPE_PROP_INVITEBOT);
+                        item.putClientProperty(INVITEBOT_URI_PROP, bot.uri);
+                        item.putClientProperty(INVITEBOT_JID_PROP, bot.jid);
+                        item.addActionListener(this);
+                        mInviteBotMenu.add(item);
+                    }
+                }
+            }
+        }
+
+        /* Now we do some lame retrofitting. If we've generated an empty
+         * submenu, go back to a lone greyed-out menu option. If we've
+         * generated a submenu of exactly one item, go back to a lone active
+         * menu option. */
+        int count = mInviteBotMenu.getMenuComponentCount();
+
+        if (count == 0) {
+            // Display a greyed-out invite option.
+            mInviteBotMenuItem.setEnabled(false);
+            mInviteBotMenuItem.setVisible(true);
+
+            mInviteBotMenu.removeAll();
+            mInviteBotMenu.setEnabled(false);
+            mInviteBotMenu.setVisible(false);
+            return;
+        }
+
+        if (count == 1) {
+            JMenuItem item = (JMenuItem)mInviteBotMenu.getMenuComponent(0);
+            
+            mInviteBotMenuItem.setEnabled(item.isEnabled());
+            mInviteBotMenuItem.setVisible(true);
+            mInviteBotMenuItem.putClientProperty(MENUTYPE_PROP,
+                item.getClientProperty(MENUTYPE_PROP));
+            mInviteBotMenuItem.putClientProperty(INVITEBOT_URI_PROP,
+                item.getClientProperty(INVITEBOT_URI_PROP));
+            mInviteBotMenuItem.putClientProperty(INVITEBOT_JID_PROP,
+                item.getClientProperty(INVITEBOT_JID_PROP));
+
+            mInviteBotMenu.removeAll();
+            mInviteBotMenu.setEnabled(false);
+            mInviteBotMenu.setVisible(false);
+            return;
+        }
+    }
+
+    /**
      * Update the "Select Resource" item and submenu.
      */
     private void updateResourceMenu() {
@@ -414,6 +559,7 @@ public class AppMenuBar extends JMenuBar
 
             mSelectResourceMenuItem.setEnabled(true);
             mSelectResourceMenuItem.setVisible(true);
+            mSelectResourceMenuItem.putClientProperty(MENUTYPE_PROP, MENUTYPE_PROP_RESOURCE);
             mSelectResourceMenuItem.putClientProperty(SELECTRESOURCE_PROP,
                 uri);
 
@@ -440,6 +586,7 @@ public class AppMenuBar extends JMenuBar
             }
 
             JMenuItem item = new JMenuItem(title);
+            item.putClientProperty(MENUTYPE_PROP, MENUTYPE_PROP_RESOURCE);
             item.putClientProperty(SELECTRESOURCE_PROP, uri);
             item.addActionListener(this);
             mSelectResourceMenu.add(item);
@@ -637,9 +784,6 @@ public class AppMenuBar extends JMenuBar
             else if (source == mInvitePlayerMenuItem) {
                 mTableWindow.doInviteDialog();
             }
-            else if (source == mInviteBotMenuItem) {
-                mTableWindow.doInviteBot();
-            }
             else if (source == mGameHelpMenuItem) {
                 mTableWindow.doGetGameHelp();
             }
@@ -647,9 +791,19 @@ public class AppMenuBar extends JMenuBar
 
         if (source instanceof JComponent) {
             JComponent jsource = (JComponent)source;
-            URI propuri = (URI)jsource.getClientProperty(SELECTRESOURCE_PROP);
-            if (propuri != null && mTableWindow != null) {
-                mTableWindow.doSelectNewResource(propuri);
+
+            String proptype = (String)jsource.getClientProperty(MENUTYPE_PROP);
+            if (proptype == MENUTYPE_PROP_RESOURCE) {
+                URI propuri = (URI)jsource.getClientProperty(SELECTRESOURCE_PROP);
+                if (propuri != null && mTableWindow != null) {
+                    mTableWindow.doSelectNewResource(propuri);
+                }
+            }
+            if (proptype == MENUTYPE_PROP_INVITEBOT) {
+                String propuri = (String)jsource.getClientProperty(INVITEBOT_URI_PROP);
+                String propjid = (String)jsource.getClientProperty(INVITEBOT_JID_PROP);
+                // Either or both may be null.
+                mTableWindow.doInviteBot(propuri, propjid);
             }
         }
     }
@@ -773,6 +927,17 @@ public class AppMenuBar extends JMenuBar
             AppMenuBar bar = (AppMenuBar)it.next();
             if (bar.mTableWindow == win)
                 bar.updateResourceMenu();            
+        }
+    }
+
+    /**
+     * Notify one menu bar that the bot list of its table window has changed.
+     */
+    public static void notifyUpdateInviteBotMenu(TableWindow win) {
+        for (Iterator it = menuBarList.iterator(); it.hasNext(); ) {
+            AppMenuBar bar = (AppMenuBar)it.next();
+            if (bar.mTableWindow == win)
+                bar.updateInviteBotMenu();            
         }
     }
 }

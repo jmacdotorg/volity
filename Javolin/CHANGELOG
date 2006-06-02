@@ -3,6 +3,13 @@ SVN repository.
 
 * the present
 
+Gamut now supports the new bot and bot factory API. If a parlor supplies
+a list of bots, Gamut will let you choose one; if the parlor supplies bot
+factories, the client will query them and display the bots they have
+available. If no bots are available, the "invite bot" menu option will
+be greyed out. Old-style parlors will get the old-style behavior (a single
+"invite bot" menu option, whether they offer bots or not).
+
 Added a "Remember password" option to connect dialog box.
 
 * release 0.3.6

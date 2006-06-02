@@ -1,13 +1,18 @@
 package org.volity.client;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import org.jivesoftware.smack.XMPPConnection;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.IQ;
 import org.jivesoftware.smackx.Form;
 import org.jivesoftware.smackx.FormField;
 import org.jivesoftware.smackx.ServiceDiscoveryManager;
 import org.jivesoftware.smackx.packet.DiscoverInfo;
+import org.jivesoftware.smackx.packet.DiscoverItems;
+import org.volity.client.comm.DiscoBackground;
 import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.GameInfo;
 import org.volity.client.translate.TokenFailure;
@@ -103,4 +108,122 @@ public class GameServer extends TokenRequester
             "volity.new_table", 120, rock);
     }
 
+    /**
+     * Asynchronously fetch the list of bot (algorithm) URIs that this parlor
+     * supports. The callback will be run with a list of AvailableBot objects
+     * (which may be empty). If the parlor query fails, the callback will be
+     * run with a null argument.
+     *
+     * The callback will be executed in the Swing thread.
+     */
+    public void getAvailableBots(final AvailableBotCallback callback) {
+        final String parlorJID = getResponderJID();
+
+        new DiscoBackground(getConnection(),
+            new DiscoBackground.Callback() {
+                public void run(IQ result, XMPPException err, Object rock) {
+                    if (err != null) {
+                        // Not implemented or not available.
+                        callback.run(null);
+                    }
+                    else {
+                        assert (result != null && result instanceof DiscoverItems);
+
+                        List bots = new ArrayList();
+                        
+                        DiscoverItems items = (DiscoverItems)result;
+                        for (Iterator it = items.getItems(); it.hasNext(); ) {
+                            DiscoverItems.Item el = (DiscoverItems.Item)it.next();
+                            if (el.getNode() != null) {
+                                AvailableBot bot = new AvailableBot(el.getEntityID(), el.getNode(), el.getName());
+                                bots.add(bot);
+                            }
+                            else {
+                                /* Don't include the parlor's JID as a factory
+                                 * JID! That would cause a disco storm. */
+                                if (!parlorJID.equals(el.getEntityID())) {
+                                    AvailableFactory factory = new AvailableFactory(el.getEntityID(), el.getName());
+                                    bots.add(factory);
+                                }
+                            }
+                        }
+
+                        callback.run(bots);
+                    }
+                }
+            },
+            DiscoBackground.QUERY_ITEMS, parlorJID, "bots", null);
+    }
+
+    /**
+     * Asynchronously fetch the list of bot (algorithm) URIs from a factory.
+     * (This doesn't really have anything to do with the GameServer object, but
+     * this was a reasonable place to put this function.)
+     *
+     * The resulting list will be placed in factory.list, and then the callback
+     * will be called. If the query fails, neither occurs.
+     *
+     * The callback will be executed in the Swing thread.
+     */
+    public void getFactoryAvailableBots(final AvailableFactory factory, 
+        final Runnable callback) {
+        new DiscoBackground(getConnection(),
+            new DiscoBackground.Callback() {
+                public void run(IQ result, XMPPException err, Object rock) {
+                    if (err != null) {
+                        // Not implemented or not available.
+                    }
+                    else {
+                        assert (result != null && result instanceof DiscoverItems);
+
+                        List bots = new ArrayList();
+                        
+                        DiscoverItems items = (DiscoverItems)result;
+                        for (Iterator it = items.getItems(); it.hasNext(); ) {
+                            DiscoverItems.Item el = (DiscoverItems.Item)it.next();
+                            if (el.getNode() != null) {
+                                AvailableBot bot = new AvailableBot(el.getEntityID(), el.getNode(), el.getName());
+                                bots.add(bot);
+                            }
+                            // no factories from a factory.
+                        }
+
+                        factory.list = bots;
+                        callback.run();
+                    }
+                }
+            },
+            DiscoBackground.QUERY_ITEMS, factory.jid, "bots", null);
+    }
+
+
+    /** Callback for getAvailableBots() */
+    public interface AvailableBotCallback {
+        public void run(List bots);
+    }
+
+    /** Data class for the list of available bots. */
+    static public class AvailableBot {
+        public String jid;
+        public String uri;
+        public String name;
+        public AvailableBot(String jid, String uri, String name) {
+            this.jid = jid;
+            this.uri = uri;
+            this.name = name;
+        }
+    }
+
+    /** Data class for the list of available bots. */
+    static public class AvailableFactory {
+        public String jid;
+        public String name;
+        public List list;
+        public AvailableFactory(String jid, String name) {
+            this.jid = jid;
+            this.name = name;
+            this.list = null;
+        }
+        public List getList() { return list; }
+    }
 }
