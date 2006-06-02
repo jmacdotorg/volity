@@ -419,6 +419,9 @@ class GoSeat(volity.game.Seat):
         
 
 class BarsoomBot(volity.bot.Bot):
+    # this algorithm URI applies to both two-player and four-player games
+    boturi = 'http://eblong.com/zarf/volity/ruleset/barsoom/BarsoomBot.html'
+    
     boardsize = None
     initialscore = 0
     initialnulls = None
@@ -523,6 +526,8 @@ class BarsoomBot(volity.bot.Bot):
 
 class BarsoomBot2(BarsoomBot):
     gameclass = BarsoomGo2
+    ruleseturi = BarsoomGo2.ruleseturi
+    rulesetversion = BarsoomGo2.rulesetversion
 
     boardsize = (8,4)
     initialscore = 0
@@ -540,6 +545,8 @@ class BarsoomBot2(BarsoomBot):
 
 class BarsoomBot4(BarsoomBot):
     gameclass = BarsoomGo4
+    ruleseturi = BarsoomGo4.ruleseturi
+    rulesetversion = BarsoomGo4.rulesetversion
 
     boardsize = (8,8)
     initialscore = 15

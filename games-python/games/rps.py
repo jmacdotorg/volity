@@ -219,6 +219,10 @@ class RPSBot(volity.bot.Bot):
     """
     
     gameclass = RPS
+    ruleseturi = RPS.ruleseturi
+    rulesetversion = RPS.rulesetversion
+    boturi = 'http://volity.org/games/rps/bots/random'
+    botname = 'Zarf\'s RPS Bot'
 
     def begingame(self):
         """begingame() -> None
@@ -254,18 +258,24 @@ class RPSBot(volity.bot.Bot):
 class RPSScissorsBot(RPSBot):
     """Designed to beat PaperBot.
     """
+    boturi = 'http://volity.org/games/rps/bots/scissors'
+    botname = 'Zarf\'s ScissorsBot'
     def choosehand(self):
         return 'scissors'
 
 class RPSPaperBot(RPSBot):
     """Designed to beat RockBot.
     """
+    boturi = 'http://volity.org/games/rps/bots/paper'
+    botname = 'Zarf\'s PaperBot'
     def choosehand(self):
         return 'paper'
 
 class RPSRockBot(RPSBot):
     """Good old rock! Nothing beats rock.
     """
+    boturi = 'http://volity.org/games/rps/bots/rock'
+    botname = 'Zarf\'s RockBot'
     def choosehand(self):
         return 'rock'
 
