@@ -18,7 +18,7 @@
 package org.volity.javolin;
 
 import java.awt.*;
-import java.util.prefs.*;
+import java.util.prefs.Preferences;
 
 /**
  * Handles saving and restoring the size and position of a Dialog or Frame in the

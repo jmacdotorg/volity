@@ -20,7 +20,7 @@ package org.volity.javolin;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-import java.util.prefs.*;
+import java.util.prefs.Preferences;
 import javax.swing.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
