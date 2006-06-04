@@ -25,8 +25,8 @@ import org.volity.javolin.URLChooser;
 /**
  * The dialog which lets you select a game resource from the list available.
  *
- * This is a modal dialog; you call show(), let it do its thing, and get
- * control back when the dialog closes. You then call getSuccess() to see
+ * This is a modal dialog; you call setVisible(true), let it do its thing, and
+ * get control back when the dialog closes. You then call getSuccess() to see
  * whether the user selected something or cancelled; then getResult() to
  * retrieve the URL that was selected.
  */
