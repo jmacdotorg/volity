@@ -48,6 +48,19 @@ sub description {
 Volity::Info::Game->set_sql(with_player =>
 			    "select distinct game_seat.game_id from game_seat, player_seat where game_seat.seat_id = player_seat.seat_id and player_seat.player_id = ?");
 
+Volity::Info::Game->set_sql(with_player_and_player =>
+			    "
+    SELECT DISTINCT game_seat.game_id
+    FROM game_seat
+    INNER JOIN player_seat ON
+        game_seat.seat_id = player_seat.seat_id AND                       
+        player_seat.player_id = ?
+    INNER JOIN game_seat AS gs2 ON game_seat.game_id=gs2.game_id
+    INNER JOIN player_seat AS ps2 ON
+        gs2.seat_id = ps2.seat_id AND
+        ps2.player_id = ?"
+			    );
+
 Volity::Info::Game->set_sql(with_player_and_limits_by_end_time =>
 			    "select distinct game.id from game, game_seat, player_seat where game.id = game_seat.game_id and game_seat.seat_id = player_seat.seat_id and player_seat.player_id = ? order by game.end_time desc limit ?, ?");
 
