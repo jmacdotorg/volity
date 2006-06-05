@@ -4,6 +4,7 @@ lib/Volity/Bookkeeper.pm
 lib/Volity/Info.pm
 lib/Volity/Info/Game.pm
 lib/Volity/Info/Player.pm
+lib/Volity/Info/PlayerAttitude.pm
 lib/Volity/Info/Ruleset.pm
 lib/Volity/Info/Feature.pm
 lib/Volity/Info/File.pm
