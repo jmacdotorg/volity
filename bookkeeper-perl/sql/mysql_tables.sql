@@ -55,6 +55,8 @@ DROP TABLE IF EXISTS `player`;
 CREATE TABLE `player` (
   `jid` char(32) NOT NULL default '',
   `id` int(11) NOT NULL auto_increment,
+  `bad_attitude_total` int(11) default '0',
+  `good_attitude_total` int(11) default '0',
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -68,6 +70,20 @@ CREATE TABLE `player_attitude` (
   `to_id` int(11) NOT NULL default '0',
   `attitude` tinyint(4) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+/*!50003 SET @OLD_SQL_MODE=@@SQL_MODE*/;
+DELIMITER ;;
+/*!50003 SET SESSION SQL_MODE="" */;;
+/*!50003 CREATE */ /*!50017 DEFINER=`root`@`localhost` */ /*!50003 TRIGGER `insert_attitude` AFTER INSERT ON `player_attitude` FOR EACH ROW call add_attitude(new.attitude, new.to_id) */;;
+
+/*!50003 SET SESSION SQL_MODE="" */;;
+/*!50003 CREATE */ /*!50017 DEFINER=`root`@`localhost` */ /*!50003 TRIGGER `update_attitude` AFTER UPDATE ON `player_attitude` FOR EACH ROW begin call remove_attitude(old.attitude, old.to_id); call add_attitude(new.attitude, new.to_id); end */;;
+
+/*!50003 SET SESSION SQL_MODE="" */;;
+/*!50003 CREATE */ /*!50017 DEFINER=`root`@`localhost` */ /*!50003 TRIGGER `delete_attitude` AFTER DELETE ON `player_attitude` FOR EACH ROW call remove_attitude(old.attitude, old.to_id) */;;
+
+DELIMITER ;
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE */;
 
 --
 -- Table structure for table `player_seat`
@@ -199,6 +215,35 @@ CREATE TABLE `ui_file_language` (
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
+
+--
+-- Dumping routines for database 'volity'
+--
+DELIMITER ;;
+/*!50003 DROP PROCEDURE IF EXISTS `add_attitude` */;;
+/*!50003 SET SESSION SQL_MODE=""*/;;
+/*!50003 CREATE PROCEDURE `add_attitude`(attitude int, player_id int)
+begin 
+if (attitude = 1) 
+then update player set good_attitude_total = good_attitude_total + 1 where id = player_id;
+elseif (attitude = -1)
+then update player set bad_attitude_total = bad_attitude_total + 1 where id = player_id;
+end if;
+end */;;
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE*/;;
+/*!50003 DROP PROCEDURE IF EXISTS `remove_attitude` */;;
+/*!50003 SET SESSION SQL_MODE=""*/;;
+/*!50003 CREATE PROCEDURE `remove_attitude`(attitude int, player_id int)
+begin 
+if (attitude = 1) 
+then update player set good_attitude_total = good_attitude_total - 1 where id = player_id;
+elseif (attitude = -1)
+then update player set bad_attitude_total = bad_attitude_total - 1 where id = player_id;
+end if;
+end */;;
+/*!50003 SET SESSION SQL_MODE=@OLD_SQL_MODE*/;;
+DELIMITER ;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
