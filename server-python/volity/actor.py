@@ -742,8 +742,10 @@ class BotAdminOpset(rpc.MethodOpset):
         
         if (not self.actor.creator.isadminjid(sender)):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
-        self.actor.log.warning('admin command from <%s>: %s %s',
-            unicode(sender), namehead, unicode(callargs))
+        # Log the command that we're about to perform.
+        if (namehead in ['shutdown']):
+            self.actor.log.warning('admin command from <%s>: %s %s',
+                unicode(sender), namehead, unicode(callargs))
 
     def rpc_status(self, sender, *args):
         """rpc_status() -> dict

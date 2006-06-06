@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 1.6.2:
+The Volity entities will now log only the admin commands that cause them
+    to do things (and not the ones that only retrieve status information).
+
 - 1.6.1:
 Added command-line options to volityd.py: --bot-factory, --entity-name,
     --entity-description. --bot and --bot-factory can be used multiple

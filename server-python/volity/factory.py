@@ -579,8 +579,9 @@ class FactoryAdminOpset(rpc.MethodOpset):
         if (not self.factory.isadminjid(sender)):        
             raise interface.StanzaNotAuthorized('admin operations are restricted')
         # Log the command that we're about to perform.
-        self.factory.log.warning('admin command from <%s>: %s %s',
-            unicode(sender), namehead, unicode(callargs))
+        if (not (namehead in ['status'] or namehead.startswith('list'))):
+            self.factory.log.warning('admin command from <%s>: %s %s',
+                unicode(sender), namehead, unicode(callargs))
 
     def rpc_status(self, sender, *args):
         """rpc_status() -> dict

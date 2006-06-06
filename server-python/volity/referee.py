@@ -7,6 +7,9 @@ from zymb.jabber import rpc
 import zymb.jabber.dataform
 import zymb.jabber.keepalive
 
+#### playeraddexternalbot should parse the return value for volity.ok
+#### or volity.TOKEN, really
+
 # Constants for the five referee states.
 STATE_SETUP     = intern('setup')
 STATE_ACTIVE    = intern('active')
@@ -2636,8 +2639,10 @@ class RefAdminOpset(rpc.MethodOpset):
         
         if (not self.parlor.isadminjid(sender)):
             raise interface.StanzaNotAuthorized('admin operations are restricted')
-        self.parlor.log.warning('admin command from <%s>: %s %s',
-            unicode(sender), namehead, unicode(callargs))
+        # Log the command that we're about to perform.
+        if (namehead in ['announce','shutdown']):
+            self.parlor.log.warning('admin command from <%s>: %s %s',
+                unicode(sender), namehead, unicode(callargs))
 
     def rpc_status(self, sender, *args):
         """rpc_status() -> dict

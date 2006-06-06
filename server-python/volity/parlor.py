@@ -637,8 +637,9 @@ class ParlorAdminOpset(rpc.MethodOpset):
         if (not self.parlor.isadminjid(sender)):        
             raise interface.StanzaNotAuthorized('admin operations are restricted')
         # Log the command that we're about to perform.
-        self.parlor.log.warning('admin command from <%s>: %s %s',
-            unicode(sender), namehead, unicode(callargs))
+        if (not (namehead in ['status'] or namehead.startswith('list'))):
+            self.parlor.log.warning('admin command from <%s>: %s %s',
+                unicode(sender), namehead, unicode(callargs))
 
     def rpc_status(self, sender, *args):
         """rpc_status() -> dict
