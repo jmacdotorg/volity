@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Added a "Request Bot From..." menu option, for when the bookkeeper doesn't
+know about your bot.
+
 Gamut now supports the new bot and bot factory API. If a parlor supplies
 a list of bots, Gamut will let you choose one; if the parlor supplies bot
 factories, the client will query them and display the bots they have

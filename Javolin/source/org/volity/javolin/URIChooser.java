@@ -11,8 +11,9 @@ import org.volity.javolin.BaseDialog;
 /**
  * Extremely simple dialog which accepts a typed-in URI.
  *
- * To use this, create a URIChooser, show() it, and then call getResult().
- * If the result is null, then the user hit "cancel" instead of "ok".
+ * To use this, create a URIChooser, call setVisible(true), and then call
+ * getResult(). If the result is null, then the user hit "cancel" instead of
+ * "ok".
  */
 public class URIChooser extends BaseDialog
 {

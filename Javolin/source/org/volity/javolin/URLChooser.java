@@ -11,8 +11,9 @@ import org.volity.javolin.BaseDialog;
 /**
  * Extremely simple dialog which accepts a typed-in URL.
  *
- * To use this, create a URLChooser, show() it, and then call getResult().
- * If the result is null, then the user hit "cancel" instead of "ok".
+ * To use this, create a URLChooser, setVisible(true), and then call
+ * getResult(). If the result is null, then the user hit "cancel" instead of
+ * "ok".
  */
 public class URLChooser extends BaseDialog
 {

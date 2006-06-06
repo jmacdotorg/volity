@@ -10,8 +10,9 @@ import org.volity.javolin.BaseDialog;
 /**
  * Extremely simple dialog which accepts a typed-in JID.
  *
- * To use this, create a JIDChooser, show() it, and then call getResult().
- * If the result is null, then the user hit "cancel" instead of "ok".
+ * To use this, create a JIDChooser, setVisible(true), and then call
+ * getResult(). If the result is null, then the user hit "cancel" instead of
+ * "ok".
  *
  * Subclasses handle choosing JIDs of particular types. Currently,
  * JIDChooser.Factory is the only subclass.

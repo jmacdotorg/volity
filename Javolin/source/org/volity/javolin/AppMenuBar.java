@@ -61,6 +61,7 @@ public class AppMenuBar extends JMenuBar
     private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
     private final static String MENUCMD_INVITE_BOT = "Request Bot";
     private final static String MENUCMD_INVITE_BOT_MENU = "Request Bot";
+    private final static String MENUCMD_INVITE_BOT_SELECT = "Request Bot From...";
     private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
     private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
     private final static String MENUCMD_CLEAR_CACHE = "Clear Interface Cache";
@@ -100,6 +101,7 @@ public class AppMenuBar extends JMenuBar
     private JMenuItem mInvitePlayerMenuItem;
     private JMenuItem mInviteBotMenuItem;
     private JMenu mInviteBotMenu;
+    private JMenuItem mInviteBotSelectMenuItem;
     private JMenuItem mGameFinderMenuItem;
     private JMenuItem mShowGameFinderMenuItem;
     private JMenuItem mBugReportMenuItem;
@@ -273,6 +275,7 @@ public class AppMenuBar extends JMenuBar
 
         mInviteBotMenuItem = new JMenuItem(MENUCMD_INVITE_BOT);
         mInviteBotMenuItem.addActionListener(this);
+        setAccelerator(mInviteBotMenuItem, KeyEvent.VK_B);
         setPlatformMnemonic(mInviteBotMenuItem, KeyEvent.VK_B);
         if (mTableWindow == null) 
             mInviteBotMenuItem.setEnabled(false);
@@ -281,6 +284,11 @@ public class AppMenuBar extends JMenuBar
         if (mTableWindow != null) {
             mInviteBotMenu = new JMenu(MENUCMD_INVITE_BOT_MENU);
             gameMenu.add(mInviteBotMenu);
+
+            mInviteBotSelectMenuItem = new JMenuItem(MENUCMD_INVITE_BOT_SELECT);
+            mInviteBotSelectMenuItem.addActionListener(this);
+            setPlatformMnemonic(mInviteBotSelectMenuItem, KeyEvent.VK_V);
+            gameMenu.add(mInviteBotSelectMenuItem);
         }
 
         // Window menu
@@ -529,6 +537,16 @@ public class AppMenuBar extends JMenuBar
             mInviteBotMenu.setEnabled(false);
             mInviteBotMenu.setVisible(false);
             return;
+        }
+
+        /* And if there's still a menu, set the first active item to be
+         * cmd-B. */
+        for (int ix=0; ix<count; ix++) {
+            JMenuItem item = (JMenuItem)mInviteBotMenu.getMenuComponent(ix);
+            if (item.isEnabled()) {
+                setAccelerator(item, KeyEvent.VK_B);
+                break;
+            }
         }
     }
 
@@ -783,6 +801,9 @@ public class AppMenuBar extends JMenuBar
             }
             else if (source == mInvitePlayerMenuItem) {
                 mTableWindow.doInviteDialog();
+            }
+            else if (source == mInviteBotSelectMenuItem) {
+                mTableWindow.doInviteBotSelect();
             }
             else if (source == mGameHelpMenuItem) {
                 mTableWindow.doGetGameHelp();

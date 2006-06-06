@@ -1444,6 +1444,22 @@ public class TableWindow extends JFrame
     }
 
     /**
+     * Bring up a dialog to select a factory and bot URI. Then send the
+     * new-bot request.
+     */
+    public void doInviteBotSelect() {
+        ChooseFactoryBotDialog box =
+            new ChooseFactoryBotDialog(mGameTable.getConnection(),
+                mParlor.getRuleset());
+        box.setVisible(true);
+
+        if (!box.getSuccess())
+            return;
+
+        doInviteBot(box.getBotURI(), box.getFactoryJID());
+    }
+
+    /**
      * Given a list of full JIDs, send an invitation to each of them, in
      * parallel. This does *not* give user feedback on failures. It is intended
      * for use on a collection of users (or a collection of resources of the
