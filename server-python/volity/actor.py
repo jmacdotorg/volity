@@ -114,7 +114,8 @@ class Actor(volent.VolEntity):
         self.basenick = basenick
         self.resource = resource
 
-        volent.VolEntity.__init__(self, jid, password, resource)
+        volent.VolEntity.__init__(self, jid, password, resource,
+            secure=creator.jabbersecurity)
 
         self.refstate = STATE_SETUP
         self.seats = {}

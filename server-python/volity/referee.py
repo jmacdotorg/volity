@@ -165,8 +165,10 @@ class Referee(volent.VolEntity):
         self.muc = muc
         self.mucnick = interface.JID(jid=muc)
         self.mucnick.setresource('referee')
+        self.jabbersecurity = parlor.jabbersecurity
         
-        volent.VolEntity.__init__(self, jid, password, resource)
+        volent.VolEntity.__init__(self, jid, password, resource,
+            secure=self.jabbersecurity)
 
         # Lots of internal state to set up.
 

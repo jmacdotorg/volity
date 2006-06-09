@@ -96,9 +96,10 @@ class Factory(volent.VolEntity):
     volityrole = 'factory'
 
     def __init__(self, config):
+        self.jabbersecurity = config.get('jabber-security')
         volent.VolEntity.__init__(self, config.get('jid'),
             config.get('password'), config.get('jid-resource'),
-            config.get('host'))
+            config.get('host'), secure=self.jabbersecurity)
 
         # Set the default shutdown conditions
             

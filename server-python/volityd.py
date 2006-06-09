@@ -81,6 +81,11 @@ Jabber servers make an effort to never allow your connection to become
 completely idle. But if this is a problem for you, use the --keepalive
 option.
 
+If you get errors of the form "unable to begin ssl on <host>: 'module'
+object has no attribute 'ssl'", then your Python installation lacks the SSL
+module. (This has been observed on Windows.) Set "--jabber-security none"
+to run Jabber with no SSL encryption.
+
 If you set --admin to one of your Jabber IDs, you will be able to send
 administrative commands and queries to your server, via Jabber. (Only the
 JID you specify is permitted to send these commands.) Currently there is
@@ -159,6 +164,8 @@ set the --contact-jid option.
       bookkeeper@volity.net/volity)
   --admin=JID, [admin]
       identity permitted to send admin messages (or comma-separated list)
+  --jabber-security=SECURE, [jabber-security]
+      Jabber connection security level (default: TLS)
   --restart-script=PATH, [restart-script]
       location of volityd.py, or whatever script you want to restart dead
       parlors (default: do not restart)
@@ -254,6 +261,9 @@ popt.add_option('--bookkeeper',
 popt.add_option('--admin',
     action='store', type='string', dest='admin', metavar='JID',
     help='identity permitted to send admin messages (or comma-separated list)')
+popt.add_option('--jabber-security',
+    action='store', type='string', dest='jabbersecurity', metavar='SECURE',
+    help='Jabber connection security level (default: TLS)')
 popt.add_option('--restart-script',
     action='store', type='string', dest='restartscript', metavar='PATH',
     help='location of volityd.py, or whatever script you want to restart dead parlors (default: do not restart)')
@@ -307,6 +317,7 @@ if (opts.keepalive):
     argmap['keepalive'] = 'True'
 if (opts.keepaliveinterval):
     argmap['keepalive-interval'] = str(opts.keepaliveinterval)
+argmap['jabber-security'] = opts.jabbersecurity
 argmap['admin'] = opts.admin
 argmap['restart-script'] = opts.restartscript
 argmap['logfile'] = opts.logfile

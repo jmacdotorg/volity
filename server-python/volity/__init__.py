@@ -68,6 +68,11 @@ config -- parses configuration files
 
 * Version history:
 
+- unreleased:
+Added a "--jabber-security" option to force Jabber to run without
+    encryption. (This may be necessary on Windows systems that lack an
+    SSL module.)
+
 - 1.6.2:
 The Volity entities will now log only the admin commands that cause them
     to do things (and not the ones that only retrieve status information).

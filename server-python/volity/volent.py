@@ -19,12 +19,15 @@ class VolEntity(zymb.sched.Agent):
     A VolEntity is an Agent itself, so it can use all the scheduling and
     queueing features defined in Zymb's sched module.
 
-    VolEntity(jidstr, password, jidresource=None, host=None) -- constructor.
+    VolEntity(jidstr, password, jidresource=None, host=None,
+        secure=client.SECURE_DEFAULT) -- constructor.
 
     The *jidstr* and *password* are used to connect to a Jabber server.
     If *jidresource* is provided, it overrides the resource string in
     *jidstr*. (If neither resource string is available, "volity" is used.)
     If *host* is provided, it overrides the server name in *jidstr*.
+    If *secure* is provided, it should be 'none', 'ssl', or 'tls' (as
+    defined in the SECURE_* constants in the zymb.client module).
 
     Static methods:
 
@@ -62,7 +65,9 @@ class VolEntity(zymb.sched.Agent):
     logprefix = 'volity'
     volityrole = 'UNDEFINED'
 
-    def __init__(self, jidstr, password, jidresource=None, host=None):
+    def __init__(self, jidstr, password, jidresource=None, host=None,
+        secure=jabber.client.SECURE_DEFAULT):
+        
         zymb.sched.Agent.__init__(self)
 
         # Figure out the JID to use.        
@@ -79,8 +84,12 @@ class VolEntity(zymb.sched.Agent):
         self.addhandler('ready', self.startpresence)
 
         # Create the Jabber client agent.
+        if (not secure):
+            secure = jabber.client.SECURE_DEFAULT
+        else:
+            secure = secure.lower()
         self.conn = jabber.client.JabberAuthResource(self.jid,
-            self.password, host=host)
+            self.password, host=host, secure=secure)
 
         # Set up handlers for ourself and the Jabber agent.
         self.conn.addhandler('authresource', self.authed)
