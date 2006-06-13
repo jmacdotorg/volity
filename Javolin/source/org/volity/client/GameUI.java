@@ -30,7 +30,7 @@ public abstract class GameUI implements RPCHandler {
     public static VersionNumber sUIVersion;
     static {
         try {
-            sUIVersion = new VersionNumber("3.1");
+            sUIVersion = new VersionNumber("3.2");
         }
         catch (VersionNumber.VersionFormatException ex) {
             throw new RuntimeException("Unable to create UI version number");
@@ -649,6 +649,7 @@ public abstract class GameUI implements RPCHandler {
         {
             try {
                 defineProperty("players", UISeat.class, PERMANENT);
+                defineProperty("nicknames", UISeat.class, PERMANENT);
             } catch (PropertyException e) {
                 throw new RuntimeException(e.toString());
             }
@@ -672,6 +673,20 @@ public abstract class GameUI implements RPCHandler {
                 for (Iterator it = seat.getPlayers(); it.hasNext(); ) {
                     Player player = (Player)it.next();
                     ls.put(count++, ls, player.getJID());
+                }
+            }
+            return ls;
+        }
+
+        public Object getNicknames() throws JavaScriptException {
+            Context context = Context.getCurrentContext();
+            Scriptable ls = context.newArray(scope, 0);
+            Seat seat = table.getSeat(id);
+            if (seat != null) {
+                int count = 0;
+                for (Iterator it = seat.getPlayers(); it.hasNext(); ) {
+                    Player player = (Player)it.next();
+                    ls.put(count++, ls, player.getNick());
                 }
             }
             return ls;

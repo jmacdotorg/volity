@@ -712,6 +712,7 @@ public abstract class TestUI
         {
             try {
                 defineProperty("players", UISeat.class, PERMANENT);
+                defineProperty("nicknames", UISeat.class, PERMANENT);
             } catch (PropertyException e) {
                 throw new RuntimeException(e.toString());
             }
@@ -732,6 +733,16 @@ public abstract class TestUI
             ls.put(0, ls, id+"@testbench/app");
             if (currentSeat != null && id.equals(currentSeat)) {
                 ls.put(1, ls, "you@testbench/testbench");
+            }
+            return ls;
+        }
+
+        public Object getNicknames() throws JavaScriptException {
+            Context context = Context.getCurrentContext();
+            Scriptable ls = context.newArray(scope, 0);
+            ls.put(0, ls, id);
+            if (currentSeat != null && id.equals(currentSeat)) {
+                ls.put(1, ls, "you");
             }
             return ls;
         }
