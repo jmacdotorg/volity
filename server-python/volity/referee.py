@@ -17,6 +17,11 @@ STATE_DISRUPTED = intern('disrupted')
 STATE_ABANDONED = intern('abandoned')
 STATE_SUSPENDED = intern('suspended')
 
+# Constants for the presencechange() game method.
+ACTION_JOINED   = intern('joined')
+ACTION_LEFT     = intern('left')
+ACTION_NICKNAME = intern('nickname')
+
 # slightly late import
 import volent
 
@@ -908,8 +913,13 @@ class Referee(volent.VolEntity):
                     unicode(player))
                 player.live = True
                 player.aware = False
+                self.queueaction(self.game.presencechange, player.jid,
+                    ACTION_JOINED)
                 if (player.seat):
                     self.queueaction(self.reportsit, player, player.seat)
+            else:
+                self.queueaction(self.game.presencechange, player.jid,
+                    ACTION_NICKNAME)
                 
             return
 
@@ -917,6 +927,8 @@ class Referee(volent.VolEntity):
         player = Player(self, jid, nick, isbot)
         self.players[jidstr] = player
         self.playernicks[nick] = player
+        
+        self.queueaction(self.game.presencechange, player.jid, ACTION_JOINED)
 
     def playerleft(self, jid, nick):
         """playerleft(jid, nick) -> None
@@ -948,6 +960,11 @@ class Referee(volent.VolEntity):
             player.nick = None
             player.live = False
             player.aware = False
+            # However, we send out player_stood() RPCs. When the player
+            # returns, we will send out player_sat() RPCs.
+            seat = player.seat
+            self.queueaction(self.reportstand, player, seat)
+            self.queueaction(self.game.presencechange, player.jid, ACTION_LEFT)
             return
         
         if (player.seat):
@@ -966,6 +983,7 @@ class Referee(volent.VolEntity):
         player.nick = None
         player.live = False
         player.aware = False
+        self.queueaction(self.game.presencechange, player.jid, ACTION_LEFT)
 
     def playersit(self, sender, jidstr, seatid=None):
         """playersit(sender, jidstr, seatid=None) -> str
@@ -1621,6 +1639,7 @@ class Referee(volent.VolEntity):
         """
         self.log.info('player %s sits in seat %s', unicode(player), seat.id)
         self.sendall('volity.player_sat', player.jidstr, seat.id)
+        self.game.seatchange(player, seat)
         
     def reportstand(self, player, seat):
         """reportstand(player, seat) -> None
@@ -1629,6 +1648,7 @@ class Referee(volent.VolEntity):
         """
         self.log.info('player %s stands from seat %s', unicode(player), seat.id)
         self.sendall('volity.player_stood', player.jidstr)
+        self.game.seatchange(player, None)
 
     def reportreadiness(self, player):
         """reportreadiness(player) -> None

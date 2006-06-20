@@ -73,6 +73,8 @@ class Game:
     unsuspendgame() -- handle game resumption.
     sendconfigstate() -- send the game configuration to a player.
     sendgamestate() -- send the (in-progress) game state to a player.
+    seatchange() -- handle a player sitting or standing.
+    presencechange() -- handle a player connecting or disconnecting.
     destroy() -- finalize anything you want to finalize in your class.
 
     Methods your subclass calls:
@@ -993,6 +995,38 @@ class Game:
         """
         pass
 
+    def seatchange(self, player, seat):
+        """seatchange(player, seat) -> None
+
+        Handle the sitting or standing of a player. If *seat* is None, the
+        player has stood up. Otherwise, *seat* is the seat the player has
+        sat in.
+
+        (If the player shifts from one seat to another, seatchange() is
+        called only once, with the destination seat. If a player disconnects
+        from the table, this is considered to be standing up, so seatchange()
+        is called with *seat* None.)
+
+        Conditions: can be called in any state.
+
+        Default: do nothing. Most games will not need to override this method.
+        """
+        pass
+
+    def presencechange(self, jid, action):
+        """presencechange(jid, action) -> None
+
+        Handle a user connecting or disconnecting from the table. The *jid*
+        will be the (real) JID of the player. The *action* will be
+        ACTION_JOINED, ACTION_LEFT, or ACTION_NICKNAME (for a nickname
+        change); these constants are defined in the referee module.
+
+        Conditions: can be called in any state.
+
+        Default: do nothing. Most games will not need to override this method.
+        """
+        pass
+    
     def destroy(self):
         """destroy() -> None
 

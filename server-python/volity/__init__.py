@@ -72,6 +72,10 @@ config -- parses configuration files
 Added a "--jabber-security" option to force Jabber to run without
     encryption. (This may be necessary on Windows systems that lack an
     SSL module.)
+Added a Game module hook for presence notifications.
+Added a Game module hook for sit/stand notifications.
+Fixed an inconsistency with player_stood/player_sat RPCs; we now send these
+    out when a seated player disconnects and reconnects during play.
 
 - 1.6.2:
 The Volity entities will now log only the admin commands that cause them
