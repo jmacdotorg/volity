@@ -10,6 +10,8 @@ from zymb import jabber
 import zymb.jabber.rpc
 import volity.game
 
+### add a timer option?
+
 NUMSEATS = 24
 ALLOW_LYNCH_PASS = False
 DAY = 'day'
@@ -66,9 +68,7 @@ class Werewolf(volity.game.Game):
         """
 
         for role in self.rolelist:
-            if (not (role == self.role_villager
-                and self.getstate() == volity.game.STATE_SETUP)):
-                player.send('role_count', role, role.count)
+            player.send('role_count', role, role.count)
 
     def sendgamestate(self, player, playerseat):
         """Send the game state information.
@@ -127,21 +127,23 @@ class Werewolf(volity.game.Game):
         """Check whether we have a playable table configuration.
         """
 
-        # During config, the villager count stays zero. We figure it out
-        # from the number of occupied seats and the number of other
-        # assigned roles.
-        assert self.role_villager.count == 0
-
         ls = [ seat for seat in self.getseatlist()
             if not seat.isempty() ]
+        seatcount = len(ls)
+        if (seatcount < 3):
+            raise volity.game.FailureToken('game.need_3_players')
+
+        # Recheck the villager count, just in case
+        self.recomputevillagers()
+        villagers = self.role_villager.count
         total = sum([ role.count for role in self.rolelist ])
-        villagers = len(ls) - total
-        
-        if (villagers < 0):
+
+        assert (seatcount <= total)
+        if (seatcount < total):
             raise volity.game.FailureToken('game.not_enough_players')
         if (self.role_werewolf.count == 0):
             raise volity.game.FailureToken('game.not_enough_wolves')
-        innocents = (total + villagers
+        innocents = (total
             - (self.role_werewolf.count + self.role_warlock.count))
         if (innocents == 0):
             raise volity.game.FailureToken('game.not_enough_innocents')
@@ -152,14 +154,17 @@ class Werewolf(volity.game.Game):
             raise volity.game.FailureToken('game.no_fool_without_seer')
         if (self.role_granger.count == 1):
             raise volity.game.FailureToken('game.not_1_granger')
-        
+
     def begingame(self):
         """Begin-game handler.
         """
         
-        # Figure out how many villagers we have.
+        # Figure out how many villagers we have. For paranoia's sake, we
+        # don't rely on the old role_villager.count value.
+        
         ls = self.getgameseatlist()
-        total = sum([ role.count for role in self.rolelist ])
+        total = sum([ role.count for role in self.rolelist
+            if (role != self.role_villager) ])
         self.role_villager.count = len(ls) - total
         assert self.role_villager.count >= 0
 
@@ -216,7 +221,6 @@ class Werewolf(volity.game.Game):
         
         self.phase = None
         self.sanctuary = None
-        self.role_villager.count = 0
         for role in self.rolelist:
             role.seats = None
             role.choice = None
@@ -226,6 +230,33 @@ class Werewolf(volity.game.Game):
             seat.deathreason = None
             seat.reveals = {}
 
+        self.queueaction(self.recomputevillagers)
+
+    def seatchange(self, player, seat):
+        """Handler for players sitting and standing.
+        """
+        if (self.getstate() == volity.game.STATE_SETUP):
+            self.queueaction(self.recomputevillagers)
+        
+    def recomputevillagers(self):
+        """Decide how many villagers we are currently set up for, based on
+        the number of occupied seats and the number of other roles configured.
+        This will never be negative.
+        """
+        ls = [ seat for seat in self.getseatlist()
+            if not seat.isempty() ]
+        total = sum([ role.count for role in self.rolelist
+            if (role != self.role_villager) ])
+        villagers = len(ls) - total
+        if (villagers < 0):
+            villagers = 0
+
+        role = self.role_villager
+        if (villagers == role.count):
+            return
+        role.count = villagers
+        self.sendtable('role_count', role, role.count)
+            
     def newday(self):
         """Invoked when a new day begins.
         """
@@ -473,6 +504,7 @@ class Werewolf(volity.game.Game):
             
         role.count = count
         self.sendtable('role_count', role, role.count)
+        self.recomputevillagers()
         self.unready()
 
     def rpc_select(self, sender, seatid):
