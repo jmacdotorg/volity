@@ -63,7 +63,6 @@ use warnings;
 use strict;
 
 use URI;
-use Carp qw( croak carp );
 use Date::Parse;
 use Date::Format;
 
@@ -158,7 +157,7 @@ sub game_uri {
         elsif ( not( ref( $_[0] ) ) ) {
             my $uri = URI->new( $_[0] );
             unless ( defined($uri) ) {
-                carp (
+                $self->logger->warn (
 "The game_uri method thinks that this doesn't look like a URI: $_[0]"
                     );
 		return;
@@ -166,7 +165,7 @@ sub game_uri {
             $self->game_uri_object($uri);
         }
         else {
-            carp (
+            $self->logger->warn (
 "You must call game_uri() with either a URI string, or a URI-class object."
                 );
 	    return;
@@ -415,7 +414,7 @@ sub massage_time {
         return ( Date::Format::time2str( "%Y-%m-%dT%H:%M:%S%z", $parsed ) );
     }
     else {
-        carp(
+        $self->logger->warn(
 "I can't parse this timestamp: $time\nPlease use a time string that Date::Parse can understand."
             );
 	return;
