@@ -41,6 +41,7 @@ role_count = role_list.length;
 simple_role_count = 3;
 config_count = [];
 
+suppression = false;
 show_advanced = false;
 current_help_role = null;
 current_help_timer = null;
@@ -69,6 +70,8 @@ function initialize() {
   set_text_by_token(obj, "ui.button_null");
   obj = document.getElementById("advanced-check-text");
   set_text_by_token(obj, "ui.button_advanced");
+  obj = document.getElementById("button_suppression_text");
+  set_text_by_token(obj, "ui.button_suppression");
 
   rebuild_config_panel();
 
@@ -94,6 +97,9 @@ game.role_count = function(role, count) {
 
   config_count[role] = count;
 
+  if (suppression)
+    return;
+
   if ((!show_advanced) && (!is_simple_role(role)) && count > 0) {
     show_advanced = true; 
     rebuild_config_panel();
@@ -115,6 +121,7 @@ volity.start_game = function() {
 
   set_sky(null);
 
+  suppression = false;
   obj = document.getElementById("configscreen");
   set_visibility(obj, false);
   grp = document.getElementById("configpanel");
@@ -134,12 +141,25 @@ volity.game_has_started = function() {
 }
 
 volity.end_game = function() {
-  var obj, grp;
+  suppression = true;
 
   set_sky(null);
 
-  clear_state();
+  is_choosing = false;
+  is_collaborating = false;
+  can_choose_self = false;
+  setup_choices(-1);
 
+  set_message("ui.msg_suppression");
+}
+
+function end_suppression() {
+  var obj, grp, ix, role;
+
+  suppression = false;
+  set_sky(null);
+  clear_state();
+  
   obj = document.getElementById("gamescreen");
   set_visibility(obj, false);
   grp = document.getElementById("gamepanel");
@@ -149,6 +169,12 @@ volity.end_game = function() {
   set_visibility(obj, true);
   grp = document.getElementById("configpanel");
   remove_children(grp);
+
+  for (ix=simple_role_count; ix<role_count; ix++) {
+    role = role_list[ix];
+    if (config_count[role] > 0) 
+      show_advanced = true;
+  }
 
   rebuild_config_panel();
 
@@ -654,6 +680,19 @@ function highlight_config_check(down) {
     obj.setAttribute("fill", "#DDA");
 }
 
+function highlight_button(id, down) {
+  var obj;
+
+  obj = document.getElementById("button_"+id+"_box");
+  if (!obj)
+    return;
+
+  if (down) 
+    obj.setAttribute("fill", "#996");
+  else
+    obj.setAttribute("fill", "#CC8");
+}
+
 function rollover_role_clear() {
   if (current_help_timer) {
     clearTimeout(current_help_timer);
@@ -852,18 +891,20 @@ function set_sanctuary(seat) {
 }
 
 function setup_choices(val) {
-  var objpass, objnull;
+  var objpass, objnull, objsupp;
 
   objpass = document.getElementById("button_pass");
   objnull = document.getElementById("button_null");
+  objsupp = document.getElementById("button_suppression");
 
-  if (val)
+  if (val > 0)
     set_own_selection('');
   else
     set_own_selection(null);
 
   set_visibility(objpass, (val >= 2));
   set_visibility(objnull, (val >= 1));
+  set_visibility(objsupp, (val < 0));
 }
 
 function set_own_selection(seat) {
@@ -1289,9 +1330,13 @@ text {
 
 <g id="button_pass"
 	transform="translate(23.5,0)">
-<rect x="0" y="0" width="35" height="4.5"
+<rect id="button_pass_box"
+	x="0" y="0" width="35" height="4.5"
 	fill="#CC8" stroke="#996" stroke-width="0.2"
-	onclick="click_seat_pass()" />
+	onclick="click_seat_pass()"
+	onmousedown="highlight_button('pass', true)" 
+	onmouseup="highlight_button('pass', false)" 
+	onmouseout="highlight_button('pass', false)" />
 <text id="button_pass_text"
 	x="4" y="3.0" class="Credits" >Choose to do nothing</text>
 <text id="selectcount_pass"
@@ -1305,15 +1350,32 @@ text {
 
 <g id="button_null"
 	transform="translate(61.5,0)">
-<rect x="0" y="0" width="35" height="4.5"
+<rect id="button_null_box"
+	x="0" y="0" width="35" height="4.5"
 	fill="#CC8" stroke="#996" stroke-width="0.2"
-	onclick="click_seat_null()" />
+	onclick="click_seat_null()"
+	onmousedown="highlight_button('null', true)" 
+	onmouseup="highlight_button('null', false)" 
+	onmouseout="highlight_button('null', false)" />
 <text id="button_null_text"
 	x="4" y="3.0" class="Credits" >Still thinking...</text>
 <use id="selectarrow_" 
 	xlink:href="#selectarrow"
 	visibility="hidden"
 	transform="translate(4,0) scale(4)" />
+</g>
+
+<g id="button_suppression"
+	transform="translate(61.5,0)">
+<rect id="button_suppression_box"
+	x="0" y="0" width="35" height="4.5"
+	fill="#CC8" stroke="#996" stroke-width="0.2"
+	onclick="end_suppression()"
+	onmousedown="highlight_button('suppression', true)" 
+	onmouseup="highlight_button('suppression', false)" 
+	onmouseout="highlight_button('suppression', false)" />
+<text id="button_suppression_text"
+	x="4" y="3.0" class="Credits" >Return to configuration</text>
 </g>
 
 <g id="gamepanel" transform="translate(0,7)" >

@@ -33,6 +33,10 @@
   <value>Still thinking...</value>
 </token>
 <token>
+  <key>button_suppression</key>
+  <value>Return to configuration</value>
+</token>
+<token>
   <key>dream</key>
   <value>Your dreams reveal that \1 is a \2.</value>
 </token>
@@ -103,6 +107,10 @@
 <token>
   <key>msg_choose_dream</key>
   <value>Choose a player to dream about tonight.</value>
+</token>
+<token>
+  <key>msg_suppression</key>
+  <value>The game is over. You may return to the configuration screen when ready.</value>
 </token>
 <token>
   <key>won_villager</key>

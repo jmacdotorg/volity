@@ -8,6 +8,7 @@ doing_nothing: (doing nothing)
 button_advanced: Display expert roles
 button_pass: Choose to do nothing
 button_null: Still thinking...
+button_suppression: Return to configuration
 
 dream: Your dreams reveal that \1 is a \2.
 died_villager: You have all lynched \1, who turns out to be a \2.
@@ -29,6 +30,7 @@ msg_choose_priest: \1 a player to protect against tomorrow's lynching.
 msg_choose_slayer: \1 a player to drive a stake into.
 msg_choose_herbalist: \1 a player to protect from Werewolves tonight.
 msg_choose_dream: Choose a player to dream about tonight.
+msg_suppression: The game is over. You may return to the configuration screen when ready.
 
 won_villager: The Villagers have won!
 won_werewolf: The Werewolves have won!
