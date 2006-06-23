@@ -68,7 +68,7 @@ config -- parses configuration files
 
 * Version history:
 
-- unreleased:
+- 1.6.3:
 Added a "--jabber-security" option to force Jabber to run without
     encryption. (This may be necessary on Windows systems that lack an
     SSL module.)

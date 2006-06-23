@@ -73,6 +73,10 @@ class TCP(sched.Agent):
         self.host = host
         self.port = port
         self.sock = sock
+        self.blockerrors = [ errno.EAGAIN, errno.EWOULDBLOCK ]
+        if (hasattr(errno, 'WSAEWOULDBLOCK')):
+            # a Windows error code
+            self.blockerrors.append(errno.WSAEWOULDBLOCK)
         self.addhandler('start', self.connect)
         self.addhandler('end', self.disconnect)
 
@@ -126,7 +130,7 @@ class TCP(sched.Agent):
                 input = input + instr
             except socket.error, ex:
                 (errnum, errstr) = ex
-                if (errnum == errno.EAGAIN):
+                if (errnum in self.blockerrors):
                     # no new data to read
                     break
                 self.log.warning('read error on socket %s:%d: %d: %s',

@@ -30,7 +30,7 @@ simple tasks.
 
 * Version history:
 
-- unreleased:
+- 1.3.4:
 Fixed several bugs in the send() methods of the tcp module. (Thanks to Phil.)
 Fixed the way I was catching SSL socket closed errors.
 Added sendnb() methods to send in a non-blocking way, since the send()
