@@ -232,6 +232,12 @@ class Werewolf(volity.game.Game):
 
         self.queueaction(self.recomputevillagers)
 
+    def unsuspendgame(self):
+        """Resume-game handler.
+        """
+        for pla in self.getplayerlist():
+            self.sendgamestate(pla, pla.seat)
+
     def seatchange(self, player, seat):
         """Handler for players sitting and standing.
         """
@@ -444,16 +450,16 @@ class Werewolf(volity.game.Game):
         """Announce which team won, and end the game.
         """
         
+        # Announce the real roles.
+        for seat in self.getgameseatlist():
+            role = seat.role
+            self.sendtable('reveal', seat, 'end', role)
+        
         # Send out the win message.
         if (evilwin):
             self.sendtable('win', 'werewolf')
         else:
             self.sendtable('win', 'villager')
-        
-        # Announce the real roles.
-        for seat in self.getgameseatlist():
-            role = seat.role
-            self.sendtable('reveal', seat, 'end', role)
         
         ls = [ seat for seat in self.getgameseatlist()
             if (seat.role.isevil == evilwin) ]
