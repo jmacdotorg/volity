@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>villager</key>
+  <value>Villager</value>
+</token>
+<token>
+  <key>villager_pl</key>
+  <value>Villagers</value>
+</token>
+<token>
+  <key>werewolf</key>
+  <value>Werewolf</value>
+</token>
+<token>
+  <key>werewolf_pl</key>
+  <value>Werewolves</value>
+</token>
+<token>
+  <key>seer</key>
+  <value>Seer</value>
+</token>
+<token>
+  <key>seer_pl</key>
+  <value>Seers</value>
+</token>
+<token>
+  <key>warlock</key>
+  <value>Warlock</value>
+</token>
+<token>
+  <key>warlock_pl</key>
+  <value>Warlocks</value>
+</token>
+<token>
+  <key>fool</key>
+  <value>Fool</value>
+</token>
+<token>
+  <key>fool_pl</key>
+  <value>Fools</value>
+</token>
+<token>
+  <key>wolfsbane</key>
+  <value>Wolfsbane</value>
+</token>
+<token>
+  <key>wolfsbane_pl</key>
+  <value>Wolfsbanes</value>
+</token>
+<token>
+  <key>herbalist</key>
+  <value>Herbalist</value>
+</token>
+<token>
+  <key>herbalist_pl</key>
+  <value>Herbalists</value>
+</token>
+<token>
+  <key>slayer</key>
+  <value>Slayer</value>
+</token>
+<token>
+  <key>slayer_pl</key>
+  <value>Slayers</value>
+</token>
+<token>
+  <key>priest</key>
+  <value>Priest</value>
+</token>
+<token>
+  <key>priest_pl</key>
+  <value>Priests</value>
+</token>
+<token>
+  <key>granger</key>
+  <value>Granger</value>
+</token>
+<token>
+  <key>granger_pl</key>
+  <value>Grangers</value>
+</token>
+<token>
+  <key>invalid_role</key>
+  <value>That role was not recognized.</value>
+</token>
+<token>
+  <key>invalid_seat</key>
+  <value>That seat was not recognized.</value>
+</token>
+<token>
+  <key>invalid_role_count</key>
+  <value>There cannot be that many players in a role.</value>
+</token>
+<token>
+  <key>cannot_set_villager_count</key>
+  <value>You may not directly set the number of villagers.</value>
+</token>
+<token>
+  <key>need_3_players</key>
+  <value>The game requires at least three occupied seats.</value>
+</token>
+<token>
+  <key>not_enough_players</key>
+  <value>There are not enough seated players to fulfil the selected roles.</value>
+</token>
+<token>
+  <key>not_enough_wolves</key>
+  <value>There must be at least one werewolf in the village.</value>
+</token>
+<token>
+  <key>too_many_wolves</key>
+  <value>There are too many werewolves for a village of this size.</value>
+</token>
+<token>
+  <key>not_enough_innocents</key>
+  <value>There must be at least one innocent in the village.</value>
+</token>
+<token>
+  <key>no_fool_without_seer</key>
+  <value>To have a fool, the village must have at least one seer.</value>
+</token>
+<token>
+  <key>not_1_granger</key>
+  <value>If the village has grangers, it must have at least two.</value>
+</token>
+<token>
+  <key>has_sanctuary</key>
+  <value>The player you have selected has sanctuary, and may not be lynched today.</value>
+</token>
+<token>
+  <key>must_lynch</key>
+  <value>You may not choose to lynch nobody.</value>
+</token>
+<token>
+  <key>not_self</key>
+  <value>You may not select yourself.</value>
+</token>
+<token>
+  <key>not_cohort</key>
+  <value>You may not select another \1.</value>
+</token>
+<token>
+  <key>not_dead</key>
+  <value>You may not select a player who is dead.</value>
+</token>
+<token>
+  <key>no_dead_vote</key>
+  <value>You are dead, and may not vote.</value>
+</token>
+<token>
+  <key>nothing_to_do</key>
+  <value>You have no selection to make at the moment.</value>
+</token>
+</volitytokens>

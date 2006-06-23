@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>death_villager</key>
+  <value>(hung from a tree)</value>
+</token>
+<token>
+  <key>death_werewolf</key>
+  <value>(torn to shreds)</value>
+</token>
+<token>
+  <key>death_slayer</key>
+  <value>(staked through the heart)</value>
+</token>
+<token>
+  <key>voting_for</key>
+  <value>voting for: \1</value>
+</token>
+<token>
+  <key>doing_nothing</key>
+  <value>(doing nothing)</value>
+</token>
+<token>
+  <key>button_advanced</key>
+  <value>Display expert roles</value>
+</token>
+<token>
+  <key>button_pass</key>
+  <value>Choose to do nothing</value>
+</token>
+<token>
+  <key>button_null</key>
+  <value>Still thinking...</value>
+</token>
+<token>
+  <key>dream</key>
+  <value>Your dreams reveal that \1 is a \2.</value>
+</token>
+<token>
+  <key>died_villager</key>
+  <value>You have all lynched \1, who turns out to be a \2.</value>
+</token>
+<token>
+  <key>died_werewolf</key>
+  <value>You discover \1, a \2, torn to pieces in the night.</value>
+</token>
+<token>
+  <key>died_slayer</key>
+  <value>You discover \1, a \2, killed by a stake through the heart.</value>
+</token>
+<token>
+  <key>no_death_villager</key>
+  <value>No one was lynched today.</value>
+</token>
+<token>
+  <key>no_death_werewolf</key>
+  <value>Strangely, no one was torn apart last night.</value>
+</token>
+<token>
+  <key>no_death_slayer</key>
+  <value>No one was staked last night.</value>
+</token>
+<token>
+  <key>choose</key>
+  <value>Choose</value>
+</token>
+<token>
+  <key>agree_on</key>
+  <value>Agree on</value>
+</token>
+<token>
+  <key>msg_config</key>
+  <value>Decide how many of each kind of person your Village should have.</value>
+</token>
+<token>
+  <key>msg_choose_day</key>
+  <value>Choose another player to lynch.</value>
+</token>
+<token>
+  <key>msg_corpse</key>
+  <value>You are dead, and may only observe now.</value>
+</token>
+<token>
+  <key>msg_sleep</key>
+  <value>You are asleep.</value>
+</token>
+<token>
+  <key>msg_choose_werewolf</key>
+  <value>\1 a player to tear apart.</value>
+</token>
+<token>
+  <key>msg_choose_priest</key>
+  <value>\1 a player to protect against tomorrow's lynching.</value>
+</token>
+<token>
+  <key>msg_choose_slayer</key>
+  <value>\1 a player to drive a stake into.</value>
+</token>
+<token>
+  <key>msg_choose_herbalist</key>
+  <value>\1 a player to protect from Werewolves tonight.</value>
+</token>
+<token>
+  <key>msg_choose_dream</key>
+  <value>Choose a player to dream about tonight.</value>
+</token>
+<token>
+  <key>won_villager</key>
+  <value>The Villagers have won!</value>
+</token>
+<token>
+  <key>won_werewolf</key>
+  <value>The Werewolves have won!</value>
+</token>
+<token>
+  <key>phase_day</key>
+  <value>The sun rises.</value>
+</token>
+<token>
+  <key>phase_night</key>
+  <value>The sun sets.</value>
+</token>
+</volitytokens>

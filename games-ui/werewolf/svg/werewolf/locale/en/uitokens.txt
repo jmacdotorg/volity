@@ -1,0 +1,37 @@
+death_villager: (hung from a tree)
+death_werewolf: (torn to shreds)
+death_slayer: (staked through the heart)
+
+voting_for: voting for: \1
+doing_nothing: (doing nothing)
+
+button_advanced: Display expert roles
+button_pass: Choose to do nothing
+button_null: Still thinking...
+
+dream: Your dreams reveal that \1 is a \2.
+died_villager: You have all lynched \1, who turns out to be a \2.
+died_werewolf: You discover \1, a \2, torn to pieces in the night.
+died_slayer: You discover \1, a \2, killed by a stake through the heart.
+no_death_villager: No one was lynched today.
+no_death_werewolf: Strangely, no one was torn apart last night.
+no_death_slayer: No one was staked last night.
+
+choose: Choose
+agree_on: Agree on
+
+msg_config: Decide how many of each kind of person your Village should have.
+msg_choose_day: Choose another player to lynch.
+msg_corpse: You are dead, and may only observe now.
+msg_sleep: You are asleep.
+msg_choose_werewolf: \1 a player to tear apart.
+msg_choose_priest: \1 a player to protect against tomorrow's lynching.
+msg_choose_slayer: \1 a player to drive a stake into.
+msg_choose_herbalist: \1 a player to protect from Werewolves tonight.
+msg_choose_dream: Choose a player to dream about tonight.
+
+won_villager: The Villagers have won!
+won_werewolf: The Werewolves have won!
+
+phase_day: The sun rises.
+phase_night: The sun sets.

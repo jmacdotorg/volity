@@ -1,0 +1,333 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+
+<script type="text/ecmascript">
+<![CDATA[
+
+
+// ]]>
+</script>
+
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+text {
+	pointer-events: none;
+	text-anchor: start;
+}
+
+.ConfigText {
+	font-size: 0.2;
+}
+
+.ConfigTextBig {
+	font-size: 0.35;
+}
+
+.ConfigTextGoal {
+	font-size: 0.2;
+	font-style: oblique;
+}
+
+.HelpBody {
+	font-size: 2;
+}
+
+]]>
+</style>
+
+<g id="simple_config_villager">
+<text y="0.25" class="ConfigText">
+The Villagers live in fear of Werewolves; but the Villagers are
+</text>
+<text y="0.50" class="ConfigText">
+many and the Werewolves are few. Every day, the Villagers
+</text>
+<text y="0.75" class="ConfigText">
+gather to decide which of their number might be a monster.
+</text>
+<text y="1.00" class="ConfigText">
+Whoever they fear most, dies.
+</text>
+<text y="1.33" class="ConfigTextGoal">
+The Villagers win if they kill all the Werewolves.
+</text>
+</g>
+
+<g id="simple_config_werewolf">
+<text y="0.25" class="ConfigText">
+The Werewolves appear innocent by day; but they hunt the
+</text>
+<text y="0.50" class="ConfigText">
+Villagers by dark. Each night, they agree on a victim and tear
+</text>
+<text y="0.75" class="ConfigText">
+him or her to shreds. The body will be found by the remaining
+</text>
+<text y="1.0" class="ConfigText">
+Villagers at dawn.
+</text>
+<text y="1.33" class="ConfigTextGoal">
+If at least half the population is Werewolves, they win.
+</text>
+</g>
+
+<g id="simple_config_seer">
+<text y="0.25" class="ConfigText">
+A Seer has visionary powers. Each night, the Seer can select 
+</text>
+<text y="0.50" class="ConfigText">
+someone to dream about. At dawn, the Seer will know
+</text>
+<text y="0.75" class="ConfigText">
+whether that person is a Werewolf. But it is dangerous for the
+</text>
+<text y="1.00" class="ConfigText">
+Seer to reveal his talent; the monsters know he is a threat.
+</text>
+<text y="1.33" class="ConfigTextGoal">
+The Seer wins if the Villagers do.
+</text>
+</g>
+
+
+<g id="advanced_config_villager">
+<text y="0.4" class="ConfigTextBig">
+During the day, Villagers vote on
+</text>
+<text y="0.85" class="ConfigTextBig">
+who to lynch. At night, they sleep.
+</text>
+</g>
+
+<g id="advanced_config_werewolf">
+<text y="0.4" class="ConfigTextBig">
+At night, the Werewolves secretly
+</text>
+<text y="0.85" class="ConfigTextBig">
+agree on a victim to kill.
+</text>
+</g>
+
+<g id="advanced_config_seer">
+<text y="0.4" class="ConfigTextBig">
+At night, a Seer secretly selects
+</text>
+<text y="0.85" class="ConfigTextBig">
+someone. A dream will reveal
+</text>
+<text y="1.30" class="ConfigTextBig">
+whether this person is a Werewolf.
+</text>
+</g>
+
+<g id="advanced_config_fool">
+<text y="0.4" class="ConfigTextBig">
+A Fool believes he is a Seer, but
+</text>
+<text y="0.85" class="ConfigTextBig">
+his dreams are confused and
+</text>
+<text y="1.30" class="ConfigTextBig">
+inaccurate.
+</text>
+</g>
+
+<g id="advanced_config_warlock">
+<text y="0.4" class="ConfigTextBig">
+A Warlock dreams like a Seer, but
+</text>
+<text y="0.85" class="ConfigTextBig">
+the Warlock helps the Werewolves;
+</text>
+<text y="1.30" class="ConfigTextBig">
+he wants them to win.
+</text>
+</g>
+
+<g id="advanced_config_granger">
+<text y="0.4" class="ConfigTextBig">
+The Grangers secretly know each
+</text>
+<text y="0.85" class="ConfigTextBig">
+others' identities, so they know
+</text>
+<text y="1.30" class="ConfigTextBig">
+they are not Werewolves.
+</text>
+</g>
+
+<g id="advanced_config_wolfsbane">
+<text y="0.4" class="ConfigTextBig">
+A Wolfsbane repels Werewolves;
+</text>
+<text y="0.85" class="ConfigTextBig">
+the wolves cannot kill him at night.
+</text>
+<text y="1.30" class="ConfigTextBig">
+But he can be lynched.
+</text>
+</g>
+
+<g id="advanced_config_herbalist">
+<text y="0.4" class="ConfigTextBig">
+At night, the Herbalists select
+</text>
+<text y="0.85" class="ConfigTextBig">
+someone. That person cannot be
+</text>
+<text y="1.30" class="ConfigTextBig">
+killed by the wolves that night.
+</text>
+</g>
+
+<g id="advanced_config_priest">
+<text y="0.4" class="ConfigTextBig">
+At night, the Priests give someone
+</text>
+<text y="0.85" class="ConfigTextBig">
+sanctuary. That person cannot be
+</text>
+<text y="1.30" class="ConfigTextBig">
+lynched the next day.
+</text>
+</g>
+
+<g id="advanced_config_slayer">
+<text y="0.4" class="ConfigTextBig">
+At night, the Slayers secretly agree
+</text>
+<text y="0.85" class="ConfigTextBig">
+on a victim to stake. They want the
+</text>
+<text y="1.30" class="ConfigTextBig">
+Villagers to win.
+</text>
+</g>
+
+<g id="help_villager">
+<text x="2.5" y="3" class="HelpBody">
+Villager tips: Try to figure out who is a Werewolf! Pay attention to who accuses who. If 
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+someone accuses a person who turns out to really be a Werewolf, the accuser might
+</text>
+<text x="2.5" y="8" class="HelpBody">
+be a Seer. Remember that the Werewolves might try to throw suspicion on you!
+</text>
+</g>
+
+<g id="help_werewolf">
+<text x="2.5" y="3" class="HelpBody">
+Werewolf tips: Don't let anybody know you're a Werewolf! Throw suspicion on others.
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+If someone is sure you're a Werewolf, he might be a Seer; kill him as soon as possible.
+</text>
+</g>
+
+<g id="help_seer">
+<text x="2.5" y="3" class="HelpBody">
+Seer tips: Your dreams give you an advantage. Try to get known Werewolves lynched,
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+and prevent known Villagers from being accused. But don't be too blatant about it --
+</text>
+<text x="2.5" y="8" class="HelpBody">
+if the Werewolves figure out you're the Seer, they'll kill you.
+</text>
+</g>
+
+<g id="help_fool">
+<text x="2.5" y="3" class="HelpBody">
+Fool tips: If the village contains a Fool, and you think you're a Seer, you might be a 
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+Fool. A Fool's dreams are often wrong. If you have two different dreams about the
+</text>
+<text x="2.5" y="8" class="HelpBody">
+same person on two nights, you're certainly a Fool.
+</text>
+</g>
+
+<g id="help_warlock">
+<text x="2.5" y="3" class="HelpBody">
+Warlock tips: You win (along with the Werewolves) if there are as many Werewolves
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+as other villagers (not counting you). You do not initially know who the Werewolves
+</text>
+<text x="2.5" y="8" class="HelpBody">
+are. Use your dreams to find out, and then work to get innocent Villagers lynched.
+</text>
+</g>
+
+<g id="help_granger">
+<text x="2.5" y="3" class="HelpBody">
+Granger tips: The Grangers are a secret society. You know your fellow Grangers, and
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+it's certain that they're not Werewolves. Protect your fellows from being lynched.
+</text>
+<text x="2.5" y="8" class="HelpBody">
+But if you collaborate too closely, the other Villagers might think you're Werewolves!
+</text>
+</g>
+
+<g id="help_wolfsbane">
+<text x="2.5" y="3" class="HelpBody">
+Wolfsbane tips: If the Werewolves select you as their victim, they'll fail to kill you; they 
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+cannot get near you at night. Once they realize this, they'll probably try to get you
+</text>
+<text x="2.5" y="8" class="HelpBody">
+lynched.
+</text>
+</g>
+
+<g id="help_herbalist">
+<text x="2.5" y="3" class="HelpBody">
+Herbalist tips: Each night you can surround one player's home with wolfsbane. If the
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+Werewolves choose that person as their victim, they will fail to kill him. (If you select
+</text>
+<text x="2.5" y="8" class="HelpBody">
+a Werewolf's home, your efforts are wasted!) The protection only lasts one night.
+</text>
+</g>
+
+<g id="help_priest">
+<text x="2.5" y="3" class="HelpBody">
+Priest tips: Each night you may secretly choose one player, and give him sanctuary.
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+The next day, that person cannot be lynched. Try to protect Villagers, or yourself, or
+</text>
+<text x="2.5" y="8" class="HelpBody">
+the Seer (if you find out who that is). Don't let the Werewolves realize who you are!
+</text>
+</g>
+
+<g id="help_slayer">
+<text x="2.5" y="3" class="HelpBody">
+Slayer tips: Just before dawn, you may sneak out and drive a stake through one
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+player's heart. (Unless the Werewolves kill you first!) Try to eliminate the Werewolves.
+</text>
+<text x="2.5" y="8" class="HelpBody">
+Don't let the Werewolves fool you into murdering your fellow Villagers!
+</text>
+</g>
+
+</defs>
+
+</svg>

@@ -1,0 +1,1331 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+<!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en#lang">
+%localedef; %lang;
+]>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+<title>Werewolf</title>
+
+<metadata
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:volity="http://volity.org/protocol/metadata" >
+  <volity:version>1.0</volity:version>
+  <volity:ruleset>http://volity.org/games/werewolf/</volity:ruleset>
+  <dc:creator>Andrew Plotkin</dc:creator>
+  <dc:modified>2006-06-23</dc:modified>
+</metadata>
+
+
+<script type="text/ecmascript">
+
+faces_path = "faces/werewolf.svg";
+help_path = "locale/&lang;/help.svg";
+
+<![CDATA[
+
+//### use multiple villager/wolf faces if available
+
+svg_ns = "http://www.w3.org/2000/svg";
+xlink_ns = "http://www.w3.org/1999/xlink";
+
+old_client = (info.version < 3.2);
+
+role_list = [
+  'villager', 'werewolf', 'seer', 'fool', 'warlock',
+  'granger', 'wolfsbane', 'herbalist', 'priest', 'slayer'
+];
+role_count = role_list.length;
+simple_role_count = 3;
+config_count = [];
+
+show_advanced = false;
+current_help_role = null;
+current_help_timer = null;
+
+self_role = null;
+known_roles = [];
+known_deaths = [];
+own_selection = null;
+seat_selections = [];
+current_sanctuary = null;
+is_choosing = false;
+is_collaborating = false;
+can_choose_self = false;
+
+function initialize() {
+  var ix, role, obj;
+
+  for (ix=0; ix<role_count; ix++) {
+    role = role_list[ix];
+    config_count[role] = 0;
+  }
+
+  obj = document.getElementById("button_pass_text");
+  set_text_by_token(obj, "ui.button_pass");
+  obj = document.getElementById("button_null_text");
+  set_text_by_token(obj, "ui.button_null");
+  obj = document.getElementById("advanced-check-text");
+  set_text_by_token(obj, "ui.button_advanced");
+
+  rebuild_config_panel();
+
+  set_message("ui.msg_config")
+}
+
+function clear_state() {
+  self_role = null;
+  known_roles = [];
+  known_deaths = [];
+  seat_selections = [];
+  set_own_selection(null);
+  setup_choices(0);
+  current_sanctuary = null;
+
+  is_choosing = false;
+  is_collaborating = false;
+  can_choose_self = false;
+}
+
+game.role_count = function(role, count) {
+  var obj;
+
+  config_count[role] = count;
+
+  if ((!show_advanced) && (!is_simple_role(role)) && count > 0) {
+    show_advanced = true; 
+    rebuild_config_panel();
+    return;
+  }
+
+  obj = document.getElementById("configcount_"+role);
+  if (!obj)
+    return;
+
+  set_text(obj, count);
+}
+
+volity.start_game = function() {
+  var obj, grp;
+
+  seatmark();
+  set_message()
+
+  set_sky(null);
+
+  obj = document.getElementById("configscreen");
+  set_visibility(obj, false);
+  grp = document.getElementById("configpanel");
+  remove_children(grp);
+
+  obj = document.getElementById("gamescreen");
+  set_visibility(obj, true);
+  grp = document.getElementById("gamepanel");
+  remove_children(grp);
+
+  clear_state();
+  rebuild_game_panel();
+}
+
+volity.game_has_started = function() {
+  volity.start_game();
+}
+
+volity.end_game = function() {
+  var obj, grp;
+
+  set_sky(null);
+
+  clear_state();
+
+  obj = document.getElementById("gamescreen");
+  set_visibility(obj, false);
+  grp = document.getElementById("gamepanel");
+  remove_children(grp);
+
+  obj = document.getElementById("configscreen");
+  set_visibility(obj, true);
+  grp = document.getElementById("configpanel");
+  remove_children(grp);
+
+  rebuild_config_panel();
+
+  set_message("ui.msg_config")
+}
+
+volity.resume_game = function() {
+  clear_state();
+  rebuild_game_panel();
+}
+
+game.reveal = function(seat, reason, role) {
+  var val;
+
+  set_seat_role(seat, role);
+
+  if (info.seat && info.seat == seat) {
+    self_role = role;
+  }
+
+  if (reason == 'vision') {
+    val = "literal."+get_seat_label(seat);
+    message("ui.dream", val, "game."+role);
+  }
+}
+
+game.died = function(seat, reason, role) {
+  var val;
+
+  set_seat_role(seat, role);
+  set_seat_death(seat, reason);
+
+  val = "literal."+get_seat_label(seat);
+  message("ui.died_"+reason, val, "game."+role);
+}
+
+game.no_deaths = function(reason) {
+  message("ui.no_death_"+reason);
+}
+
+game.phase = function(phase) {
+  var val;
+
+  set_sky(phase);
+  message("ui.phase_"+phase);
+
+  is_choosing = false;
+  is_collaborating = false;
+  can_choose_self = false;
+  clear_seat_selections();
+
+  if (phase == 'day') {
+    set_sanctuary(null);
+
+    if (is_self_alive()) {
+      setup_choices(1);
+      is_choosing = true;
+      is_collaborating = true;
+      set_message("ui.msg_choose_day");
+    }
+    else {
+      setup_choices(0);
+      if (info.seat)
+        set_message("ui.msg_corpse");
+    }
+  }
+
+  if (phase == 'night') {
+    if (is_self_alive()) {
+      if (self_role == 'werewolf' || self_role == 'priest'
+          || self_role == 'herbalist' || self_role == 'slayer') {
+        setup_choices(2);
+        is_choosing = true;
+        is_collaborating = true;
+        if (get_live_role_count(self_role) > 1)
+          val = "ui.agree_on";
+        else
+          val = "ui.choose";
+        set_message("ui.msg_choose_"+self_role, val);
+      }
+      else if (self_role == 'seer' || self_role == 'fool' 
+          || self_role == 'warlock') {
+        setup_choices(2);
+        is_choosing = true;
+        set_message("ui.msg_choose_dream");
+      }
+      else {
+        setup_choices(0);
+        set_message("ui.msg_sleep");
+      }
+    }
+    else {
+      setup_choices(0);
+      if (info.seat)
+        set_message("ui.msg_corpse");
+    }
+  }
+}
+
+game.sanctuary = function(seat) {
+  set_sanctuary(seat);
+}
+
+game.selected = function(seat, target) {
+  if (!target)
+    target = "";
+
+  if (info.seat && seat == info.seat) {
+    set_own_selection(target);
+  }
+
+  set_seat_selection(seat, target);
+}
+
+game.win = function(team) {
+  var ix, role, seat, isevil, count, map;
+
+  map = [];
+  isevil = (team == 'werewolf');
+  count = info.gameseats.length;
+  for (ix=0; ix<count; ix++) {
+    seat = info.gameseats[ix];
+    role = get_seat_role(seat);
+    if (role && is_evil_role(role) == isevil)
+      map[seat] = 'win';
+  }
+
+  seatmark(map);
+
+  set_message("ui.won_"+team);
+}
+
+function rebuild_config_panel() {
+  var obj, grp, box, ix, val, role;
+
+  obj = document.getElementById("advanced-check");
+  set_visibility(obj, show_advanced);
+
+  grp = document.getElementById("configpanel");
+  remove_children(grp);
+
+  for (ix=0; ix<role_count; ix++) {
+    if ((!show_advanced) && ix >= simple_role_count)
+      break;
+
+    role = role_list[ix];
+
+    box = document.createElementNS(svg_ns, "g");
+    if (!show_advanced) {
+      val = "translate(10,"+(ix*16)+") scale(10)";
+    }
+    else {
+      if (ix < 5)
+        val = "translate(6,"+(ix*8)+") scale(5)";
+      else
+        val = "translate(54,"+((ix-5)*8)+") scale(5)";
+    }
+    box.setAttribute("transform", val);
+    box.setAttribute("pointer-events", "none");
+
+    obj = document.createElementNS(svg_ns, "use");
+    set_use_ref(obj, "configrolerect");
+    val = "rollover_role('"+role+"')";
+    obj.setAttribute("onmouseover", val);
+    val = "rollover_role_clear()";
+    obj.setAttribute("onmouseout", val);
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "use");
+    if (is_evil_role(role))
+      val = "wolfsquare";
+    else
+      val = "villagesquare";
+    set_use_ref(obj, val, faces_path);
+    obj.setAttribute("y", "0.05");
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "use");
+    val = role;
+    if (val == "werewolf" || val == "villager")
+      val = val+"1";
+    set_use_ref(obj, val, faces_path);
+    obj.setAttribute("y", "0.05");
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "text");
+    obj.setAttribute("class", "FaceLabel");
+    obj.setAttribute("x", "0.5");
+    obj.setAttribute("y", "1.33");
+    set_text(obj, localize("game."+role+"_pl"));
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "text");
+    obj.setAttribute("id", "configcount_"+role);
+    obj.setAttribute("class", "FaceCount");
+    obj.setAttribute("x", "1.5");
+    obj.setAttribute("y", "0.8");
+    set_text(obj, config_count[role]);
+    box.appendChild(obj);
+
+    if (role != "villager") {
+      obj = document.createElementNS(svg_ns, "use");
+      obj.setAttribute("id", "uparrow_"+role);
+      set_use_ref(obj, "uparrow");
+      obj.setAttribute("x", "2.1");
+      obj.setAttribute("y", "0.05");
+      val = "click_config_count('"+role+"',1)";
+      obj.setAttribute("onclick", val);
+      val = "highlight_config_count('uparrow_"+role+"',true)";
+      obj.setAttribute("onmousedown", val);
+      val = "highlight_config_count('uparrow_"+role+"',false)";
+      obj.setAttribute("onmouseup", val);
+      val = val + "; rollover_role_clear()";
+      obj.setAttribute("onmouseout", val);
+      val = "rollover_role('"+role+"')";
+      obj.setAttribute("onmouseover", val);
+      obj.setAttribute("fill", "#CCC");
+      box.appendChild(obj);
+
+      obj = document.createElementNS(svg_ns, "use");
+      obj.setAttribute("id", "downarrow_"+role);
+      set_use_ref(obj, "downarrow");
+      obj.setAttribute("x", "2.1");
+      obj.setAttribute("y", "0.50");
+      val = "click_config_count('"+role+"',-1)";
+      obj.setAttribute("onclick", val);
+      val = "highlight_config_count('downarrow_"+role+"',true)";
+      obj.setAttribute("onmousedown", val);
+      val = "highlight_config_count('downarrow_"+role+"',false)";
+      obj.setAttribute("onmouseup", val);
+      val = val + "; rollover_role_clear()";
+      obj.setAttribute("onmouseout", val);
+      val = "rollover_role('"+role+"')";
+      obj.setAttribute("onmouseover", val);
+      obj.setAttribute("fill", "#CCC");
+      box.appendChild(obj);
+
+      obj = document.createElementNS(svg_ns, "use");
+      obj.setAttribute("id", "zeroarrow_"+role);
+      set_use_ref(obj, "zeroarrow");
+      obj.setAttribute("x", "2.1");
+      obj.setAttribute("y", "0.95");
+      val = "click_config_count('"+role+"',0)";
+      obj.setAttribute("onclick", val);
+      val = "highlight_config_count('zeroarrow_"+role+"',true)";
+      obj.setAttribute("onmousedown", val);
+      val = "highlight_config_count('zeroarrow_"+role+"',false)";
+      obj.setAttribute("onmouseup", val);
+      val = val + "; rollover_role_clear()";
+      obj.setAttribute("onmouseout", val);
+      val = "rollover_role('"+role+"')";
+      obj.setAttribute("onmouseover", val);
+      obj.setAttribute("fill", "#CCC");
+      box.appendChild(obj);
+    }
+
+    if (!show_advanced) {
+      obj = document.createElementNS(svg_ns, "use");
+      set_use_ref(obj, "simple_config_"+role, help_path);
+      obj.setAttribute("x", "2.95");
+      box.appendChild(obj);
+    }
+    else {
+      obj = document.createElementNS(svg_ns, "use");
+      set_use_ref(obj, "advanced_config_"+role, help_path);
+      obj.setAttribute("x", "2.95");
+      box.appendChild(obj);
+    }
+
+    grp.appendChild(box);
+  }
+}
+
+function rebuild_game_panel() {
+  var ix, obj, grp, count, cols, box, val, facegrp, seat, halfcol, xpos, ypos;
+
+  grp = document.getElementById("gamepanel");
+  remove_children(grp);
+
+  count = info.gameseats.length;
+
+  halfcol = false;
+
+  if (count <= 3) {
+    cols = 1;
+  }
+  else if (count <= 12) {
+    cols = 2;
+    halfcol = (count <= 6);
+  }
+  else {
+    cols = 3;
+    halfcol = (count <= 16);
+  }
+
+  for (ix=0; ix<count; ix++) {
+    seat = info.gameseats[ix];
+
+    box = document.createElementNS(svg_ns, "g");
+    if (cols == 1) {
+      val = "translate(10,"+(ix*16)+") scale(10)";
+    }
+    else if (cols == 2) {
+      if (ix < 6) {
+        xpos = 6;
+        ypos = (ix*8);
+      }
+      else {
+        xpos = 54;
+        ypos = (ix-6)*8;
+      }
+      if (halfcol)
+        xpos += 24;
+      val = "translate("+xpos+","+ypos+") scale(5)";
+    }
+    else {
+      if (ix < 8) {
+        xpos = 5;
+        ypos = (ix*5.3333);
+      }
+      else if (ix < 16) {
+        xpos = 37;
+        ypos = (ix-8)*5.3333;
+      }
+      else {
+        xpos = 69;
+        ypos = (ix-16)*5.3333;
+      }
+      if (halfcol)
+        xpos += 16;
+      val = "translate("+xpos+","+ypos+") scale(3.3333)";
+    }
+    box.setAttribute("transform", val);
+    box.setAttribute("pointer-events", "none");
+
+    obj = document.createElementNS(svg_ns, "use");
+    set_use_ref(obj, "gamerolerect");
+    val = "rollover_role_seat('"+seat+"')";
+    obj.setAttribute("onmouseover", val);
+    val = "rollover_role_clear()";
+    obj.setAttribute("onmouseout", val);
+    val = "click_seat('"+seat+"')";
+    obj.setAttribute("onclick", val);
+    box.appendChild(obj);
+
+    facegrp = document.createElementNS(svg_ns, "g");
+    facegrp.setAttribute("transform", "translate(0.3,0) scale(0.8) translate(0,0.05)");
+
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttribute("id", "background_"+seat);
+    val = "neutralsquare";
+    set_use_ref(obj, val, faces_path);
+    facegrp.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttribute("id", "backmark_"+seat);
+    val = "nomark";
+    set_use_ref(obj, val, faces_path);
+    facegrp.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttribute("id", "face_"+seat);
+    val = "unknown";
+    set_use_ref(obj, val, faces_path);
+    facegrp.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "use");
+    obj.setAttribute("id", "selectarrow_"+seat);
+    set_use_ref(obj, "selectarrow");
+    set_visibility(obj, false);
+    facegrp.appendChild(obj);
+
+    box.appendChild(facegrp);
+
+    if (seat == info.seat) {
+      obj = document.createElementNS(svg_ns, "use");
+      set_use_ref(obj, "selfseatmarker");
+      box.appendChild(obj);
+    }
+
+    obj = document.createElementNS(svg_ns, "text");
+    obj.setAttribute("id", "selectcount_"+seat);
+    obj.setAttribute("class", "FaceCountSmall");
+    obj.setAttribute("x", "1.6");
+    obj.setAttribute("y", "0.7");
+    obj.setAttribute("fill", "#410");
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "text");
+    obj.setAttribute("id", "label_"+seat);
+    obj.setAttribute("class", "SeatLabel");
+    obj.setAttribute("x", "2.5");
+    obj.setAttribute("y", "0.65");
+    set_text(obj, get_seat_label(seat));
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "text");
+    obj.setAttribute("id", "role_"+seat);
+    obj.setAttribute("class", "FaceLabelBig");
+    obj.setAttribute("x", "0.7");
+    obj.setAttribute("y", "1.27");
+    set_text(obj, "??");
+    box.appendChild(obj);
+
+    obj = document.createElementNS(svg_ns, "text");
+    obj.setAttribute("id", "death_"+seat);
+    obj.setAttribute("class", "DeathLabelBig");
+    obj.setAttribute("x", "8.0");
+    obj.setAttribute("y", "1.27");
+    box.appendChild(obj);
+
+    grp.appendChild(box);
+  }
+}
+
+function click_config_count(role, delta) {
+  var current;
+
+  current = config_count[role];
+
+  if (delta == 0) {
+    if (current != 0)
+      rpc("change_role_count", role, 0);
+    return;
+  }
+
+  if (delta < 0) {
+    if (current > 0)
+      rpc("change_role_count", role, current-1);
+    return;
+  }
+
+  if (delta > 0) {
+    if (current < info.allseats.length)
+      rpc("change_role_count", role, current+1);
+    return;
+  }
+}
+
+function highlight_config_count(id, down) {
+  var obj;
+
+  obj = document.getElementById(id);
+  if (!obj)
+    return;
+
+  if (down) 
+    obj.setAttribute("fill", "#888");
+  else
+    obj.setAttribute("fill", "#CCC");
+}
+
+function click_config_check() {
+  var ix, role;
+
+  if (!show_advanced) {
+    show_advanced = true;
+    rebuild_config_panel();
+    return;
+  }
+
+  for (ix=simple_role_count; ix<role_count; ix++) {
+    role = role_list[ix];
+    if (config_count[role] > 0) 
+      rpc("change_role_count", role_list[ix], 0);
+  }
+
+  // This is a slight solecism, since the counts won't really be zero until
+  // the referee says so. But it isn't noticeably broken to the player.
+
+  show_advanced = false;
+  rebuild_config_panel();
+}
+
+function click_seat(seat) {
+  if (!is_choosing)
+    return;
+  rpc("select", seat);
+}
+
+function click_seat_pass(seat) {
+  if (!is_choosing)
+    return;
+  rpc("select", "pass");
+}
+
+function click_seat_null(seat) {
+  if (!is_choosing)
+    return;
+  rpc("select", "");
+}
+
+function highlight_config_check(down) {
+  var obj;
+
+  obj = document.getElementById("advanced-check-box");
+  if (!obj)
+    return;
+
+  if (down) 
+    obj.setAttribute("fill", "#AA7");
+  else
+    obj.setAttribute("fill", "#DDA");
+}
+
+function rollover_role_clear() {
+  if (current_help_timer) {
+    clearTimeout(current_help_timer);
+    current_help_timer = null;
+  }
+
+  if (!current_help_role)
+    return;
+
+  current_help_timer = setTimeout("rollover_role(null)", 100);
+}
+
+function rollover_role_seat(seat) {
+  var role;
+  role = get_seat_role(seat);
+  if (role)
+    rollover_role(role);
+  else
+    rollover_role_clear();
+}
+
+function rollover_role(role) {
+  var obj;
+
+  if (current_help_timer) {
+    clearTimeout(current_help_timer);
+    current_help_timer = null;
+  }
+
+  if (role == current_help_role)
+    return;
+  current_help_role = role;
+
+  obj = document.getElementById("helptext");
+  if (!obj)
+    return;
+
+  if (role)
+    set_use_ref(obj, "help_"+role, help_path);
+  else
+    set_use_ref(obj, "blank");
+}
+
+function get_seat_label(seat) {
+  var ix, count, id, seat2;
+
+  if (!seat)
+    return "???";
+
+  if (seat.players == null) {
+    id = seat;
+    seat = null;
+    seat2 = null;
+
+    count = info.gameseats.length;
+    for (ix=0; ix<count; ix++) {
+      seat2 = info.gameseats[ix];
+      if (seat2 == id) {
+        seat = seat2;
+        break;
+      }
+    }
+
+    if (!seat)
+      return "???";
+  }
+
+  if (old_client)
+    return ""+seat.players;
+  else
+    return ""+seat.nicknames;
+}
+
+function is_self_alive() {
+  if (!info.seat)
+    return false;
+  if (known_deaths[info.seat])
+    return false;
+  return true;
+}
+
+function get_live_role_count(role) {
+  var count, ix, seat, total;
+
+  total = 0;
+
+  count = info.gameseats.length;
+  for (ix=0; ix<count; ix++) {
+    seat = info.gameseats[ix];
+    if (!get_seat_death(seat) && get_seat_role(seat) == role) {
+      total += 1;
+    }
+  }
+
+  return total;
+}
+
+function get_seat_role(seat) {
+  return known_roles[seat];
+}
+
+function get_seat_death(seat) {
+  return known_deaths[seat];
+}
+
+function set_seat_role(seat, role) {
+  var obj, val;
+
+  if (!role) {
+    known_roles[seat] = null;
+    val = "unknown";
+  }
+  else {
+    known_roles[seat] = role;
+    val = role;
+    if (val == "werewolf" || val == "villager")
+        val = val+"1";
+  }
+  obj = document.getElementById("face_"+seat);
+  if (!obj)
+    return;
+  set_use_ref(obj, val, faces_path);
+
+  if (!role) {
+    val = "neutralsquare";
+  }
+  else if (is_evil_role(role)) {
+    val = "wolfsquare";
+  }
+  else {
+    val = "villagesquare";
+  }
+  obj = document.getElementById("background_"+seat);
+  if (!obj)
+    return;
+  set_use_ref(obj, val, faces_path);
+
+  if (!role) {
+    val = "??";
+  }
+  else {
+    val = localize("game."+role);
+  }
+  obj = document.getElementById("role_"+seat);
+  if (!obj)
+    return;
+  set_text(obj, val);
+}
+
+function set_seat_death(seat, reason) {
+  var val, obj;
+
+  if (!reason) { 
+    known_deaths[seat] = null;
+    val = "";
+  }
+  else {
+    known_deaths[seat] = reason;
+    val = localize("ui.death_"+reason);
+  }
+
+  obj = document.getElementById("death_"+seat);
+  if (!obj)
+    return;
+  set_text(obj, val);
+
+  if (!reason)
+    val = "nomark";
+  else
+    val = "deathmark";
+  obj = document.getElementById("backmark_"+seat);
+  if (!obj)
+    return;
+  set_use_ref(obj, val, faces_path);
+
+  if (seat == current_sanctuary)
+    current_sanctuary = null;
+}
+
+function set_sanctuary(seat) {
+  var obj;
+
+  if (current_sanctuary) {
+    obj = document.getElementById("backmark_"+current_sanctuary);
+    if (obj)
+      set_use_ref(obj, "nomark", faces_path);
+  }
+
+  current_sanctuary = seat;
+
+  if (current_sanctuary) {
+    obj = document.getElementById("backmark_"+current_sanctuary);
+    if (obj)
+      set_use_ref(obj, "sanctuarymark", faces_path);
+  }
+}
+
+function setup_choices(val) {
+  var objpass, objnull;
+
+  objpass = document.getElementById("button_pass");
+  objnull = document.getElementById("button_null");
+
+  if (val)
+    set_own_selection('');
+  else
+    set_own_selection(null);
+
+  set_visibility(objpass, (val >= 2));
+  set_visibility(objnull, (val >= 1));
+}
+
+function set_own_selection(seat) {
+  var obj;
+
+  if (own_selection != null) {
+    obj = document.getElementById("selectarrow_"+own_selection);
+    if (obj)
+      set_visibility(obj, false);
+  }
+
+  own_selection = seat;
+
+  if (own_selection != null) {
+    obj = document.getElementById("selectarrow_"+own_selection);
+    if (obj)
+      set_visibility(obj, true);
+  }
+}
+
+function clear_seat_selections() {
+  var ix, count, seat, obj;
+
+  seat_selections = [];
+
+  count = info.gameseats.length;
+  for (ix=0; ix<count; ix++) {
+    seat = info.gameseats[ix];
+    if (!get_seat_death(seat)) {
+      obj = document.getElementById("death_"+seat);
+      if (obj)
+        set_text(obj, "");
+    }
+    obj = document.getElementById("selectcount_"+seat);
+    if (obj)
+      set_text(obj, "");
+  }
+
+  obj = document.getElementById("selectcount_pass");
+  if (obj)
+    set_text(obj, "");
+}
+
+function set_seat_selection(seat, target) {
+  var obj, val, oldtarget;
+
+  obj = document.getElementById("death_"+seat);
+  if (!obj)
+    return;
+
+  if (!target)
+    val = "";
+  else if (target == "pass")
+    val = localize("ui.voting_for", "ui.doing_nothing");
+  else
+    val = localize("ui.voting_for", "literal."+get_seat_label(target));
+
+  set_text(obj, val);
+
+  oldtarget = seat_selections[seat];
+  seat_selections[seat] = target;
+
+  if (target)
+    set_seat_selcount(target);
+  if (oldtarget && oldtarget != target)
+    set_seat_selcount(oldtarget);
+}
+
+function set_seat_selcount(target) {
+  var obj, ix, count, seat, total;
+
+  if (!target)
+    return;
+
+  total = 0;
+
+  count = info.gameseats.length;
+  for (ix=0; ix<count; ix++) {
+    seat = info.gameseats[ix];
+    if (seat_selections[seat] == target)
+      total += 1;
+  }
+
+  if (total && target == "pass")
+    total = "("+total+")";
+
+  obj = document.getElementById("selectcount_"+target);
+  if (!total)
+    set_text(obj, "");
+  else
+    set_text(obj, total);
+}
+
+function set_sky(phase) {
+  var obj, objmoon, objsun;
+
+  obj = document.getElementById("sky");
+  objmoon = document.getElementById("skymoon");
+  objsun = document.getElementById("skysun");
+
+  if (phase == 'night') {
+    obj.setAttribute("fill", "#7788CC");
+    set_visibility(objmoon, true);
+    set_visibility(objsun, false);
+  }
+  else if (phase == 'day') {
+    obj.setAttribute("fill", "#FFCCAA");
+    set_visibility(objmoon, false);
+    set_visibility(objsun, true);
+  }
+  else {
+    obj.setAttribute("fill", "#E4DDBB");
+    set_visibility(objmoon, false);
+    set_visibility(objsun, false);
+  }
+}
+
+function set_message(tok, tok1, tok2) {
+  var obj;
+
+  obj = document.getElementById("message-text");
+  if (!tok)
+    set_text(obj, "");
+  else if (!tok1)
+    set_text(obj, localize(tok));
+  else if (!tok2)
+    set_text(obj, localize(tok, tok1));
+  else
+    set_text(obj, localize(tok, tok1, tok2));
+}
+
+function is_simple_role(role) {
+  // Okay, we assume simple_roles==3 for simplicity.
+  if (role == role_list[0] || role == role_list[1] || role == role_list[2])
+    return true;
+  else
+    return false;
+}
+
+function any_advanced_roles() {
+  var ix, role;
+  for (ix=simple_role_count; ix<role_count; ix++) {
+    role = role_list[ix];
+    if (config_count[role] > 0)
+      return true;
+  }
+  return false;
+}
+
+function is_evil_role(role) {
+  if (role == "werewolf" || role == "warlock")
+    return true;
+  else
+    return false;
+}
+
+function set_use_ref(obj, ref, path) {
+  if (path)
+    obj.setAttributeNS(xlink_ns, "href", path+"#"+ref);
+  else
+    obj.setAttributeNS(xlink_ns, "href", "#"+ref);
+}
+
+function set_visibility(obj, val) {
+  if (val)
+    obj.setAttribute("visibility", "inherit");
+  else
+    obj.setAttribute("visibility", "hidden");
+}
+
+function set_text_by_token(obj, val) {
+  set_text(obj, localize(val));
+}
+
+function set_text(obj, val) {
+  var valobj;
+  remove_children(obj);
+  valobj = document.createTextNode(val);
+  obj.appendChild(valobj);
+}
+
+function remove_children(parent) {
+  var obj, ls;
+  ls = parent.childNodes;
+  while (ls.length > 0) {
+    obj = ls.item(0);
+    parent.removeChild(obj);
+  }
+}
+
+initialize();
+
+// ]]>
+</script>
+
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+text {
+	pointer-events: none;
+	text-anchor: start;
+}
+
+.Message {
+	font-size: 2.5;
+	font-weight: bold;
+}
+
+.Credits {
+	font-size: 2.5;
+}
+
+.FaceLabel {
+	text-anchor: middle;
+	font-size: 0.23;
+	font-weight: bold;
+}
+
+.FaceLabelBig {
+	text-anchor: middle;
+	font-size: 0.36;
+	font-weight: bold;
+}
+
+.DeathLabelBig {
+	text-anchor: end;
+	font-size: 0.36;
+	font-style: oblique;
+}
+
+.FaceCount {
+	text-anchor: middle;
+	font-size: 0.7;
+}
+
+.FaceCountSmall {
+	text-anchor: middle;
+	font-size: 0.65;
+}
+
+.SeatLabel {
+	font-size: 0.5;
+}
+
+.ConfigText {
+	font-size: 0.2;
+}
+
+.ConfigTextGoal {
+	font-size: 0.2;
+	font-style: oblique;
+}
+
+.HelpBody {
+	font-size: 2;
+}
+
+]]>
+</style>
+
+<g id="blank" />
+
+<g id="configrolerect">
+<rect x="-0.5" y="0" width="9" height="1.44"
+	fill="#CC8"
+	pointer-events="fill" />
+<rect x="-0.05" y="0" width="1.1" height="1.1"
+	fill="#996" />
+<rect x="-0.5" y="1.10" width="9" height="0.34"
+	fill="#BB7" />
+</g>
+
+<g id="gamerolerect">
+<rect x="-0.5" y="0" width="9" height="1.44"
+	fill="#CC8"
+	pointer-events="fill" />
+<rect x="0.25" y="0" width="0.9" height="0.9"
+	fill="#996" />
+<rect x="-0.5" y="0.90" width="9" height="0.54"
+	fill="#BB7" />
+</g>
+
+<g id="uparrow"
+	stroke-linejoin="round" stroke-width="0.02" >
+<rect x="0" y="0" width="0.6" height="0.4"
+	fill="inherit" stroke="#888"
+	pointer-events="fill" />
+<path d="M 0.3 0.1  L 0.1 0.3  L 0.5 0.3 z"
+	fill="#3A3" stroke="#080" />
+</g>
+
+<g id="downarrow" 
+	stroke-linejoin="round" stroke-width="0.02" >
+<rect x="0" y="0" width="0.6" height="0.4"
+	fill="inherit" stroke="#888"
+	pointer-events="fill" />
+<path d="M 0.3 0.3  L 0.1 0.1  L 0.5 0.1 z"
+	fill="#3A3" stroke="#080" />
+</g>
+
+<g id="zeroarrow"
+	stroke-linejoin="round" stroke-width="0.02" >
+<rect x="0" y="0" width="0.6" height="0.4"
+	fill="inherit" stroke="#888"
+	pointer-events="fill" />
+<path d="M 0.3 0.35  L 0.1 0.15  L 0.2 0.15  L 0.1 0.05  
+	L 0.5 0.05  L 0.4 0.15  L 0.5 0.15  z"
+	fill="#3A3" stroke="#080" />
+</g>
+
+<path id="selectarrow"
+	d="M -0.56 0.9  L -0.2 0.1  L -0.6 0.6  L -0.9 0.5
+	z"
+	fill="#410" />
+
+<path id="selfseatmarker"
+	d="M 2.4 0.0  L 8.2 0.0
+	Q 8.5 0.45  8.2 0.9  L 2.4 0.9
+	Q 2.1 0.45  2.4 0.0
+	z"
+	fill="#995" />
+
+<g id="logo"
+	transform="translate(13,17) scale(0.05)" >
+      <path
+         d="M -194.21276,-223.33432 C 203.24592,-194.72933 567.58303,-148.05806 924.39253,-50.198911 L 966.54724,-17.830116 C 641.35377,-111.17268 197.22381,-152.57463 -124.9586,-152.57463 C -124.9586,-152.57463 -105.01039,-164.85863 -83.180273,-169.13541 C -106.51591,-180.42684 -159.58568,-184.94342 -159.58568,-184.94342 C -159.58568,-184.94342 -135.1209,-197.364 -109.52696,-199.24591 C -142.11673,-214.31411 -194.21276,-223.33432 -194.21276,-223.33432 z "
+         fill="#F01018" />
+      <g fill="#601909" >
+        <path
+           d="M -108.39782,-299.59953 C -48.035752,-216.17932 -22.582879,-49.682335 -22.582879,-49.682335 C 4.5530446e-07,-73.77074 10.129579,-89.024596 19.571829,-106.8923 C 39.143658,-94.848095 57.209961,-73.77074 67.748638,-48.17681 C 67.748638,-48.17681 96.346044,-215.39711 85.814942,-299.59953 C 64.737588,-252.92825 30.110506,-236.36747 30.110506,-236.36747 C 30.110506,-236.36747 2.2582882,-298.09401 -30.863268,-322.18241 C -13.28337,-270.13062 -18.066303,-239.37852 -18.066303,-239.37852 C -18.066303,-239.37852 -55.704435,-290.56638 -108.39782,-299.59953 z " />
+        <path
+           d="M 97.90335,-49.682335 C 105.43098,-103.88124 147.58569,-186.68514 165.65199,-207.76249 C 165.65199,-207.76249 183.71829,-112.9144 168.66304,-85.814942 C 168.66304,-85.814942 191.24591,-54.198911 218.34537,-49.682335 C 169.69846,-35.714068 97.90335,-49.682335 97.90335,-49.682335 z " />
+        <path
+           d="M 221.8951,-201.74039 C 209.8509,-129.47518 229.42272,-51.18786 229.42272,-51.18786 C 253.51112,-102.37572 297.17136,-161.0912 351.37027,-195.71829 C 304.82235,-200.02731 247.48903,-162.59673 247.48903,-162.59673 C 233.9393,-173.13541 221.8951,-201.74039 221.8951,-201.74039 z " />
+        <path
+           d="M 313.90335,-49.682335 C 321.43098,-103.88124 363.58569,-186.68514 381.65199,-207.76249 C 381.65199,-207.76249 399.71829,-112.9144 384.66304,-85.814942 C 384.66304,-85.814942 407.24591,-54.198911 434.34537,-49.682335 C 385.69846,-35.714068 313.90335,-49.682335 313.90335,-49.682335 z " />
+        <path
+           d="M 406.20716,-197.37271 C 457.78404,-147.8706 479.53247,-49.070198 479.53247,-49.070198 C 498.8286,-63.364417 507.48391,-72.416156 515.55192,-83.018968 C 532.27523,-75.871858 547.71214,-63.364417 556.717,-48.17681 C 556.717,-48.17681 581.15229,-147.40644 572.15391,-197.37271 C 554.14418,-169.67767 524.55678,-159.85039 524.55678,-159.85039 C 524.55678,-159.85039 500.75822,-196.47932 472.45722,-210.77354 C 487.47851,-179.88566 483.3917,-161.63717 483.3917,-161.63717 C 483.3917,-161.63717 451.23148,-192.01238 406.20716,-197.37271 z " />
+        <path
+           d="M 643.84822,-139.56643 C 646.20556,-157.33699 653.49945,-171.64372 675.98086,-193.20171 C 659.31862,-192.17682 641.80081,-188.27899 626.38985,-173.44723 C 603.90393,-151.7864 585.77972,-114.72751 600.70459,-77.276265 C 615.41415,-40.365313 668.40135,-38.179071 689.34793,-75.95339 C 709.94335,-113.09442 697.96164,-159.6291 671.46428,-169.11331 C 675.93727,-151.11238 678.82259,-133.4299 670.32406,-122.74734 C 659.33776,-108.93768 641.42147,-121.27265 643.84822,-139.56643 z " />
+        <path
+           d="M 732.24607,-48.17681 C 756.69271,-100.85013 768.19049,-252.92825 757.84,-299.59953 C 739.96189,-280.0277 730.74054,-270.99455 711.16872,-264.97245 C 733.14382,-203.53587 732.24607,-124.9586 732.24607,-48.17681 z " />
+        <path
+           d="M 907.29308,-293.57743 C 860.62179,-277.3148 821.80124,-241.49796 800.40078,-182.16856 C 800.40078,-135.49728 770.29027,-49.682335 770.29027,-49.682335 C 803.41183,-70.759689 835.02786,-108.39782 844.06101,-144.53042 C 856.10522,-171.62987 883.20467,-191.20171 883.20467,-191.20171 C 883.20467,-191.20171 863.63284,-195.71829 851.58864,-191.20171 C 851.58864,-191.20171 853.09417,-224.32326 907.29308,-293.57743 z " />
+      </g>
+</g>
+
+<g id="credits">
+<text class="Credits" x="0" y="4" font-weight="bold" >A Mind Game</text>
+<text class="Credits" x="0" y="8">Implemented by</text>
+<text class="Credits" x="2" y="11">Andrew Plotkin</text>
+<line x1="0" y1="15.25" x2="18" y2="15.25" stroke="#55F" stroke-width="0.15" />
+<text class="Credits" x="0" y="15" fill="#00C" >About this game</text>
+
+<a xlink:href="http://eblong.com/zarf/werewolf.html">
+<rect x="-1" y="12" width="20" height="4" fill="none"
+	pointer-events="fill" />
+</a>
+</g>
+
+</defs>
+
+<rect x="0" y="0" width="100" height="100" stroke-width="0.1" stroke="none" fill="none" />
+<rect id="sky" x="0" y="0" width="100" height="17.5" fill="#E4DDBB" />
+<g id="skysun" visibility="hidden"
+	pointer-events="none" >
+<path d="M 77 0  A 23 23  0  0 0  100 7
+	L 100 0  z"
+	fill="#FF6" />
+<path d="M 80 0  A 20 20  0  0 0  100 5
+	L 100 0  z"
+	fill="#FFA" />
+</g>
+<g id="skymoon" visibility="hidden"
+	pointer-events="none" >
+<path d="M 12.5 0  A 20 20  0  0 1  0 8.5
+	L 0 0  z"
+	fill="#8B9BDC" />
+<path d="M 12 0  A 20 20  0  0 1  0 8
+	L 0 0  z"
+	fill="#CCC" />
+<ellipse rx="2" ry="1"
+	transform="translate(3,2) rotate(-22)"
+	fill="#B0B0C0" />
+<ellipse rx="1.5" ry="0.5"
+	transform="translate(4,4.5) rotate(-28)"
+	fill="#B0B0CC" />
+<ellipse rx="1.5" ry="0.5"
+	transform="translate(9,1.5) rotate(-40)"
+	fill="#B0B0C0" />
+</g>
+
+<use xlink:href="#logo" x="4" />
+<use xlink:href="#credits" x="70" />
+
+<g id="configscreen" transform="translate(0,22.5)"
+	visibility="visible" >
+<g transform="translate(60,0)" >
+<rect id="advanced-check-box" x="0" y="-2.3" width="3" height="3" 
+	fill="#DDA" stroke="#222" stroke-width="0.3" />
+<path id="advanced-check"
+	fill="#410"
+	d="M 1.2 1.25  L 3.5 -3  L 1.2 -0.5  L 0.2 -1.1
+	z" />
+<rect x="-0.2" y="-2.5" width="27" height="3.4" 
+	fill="none" pointer-events="visibleFill" onclick="click_config_check()"
+	onmousedown="highlight_config_check(true)" 
+	onmouseup="highlight_config_check(false)" 
+	onmouseout="highlight_config_check(false)" />
+
+<text id="advanced-check-text"
+	x="4.5" y="0" font-size="2.5">Display expert roles</text>
+</g>
+
+<g id="configpanel" transform="translate(0,2.5)" >
+</g>
+</g>
+
+<g id="gamescreen" transform="translate(0,20.0)"
+	visibility="hidden" >
+
+<g id="button_pass"
+	transform="translate(23.5,0)">
+<rect x="0" y="0" width="35" height="4.5"
+	fill="#CC8" stroke="#996" stroke-width="0.2"
+	onclick="click_seat_pass()" />
+<text id="button_pass_text"
+	x="4" y="3.0" class="Credits" >Choose to do nothing</text>
+<text id="selectcount_pass"
+	fill="#410"
+	x="30" y="3.0" class="Credits" ></text>
+<use id="selectarrow_pass" 
+	xlink:href="#selectarrow"
+	visibility="hidden"
+	transform="translate(4,0) scale(4)" />
+</g>
+
+<g id="button_null"
+	transform="translate(61.5,0)">
+<rect x="0" y="0" width="35" height="4.5"
+	fill="#CC8" stroke="#996" stroke-width="0.2"
+	onclick="click_seat_null()" />
+<text id="button_null_text"
+	x="4" y="3.0" class="Credits" >Still thinking...</text>
+<use id="selectarrow_" 
+	xlink:href="#selectarrow"
+	visibility="hidden"
+	transform="translate(4,0) scale(4)" />
+</g>
+
+<g id="gamepanel" transform="translate(0,7)" >
+</g>
+</g>
+
+<g transform="translate(10,80)" >
+<rect x="0" y="0" width="80" height="10"
+	fill="#E4DDBB" />
+<use id="helptext" xlink:href="#blank" />
+</g>
+
+<text id="message-text" x="5" y="97" class="Message" >...</text>
+
+</svg>

@@ -1,0 +1,40 @@
+villager: Villager
+villager_pl: Villagers
+werewolf: Werewolf
+werewolf_pl: Werewolves
+seer: Seer
+seer_pl: Seers
+warlock: Warlock
+warlock_pl: Warlocks
+fool: Fool
+fool_pl: Fools
+wolfsbane: Wolfsbane
+wolfsbane_pl: Wolfsbanes
+herbalist: Herbalist
+herbalist_pl: Herbalists
+slayer: Slayer
+slayer_pl: Slayers
+priest: Priest
+priest_pl: Priests
+granger: Granger
+granger_pl: Grangers
+
+
+invalid_role: That role was not recognized.
+invalid_seat: That seat was not recognized.
+invalid_role_count: There cannot be that many players in a role.
+cannot_set_villager_count: You may not directly set the number of villagers.
+need_3_players: The game requires at least three occupied seats.
+not_enough_players: There are not enough seated players to fulfil the selected roles.
+not_enough_wolves: There must be at least one werewolf in the village.
+too_many_wolves: There are too many werewolves for a village of this size.
+not_enough_innocents: There must be at least one innocent in the village.
+no_fool_without_seer: To have a fool, the village must have at least one seer.
+not_1_granger: If the village has grangers, it must have at least two.
+has_sanctuary: The player you have selected has sanctuary, and may not be lynched today.
+must_lynch: You may not choose to lynch nobody.
+not_self: You may not select yourself.
+not_cohort: You may not select another \1.
+not_dead: You may not select a player who is dead.
+no_dead_vote: You are dead, and may not vote.
+nothing_to_do: You have no selection to make at the moment.
