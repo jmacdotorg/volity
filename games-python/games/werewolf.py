@@ -2,7 +2,7 @@
     Implemented by Andrew Plotkin.
 
 Ruleset URI: <http://volity.org/games/werewolf/>
-Game URL:    <http://eblong.com/zarf/werewolf.html>
+Game URL:    <http://volity.org/games/werewolf/about.html>
 """
 
 import random
@@ -14,6 +14,7 @@ import volity.game
 
 NUMSEATS = 24
 ALLOW_LYNCH_PASS = False
+MIN_SEATS = 5
 DAY = 'day'
 NIGHT = 'night'
 
@@ -27,7 +28,7 @@ class Werewolf(volity.game.Game):
     gamedescription = 'A social game of deception and murder'
     ruleseturi = 'http://volity.org/games/werewolf/'
     rulesetversion = '1.0'
-    websiteurl = 'http://eblong.com/zarf/werewolf.html'
+    websiteurl = 'http://volity.org/games/werewolf/about.html'
 
     def __init__(self, ref):
         volity.game.Game.__init__(self, ref)
@@ -130,8 +131,8 @@ class Werewolf(volity.game.Game):
         ls = [ seat for seat in self.getseatlist()
             if not seat.isempty() ]
         seatcount = len(ls)
-        if (seatcount < 3):
-            raise volity.game.FailureToken('game.need_3_players')
+        if (seatcount < MIN_SEATS):
+            raise volity.game.FailureToken('game.need_min_players')
 
         # Recheck the villager count, just in case
         self.recomputevillagers()
@@ -404,7 +405,7 @@ class Werewolf(volity.game.Game):
             slayerkill = self.role_slayer.choice
 
         assert slayerkill
-        if (slayerkill != Pass):
+        if (slayerkill != Pass and slayerkill.isalive):
             self.killseat(slayerkill, 'slayer')
 
         if (self.checkwinner()):
@@ -417,7 +418,7 @@ class Werewolf(volity.game.Game):
             protected = self.role_priest.choice
 
         assert protected            
-        if (protected == Pass):
+        if (protected == Pass or (not protected.isalive)):
             protected = None
         self.sanctuary = protected
 
