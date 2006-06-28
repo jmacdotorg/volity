@@ -24,7 +24,7 @@ invalid_role: That role was not recognized.
 invalid_seat: That seat was not recognized.
 invalid_role_count: There cannot be that many players in a role.
 cannot_set_villager_count: You may not directly set the number of villagers.
-need_3_players: The game requires at least three occupied seats.
+need_min_players: The game requires at least five occupied seats.
 not_enough_players: There are not enough seated players to fulfil the selected roles.
 not_enough_wolves: There must be at least one werewolf in the village.
 too_many_wolves: There are too many werewolves for a village of this size.

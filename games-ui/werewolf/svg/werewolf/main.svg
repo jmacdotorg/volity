@@ -12,10 +12,10 @@
 <metadata
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:volity="http://volity.org/protocol/metadata" >
-  <volity:version>1.0</volity:version>
+  <volity:version>1.0.2</volity:version>
   <volity:ruleset>http://volity.org/games/werewolf/</volity:ruleset>
   <dc:creator>Andrew Plotkin</dc:creator>
-  <dc:modified>2006-06-23</dc:modified>
+  <dc:modified>2006-06-27</dc:modified>
 </metadata>
 
 
@@ -42,10 +42,12 @@ simple_role_count = 3;
 config_count = [];
 
 suppression = false;
+show_tally = false;
 show_advanced = false;
 current_help_role = null;
 current_help_timer = null;
 
+current_phase = null;
 self_role = null;
 known_roles = [];
 known_deaths = [];
@@ -72,6 +74,10 @@ function initialize() {
   set_text_by_token(obj, "ui.button_advanced");
   obj = document.getElementById("button_suppression_text");
   set_text_by_token(obj, "ui.button_suppression");
+  obj = document.getElementById("button_tally_text");
+  set_text_by_token(obj, "ui.button_tally");
+  obj = document.getElementById("tallyheader");
+  set_text_by_token(obj, "ui.as_of_start");
 
   rebuild_config_panel();
 
@@ -79,6 +85,7 @@ function initialize() {
 }
 
 function clear_state() {
+  current_phase = null;
   self_role = null;
   known_roles = [];
   known_deaths = [];
@@ -134,6 +141,13 @@ volity.start_game = function() {
 
   clear_state();
   rebuild_game_panel();
+  show_tally = false;
+  obj = document.getElementById("tallypanel");
+  set_visibility(obj, false);
+
+  rebuild_tally();
+
+  message("ui.startup");
 }
 
 volity.game_has_started = function() {
@@ -195,16 +209,27 @@ game.reveal = function(seat, reason, role) {
     self_role = role;
   }
 
-  if (reason == 'vision') {
+  if (reason == "self") {
+    if (role == "villager")
+      message("ui.you_are_villager");
+    else
+      message("ui.you_are_role", "game."+role);
+  }
+
+  if (reason == "vision") {
     val = "literal."+get_seat_label(seat);
     message("ui.dream", val, "game."+role);
   }
 }
 
 game.died = function(seat, reason, role) {
-  var val;
+  var val, uncertain;
 
-  set_seat_role(seat, role);
+  uncertain = false;
+  if ((role == "seer" || role == "fool") && config_count["fool"])
+    uncertain = true;
+
+  set_seat_role(seat, role, uncertain);
   set_seat_death(seat, reason);
 
   val = "literal."+get_seat_label(seat);
@@ -218,6 +243,7 @@ game.no_deaths = function(reason) {
 game.phase = function(phase) {
   var val;
 
+  current_phase = phase;
   set_sky(phase);
   message("ui.phase_"+phase);
 
@@ -279,11 +305,19 @@ game.sanctuary = function(seat) {
 }
 
 game.selected = function(seat, target) {
+  var obj;
+
   if (!target)
     target = "";
 
   if (info.seat && seat == info.seat) {
     set_own_selection(target);
+
+    obj = document.getElementById("button_null_text");
+    if (!target) 
+      set_text_by_token(obj, "ui.button_null");
+    else 
+      set_text_by_token(obj, "ui.button_retract");
   }
 
   set_seat_selection(seat, target);
@@ -304,7 +338,7 @@ game.win = function(team) {
 
   seatmark(map);
 
-  set_message("ui.won_"+team);
+  message("ui.won_"+team);
 }
 
 function rebuild_config_panel() {
@@ -590,6 +624,38 @@ function rebuild_game_panel() {
   }
 }
 
+function rebuild_tally() {
+  var grp, obj, ix, row, count, role, val;
+
+  grp = document.getElementById("tallycontents");
+  remove_children(grp);
+
+  row = 0;
+
+  for (ix=0; ix<role_list.length; ix++) {
+    role = role_list[ix];
+    count = config_count[role];
+    if (count) {
+      obj = document.createElementNS(svg_ns, "text");
+      obj.setAttribute("class", "TallyBody");
+      val = count + " ";
+      if (count > 1)
+        val = val + localize("game."+role+"_pl");
+      else
+        val = val + localize("game."+role);
+      set_text(obj, val);
+      obj.setAttribute("x", 6);
+      obj.setAttribute("y", 7.5+row*3);
+      grp.appendChild(obj);
+
+      row += 1;
+    }
+  }
+
+  obj = document.getElementById("tallybox");
+  obj.setAttribute("height", 7.5+row*3);
+}
+
 function click_config_count(role, delta) {
   var current;
 
@@ -649,16 +715,34 @@ function click_config_check() {
   rebuild_config_panel();
 }
 
+function click_seat_tally(autoclose) {
+  if (autoclose)
+    show_tally = false;
+  else
+    show_tally = !show_tally;
+
+  obj = document.getElementById("tallypanel");
+  set_visibility(obj, show_tally);
+}
+
 function click_seat(seat) {
   if (!is_choosing)
     return;
-  rpc("select", seat);
+
+  if (own_selection == seat)
+    rpc("select", "");
+  else
+    rpc("select", seat);
 }
 
 function click_seat_pass(seat) {
   if (!is_choosing)
     return;
-  rpc("select", "pass");
+
+  if (own_selection == "pass")
+    rpc("select", "");
+  else
+    rpc("select", "pass");
 }
 
 function click_seat_null(seat) {
@@ -798,7 +882,7 @@ function get_seat_death(seat) {
   return known_deaths[seat];
 }
 
-function set_seat_role(seat, role) {
+function set_seat_role(seat, role, uncertain) {
   var obj, val;
 
   if (!role) {
@@ -835,6 +919,8 @@ function set_seat_role(seat, role) {
   }
   else {
     val = localize("game."+role);
+    if (uncertain)
+      val = val+"?"
   }
   obj = document.getElementById("role_"+seat);
   if (!obj)
@@ -891,7 +977,7 @@ function set_sanctuary(seat) {
 }
 
 function setup_choices(val) {
-  var objpass, objnull, objsupp;
+  var objpass, objnull, objsupp, obj;
 
   objpass = document.getElementById("button_pass");
   objnull = document.getElementById("button_null");
@@ -901,6 +987,11 @@ function setup_choices(val) {
     set_own_selection('');
   else
     set_own_selection(null);
+
+  if (val > 0) {
+    obj = document.getElementById("button_null_text");
+    set_text_by_token(obj, "ui.button_null");
+  }
 
   set_visibility(objpass, (val >= 2));
   set_visibility(objnull, (val >= 1));
@@ -949,18 +1040,31 @@ function clear_seat_selections() {
 }
 
 function set_seat_selection(seat, target) {
-  var obj, val, oldtarget;
+  var obj, val, oldtarget, tok;
 
   obj = document.getElementById("death_"+seat);
   if (!obj)
     return;
 
-  if (!target)
+  if (!target) {
     val = "";
-  else if (target == "pass")
-    val = localize("ui.voting_for", "ui.doing_nothing");
-  else
-    val = localize("ui.voting_for", "literal."+get_seat_label(target));
+  }
+  else {
+    if (current_phase == "night" && self_role) {
+      if (self_role == "seer" || self_role == "fool" || self_role == "warlock")
+        tok = "ui.voting_for_vision";
+      else
+        tok = "ui.voting_for_" + self_role;
+    }
+    else {
+      tok = "ui.voting_for_day";
+    }
+
+    if (target == "pass")
+      val = localize(tok, "ui.doing_nothing");
+    else
+      val = localize(tok, "literal."+get_seat_label(target));
+  }
 
   set_text(obj, val);
 
@@ -1164,6 +1268,15 @@ text {
 	font-size: 2;
 }
 
+.TallyTitle {
+	font-size: 2.5;
+	text-anchor: end;
+}
+
+.TallyBody {
+	font-size: 2.5;
+}
+
 ]]>
 </style>
 
@@ -1258,10 +1371,12 @@ text {
 <text class="Credits" x="0" y="4" font-weight="bold" >A Mind Game</text>
 <text class="Credits" x="0" y="8">Implemented by</text>
 <text class="Credits" x="2" y="11">Andrew Plotkin</text>
-<line x1="0" y1="15.25" x2="18" y2="15.25" stroke="#55F" stroke-width="0.15" />
-<text class="Credits" x="0" y="15" fill="#00C" >About this game</text>
+<line id="aboutunderline"
+	x1="0" y1="15.25" x2="24.0" y2="15.25" stroke="#55F" stroke-width="0.15" />
+<text id="aboutlink" class="Credits" 
+	x="0" y="15" fill="#00C" >How to play Werewolf</text>
 
-<a xlink:href="http://eblong.com/zarf/werewolf.html">
+<a xlink:href="http://volity.org/games/werewolf/about.html">
 <rect x="-1" y="12" width="20" height="4" fill="none"
 	pointer-events="fill" />
 </a>
@@ -1328,6 +1443,22 @@ text {
 <g id="gamescreen" transform="translate(0,20.0)"
 	visibility="hidden" >
 
+<g id="button_tally"
+	transform="translate(4.5,0)">
+<rect id="button_tally_box"
+	x="0" y="0" width="12.5" height="4.5"
+	fill="#CC8" stroke="#996" stroke-width="0.2"
+	onclick="click_seat_tally()"
+	onmousedown="highlight_button('tally', true)" 
+	onmouseup="highlight_button('tally', false)" 
+	onmouseout="highlight_button('tally', false)" />
+<text id="button_tally_text"
+	x="1.5" y="3.0" class="Credits" >Tally</text>
+<path d="M 8.0 1.5  L 12.0 1.5  L 10.0 3.5  z"
+	fill="#996"
+	pointer-events="none" />
+</g>
+
 <g id="button_pass"
 	transform="translate(23.5,0)">
 <rect id="button_pass_box"
@@ -1380,6 +1511,26 @@ text {
 
 <g id="gamepanel" transform="translate(0,7)" >
 </g>
+
+<g id="tallypanel"
+	transform="translate(12,0.5)"
+	pointer-events="none" >
+<rect id="tallybox"
+	x="0" y="0" width="28" height="20"
+	fill="#996" stroke="#775" stroke-width="0.333"
+	pointer-events="visibleFill"
+	onclick="click_seat_tally(true)" />
+<path d="M 0.5 3.0  L 4.5 3.0  L 2.5 1.0  z"
+	fill="#CC8" />
+
+<text id="tallyheader" 
+	x="26" y="3"
+	class="TallyTitle">(as of start of game)</text>
+
+<g id="tallycontents" />
+
+</g>
+
 </g>
 
 <g transform="translate(10,80)" >

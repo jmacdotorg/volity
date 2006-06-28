@@ -97,8 +97,8 @@
   <value>You may not directly set the number of villagers.</value>
 </token>
 <token>
-  <key>need_3_players</key>
-  <value>The game requires at least three occupied seats.</value>
+  <key>need_min_players</key>
+  <value>The game requires at least five occupied seats.</value>
 </token>
 <token>
   <key>not_enough_players</key>

@@ -2,14 +2,25 @@ death_villager: (hung from a tree)
 death_werewolf: (torn to shreds)
 death_slayer: (staked through the heart)
 
-voting_for: voting for: \1
-doing_nothing: (doing nothing)
+voting_for_day: voting for: \1
+voting_for_werewolf: voting to kill: \1
+voting_for_slayer: voting to stake: \1
+voting_for_priest: voting to protect: \1
+voting_for_herbalist: voting to protect: \1
+voting_for_vision: dreaming about: \1
+doing_nothing: (nobody)
 
 button_advanced: Display expert roles
 button_pass: Choose to do nothing
 button_null: Still thinking...
+button_retract: Retract vote
 button_suppression: Return to configuration
+button_tally: Tally
+as_of_start: (At start of game)
 
+startup: There are howls in the night and pawprints in the fields. The Village is rife with accusation, distrust, and fear...
+you_are_villager: You are a simple Villager.
+you_are_role: You are a \1. Act normal!
 dream: Your dreams reveal that \1 is a \2.
 died_villager: You have all lynched \1, who turns out to be a \2.
 died_werewolf: You discover \1, a \2, torn to pieces in the night.
@@ -23,7 +34,7 @@ agree_on: Agree on
 
 msg_config: Decide how many of each kind of person your Village should have.
 msg_choose_day: Choose another player to lynch.
-msg_corpse: You are dead, and may only observe now.
+msg_corpse: You are dead, and may only observe now. (Please don't talk!)
 msg_sleep: You are asleep.
 msg_choose_werewolf: \1 a player to tear apart.
 msg_choose_priest: \1 a player to protect against tomorrow's lynching.

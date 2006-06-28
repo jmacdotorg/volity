@@ -13,12 +13,32 @@
   <value>(staked through the heart)</value>
 </token>
 <token>
-  <key>voting_for</key>
+  <key>voting_for_day</key>
   <value>voting for: \1</value>
 </token>
 <token>
+  <key>voting_for_werewolf</key>
+  <value>voting to kill: \1</value>
+</token>
+<token>
+  <key>voting_for_slayer</key>
+  <value>voting to stake: \1</value>
+</token>
+<token>
+  <key>voting_for_priest</key>
+  <value>voting to protect: \1</value>
+</token>
+<token>
+  <key>voting_for_herbalist</key>
+  <value>voting to protect: \1</value>
+</token>
+<token>
+  <key>voting_for_vision</key>
+  <value>dreaming about: \1</value>
+</token>
+<token>
   <key>doing_nothing</key>
-  <value>(doing nothing)</value>
+  <value>(nobody)</value>
 </token>
 <token>
   <key>button_advanced</key>
@@ -33,8 +53,32 @@
   <value>Still thinking...</value>
 </token>
 <token>
+  <key>button_retract</key>
+  <value>Retract vote</value>
+</token>
+<token>
   <key>button_suppression</key>
   <value>Return to configuration</value>
+</token>
+<token>
+  <key>button_tally</key>
+  <value>Tally</value>
+</token>
+<token>
+  <key>as_of_start</key>
+  <value>(At start of game)</value>
+</token>
+<token>
+  <key>startup</key>
+  <value>There are howls in the night and pawprints in the fields. The Village is rife with accusation, distrust, and fear...</value>
+</token>
+<token>
+  <key>you_are_villager</key>
+  <value>You are a simple Villager.</value>
+</token>
+<token>
+  <key>you_are_role</key>
+  <value>You are a \1. Act normal!</value>
 </token>
 <token>
   <key>dream</key>
@@ -82,7 +126,7 @@
 </token>
 <token>
   <key>msg_corpse</key>
-  <value>You are dead, and may only observe now.</value>
+  <value>You are dead, and may only observe now. (Please don't talk!)</value>
 </token>
 <token>
   <key>msg_sleep</key>
