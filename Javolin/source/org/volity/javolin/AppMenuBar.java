@@ -254,6 +254,7 @@ public class AppMenuBar extends JMenuBar
         
         mGameInfoMenuItem = new JMenuItem(MENUCMD_GAME_INFO);
         mGameInfoMenuItem.addActionListener(this);
+        setAccelerator(mGameInfoMenuItem, KeyEvent.VK_I);
         setPlatformMnemonic(mGameInfoMenuItem, KeyEvent.VK_I);
         if (mTableWindow == null) 
             mGameInfoMenuItem.setEnabled(false);
@@ -337,7 +338,7 @@ public class AppMenuBar extends JMenuBar
 
         mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
         mMemUsageMenuItem.addActionListener(this);
-        setAccelerator(mMemUsageMenuItem, KeyEvent.VK_M);
+        //setAccelerator(mMemUsageMenuItem, KeyEvent.VK_M);
         setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
         debugMenu.add(mMemUsageMenuItem);
 
