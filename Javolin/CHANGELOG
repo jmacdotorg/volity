@@ -1,7 +1,7 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.3.7
 
 Added a "nicknames" field to the Seat object you get in the ECMAScript
 UI. So you can do info.gameseats[0].nicknames. (This puts us at ECMAScript 
