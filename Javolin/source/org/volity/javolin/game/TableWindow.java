@@ -79,10 +79,12 @@ public class TableWindow extends JFrame
 
     private static Map sGameNameNumberMap = new HashMap();
 
-    private final static String INVITE_LABEL = "Invite";
+    private final static String INVITE_LABEL = "Invite Player";
+    private final static String BOT_LABEL = "Request Bot";
     private final static String READY_LABEL = "Ready";
     private final static String SEAT_LABEL = "Seat";
     private final static ImageIcon INVITE_ICON;
+    private final static ImageIcon BOT_ICON;
     private final static ImageIcon READY_ICON;
     private final static ImageIcon UNREADY_ICON;
     private final static ImageIcon SEAT_ICON;
@@ -93,6 +95,7 @@ public class TableWindow extends JFrame
 
     static {
         INVITE_ICON = new ImageIcon(TableWindow.class.getResource("Invite_ButIcon.png"));
+        BOT_ICON = new ImageIcon(TableWindow.class.getResource("Bot_ButIcon.png"));
         READY_ICON = new ImageIcon(TableWindow.class.getResource("Ready_ButIcon.png"));
         UNREADY_ICON = new ImageIcon(TableWindow.class.getResource("Unready_ButIcon.png"));
         SEAT_ICON = new ImageIcon(TableWindow.class.getResource("Seat_ButIcon.png"));
@@ -119,6 +122,7 @@ public class TableWindow extends JFrame
     private UpdateManagerAdapter mViewportUpdateListener;
     private SeatChart.SeatMarkListener mSeatMarkListener;
 
+    private JButton mBotButton;
     private JButton mInviteButton;
     private JButton mReadyButton;
     private JButton mSeatButton;
@@ -414,6 +418,16 @@ public class TableWindow extends JFrame
 
         // Set up button actions.
 
+        mBotButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent ev) {
+                    String[] vals = new String[2];
+                    if (AppMenuBar.getDefaultInviteBot(TableWindow.this,
+                            vals)) {
+                        doInviteBot(vals[0], vals[1]);
+                    }
+                }
+            });
+
         mInviteButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
                     doInviteDialog();
@@ -536,6 +550,7 @@ public class TableWindow extends JFrame
                     assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
                     mAvailableBots = bots;
                     AppMenuBar.notifyUpdateInviteBotMenu(TableWindow.this);
+                    mBotButton.setEnabled(AppMenuBar.getDefaultInviteBot(TableWindow.this, null));
                     if (bots == null)
                         return;
 
@@ -549,6 +564,7 @@ public class TableWindow extends JFrame
                                         public void run() {
                                             assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
                                             AppMenuBar.notifyUpdateInviteBotMenu(TableWindow.this);
+                                            mBotButton.setEnabled(AppMenuBar.getDefaultInviteBot(TableWindow.this, null));
                                         }
                                     });
                             }
@@ -1681,6 +1697,11 @@ public class TableWindow extends JFrame
 
         mInviteButton = new JButton(INVITE_LABEL, INVITE_ICON);
         toolbar.add(mInviteButton);
+
+        toolbar.addSeparator();
+
+        mBotButton = new JButton(BOT_LABEL, BOT_ICON);
+        toolbar.add(mBotButton);
 
         toolbar.addSeparator(new Dimension(16, 10));
 

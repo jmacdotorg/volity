@@ -962,4 +962,46 @@ public class AppMenuBar extends JMenuBar
                 bar.updateInviteBotMenu();            
         }
     }
+
+    /**
+     * Fetch from one menu bar the default (cmd-B) invite-bot parameters. The
+     * supplied String[2] is optional; if present, it will be filled in with
+     * [URI, JID]. Either or both value may be null.
+     *
+     * @return whether there is a valid default invite-bot command.
+     */
+    public static boolean getDefaultInviteBot(TableWindow win, 
+        String[] urijid) {
+        for (Iterator it = menuBarList.iterator(); it.hasNext(); ) {
+            AppMenuBar bar = (AppMenuBar)it.next();
+            if (bar.mTableWindow == win) {
+                JMenuItem item = bar.mInviteBotMenuItem;
+
+                if (item == null || !item.isEnabled()) {
+                    item = null;
+                    int count = bar.mInviteBotMenu.getMenuComponentCount();
+                    for (int ix=0; ix<count; ix++) {
+                        JMenuItem subitem = (JMenuItem)bar.mInviteBotMenu.getMenuComponent(ix);
+                        if (subitem.isEnabled()) {
+                            item = subitem;
+                            break;
+                        }
+                    }
+                }
+
+                if (item == null || !item.isEnabled())
+                    return false;
+
+                if (urijid != null) {
+                    String uri = (String)item.getClientProperty(INVITEBOT_URI_PROP);
+                    String jid = (String)item.getClientProperty(INVITEBOT_JID_PROP);
+                    urijid[0] = uri;
+                    urijid[1] = jid;
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
