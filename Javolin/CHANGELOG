@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+The squashed-input-pane on Win/Linux is fixed! Only now, the input pane
+on Mac defaults to two lines high. I declare this to be okay.
+
 Cmd-I is now "Game Info". And there's a "Request Bot" button in the game
 window.
 

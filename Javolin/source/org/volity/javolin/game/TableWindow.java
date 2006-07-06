@@ -276,6 +276,18 @@ public class TableWindow extends JFrame
         mSizePosSaver = new SizeAndPositionSaver(this, NODENAME);
         restoreWindowState();
 
+        /* This is a horrible hack to ensure that the input pane is never
+         * bigger than it ought to be. */
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    int max = mChatSplitter.getMaximumDividerLocation();
+                    int val = mChatSplitter.getDividerLocation();
+                    if (val > max) {
+                        mChatSplitter.setDividerLocation(max);
+                    }
+                }
+            });
+
         // Send message when user presses Enter while editing input text
         mSendMessageAction =
             new AbstractAction()
@@ -1034,7 +1046,14 @@ public class TableWindow extends JFrame
 
         mSizePosSaver.restoreSizeAndPosition();
 
-        mChatSplitter.setDividerLocation(prefs.getInt(CHAT_SPLIT_POS, 100));
+        /* The chat input pane defaults to a split of 80. This is two lines
+         * high on the Mac, but only one on Win/Linux, because the range of
+         * divider values seems to be defined differently on Mac. (This
+         * splitter runs 23-100 on Mac, but 23-81 on the other platforms.) We
+         * have some code to keep it inside the limits (see above), but I am
+         * still sticking with the conservative value here.
+         */
+        mChatSplitter.setDividerLocation(prefs.getInt(CHAT_SPLIT_POS, 80));
         mBoardSplitter.setDividerLocation(prefs.getInt(BOARD_SPLIT_POS,
             getHeight() - 200));
         mUserListSplitter.setDividerLocation(prefs.getInt(USERLIST_SPLIT_POS,
