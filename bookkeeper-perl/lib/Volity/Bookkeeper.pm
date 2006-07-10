@@ -330,6 +330,12 @@ sub get_parlor_with_jid {
 sub _rpc_record_game {
   my $self = shift;
   my ($sender_jid, $game_record_hashref) = @_;
+  
+  unless (ref($game_record_hashref) && ref($game_record_hashref) eq 'HASH') {
+      $self->logger->warn("Got a non-struct game record from $sender_jid.\n");
+      return ('606', "Game record wasn't a struct");
+  }
+
   my $game_record = Volity::GameRecord->new_from_hashref($game_record_hashref);
   unless (defined($game_record)) {
     $self->logger->warn("Got bad game struct from $sender_jid.\n");
