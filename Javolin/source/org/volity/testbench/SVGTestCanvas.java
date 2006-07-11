@@ -10,6 +10,7 @@ import org.apache.batik.bridge.UserAgent;
 import org.apache.batik.bridge.svg12.SVG12BridgeContext;
 import org.apache.batik.dom.svg.SVGOMDocument;
 import org.apache.batik.script.Interpreter;
+import org.apache.batik.script.InterpreterException;
 import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
 import org.apache.batik.script.rhino.RhinoInterpreter;
@@ -20,8 +21,9 @@ import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
 import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
 import org.apache.batik.util.RunnableQueue;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.Function;
-import org.mozilla.javascript.JavaScriptException;
+import org.mozilla.javascript.ScriptableObject;
 import org.volity.client.GameUI;
 import org.volity.client.data.Metadata;
 import org.volity.client.translate.TranslateToken;
@@ -171,9 +173,13 @@ public class SVGTestCanvas extends JSVGCanvas
                 TestUIInterpreter() {
                     super(documentURL);
                     ui = new SVGUI(documentURL);
-                    // Will need the security domain to execute debug scripts.
-                    ui.setSecurityDomain(rhinoClassLoader);
-                    ui.initGameObjects(getGlobalObject());
+                    uiGlobalObject = getGlobalObject();
+                    contextFactory.call(new ContextAction() {
+                            public Object run(Context cx) {
+                                ui.initGameObjects(cx, uiGlobalObject);
+                                return null;
+                            }
+                        });
                     for (Iterator it = listeners.iterator(); it.hasNext(); ) {
                         ((UIListener) it.next()).newUI(ui);
                     }
@@ -186,9 +192,13 @@ public class SVGTestCanvas extends JSVGCanvas
                 TestUI12Interpreter() {
                     super(documentURL);
                     ui = new SVGUI(documentURL);
-                    // Will need the security domain to execute debug scripts.
-                    ui.setSecurityDomain(rhinoClassLoader);
-                    ui.initGameObjects(getGlobalObject());
+                    uiGlobalObject = getGlobalObject();
+                    contextFactory.call(new ContextAction() {
+                            public Object run(Context cx) {
+                                ui.initGameObjects(cx, uiGlobalObject);
+                                return null;
+                            }
+                        });
                     for (Iterator it = listeners.iterator(); it.hasNext(); ) {
                         ((UIListener) it.next()).newUI(ui);
                     }
@@ -206,6 +216,7 @@ public class SVGTestCanvas extends JSVGCanvas
     } 
     
     SVGUI ui;
+    ScriptableObject uiGlobalObject;
     RhinoInterpreter interpreter;
     
     public TestUI getUI() { return ui; }
@@ -243,16 +254,19 @@ public class SVGTestCanvas extends JSVGCanvas
             RunnableQueue rq = getUpdateManager().getUpdateRunnableQueue();
 
             rq.invokeLater(new Runnable() {
-                    // Make sure we use the interpreter's context rather than
-                    // one returned by Context.enter() in a new thread, because
-                    // it needs to be a special subclass of Context.
                     public void run() {
                         try {
-                            Context context = interpreter.enterContext();
-                            SVGUI.super.loadString(uiScript, scriptLabel);
+                            beginScriptCode();
+                            interpreter.evaluate(uiScript);
+                        }
+                        catch (InterpreterException ex) {
+                            Exception wrapex = ex.getException();
+                            if (wrapex == null)
+                                wrapex = ex;
+                            errorHandler.error(wrapex, scriptLabel + " failed");
                         }
                         finally {
-                            Context.exit();
+                            endScriptCode();
                         }
                     }
                 });
@@ -266,16 +280,21 @@ public class SVGTestCanvas extends JSVGCanvas
             RunnableQueue rq = getUpdateManager().getUpdateRunnableQueue();
 
             rq.invokeLater(new Runnable() {
-                    // Make sure we use the interpreter's context rather than
-                    // one returned by Context.enter() in a new thread, because
-                    // it needs to be a special subclass of Context.
                     public void run() {
+                        ContextAction action = uiMethodAction(uiGlobalObject,
+                            method, params, callback);
                         try {
-                            Context context = interpreter.enterContext();
-                            SVGUI.super.callUIMethod(method, params, callback);
+                            beginScriptCode();
+                            interpreter.getContextFactory().call(action);
+                        }
+                        catch (InterpreterException ex) {
+                            Exception wrapex = ex.getException();
+                            if (wrapex == null)
+                                wrapex = ex;
+                            errorHandler.error(wrapex);
                         }
                         finally {
-                            Context.exit();
+                            endScriptCode();
                         }
                     }
                 });

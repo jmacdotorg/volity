@@ -3,8 +3,13 @@ SVN repository.
 
 * the present
 
+Upgraded to the latest Batik, and to Rhino (ECMAScript library) version
+1.6.
+
 The squashed-input-pane on Win/Linux is fixed! Only now, the input pane
-on Mac defaults to two lines high. I declare this to be okay.
+on Mac defaults to two lines high. I declare this to be okay. (Note that
+the table window size preference is reset with this release, so that
+people don't inherit the bug from previous versions.)
 
 Cmd-I is now "Game Info". And there's a "Request Bot" button in the game
 window.

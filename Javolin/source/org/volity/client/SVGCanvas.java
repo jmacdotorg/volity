@@ -11,6 +11,7 @@ import org.apache.batik.bridge.UserAgent;
 import org.apache.batik.bridge.svg12.SVG12BridgeContext;
 import org.apache.batik.dom.svg.SVGOMDocument;
 import org.apache.batik.script.Interpreter;
+import org.apache.batik.script.InterpreterException;
 import org.apache.batik.script.InterpreterFactory;
 import org.apache.batik.script.InterpreterPool;
 import org.apache.batik.script.rhino.RhinoInterpreter;
@@ -22,8 +23,9 @@ import org.apache.batik.swing.svg.SVGUserAgentGUIAdapter;
 import org.apache.batik.util.RunnableQueue;
 import org.jivesoftware.smack.XMPPConnection;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
 import org.mozilla.javascript.Function;
-import org.mozilla.javascript.JavaScriptException;
+import org.mozilla.javascript.ScriptableObject;
 import org.volity.client.data.Metadata;
 import org.volity.client.translate.TranslateToken;
 
@@ -40,6 +42,7 @@ public class SVGCanvas extends JSVGCanvas
     LinkHandler linkHandler;
 
     SVGUI ui;
+    ScriptableObject uiGlobalObject;
     RhinoInterpreter interpreter;
     boolean stopped = false;
 
@@ -222,9 +225,15 @@ public class SVGCanvas extends JSVGCanvas
                      * Therefore, we create a UI and immediately stop it. (Test
                      * case: create a new table, requesting nickname
                      * "referee".) */
+                    uiGlobalObject = getGlobalObject();
+                    contextFactory.call(new ContextAction() {
+                            public Object run(Context cx) {
+                                ui.initGameObjects(cx, uiGlobalObject);
+                                return null;
+                            }
+                        });
                     if (stopped)
                         ui.stop();
-                    ui.initGameObjects(getGlobalObject());
                     if (table != null)
                         ui.setTable(table);
                 }
@@ -243,9 +252,15 @@ public class SVGCanvas extends JSVGCanvas
                      * Therefore, we create a UI and immediately stop it. (Test
                      * case: create a new table, requesting nickname
                      * "referee".) */
+                    uiGlobalObject = getGlobalObject();
+                    contextFactory.call(new ContextAction() {
+                            public Object run(Context cx) {
+                                ui.initGameObjects(cx, uiGlobalObject);
+                                return null;
+                            }
+                        });
                     if (stopped)
                         ui.stop();
-                    ui.initGameObjects(getGlobalObject());
                     if (table != null)
                         ui.setTable(table);
                 }
@@ -319,19 +334,21 @@ public class SVGCanvas extends JSVGCanvas
             RunnableQueue rq = getUpdateManager().getUpdateRunnableQueue();
 
             rq.invokeLater(new Runnable() {
-                    // Make sure we use the interpreter's context rather than
-                    // one returned by Context.enter() in a new thread, because
-                    // it needs to be a special subclass of Context.
                     public void run() {        
                         if (interpreter == null) {
                             callback.error(new NullPointerException("interpreter is stopped."));
                             return;
                         }
+                        ContextAction action = uiMethodAction(uiGlobalObject,
+                            method, params, callback);
                         try {
-                            Context context = interpreter.enterContext();
-                            SVGUI.super.callUIMethod(method, params, callback);
-                        } finally {
-                            Context.exit();
+                            interpreter.getContextFactory().call(action);
+                        }
+                        catch (InterpreterException ex) {
+                            Exception wrapex = ex.getException();
+                            if (wrapex == null)
+                                wrapex = ex;
+                            errorHandler.error(wrapex);
                         }
                     }
                 });

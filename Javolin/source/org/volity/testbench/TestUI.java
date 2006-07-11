@@ -4,8 +4,15 @@ import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
-import org.apache.batik.script.rhino.RhinoInterpreter;
-import org.mozilla.javascript.*;
+import org.mozilla.javascript.Callable;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.WrapFactory;
 import org.volity.client.Audio;
 import org.volity.client.GameUI;
 import org.volity.client.data.Metadata;
@@ -47,83 +54,12 @@ public abstract class TestUI
      */
     public abstract Metadata loadMetadata();
 
-    /**
-     * Call a UI method. Since this is a slow operation, probably involving
-     * work in another thread, it does not return a value or throw exceptions.
-     * Instead, you may supply a callback which will be called when the method
-     * completes. (The callback may not be called in your thread!) If the
-     * callback is null, the result (or exception) of the method is silently
-     * dropped.
-     *
-     * A word on concurrency: it is a bad idea for the UI to execute two
-     * methods in different threads at the same time. ECMAScript isn't built
-     * for multithreading, and if it were, UI authors still wouldn't want to do
-     * it. However, it is not useful to put serialization guards (say, mutexes)
-     * in this method. The right way to solve the problem is to queue
-     * everything in one thread -- but the UI package (Batik) will have its own
-     * methods for doing this.
-     *
-     * Therefore, you must subclass TestUI, and wrap callUIMethod in code that
-     * does the appropriate serialization. (For Batik, that means calling
-     * getUpdateRunnableQueue.invokeLater(). See SVGUI in SVGTestCanvas.)
-     *
-     * If I were being more consistent, I'd make this an abstract method. In
-     * lieu of that, and to ensure that mistakes are obvious, I am putting
-     * asserts in this method. The callInProgress field is used as a guard
-     * against concurrent method calling.
-     *
-     * @param method the UI method to be called
-     * @param params the list of method arguments (RPC data objects)
-     * @param callback completion function, or null
-     */
-    public void callUIMethod(Function method, List params, Completion callback)
-    {
-        try {
-            Context context = Context.enter();
-            synchronized (callInProgressLock) {
-                if (callInProgress == Boolean.TRUE)
-                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
-                callInProgress = Boolean.TRUE;
-            }
-
-            /* If we haven't already, put an RPCWrapFactory around whatever
-             * WrapFactory exists on the context. (We don't want to give up the
-             * BatikWrapFactory which exists on Batik contexts.) */
-            WrapFactory wrapper = context.getWrapFactory();
-            if (!(wrapper instanceof GameUI.RPCWrapFactory)) {
-                wrapper = new GameUI.RPCWrapFactory(wrapper);
-                context.setWrapFactory(wrapper);
-            }
-
-            try {
-                Object ret = method.call(context, scope, game, params.toArray());
-                if (ret == null || ret instanceof Undefined) {
-                    // function returned void, but RPC result has to be non-void
-                    ret = Boolean.TRUE;
-                }
-                if (callback != null) 
-                    callback.result(ret);
-            }
-            catch (JavaScriptException ex) {
-                errorHandler.error(ex);
-                if (callback != null) 
-                    callback.error(ex);
-            }
-        } finally {
-            synchronized (callInProgressLock) {
-                callInProgress = Boolean.FALSE;
-            }
-            Context.exit();
-        }
-    }
-
     URL baseURL;
     TranslateToken translator;
     ErrorHandler errorHandler;
     ErrorHandler parentErrorHandler;
     GameUI.MessageHandler messageHandler;
     Metadata metadata;
-    Object securityDomain; 
 
     String currentSeat;
     Scriptable scope, game, info, volity;
@@ -164,93 +100,117 @@ public abstract class TestUI
         currentSeat = null;
     }
 
+    /**
+     * Get the Testbench-specific debug information (projected list of seats,
+     * debug buttons). This is an abstract method, which should be overridden
+     * by the SVGTestCanvas class.
+     */
     public abstract DebugInfo getDebugInfo();
-    
-    /**
-     * Execute a UI script.
-     * @param uiScript an ECMAScript file implementing the game UI
-     * @throws IOException if there is an I/O problem reading the UI script
-     * @throws JavaScriptException if the UI script throws an exception
-     * @throws EvaluationException if an error occurs while evaluating
-     *                             the UI script
-     */
-    public void load(File uiScript) throws IOException, JavaScriptException {
-        try {
-            if (scope == null) initGameObjects();
-            Context context = Context.enter();
-            synchronized (callInProgressLock) {
-                if (callInProgress == Boolean.TRUE)
-                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
-                callInProgress = Boolean.TRUE;
-            }
-
-            context.evaluateReader(scope, new FileReader(uiScript),
-                uiScript.getName(), 1, null);
-        } finally {
-            synchronized (callInProgressLock) {
-                callInProgress = Boolean.FALSE;
-            }
-            Context.exit();
-        }
-    }
 
     /**
-     * Execute a string as a UI script.
+     * Execute a string as a UI script. This is an abstract method, which
+     * should be overridden by the SVGTestCanvas class.
+     *
      * @param uiScript a string containing ECMAScript code
+     * @param scriptLabel a label to attach to error messages
      */
-    public void loadString(String uiScript, String scriptLabel) {
+    public abstract void loadString(String uiScript, String scriptLabel);
+
+    /**
+     * Execute an ECMAScript function object. This is an abstract method, which
+     * should be overridden by the SVGTestCanvas class.
+     *
+     * Since this is a slow operation, probably involving work in another
+     * thread, it does not return a value or throw exceptions. Instead, you may
+     * supply a callback which will be called when the method completes. (The
+     * callback may not be called in your thread!) If the callback is null, the
+     * result (or exception) of the method is silently dropped.
+     *
+     * A word on concurrency: it is a bad idea for the UI to execute two
+     * methods in different threads at the same time. ECMAScript isn't built
+     * for multithreading, and if it were, UI authors still wouldn't want to do
+     * it. However, it is not useful to put serialization guards (say, mutexes)
+     * in the execution methods. The right way to solve the problem is to queue
+     * everything in one thread -- but the UI package (Batik) will have its own
+     * methods for doing this.
+     *
+     * Therefore, you must subclass TestUI, and implement callUIMethod and
+     * loadString with code that does the appropriate serialization. (For
+     * Batik, that means calling getUpdateRunnableQueue.invokeLater(). See
+     * SVGUI in SVGTestCanvas.)
+     *
+     * @param method the UI method to be called
+     * @param params the list of method arguments (RPC data objects)
+     * @param callback completion function, or null
+     */
+    public abstract void callUIMethod(Function method, List params,
+        Completion callback);
+
+    /**
+     * Create a ContextAction which does the work of calling a method,
+     * translating the result, and invoking the callback. This is a utility
+     * method which should be used by the callUIMethod() implementation.
+     */
+    public ContextAction uiMethodAction(final ScriptableObject global,
+        final Function method, final List params, final Completion callback) {
+
+        return new ContextAction() {
+                public Object run(Context context) {
+                    /* If we haven't already, put an RPCWrapFactory around
+                     * whatever WrapFactory exists on the context. (We don't
+                     * want to give up the BatikWrapFactory which exists on
+                     * Batik contexts.) */
+                    WrapFactory wrapper = context.getWrapFactory();
+                    if (!(wrapper instanceof GameUI.RPCWrapFactory)) {
+                        wrapper = new GameUI.RPCWrapFactory(wrapper);
+                        context.setWrapFactory(wrapper);
+                    }
+
+                    Object ret = method.call(context,
+                        global, global, params.toArray());
+                    if (ret == null || ret instanceof Undefined) {
+                        // function returned void, but RPC result has to be non-void
+                        ret = Boolean.TRUE;
+                    }
+                    if (callback != null) 
+                        callback.result(ret);
+                                    
+                    return null;
+                }
+            };    
+    }
+
+    /**
+     * This exists only to support assertions and paranoia checks. We like
+     * those, especially in Testbench. Call this before executing any script
+     * code, in the thread where it will be executed.
+     */
+    public void beginScriptCode() {
+        synchronized (callInProgressLock) {
+            if (callInProgress == Boolean.TRUE)
+                throw new AssertionError("Tried to run two ECMAScript calls at the same time");
+            callInProgress = Boolean.TRUE;
+        }
+    }
+
+    /**
+     * Call this after executing any script code.
+     */
+    public void endScriptCode() {
+        synchronized (callInProgressLock) {
+            callInProgress = Boolean.FALSE;
+        }
+    }
+
+    /**
+     * Initialize game-handling objects. Call this inside a ContextAction
+     * when setting up the Interpreter.
+     *
+     * @param context a context to run in.
+     * @param scope the scope to initialize. May not be null.
+     */
+    public void initGameObjects(Context context, ScriptableObject scope) {
         try {
-            if (scope == null) initGameObjects();
-            Context context = Context.enter();
-            synchronized (callInProgressLock) {
-                if (callInProgress == Boolean.TRUE)
-                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
-                callInProgress = Boolean.TRUE;
-            }
-
-            context.evaluateString(scope, uiScript,
-                "<debug command>", 1, securityDomain);
-        }
-        catch (Exception ex) {
-            errorHandler.error(ex, scriptLabel + " failed");
-        }
-        finally {
-            synchronized (callInProgressLock) {
-                callInProgress = Boolean.FALSE;
-            }
-            Context.exit();
-        }
-    }
-
-    /**
-     * To compile and run debug commands, we need a valid security domain. That
-     * has to be nipped out of the RhinoInterpreter. (See SVGTestCanvas.)
-     */
-    public void setSecurityDomain(Object securityDomain) {
-        this.securityDomain = securityDomain;
-    }
-
-    /**
-     * Initialize game-handling objects.
-     * @return the initialized scope
-     */
-    public ScriptableObject initGameObjects() {
-        return initGameObjects(null);
-    }
-
-    /**
-     * Initialize game-handling objects.
-     * @param scope the scope to initialize, or null, in which case a
-     *              new object will be created to serve as the scope.
-     * @return the initialized scope, which is the same as the scope
-     *         argument if not null.
-     */
-    public ScriptableObject initGameObjects(ScriptableObject scope) {
-        try {
-            Context context = Context.enter();
-            if (scope == null) {
-                scope = context.initStandardObjects();
-            }
             this.scope = scope;
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("volity", scope, volity = context.newObject(scope));
@@ -347,24 +307,9 @@ public abstract class TestUI
             /* If you add more identifiers to scope, be sure to delete them in
              * the stop() method. */
 
-        } catch (JavaScriptException e) {
-            errorHandler.error(e);
-        } finally {
-            Context.exit();
+        } catch (Exception ex) {
+            errorHandler.error(ex);
         }
-        return scope;
-    }
-
-    /**
-     * Set where the imaginary client thinks it's sitting. (In a real
-     * client, this information would come from the client's seating
-     * map, which is updated by volity.player_sat() / volity.player_stood()
-     * RPCs.)
-     *
-     * Param seatId the notional player's current seat (null for unseated)
-     */
-    public void setCurrentSeat(String seatId) {
-        currentSeat = seatId;
     }
 
     /**
@@ -392,6 +337,18 @@ public abstract class TestUI
         game = null;
         volity = null;
         info = null;
+    }
+
+    /**
+     * Set where the imaginary client thinks it's sitting. (In a real
+     * client, this information would come from the client's seating
+     * map, which is updated by volity.player_sat() / volity.player_stood()
+     * RPCs.)
+     *
+     * Param seatId the notional player's current seat (null for unseated)
+     */
+    public void setCurrentSeat(String seatId) {
+        currentSeat = seatId;
     }
 
     /**
@@ -541,19 +498,15 @@ public abstract class TestUI
         private Callable funcVersionMatch;
 
         {
-            try {
-                defineProperty("version", Info.class, PERMANENT);
-                defineProperty("state", Info.class, PERMANENT);
-                defineProperty("recovery", Info.class, PERMANENT);
-                defineProperty("nickname", Info.class, PERMANENT);
-                defineProperty("seat", Info.class, PERMANENT);
-                defineProperty("allseats", Info.class, PERMANENT);
-                defineProperty("gameseats", Info.class, PERMANENT);
-                defineProperty("ruleset", Info.class, PERMANENT);
-                defineProperty("versionmatch", Info.class, PERMANENT);
-            } catch (PropertyException e) {
-                throw new RuntimeException(e.toString());
-            }
+            defineProperty("version", Info.class, PERMANENT);
+            defineProperty("state", Info.class, PERMANENT);
+            defineProperty("recovery", Info.class, PERMANENT);
+            defineProperty("nickname", Info.class, PERMANENT);
+            defineProperty("seat", Info.class, PERMANENT);
+            defineProperty("allseats", Info.class, PERMANENT);
+            defineProperty("gameseats", Info.class, PERMANENT);
+            defineProperty("ruleset", Info.class, PERMANENT);
+            defineProperty("versionmatch", Info.class, PERMANENT);
 
             funcVersionMatch = new GameUI.Callback() {
                     public Object run(Object[] args) {
@@ -603,7 +556,7 @@ public abstract class TestUI
         public void setNickname(String nickname) {
             throw new RuntimeException("Cannot change nickname in testbench");
         }
-        public Object getAllseats() throws JavaScriptException {
+        public Object getAllseats() {
             List seatlist = getDebugInfo().getSeatList();
 
             Context context = Context.getCurrentContext();
@@ -615,10 +568,10 @@ public abstract class TestUI
             }
             return ls;
         }
-        public Object getGameseats() throws JavaScriptException {
+        public Object getGameseats() {
             return getAllseats();
         }
-        public Callable getVersionmatch() throws JavaScriptException {
+        public Callable getVersionmatch() {
             return funcVersionMatch;
         }
     }
@@ -628,12 +581,8 @@ public abstract class TestUI
         private Callable funcGetall;
 
         {
-            try {
-                defineProperty("get", MetadataObj.class, PERMANENT);
-                defineProperty("getall", MetadataObj.class, PERMANENT);
-            } catch (PropertyException e) {
-                throw new RuntimeException(e.toString());
-            }
+            defineProperty("get", MetadataObj.class, PERMANENT);
+            defineProperty("getall", MetadataObj.class, PERMANENT);
 
             funcGet = new GameUI.Callback() {
                     public Object run(Object[] args) {
@@ -700,22 +649,18 @@ public abstract class TestUI
         public String getClassName() { return "Metadata"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
-        public Callable getGet() throws JavaScriptException {
+        public Callable getGet() {
             return funcGet;
         }
-        public Callable getGetall() throws JavaScriptException {
+        public Callable getGetall() {
             return funcGetall;
         }
     }
 
     class UISeat extends ScriptableObject {
         {
-            try {
-                defineProperty("players", UISeat.class, PERMANENT);
-                defineProperty("nicknames", UISeat.class, PERMANENT);
-            } catch (PropertyException e) {
-                throw new RuntimeException(e.toString());
-            }
+            defineProperty("players", UISeat.class, PERMANENT);
+            defineProperty("nicknames", UISeat.class, PERMANENT);
         }
 
         protected String id;
@@ -727,7 +672,7 @@ public abstract class TestUI
         public String getClassName() { return "Seat"; }
         public Object getDefaultValue(Class typeHint) { return id; }
 
-        public Object getPlayers() throws JavaScriptException {
+        public Object getPlayers() {
             Context context = Context.getCurrentContext();
             Scriptable ls = context.newArray(scope, 0);
             ls.put(0, ls, id+"@testbench/app");
@@ -737,7 +682,7 @@ public abstract class TestUI
             return ls;
         }
 
-        public Object getNicknames() throws JavaScriptException {
+        public Object getNicknames() {
             Context context = Context.getCurrentContext();
             Scriptable ls = context.newArray(scope, 0);
             ls.put(0, ls, id);

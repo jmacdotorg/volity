@@ -10,7 +10,15 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.filter.PacketFilter;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smackx.packet.MUCUser;
-import org.mozilla.javascript.*;
+import org.mozilla.javascript.Callable;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextAction;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.WrapFactory;
 import org.volity.client.Audio;
 import org.volity.client.comm.RPCDispatcherDebug;
 import org.volity.client.data.Metadata;
@@ -86,8 +94,6 @@ public abstract class GameUI implements RPCHandler {
     GamePacketFilter filter;
     Scriptable scope, game, volity, info;
     GameTable table;
-    private Boolean callInProgress = Boolean.FALSE;
-    private Object callInProgressLock = new Object();
     Map seatObjects = new HashMap();
     
     public interface ErrorHandler {
@@ -163,26 +169,14 @@ public abstract class GameUI implements RPCHandler {
     }
 
     /**
-     * Initialize game-handling objects.
-     * @return the initialized scope
+     * Initialize game-handling objects. Call this inside a ContextAction
+     * when setting up the Interpreter.
+     *
+     * @param context a context to run in.
+     * @param scope the scope to initialize. May not be null.
      */
-    public ScriptableObject initGameObjects() {
-        return initGameObjects(null);
-    }
-
-    /**
-     * Initialize game-handling objects.
-     * @param scope the scope to initialize, or null, in which case a
-     *              new object will be created to serve as the scope.
-     * @return the initialized scope, which is the same as the scope
-     *         argument if not null.
-     */
-    public ScriptableObject initGameObjects(ScriptableObject scope) {
+    public void initGameObjects(Context context, ScriptableObject scope) {
         try {
-            Context context = Context.enter();
-            if (scope == null) {
-                scope = context.initStandardObjects();
-            }
             this.scope = scope;
             scope.put("game", scope, game = context.newObject(scope));
             scope.put("volity", scope, volity = context.newObject(scope));
@@ -268,12 +262,9 @@ public abstract class GameUI implements RPCHandler {
             /* If you add more identifiers to scope, be sure to delete them in
              * the stop() method. */
 
-        } catch (JavaScriptException e) {
-            errorHandler.error(e);
-        } finally {
-            Context.exit();
+        } catch (Exception ex) {
+            errorHandler.error(ex);
         }
-        return scope;
     }
 
     /**
@@ -467,19 +458,15 @@ public abstract class GameUI implements RPCHandler {
         private Callable funcVersionMatch;
 
         {
-            try {
-                defineProperty("version", Info.class, PERMANENT);
-                defineProperty("state", Info.class, PERMANENT);
-                defineProperty("recovery", Info.class, PERMANENT);
-                defineProperty("nickname", Info.class, PERMANENT);
-                defineProperty("seat", Info.class, PERMANENT);
-                defineProperty("allseats", Info.class, PERMANENT);
-                defineProperty("gameseats", Info.class, PERMANENT);
-                defineProperty("ruleset", Info.class, PERMANENT);
-                defineProperty("versionmatch", Info.class, PERMANENT);
-            } catch (PropertyException e) {
-                errorHandler.error(e);
-            }
+            defineProperty("version", Info.class, PERMANENT);
+            defineProperty("state", Info.class, PERMANENT);
+            defineProperty("recovery", Info.class, PERMANENT);
+            defineProperty("nickname", Info.class, PERMANENT);
+            defineProperty("seat", Info.class, PERMANENT);
+            defineProperty("allseats", Info.class, PERMANENT);
+            defineProperty("gameseats", Info.class, PERMANENT);
+            defineProperty("ruleset", Info.class, PERMANENT);
+            defineProperty("versionmatch", Info.class, PERMANENT);
 
             funcVersionMatch = new Callback() {
                     public Object run(Object[] args) {
@@ -532,7 +519,7 @@ public abstract class GameUI implements RPCHandler {
         public void setNickname(String nickname) throws XMPPException {
             table.changeNickname(nickname);
         }
-        public Object getAllseats() throws JavaScriptException {
+        public Object getAllseats() {
             Context context = Context.getCurrentContext();
             Scriptable ls = context.newArray(scope, 0);
             int count = 0;
@@ -542,7 +529,7 @@ public abstract class GameUI implements RPCHandler {
             }
             return ls;
         }
-        public Object getGameseats() throws JavaScriptException {
+        public Object getGameseats() {
             Context context = Context.getCurrentContext();
             Scriptable ls = context.newArray(scope, 0);
             int count = 0;
@@ -555,7 +542,7 @@ public abstract class GameUI implements RPCHandler {
         public String getRuleset() {
             return ruleset.toString();
         }
-        public Callable getVersionmatch() throws JavaScriptException {
+        public Callable getVersionmatch() {
             return funcVersionMatch;
         }
     }
@@ -565,12 +552,8 @@ public abstract class GameUI implements RPCHandler {
         private Callable funcGetall;
 
         {
-            try {
-                defineProperty("get", MetadataObj.class, PERMANENT);
-                defineProperty("getall", MetadataObj.class, PERMANENT);
-            } catch (PropertyException e) {
-                throw new RuntimeException(e.toString());
-            }
+            defineProperty("get", MetadataObj.class, PERMANENT);
+            defineProperty("getall", MetadataObj.class, PERMANENT);
 
             funcGet = new Callback() {
                     public Object run(Object[] args) {
@@ -637,22 +620,18 @@ public abstract class GameUI implements RPCHandler {
         public String getClassName() { return "Metadata"; }
         public Object getDefaultValue(Class typeHint) { return toString(); }
 
-        public Callable getGet() throws JavaScriptException {
+        public Callable getGet() {
             return funcGet;
         }
-        public Callable getGetall() throws JavaScriptException {
+        public Callable getGetall() {
             return funcGetall;
         }
     }
 
     class UISeat extends ScriptableObject {
         {
-            try {
-                defineProperty("players", UISeat.class, PERMANENT);
-                defineProperty("nicknames", UISeat.class, PERMANENT);
-            } catch (PropertyException e) {
-                throw new RuntimeException(e.toString());
-            }
+            defineProperty("players", UISeat.class, PERMANENT);
+            defineProperty("nicknames", UISeat.class, PERMANENT);
         }
 
         protected String id;
@@ -664,7 +643,7 @@ public abstract class GameUI implements RPCHandler {
         public String getClassName() { return "Seat"; }
         public Object getDefaultValue(Class typeHint) { return id; }
 
-        public Object getPlayers() throws JavaScriptException {
+        public Object getPlayers() {
             Context context = Context.getCurrentContext();
             Scriptable ls = context.newArray(scope, 0);
             Seat seat = table.getSeat(id);
@@ -678,7 +657,7 @@ public abstract class GameUI implements RPCHandler {
             return ls;
         }
 
-        public Object getNicknames() throws JavaScriptException {
+        public Object getNicknames() {
             Context context = Context.getCurrentContext();
             Scriptable ls = context.newArray(scope, 0);
             Seat seat = table.getSeat(id);
@@ -702,14 +681,10 @@ public abstract class GameUI implements RPCHandler {
      */
     public static class UIAudio extends ScriptableObject {
         {
-            try {
-                defineProperty("url", UIAudio.class, PERMANENT);
-                defineProperty("loop", UIAudio.class, PERMANENT);
-                defineProperty("alt", UIAudio.class, PERMANENT);
-                defineProperty("play", UIAudio.class, PERMANENT);
-            } catch (PropertyException ex) {
-                throw new RuntimeException(ex.toString());
-            }
+            defineProperty("url", UIAudio.class, PERMANENT);
+            defineProperty("loop", UIAudio.class, PERMANENT);
+            defineProperty("alt", UIAudio.class, PERMANENT);
+            defineProperty("play", UIAudio.class, PERMANENT);
         }
 
         /**
@@ -836,11 +811,7 @@ public abstract class GameUI implements RPCHandler {
      */
     static class UIAudioInstance extends ScriptableObject {
         {
-            try {
-                defineProperty("stop", UIAudioInstance.class, PERMANENT);
-            } catch (PropertyException ex) {
-                throw new RuntimeException(ex.toString());
-            }
+            defineProperty("stop", UIAudioInstance.class, PERMANENT);
         }
 
         protected Audio.Instance instance;
@@ -871,25 +842,6 @@ public abstract class GameUI implements RPCHandler {
         this.table = table;
     }
   
-    /**
-     * Execute a UI script.
-     * @param uiScript an ECMAScript file implementing the game UI
-     * @throws IOException if there is an I/O problem reading the UI script
-     * @throws JavaScriptException if the UI script throws an exception
-     * @throws EvaluationException if an error occurs while evaluating
-     *                             the UI script
-     */
-    public void load(File uiScript) throws IOException, JavaScriptException {
-        try {
-            if (scope == null) initGameObjects();
-            Context context = Context.enter();
-            context.evaluateReader(scope, new FileReader(uiScript),
-                uiScript.getName(), 1, null);
-        } finally {
-            Context.exit();
-        }
-    }
-
     protected static class GamePacketFilter implements PacketFilter {
 
         protected GameUI ui;
@@ -961,12 +913,14 @@ public abstract class GameUI implements RPCHandler {
     }
 
     /**
-     * Call a UI method. Since this is a slow operation, probably involving
-     * work in another thread, it does not return a value or throw exceptions.
-     * Instead, you may supply a callback which will be called when the method
-     * completes. (The callback may not be called in your thread!) If the
-     * callback is null, the result (or exception) of the method is silently
-     * dropped.
+     * Execute an ECMAScript function object. This is an abstract method, which
+     * should be overridden by the SVGCanvas class.
+     *
+     * Since this is a slow operation, probably involving work in another
+     * thread, it does not return a value or throw exceptions. Instead, you may
+     * supply a callback which will be called when the method completes. (The
+     * callback may not be called in your thread!) If the callback is null, the
+     * result (or exception) of the method is silently dropped.
      *
      * A word on concurrency: it is a bad idea for the UI to execute two
      * methods in different threads at the same time. ECMAScript isn't built
@@ -980,50 +934,41 @@ public abstract class GameUI implements RPCHandler {
      * does the appropriate serialization. (For Batik, that means calling
      * getUpdateRunnableQueue.invokeLater(). See SVGUI in SVGCanvas.)
      *
-     * If I were being more consistent, I'd make this an abstract method. In
-     * lieu of that, and to ensure that mistakes are obvious, I am putting
-     * asserts in this method. The callInProgress field is used as a guard
-     * against concurrent method calling.
-     *
      * @param method the UI method to be called
      * @param params the list of method arguments (RPC data objects)
      * @param callback completion function, or null
      */
-    public void callUIMethod(Function method, List params, Completion callback)
-    {
-        try {
-            Context context = Context.enter();
-            synchronized (callInProgressLock) {
-                if (callInProgress == Boolean.TRUE)
-                    throw new AssertionError("Tried to run two ECMAScript calls at the same time");
-                callInProgress = Boolean.TRUE;
-            }
+    public abstract void callUIMethod(Function method, List params, 
+        Completion callback);
 
-            /* If we haven't already, put an RPCWrapFactory around whatever
-             * WrapFactory exists on the context. (We don't want to give up the
-             * BatikWrapFactory which exists on Batik contexts.) */
-            WrapFactory wrapper = context.getWrapFactory();
-            if (!(wrapper instanceof RPCWrapFactory)) {
-                wrapper = new RPCWrapFactory(wrapper);
-                context.setWrapFactory(wrapper);
-            }
+    /**
+     * Create a ContextAction which does the work of calling a method,
+     * translating the result, and invoking the callback. This is a utility
+     * method which should be used by the callUIMethod() implementation.
+     */
+    public ContextAction uiMethodAction(final ScriptableObject global,
+        final Function method, final List params, final Completion callback) {
 
-            try {
-                Object ret = method.call(context, scope, game, 
-                    params.toArray());
-                if (callback != null)
-                    callback.result(ret);
-            }
-            catch (Exception ex) {
-                if (callback != null) 
-                    callback.error(ex);
-            }
-        } finally {
-            synchronized (callInProgressLock) {
-                callInProgress = Boolean.FALSE;
-            }
-            Context.exit();
-        }
+        return new ContextAction() {
+                public Object run(Context context) {
+                    /* If we haven't already, put an RPCWrapFactory around
+                     * whatever WrapFactory exists on the context. (We don't
+                     * want to give up the BatikWrapFactory which exists on
+                     * Batik contexts.) */
+                    WrapFactory wrapper = context.getWrapFactory();
+                    if (!(wrapper instanceof GameUI.RPCWrapFactory)) {
+                        wrapper = new GameUI.RPCWrapFactory(wrapper);
+                        context.setWrapFactory(wrapper);
+                    }
+
+                    Object ret = method.call(context,
+                        global, global, params.toArray());
+                    if (callback != null) 
+                        callback.result(ret);
+                                    
+                    return null;
+                }
+            };    
     }
 
     /**
