@@ -69,7 +69,7 @@ public class TableWindow extends JFrame
     public final static String DEFAULT_GAME_HELP_URL
         = "http://volity.net/games/gamut/help/game_help.html?ruleset_uri=";
 
-    private final static String NODENAME = "TableWindow";
+    private final static String NODENAME = "TableWindow2";
     private final static String CHAT_SPLIT_POS = "ChatSplitPos";
     private final static String USERLIST_SPLIT_POS = "UserListSplitPos";
     private final static String BOARD_SPLIT_POS = "BoardSplitPos";
