@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
@@ -55,6 +56,18 @@ public class TranslateToken {
      */
     public TranslateToken(File localeDir) {
         this.localeDir = localeDir;
+    }
+
+    /**
+     * Set the language used for all TranslateToken output.
+     *
+     * @param locale the Locale
+     */
+    public static void setLanguage(Locale loc) {
+        String val = loc.getLanguage();
+        if (val.length() == 0)
+            val = "en";
+        setLanguage(val);
     }
 
     /**
@@ -286,6 +299,10 @@ public class TranslateToken {
             msglist = VolityMessageList_EN;
         }
         // XXX else other languages
+        else {
+            // default to English.
+            msglist = VolityMessageList_EN;
+        }
         
         if (msglist != null) {
             /* It would be super-bad for a translation map to be missing
@@ -521,6 +538,7 @@ public class TranslateToken {
     /* Source tables for the "volity" namespace. Each of these is just
      * a String array of length 2*N. Ultimately, we'll want one table
      * for every language the client supports. */
+    // Should this be done with a property file? Probably.
 
     /* But today, we only have English. */
     private static String VolityMessageList_EN[] = {

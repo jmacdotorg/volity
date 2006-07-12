@@ -43,36 +43,6 @@ public class AppMenuBar extends JMenuBar
     private final static String INVITEBOT_JID_PROP = "InviteBot_JID";
     private final static String INVITEBOT_URI_PROP = "InviteBot_URI";
 
-    private final static String MENUCMD_ABOUT = "About Gamut...";
-    private final static String MENUCMD_PREFERENCES = "Preferences...";
-    private final static String MENUCMD_CONNECT = "Connect...";
-    private final static String MENUCMD_DISCONNECT = "Disconnect";
-    private final static String MENUCMD_CLOSE_WINDOW = "Close Window";
-    private final static String MENUCMD_QUIT = "Exit";
-    private final static String MENUCMD_NEW_TABLE_AT = "New Table At...";
-    private final static String MENUCMD_JOIN_TABLE_AT = "Join Table At...";
-    private final static String MENUCMD_GAME_INFO = "Game Info...";
-    private final static String MENUCMD_SUSPEND_TABLE = "Suspend Table";
-    private final static String MENUCMD_RESTART_UI = "Restart Interface";
-    private final static String MENUCMD_RELOAD_UI = "Reload Interface";
-    private final static String MENUCMD_SELECT_UI = "Select New Interface...";
-    private final static String MENUCMD_SELECT_RESOURCE = "Select New Resource...";
-    private final static String MENUCMD_SELECT_RESOURCE_MENU = "Select New Resources";
-    private final static String MENUCMD_INVITE_PLAYER = "Invite Player...";
-    private final static String MENUCMD_INVITE_BOT = "Request Bot";
-    private final static String MENUCMD_INVITE_BOT_MENU = "Request Bot";
-    private final static String MENUCMD_INVITE_BOT_SELECT = "Request Bot From...";
-    private final static String MENUCMD_JOIN_MUC = "Join Multi-user Chat...";
-    private final static String MENUCMD_SHOW_LAST_ERROR = "Display Last Error...";
-    private final static String MENUCMD_CLEAR_CACHE = "Clear Interface Cache";
-    private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
-    private final static String MENUCMD_GAME_FINDER = "Game Finder";
-    private final static String MENUCMD_SHOW_GAME_FINDER = "Show Game Finder";
-    private final static String MENUCMD_BUG_REPORT = "File Bug Report";
-    private final static String MENUCMD_DEBUG_SHOW_RPCS = "Print All RPCs";
-    private final static String MENUCMD_GAMUT_HELP = "Gamut Help";
-    private final static String MENUCMD_GAME_HELP = "Playing This Game";
-
     private JavolinApp mApplication = null;
     private JFrame mWindow = null;
     private TableWindow mTableWindow = null;
@@ -162,10 +132,10 @@ public class AppMenuBar extends JMenuBar
         JMenu helpMenu = null;
 
         // File menu
-        JMenu fileMenu = new JMenu("File");
+        JMenu fileMenu = new JMenu(localizeTitle("File"));
         setPlatformMnemonic(fileMenu, KeyEvent.VK_F);
 
-        mConnectMenuItem = new JMenuItem(MENUCMD_CONNECT);
+        mConnectMenuItem = new JMenuItem(localize("Connect"));
         mConnectMenuItem.addActionListener(this);
         setAccelerator(mConnectMenuItem, KeyEvent.VK_L);
         setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_L);
@@ -173,7 +143,7 @@ public class AppMenuBar extends JMenuBar
 
         fileMenu.addSeparator();
 
-        mCloseWindowMenuItem = new JMenuItem(MENUCMD_CLOSE_WINDOW);
+        mCloseWindowMenuItem = new JMenuItem(localize("CloseWindow"));
         mCloseWindowMenuItem.addActionListener(this);
         setPlatformMnemonic(mCloseWindowMenuItem, KeyEvent.VK_W);
         setAccelerator(mCloseWindowMenuItem, KeyEvent.VK_W);
@@ -183,7 +153,7 @@ public class AppMenuBar extends JMenuBar
 
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
             // Only needed if there isn't a built-in Preferences menu
-            mPreferencesMenuItem = new JMenuItem(MENUCMD_PREFERENCES);
+            mPreferencesMenuItem = new JMenuItem(localize("Preferences"));
             mPreferencesMenuItem.addActionListener(this);
             setPlatformMnemonic(mPreferencesMenuItem, KeyEvent.VK_P);
             fileMenu.add(mPreferencesMenuItem);
@@ -194,39 +164,39 @@ public class AppMenuBar extends JMenuBar
 
             fileMenu.addSeparator();
 
-            mQuitMenuItem = new JMenuItem(MENUCMD_QUIT);
+            mQuitMenuItem = new JMenuItem(localize("Quit"));
             mQuitMenuItem.addActionListener(this);
             setPlatformMnemonic(mQuitMenuItem, KeyEvent.VK_X);
             fileMenu.add(mQuitMenuItem);
         }
 
         // Chat menu
-        JMenu chatMenu = new JMenu("Chat");
+        JMenu chatMenu = new JMenu(localizeTitle("Chat"));
         setPlatformMnemonic(chatMenu, KeyEvent.VK_C);
 
-        mJoinMucMenuItem = new JMenuItem(MENUCMD_JOIN_MUC);
+        mJoinMucMenuItem = new JMenuItem(localize("JoinMUC"));
         mJoinMucMenuItem.addActionListener(this);
         setAccelerator(mJoinMucMenuItem, KeyEvent.VK_G);
         setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_G);
         chatMenu.add(mJoinMucMenuItem);
 
         // Game menu
-        JMenu gameMenu = new JMenu("Game");
+        JMenu gameMenu = new JMenu(localizeTitle("Game"));
         setPlatformMnemonic(gameMenu, KeyEvent.VK_G);
 
-        mNewTableAtMenuItem = new JMenuItem(MENUCMD_NEW_TABLE_AT);
+        mNewTableAtMenuItem = new JMenuItem(localize("NewTableAt"));
         mNewTableAtMenuItem.addActionListener(this);
         setAccelerator(mNewTableAtMenuItem, KeyEvent.VK_N);
         setPlatformMnemonic(mNewTableAtMenuItem, KeyEvent.VK_N);
         gameMenu.add(mNewTableAtMenuItem);
 
-        mJoinTableAtMenuItem = new JMenuItem(MENUCMD_JOIN_TABLE_AT);
+        mJoinTableAtMenuItem = new JMenuItem(localize("JoinTableAt"));
         mJoinTableAtMenuItem.addActionListener(this);
         setAccelerator(mJoinTableAtMenuItem, KeyEvent.VK_J);
         setPlatformMnemonic(mJoinTableAtMenuItem, KeyEvent.VK_J);
         gameMenu.add(mJoinTableAtMenuItem);
 
-        mShowGameFinderMenuItem = new JMenuItem(MENUCMD_SHOW_GAME_FINDER);
+        mShowGameFinderMenuItem = new JMenuItem(localize("ShowGameFinder"));
         mShowGameFinderMenuItem.addActionListener(this);
         setAccelerator(mShowGameFinderMenuItem, KeyEvent.VK_F);
         setPlatformMnemonic(mShowGameFinderMenuItem, KeyEvent.VK_F);
@@ -234,7 +204,7 @@ public class AppMenuBar extends JMenuBar
 
         gameMenu.addSeparator();
         
-        mSelectUIMenuItem = new JMenuItem(MENUCMD_SELECT_UI);
+        mSelectUIMenuItem = new JMenuItem(localize("SelectUI"));
         mSelectUIMenuItem.addActionListener(this);
         setPlatformMnemonic(mSelectUIMenuItem, KeyEvent.VK_U);
         if (mTableWindow == null) 
@@ -242,17 +212,17 @@ public class AppMenuBar extends JMenuBar
         gameMenu.add(mSelectUIMenuItem);
 
         if (mTableWindow != null) {
-            mSelectResourceMenuItem = new JMenuItem(MENUCMD_SELECT_RESOURCE);
+            mSelectResourceMenuItem = new JMenuItem(localize("SelectResource"));
             mSelectResourceMenuItem.addActionListener(this);
             gameMenu.add(mSelectResourceMenuItem);
 
-            mSelectResourceMenu = new JMenu(MENUCMD_SELECT_RESOURCE_MENU);
+            mSelectResourceMenu = new JMenu(localize("SelectResourceMenu"));
             gameMenu.add(mSelectResourceMenu);
         }
 
         gameMenu.addSeparator();
         
-        mGameInfoMenuItem = new JMenuItem(MENUCMD_GAME_INFO);
+        mGameInfoMenuItem = new JMenuItem(localize("GameInfo"));
         mGameInfoMenuItem.addActionListener(this);
         setAccelerator(mGameInfoMenuItem, KeyEvent.VK_I);
         setPlatformMnemonic(mGameInfoMenuItem, KeyEvent.VK_I);
@@ -260,21 +230,21 @@ public class AppMenuBar extends JMenuBar
             mGameInfoMenuItem.setEnabled(false);
         gameMenu.add(mGameInfoMenuItem);
 
-        mSuspendTableMenuItem = new JMenuItem(MENUCMD_SUSPEND_TABLE);
+        mSuspendTableMenuItem = new JMenuItem(localize("SuspendTable"));
         mSuspendTableMenuItem.addActionListener(this);
         setPlatformMnemonic(mSuspendTableMenuItem, KeyEvent.VK_S);
         if (mTableWindow == null) 
             mSuspendTableMenuItem.setEnabled(false);
         gameMenu.add(mSuspendTableMenuItem);
 
-        mInvitePlayerMenuItem = new JMenuItem(MENUCMD_INVITE_PLAYER);
+        mInvitePlayerMenuItem = new JMenuItem(localize("InvitePlayer"));
         mInvitePlayerMenuItem.addActionListener(this);
         setPlatformMnemonic(mInvitePlayerMenuItem, KeyEvent.VK_P);
         if (mTableWindow == null) 
             mInvitePlayerMenuItem.setEnabled(false);
         gameMenu.add(mInvitePlayerMenuItem);
 
-        mInviteBotMenuItem = new JMenuItem(MENUCMD_INVITE_BOT);
+        mInviteBotMenuItem = new JMenuItem(localize("InviteBot"));
         mInviteBotMenuItem.addActionListener(this);
         setAccelerator(mInviteBotMenuItem, KeyEvent.VK_B);
         setPlatformMnemonic(mInviteBotMenuItem, KeyEvent.VK_B);
@@ -283,10 +253,10 @@ public class AppMenuBar extends JMenuBar
         gameMenu.add(mInviteBotMenuItem);
 
         if (mTableWindow != null) {
-            mInviteBotMenu = new JMenu(MENUCMD_INVITE_BOT_MENU);
+            mInviteBotMenu = new JMenu(localize("InviteBotMenu"));
             gameMenu.add(mInviteBotMenu);
 
-            mInviteBotSelectMenuItem = new JMenuItem(MENUCMD_INVITE_BOT_SELECT);
+            mInviteBotSelectMenuItem = new JMenuItem(localize("InviteBotSelect"));
             mInviteBotSelectMenuItem.addActionListener(this);
             setPlatformMnemonic(mInviteBotSelectMenuItem, KeyEvent.VK_V);
             gameMenu.add(mInviteBotSelectMenuItem);
@@ -296,9 +266,9 @@ public class AppMenuBar extends JMenuBar
         mWindowMenu = new WindowMenu();
 
         // Debug menu
-        JMenu debugMenu = new JMenu("Debug");
+        JMenu debugMenu = new JMenu(localizeTitle("Debug"));
 
-        mBugReportMenuItem = new JMenuItem(MENUCMD_BUG_REPORT);
+        mBugReportMenuItem = new JMenuItem(localize("BugReport"));
         mBugReportMenuItem.addActionListener(this);
         setPlatformMnemonic(mBugReportMenuItem, KeyEvent.VK_B);
         if (!PlatformWrapper.launchURLAvailable())
@@ -307,50 +277,50 @@ public class AppMenuBar extends JMenuBar
 
         debugMenu.addSeparator();
 
-        mRestartUIMenuItem = new JMenuItem(MENUCMD_RESTART_UI);
+        mRestartUIMenuItem = new JMenuItem(localize("RestartUI"));
         mRestartUIMenuItem.addActionListener(this);
         setPlatformMnemonic(mRestartUIMenuItem, KeyEvent.VK_E);
         if (mTableWindow == null) 
             mRestartUIMenuItem.setEnabled(false);
         debugMenu.add(mRestartUIMenuItem);
 
-        mReloadUIMenuItem = new JMenuItem(MENUCMD_RELOAD_UI);
+        mReloadUIMenuItem = new JMenuItem(localize("ReloadUI"));
         mReloadUIMenuItem.addActionListener(this);
         setPlatformMnemonic(mReloadUIMenuItem, KeyEvent.VK_R);
         if (mTableWindow == null) 
             mReloadUIMenuItem.setEnabled(false);
         debugMenu.add(mReloadUIMenuItem);
 
-        mShowLastErrorMenuItem = new JMenuItem(MENUCMD_SHOW_LAST_ERROR);
+        mShowLastErrorMenuItem = new JMenuItem(localize("ShowLastError"));
         mShowLastErrorMenuItem.addActionListener(this);
         setPlatformMnemonic(mShowLastErrorMenuItem, KeyEvent.VK_S);
         debugMenu.add(mShowLastErrorMenuItem);
 
-        mDebugShowRPCsMenuItem = new JCheckBoxMenuItem(MENUCMD_DEBUG_SHOW_RPCS);
+        mDebugShowRPCsMenuItem = new JCheckBoxMenuItem(localize("DebugShowRPCs"));
         mDebugShowRPCsMenuItem.addActionListener(this);
         setPlatformMnemonic(mDebugShowRPCsMenuItem, KeyEvent.VK_P);
         debugMenu.add(mDebugShowRPCsMenuItem);
 
-        mClearCacheMenuItem = new JMenuItem(MENUCMD_CLEAR_CACHE);
+        mClearCacheMenuItem = new JMenuItem(localize("ClearCache"));
         mClearCacheMenuItem.addActionListener(this);
         setPlatformMnemonic(mClearCacheMenuItem, KeyEvent.VK_C);
         debugMenu.add(mClearCacheMenuItem);
 
-        mMemUsageMenuItem = new JMenuItem(MENUCMD_MEMUSAGE);
+        mMemUsageMenuItem = new JMenuItem(localize("MemUsage"));
         mMemUsageMenuItem.addActionListener(this);
         //setAccelerator(mMemUsageMenuItem, KeyEvent.VK_M);
         setPlatformMnemonic(mMemUsageMenuItem, KeyEvent.VK_M);
         debugMenu.add(mMemUsageMenuItem);
 
         // Help menu
-        helpMenu = new JMenu("Help");
+        helpMenu = new JMenu(localizeTitle("Help"));
 
-        mGamutHelpMenuItem = new JMenuItem(MENUCMD_GAMUT_HELP);
+        mGamutHelpMenuItem = new JMenuItem(localize("AppHelp"));
         mGamutHelpMenuItem.addActionListener(this);
         setPlatformMnemonic(mGamutHelpMenuItem, KeyEvent.VK_G);
         helpMenu.add(mGamutHelpMenuItem);
 
-        mGameHelpMenuItem = new JMenuItem(MENUCMD_GAME_HELP);
+        mGameHelpMenuItem = new JMenuItem(localize("GameHelp"));
         mGameHelpMenuItem.addActionListener(this);
         setPlatformMnemonic(mGameHelpMenuItem, KeyEvent.VK_P);
         helpMenu.add(mGameHelpMenuItem);
@@ -360,7 +330,7 @@ public class AppMenuBar extends JMenuBar
         if (!PlatformWrapper.applicationMenuHandlersAvailable()) {
             // Only needed if there isn't a built-in About menu
             helpMenu.addSeparator();
-            mAboutMenuItem = new JMenuItem(MENUCMD_ABOUT);
+            mAboutMenuItem = new JMenuItem(localize("About"));
             mAboutMenuItem.addActionListener(this);
             setPlatformMnemonic(mAboutMenuItem, KeyEvent.VK_A);
             helpMenu.add(mAboutMenuItem);
@@ -393,12 +363,12 @@ public class AppMenuBar extends JMenuBar
         int keyMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
         if (isConnected) {
-            mConnectMenuItem.setText(MENUCMD_DISCONNECT);
+            mConnectMenuItem.setText(localize("Disconnect"));
             setAccelerator(mConnectMenuItem, KeyEvent.VK_D);
             setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_D);
         }
         else {
-            mConnectMenuItem.setText(MENUCMD_CONNECT);
+            mConnectMenuItem.setText(localize("Connect"));
             setAccelerator(mConnectMenuItem, KeyEvent.VK_L);
             setPlatformMnemonic(mConnectMenuItem, KeyEvent.VK_L);
         }
@@ -622,7 +592,7 @@ public class AppMenuBar extends JMenuBar
 
         /* Include the game-finder window. This isn't added as a JFrame menu
          * item; it's a routine that calls JavolinApp.doGetFinder. */
-        mGameFinderMenuItem = new JMenuItem(MENUCMD_GAME_FINDER);
+        mGameFinderMenuItem = new JMenuItem(localize("GameFinderTitle"));
         mGameFinderMenuItem.addActionListener(this);
         mWindowMenu.add(mGameFinderMenuItem);
 
@@ -675,6 +645,32 @@ public class AppMenuBar extends JMenuBar
                 divided = true;
             }
             mWindowMenu.add(win);
+        }
+    }
+
+    /**
+     * Helper method for setUpAppMenus. Find the localized string for a menu
+     * item.
+     */
+    private String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("MenuIt_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+key;
+        }
+    }
+
+    /**
+     * Helper method for setUpAppMenus. Find the localized string for a menu
+     * title.
+     */
+    private String localizeTitle(String key) {
+        try {
+            return JavolinApp.resources.getString("Menu_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+key;
         }
     }
 

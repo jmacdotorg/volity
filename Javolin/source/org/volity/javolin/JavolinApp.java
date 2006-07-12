@@ -86,6 +86,9 @@ public class JavolinApp extends JFrame
     private static UIFileCache sUIFileCache = new UIFileCache();
 
     private static JavolinApp soleJavolinApp = null;
+    public static Locale localeApp = null;
+    public static Locale localeGame = null;
+    public static ResourceBundle resources = null;
     private static TranslateToken sTranslator = new TranslateToken(null);
 
     protected static GameResourcePrefs sGameResourcePrefs;
@@ -420,6 +423,12 @@ public class JavolinApp extends JFrame
         String bookkeeperJid = System.getProperty("org.volity.bookkeeper");
         if (bookkeeperJid != null)
             Bookkeeper.setDefaultJid(bookkeeperJid);
+
+        // Set up the locale information.
+        localeApp = Locale.getDefault();
+        resources = ResourceBundle.getBundle("ResBundle", localeApp);
+        localeGame = localeApp;
+        TranslateToken.setLanguage(localeGame);
 
         /* Invoke into the Swing thread to create the JavolinApp.
          *

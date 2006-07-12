@@ -33,11 +33,13 @@
       <include name="org/volity/client/**/*.java" />
       <include name="org/volity/jabber/**/*.java" />
     </javac>
-    <!-- Copy all .png and .wav files from ${src} to ${build}-->
+    <!-- Copy all .png and .wav files from ${src} to ${build}. -->
+    <!-- Also .properties files. -->
     <copy todir="${build}">
       <fileset dir="${src}">
         <include name="**/*.png"/> 
         <include name="**/*.wav"/> 
+        <include name="**/*.properties"/> 
       </fileset>
     </copy> 
   </target>
@@ -64,6 +66,7 @@
       <include name="org/volity/javolin/" />
       <include name="org/volity/client/" />
       <include name="org/volity/jabber/" />
+      <include name="*.properties" />
       <manifest>
         <attribute name="Main-Class" value="${mainclass}"/>
         <attribute name="Class-Path" value="${manif.cpath}"/>        
@@ -128,6 +131,7 @@
         <include name="org/volity/javolin/" />
         <include name="org/volity/client/" />
         <include name="org/volity/jabber/" />
+        <include name="*.properties" />
       </fileset>
       <!-- Merge all of the lib .jars into the ${jarfile} file -->
       <zipgroupfileset dir="${lib.loc}" includes="*.jar"/>

@@ -31,7 +31,7 @@ public class WindowMenu extends JMenu implements ActionListener
      */
     public WindowMenu()
     {
-        super("Window");
+        super(JavolinApp.resources.getString("Menu_Window"));
     }
 
     /**

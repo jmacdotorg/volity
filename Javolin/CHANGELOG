@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Very preliminary localization support. The app menus are now built from
+a property bundle, instead of from hardcoded strings. Only English is
+supported, so you won't see anything new, but the framework is there now.
+
 Upgraded to the latest Batik, and to Rhino (ECMAScript library) version
 1.6.
 
