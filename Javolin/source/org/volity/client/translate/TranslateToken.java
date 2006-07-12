@@ -337,12 +337,8 @@ public class TranslateToken {
          * even if the importLocaleTable call fails. */
         Map tab = new Hashtable();
 
-        File localeSubdir = new File(localeDir, currentLanguage);
-        File localeFile = new File(localeSubdir, "gametokens.xml");
-        if (!localeFile.exists()) {
-            localeFile = new File(localeSubdir, "GAMETOKENS.XML");
-        }
-        if (localeFile.exists()) {
+        File localeFile = getCurrentTableFile("game");
+        if (localeFile != null && localeFile.exists()) {
             try {
                 importLocaleTable(tab, localeFile);
             }
@@ -375,12 +371,8 @@ public class TranslateToken {
          * even if the importLocaleTable call fails. */
         Map tab = new Hashtable();
 
-        File localeSubdir = new File(localeDir, currentLanguage);
-        File localeFile = new File(localeSubdir, "uitokens.xml");
-        if (!localeFile.exists()) {
-            localeFile = new File(localeSubdir, "UITOKENS.XML");
-        }
-        if (localeFile.exists()) {
+        File localeFile = getCurrentTableFile("ui");
+        if (localeFile != null && localeFile.exists()) {
             try {
                 importLocaleTable(tab, localeFile);
             }
@@ -413,12 +405,8 @@ public class TranslateToken {
          * even if the importLocaleTable call fails. */
         Map tab = new Hashtable();
 
-        File localeSubdir = new File(localeDir, currentLanguage);
-        File localeFile = new File(localeSubdir, "seattokens.xml");
-        if (!localeFile.exists()) {
-            localeFile = new File(localeSubdir, "SEATTOKENS.XML");
-        }
-        if (localeFile.exists()) {
+        File localeFile = getCurrentTableFile("seat");
+        if (localeFile != null && localeFile.exists()) {
             try {
                 importLocaleTable(tab, localeFile);
             }
@@ -432,6 +420,61 @@ public class TranslateToken {
 
         tableCacheSeat.put(currentLanguage, tab);
         return tab;
+    }
+
+    /**
+     * Get a token table from the UI package. The key must be "seat", "game",
+     * or "ui".
+     *
+     * This is harder than it sounds, because the UI may not contain a locale
+     * for the current language. If it doesn't, we should try English, or
+     * whatever locale the UI *does* contain. (It's better to return
+     * translations in the wrong language than to fail entirely.)
+     *
+     * If no locale is available at all, this returns null.
+     */
+    protected File getCurrentTableFile(String key) {
+        String upkey = key.toUpperCase();
+
+        File localeSubdir;
+        File localeFile;
+
+        localeSubdir = new File(localeDir, currentLanguage);
+        localeFile = new File(localeSubdir, key+"tokens.xml");
+        if (localeFile.exists())
+            return localeFile;
+        localeFile = new File(localeSubdir, upkey+"TOKENS.XML");
+        if (localeFile.exists())
+            return localeFile;
+
+        /* Okay, try English. (It would be better if the locale directory had a
+         * "default" file.)
+         */
+        localeSubdir = new File(localeDir, "en");
+        localeFile = new File(localeSubdir, key+"tokens.xml");
+        if (localeFile.exists())
+            return localeFile;
+        localeFile = new File(localeSubdir, upkey+"TOKENS.XML");
+        if (localeFile.exists())
+            return localeFile;
+
+        /* Okay, look for anything at all. */
+        String[] subs = localeDir.list();
+        if (subs != null) {
+            for (int ix=0; ix<subs.length; ix++) {
+                localeSubdir = new File(localeDir, subs[ix]);
+                if (localeSubdir.exists() && localeSubdir.isDirectory()) {
+                    localeFile = new File(localeSubdir, key+"tokens.xml");
+                    if (localeFile.exists())
+                        return localeFile;
+                    localeFile = new File(localeSubdir, upkey+"TOKENS.XML");
+                    if (localeFile.exists())
+                        return localeFile;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
