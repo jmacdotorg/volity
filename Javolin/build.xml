@@ -7,6 +7,7 @@
   <property name="jarfiletestbench" value="Testbench.jar"/>
   <!-- set global properties for this build -->
   <property name="src" location="source"/>
+  <property name="props" location="properties"/>
   <property name="build" location="build"/>
   <property name="doc" location="doc"/>
   <property name="lib.loc" location="lib"/>
@@ -34,11 +35,13 @@
       <include name="org/volity/jabber/**/*.java" />
     </javac>
     <!-- Copy all .png and .wav files from ${src} to ${build}. -->
-    <!-- Also .properties files. -->
+    <!-- Also .properties files from ${props}. -->
     <copy todir="${build}">
       <fileset dir="${src}">
         <include name="**/*.png"/> 
         <include name="**/*.wav"/> 
+      </fileset>
+      <fileset dir="${props}">
         <include name="**/*.properties"/> 
       </fileset>
     </copy> 
