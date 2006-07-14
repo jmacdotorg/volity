@@ -86,6 +86,9 @@ object has no attribute 'ssl'", then your Python installation lacks the SSL
 module. (This has been observed on Windows.) Set "--jabber-security none"
 to run Jabber with no SSL encryption.
 
+(Windows users have also run into bugs in the SSL module in Python 2.3.4.
+For the moment, we recommend you use Windows Python 2.4.3 or later.)
+
 If you set --admin to one of your Jabber IDs, you will be able to send
 administrative commands and queries to your server, via Jabber. (Only the
 JID you specify is permitted to send these commands.) Currently there is
@@ -197,6 +200,7 @@ if (sys.hexversion < 0x2030000):
     
 import time
 import os
+import signal
 import optparse
 import logging
 import zymb.sched
@@ -204,8 +208,10 @@ import volity.config
 from volity import parlor
 from volity import factory
 
-# Save sys.args for future forking
+# Save sys.args for future forking.
 originalargs = list(sys.argv)
+# Ignore SIGCHLD to avoid creating zombies when forking.
+signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
 usage = "usage: %prog [ options ]"
 
