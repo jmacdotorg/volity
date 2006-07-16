@@ -79,10 +79,6 @@ public class TableWindow extends JFrame
 
     private static Map sGameNameNumberMap = new HashMap();
 
-    private final static String INVITE_LABEL = "Invite Player";
-    private final static String BOT_LABEL = "Request Bot";
-    private final static String READY_LABEL = "Ready";
-    private final static String SEAT_LABEL = "Seat";
     private final static ImageIcon INVITE_ICON;
     private final static ImageIcon BOT_ICON;
     private final static ImageIcon READY_ICON;
@@ -342,7 +338,7 @@ public class TableWindow extends JFrame
                     SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
                                 JOptionPane.showMessageDialog(TableWindow.this,
-                                    "The referee has shut down unexpectedly.",
+                                    localize("ErrorRefereeShutDown"),
                                     JavolinApp.getAppName() + ": Error",
                                     JOptionPane.ERROR_MESSAGE);
                             }
@@ -357,22 +353,22 @@ public class TableWindow extends JFrame
                 public void stateChanged(int state) {
                     // Called outside Swing thread!
                     // (We can do the string picking first, that's thread-safe)
-                    String str = "Game status unknown";
+                    String str = localize("RefStatusUnknown");
                     switch (state) {
                     case GameTable.STATE_SETUP:
-                        str = "New game setup";
+                        str = localize("RefStatusSetup");
                         break;
                     case GameTable.STATE_ACTIVE:
-                        str = "Game in progress";
+                        str = localize("RefStatusActive");
                         break;
                     case GameTable.STATE_DISRUPTED:
-                        str = "Game is disrupted: a seat has been left empty";
+                        str = localize("RefStatusDisrupted");
                         break;
                     case GameTable.STATE_ABANDONED:
-                        str = "Game is abandoned: no humans are left";
+                        str = localize("RefStatusAbandoned");
                         break;
                     case GameTable.STATE_SUSPENDED:
-                        str = "Game suspended";
+                        str = localize("RefStatusSuspended");
                         break;
                     }
                     final String label = str;
@@ -414,13 +410,13 @@ public class TableWindow extends JFrame
                 public void markChanged(String mark, boolean bygame) {
                     String suffix = "";
                     if (mark == GameTable.MARK_TURN)
-                        suffix = " [GO]";
+                        suffix = " "+localize("WindowTitleMarkTurn");
                     else if (mark == GameTable.MARK_WIN)
-                        suffix = " [WON]";
+                        suffix = " "+localize("WindowTitleMarkWin");
                     else if (mark == GameTable.MARK_FIRST)
-                        suffix = " [+++]";
+                        suffix = " "+localize("WindowTitleMarkFirst");
                     else if (mark == GameTable.MARK_OTHER)
-                        suffix = " [---]";
+                        suffix = " "+localize("WindowTitleMarkOther");
                     setTitle(mBaseTitle+suffix);
                     if (bygame)
                         Audio.playMark(mark);
@@ -879,7 +875,7 @@ public class TableWindow extends JFrame
             }
             else {
                 if (mMessageHandler != null)
-                    mMessageHandler.print("Visit this website: " + uri);
+                    mMessageHandler.print(localize("MessageVisitURL") + " " + uri);
             }
         }
     }
@@ -1061,6 +1057,18 @@ public class TableWindow extends JFrame
     }
 
     /**
+     * Localization helper.
+     */
+    protected static String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("TableWindow_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+key;
+        }
+    }
+
+    /**
      * Reload the game UI from scratch. If the download argument is true, this
      * downloads a fresh copy from the original URL. If false, it just restarts
      * the cached copy.
@@ -1102,7 +1110,7 @@ public class TableWindow extends JFrame
                 new ErrorWrapper(ex);
 
                 JOptionPane.showMessageDialog(null, 
-                    "Cannot download UI:\n" + ex.toString(),
+                    localize("ErrorCannotDownloadUI") + "\n" + ex.toString(),
                     JavolinApp.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
                 return;
@@ -1214,7 +1222,7 @@ public class TableWindow extends JFrame
         boolean flag = PlatformWrapper.launchURL(url);
         if (!flag) {
             JOptionPane.showMessageDialog(this, 
-                "Unable to launch web browser. Please see:\n" + url,
+                localize("ErrorCannotLaunchURL") + "\n" + url,
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -1270,12 +1278,12 @@ public class TableWindow extends JFrame
                             Presence.Type typ = pres.getType();
                             if (typ == Presence.Type.AVAILABLE) {
                                 mLog.message(realAddr, null,
-                                    nick+" has joined the table.");
+                                    nick+" "+localize("PlayerHasJoined"));
                                 Audio.playPresenceIn();
                             }
                             if (typ == Presence.Type.UNAVAILABLE) {
                                 mLog.message(realAddr, null,
-                                    nick+" has left the table.");
+                                    nick+" "+localize("PlayerHasLeft"));
                                 Audio.playPresenceOut();
                             }
                         }
@@ -1435,7 +1443,7 @@ public class TableWindow extends JFrame
                 if (JIDUtils.bareMatch(recipient, jid)) {
                     if (!suppressredundancy) {
                         JOptionPane.showMessageDialog(TableWindow.this,
-                            "This player is already present at the table:\n"
+                            localize("ErrorPlayerAlreadyPresent") + "\n"
                             + StringUtils.parseBareAddress(recipient),
                             JavolinApp.getAppName() + ": Error",
                             JOptionPane.ERROR_MESSAGE);
@@ -1545,13 +1553,13 @@ public class TableWindow extends JFrame
         }
 
         if (isGameActive) {
-            mSeatButton.setToolTipText("The game is in progress");
+            mSeatButton.setToolTipText(localize("TTSeatActive"));
         }
         else {
             if (isSeated) 
-                mSeatButton.setToolTipText("Stand up");
+                mSeatButton.setToolTipText(localize("TTSeatSitting"));
             else 
-                mSeatButton.setToolTipText("Sit down");
+                mSeatButton.setToolTipText(localize("TTSeatStanding"));
         }
 
         if (isReady) 
@@ -1560,16 +1568,16 @@ public class TableWindow extends JFrame
             mReadyButton.setIcon(UNREADY_ICON);
 
         if (isGameActive) {
-            mReadyButton.setToolTipText("The game is in progress");
+            mReadyButton.setToolTipText(localize("TTReadyActive"));
         }
         else if (!isSeated) {
-            mReadyButton.setToolTipText("You must sit down before you can declare yourself ready");
+            mReadyButton.setToolTipText(localize("TTReadyStanding"));
         }
         else {
             if (isReady) 
-                mReadyButton.setToolTipText("Declare yourself not ready");
+                mReadyButton.setToolTipText(localize("TTReadyReady"));
             else
-                mReadyButton.setToolTipText("Declare yourself ready to play");
+                mReadyButton.setToolTipText(localize("TTReadyUnready"));
         }
     }
 
@@ -1599,7 +1607,7 @@ public class TableWindow extends JFrame
         int gridY = 0;
 
         // Add Loading label
-        JLabel someLabel = new JLabel("Loading...");
+        JLabel someLabel = new JLabel(localize("MessageLoading"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -1705,7 +1713,7 @@ public class TableWindow extends JFrame
 
         toolbar.addSeparator();
 
-        mRefereeStatusLabel = new JLabel("Connecting...");
+        mRefereeStatusLabel = new JLabel(localize("MessageConnecting"));
         mRefereeStatusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         toolbar.add(mRefereeStatusLabel);
 
@@ -1714,22 +1722,22 @@ public class TableWindow extends JFrame
         toolbar.add(label);
         label.setMaximumSize(new Dimension(32767, 10));
 
-        mInviteButton = new JButton(INVITE_LABEL, INVITE_ICON);
+        mInviteButton = new JButton(localize("ButtonInvitePlayer"), INVITE_ICON);
         toolbar.add(mInviteButton);
 
         toolbar.addSeparator();
 
-        mBotButton = new JButton(BOT_LABEL, BOT_ICON);
+        mBotButton = new JButton(localize("ButtonRequestBot"), BOT_ICON);
         toolbar.add(mBotButton);
 
         toolbar.addSeparator(new Dimension(16, 10));
 
-        mSeatButton = new JButton(SEAT_LABEL, UNSEAT_ICON);
+        mSeatButton = new JButton(localize("ButtonSeat"), UNSEAT_ICON);
         toolbar.add(mSeatButton);
 
         toolbar.addSeparator();
 
-        mReadyButton = new JButton(READY_LABEL, UNREADY_ICON);
+        mReadyButton = new JButton(localize("ButtonReady"), UNREADY_ICON);
         toolbar.add(mReadyButton);
 
         adjustButtons();

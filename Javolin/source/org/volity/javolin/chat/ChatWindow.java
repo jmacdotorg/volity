@@ -139,7 +139,8 @@ public class ChatWindow extends JFrame
             mRemoteNick = mRemoteIdBare;
         }
         
-        setTitle(JavolinApp.getAppName() + ": Chat with " + mRemoteNick);
+        String val = JavolinApp.resources.getString("ChatWindow_WindowTitle");
+        setTitle(JavolinApp.getAppName() + ": " + val + " " + mRemoteNick);
 
         // Get local user ID and chat color
         mLocalId = StringUtils.parseBareAddress(mConnection.getUser());
