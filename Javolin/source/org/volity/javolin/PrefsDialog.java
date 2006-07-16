@@ -277,30 +277,6 @@ public class PrefsDialog extends JFrame
         }
     }
 
-    private final static String LABEL_GAMESHOWHELP = "Display seating help";
-    private final static String LABEL_GAMESELECTUI = "Automatically select a game UI...";
-    private final static String LABEL_GAMESELECTUIALWAYS = "...always";
-    private final static String LABEL_GAMESELECTUISOLE = "...if exactly one is available";
-    private final static String LABEL_GAMESELECTUIFAMILIAR = "...if you've played the game before";
-    private final static String LABEL_GAMEFINDERSTARTUP = "At startup, open the Game Finder...";
-    private final static String LABEL_GAMEFINDERSTARTUPALWAYS = "...always";
-    private final static String LABEL_GAMEFINDERSTARTUPNEVER = "...never";
-    private final static String LABEL_GAMEFINDERSTARTUPREMEMBER = "...if you left it open last time";
-    private final static String LABEL_ROSTERSHOWOFFLINE = "Display offline buddies";
-    private final static String LABEL_ROSTERSHOWREVERSE = "Display people whose roster you are on";
-    private final static String LABEL_ROSTERNOTIFYSUBSCRIPTIONS = "Ask when someone adds you to his roster";
-    private final static String LABEL_SOUNDPLAYAUDIO = "Play audio effects";
-    private final static String LABEL_SOUNDSHOWALTTAGS = "Print text equivalents for audio effects";
-    private final static String LABEL_SOUNDALERTGROUP = "Play alert sounds for...";
-    private final static String LABEL_SOUNDUSEBUDDYSOUNDS = "Buddies logging in and out";
-    private final static String LABEL_SOUNDUSEINVITEDSOUND = "Game invitations";
-    private final static String LABEL_SOUNDUSEMARKSOUNDS = "It's your turn";
-    private final static String LABEL_SOUNDUSEMESSAGESOUND = "Message in a chat window";
-    private final static String LABEL_SOUNDUSEPRESENCESOUNDS = "People arriving and leaving in a chat window";
-    private final static String LABEL_SOUNDUSETHREADSOUND = "New chat window";
-    private final static String LABEL_SOUNDUSEERRORSOUND = "Gamut errors";
-    private final static String LABEL_DEBUGSHOWRPCS = "Print all RPCs";
-
     private JavolinApp mOwner;
     private SizeAndPositionSaver mSizePosSaver;
 
@@ -333,7 +309,7 @@ public class PrefsDialog extends JFrame
     {
         mOwner = owner;
 
-        setTitle(JavolinApp.getAppName() + " Preferences");
+        setTitle(JavolinApp.getAppName() + " " + localize("WindowTitle"));
         buildUI();
 
         setSize(450, 350);
@@ -611,6 +587,18 @@ public class PrefsDialog extends JFrame
     }
 
     /**
+     * Localization helper.
+     */
+    protected String localize(String key) {
+        try {
+            return JavolinApp.resources.getString(NODENAME+"_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+key;
+        }
+    }
+
+    /**
      * Given a pure color, lighten or darken it. The shift value must be from
      * -100 (white) to 0 (pure color unchanged) to -100 (black).
      * @return the transformed color.
@@ -661,7 +649,7 @@ public class PrefsDialog extends JFrame
 
             StyleConstants.setForeground(style, Color.BLACK);
             doc.insertString(doc.getLength(), "[10:15:00]  ", style);
-            doc.insertString(doc.getLength(), "*** Sample text:\n", style);
+            doc.insertString(doc.getLength(), "*** "+localize("ChatSampleText")+"\n", style);
 
             StyleConstants.setForeground(style, Color.BLACK);
             doc.insertString(doc.getLength(), "[10:15:01]  ", style);
@@ -703,7 +691,7 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
             
-            label = new JLabel(LABEL_GAMEFINDERSTARTUP);
+            label = new JLabel(localize("GameFinderStartup"));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -714,7 +702,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mGameFinderStartupAlways = new JRadioButton(LABEL_GAMEFINDERSTARTUPALWAYS, (prefGameFinderStartup==GAMEFINDERSTARTUP_ALWAYS));
+            mGameFinderStartupAlways = new JRadioButton(
+                localize("GameFinderStartupAlways"),
+                (prefGameFinderStartup==GAMEFINDERSTARTUP_ALWAYS));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -725,7 +715,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mGameFinderStartupAlways, c);
 
-            mGameFinderStartupNever = new JRadioButton(LABEL_GAMEFINDERSTARTUPNEVER, (prefGameFinderStartup==GAMEFINDERSTARTUP_NEVER));
+            mGameFinderStartupNever = new JRadioButton(
+                localize("GameFinderStartupNever"),
+                (prefGameFinderStartup==GAMEFINDERSTARTUP_NEVER));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -736,7 +728,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mGameFinderStartupNever, c);
 
-            mGameFinderStartupRemember = new JRadioButton(LABEL_GAMEFINDERSTARTUPREMEMBER, (prefGameFinderStartup==GAMEFINDERSTARTUP_REMEMBER));
+            mGameFinderStartupRemember = new JRadioButton(
+                localize("GameFinderStartupRemember"),
+                (prefGameFinderStartup==GAMEFINDERSTARTUP_REMEMBER));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -752,7 +746,7 @@ public class PrefsDialog extends JFrame
             GameFinderStartupGroup.add(mGameFinderStartupNever);
             GameFinderStartupGroup.add(mGameFinderStartupRemember);
 
-            label = new JLabel(LABEL_GAMESELECTUI);
+            label = new JLabel(localize("GameSelectUI"));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -763,7 +757,8 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mGameSelectUIAlways = new JCheckBox(LABEL_GAMESELECTUIALWAYS, prefGameSelectUIAlways);
+            mGameSelectUIAlways = new JCheckBox(localize("GameSelectUIAlways"),
+                prefGameSelectUIAlways);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -774,7 +769,8 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mGameSelectUIAlways, c);
 
-            mGameSelectUISole = new JCheckBox(LABEL_GAMESELECTUISOLE, prefGameSelectUISole);
+            mGameSelectUISole = new JCheckBox(localize("GameSelectUISole"),
+                prefGameSelectUISole);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -786,7 +782,8 @@ public class PrefsDialog extends JFrame
             mGameSelectUISole.setEnabled(!prefGameSelectUIAlways);
             pane.add(mGameSelectUISole, c);
 
-            mGameSelectUIFamiliar = new JCheckBox(LABEL_GAMESELECTUIFAMILIAR, prefGameSelectUIFamiliar);
+            mGameSelectUIFamiliar = new JCheckBox(localize("GameSelectUIFamiliar"), 
+                prefGameSelectUIFamiliar);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -798,7 +795,8 @@ public class PrefsDialog extends JFrame
             mGameSelectUIFamiliar.setEnabled(!prefGameSelectUIAlways);
             pane.add(mGameSelectUIFamiliar, c);
 
-            mGameShowHelp = new JCheckBox(LABEL_GAMESHOWHELP, prefGameShowHelp);
+            mGameShowHelp = new JCheckBox(localize("GameShowHelp"),
+                prefGameShowHelp);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -820,7 +818,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mTabPane.addTab("Game", pane);
+            mTabPane.addTab(localize("TabGame"), pane);
         }
 
         {
@@ -828,7 +826,9 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
             
-            mRosterShowOffline = new JCheckBox(LABEL_ROSTERSHOWOFFLINE, prefRosterShowOffline);
+            mRosterShowOffline = new JCheckBox(
+                localize("RosterShowOffline"),
+                prefRosterShowOffline);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -839,7 +839,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(mRosterShowOffline, c);
 
-            mRosterShowReverse = new JCheckBox(LABEL_ROSTERSHOWREVERSE, prefRosterShowReverse);
+            mRosterShowReverse = new JCheckBox(
+                localize("RosterShowReverse"),
+                prefRosterShowReverse);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -850,7 +852,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
             pane.add(mRosterShowReverse, c);
 
-            mRosterNotifySubscriptions = new JCheckBox(LABEL_ROSTERNOTIFYSUBSCRIPTIONS, prefRosterNotifySubscriptions);
+            mRosterNotifySubscriptions = new JCheckBox(
+                localize("RosterNotifySubscriptions"),
+                prefRosterNotifySubscriptions);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -872,7 +876,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mTabPane.addTab("Roster", pane);
+            mTabPane.addTab(localize("TabRoster"), pane);
         }
 
         {
@@ -880,7 +884,7 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
 
-            label = new JLabel("Sender color:");
+            label = new JLabel(localize("ChatSenderColor"));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row;
@@ -903,7 +907,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(mChatNameShade, c);
 
-            label = new JLabel("Message color:");
+            label = new JLabel(localize("ChatMessageColor"));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row;
@@ -951,7 +955,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mTabPane.addTab("Chat", pane);
+            mTabPane.addTab(localize("TabChat"), pane);
         }
 
         {
@@ -959,7 +963,9 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
             
-            mSoundPlayAudio = new JCheckBox(LABEL_SOUNDPLAYAUDIO, prefSoundPlayAudio);
+            mSoundPlayAudio = new JCheckBox(
+                localize("SoundPlayAudio"),
+                prefSoundPlayAudio);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -970,7 +976,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(mSoundPlayAudio, c);
 
-            mSoundShowAltTags = new JCheckBox(LABEL_SOUNDSHOWALTTAGS, prefSoundShowAltTags);
+            mSoundShowAltTags = new JCheckBox(
+                localize("SoundShowAltTags"),
+                prefSoundShowAltTags);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -981,7 +989,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, MARGIN, 0, MARGIN);
             pane.add(mSoundShowAltTags, c);
 
-            label = new JLabel(LABEL_SOUNDALERTGROUP);
+            label = new JLabel(localize("SoundAlertGroup"));
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -992,7 +1000,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mSoundUseMarkSounds = new JCheckBox(LABEL_SOUNDUSEMARKSOUNDS, prefSoundUseMarkSounds);
+            mSoundUseMarkSounds = new JCheckBox(
+                localize("SoundUseMarkSounds"),
+                prefSoundUseMarkSounds);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1003,7 +1013,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mSoundUseMarkSounds, c);
 
-            mSoundUseInvitedSound = new JCheckBox(LABEL_SOUNDUSEINVITEDSOUND, prefSoundUseInvitedSound);
+            mSoundUseInvitedSound = new JCheckBox(
+                localize("SoundUseInvitedSound"),
+                prefSoundUseInvitedSound);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1014,7 +1026,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mSoundUseInvitedSound, c);
 
-            mSoundUseThreadSound = new JCheckBox(LABEL_SOUNDUSETHREADSOUND, prefSoundUseThreadSound);
+            mSoundUseThreadSound = new JCheckBox(
+                localize("SoundUseThreadSound"),
+                prefSoundUseThreadSound);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1025,7 +1039,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mSoundUseThreadSound, c);
 
-            mSoundUseMessageSound = new JCheckBox(LABEL_SOUNDUSEMESSAGESOUND, prefSoundUseMessageSound);
+            mSoundUseMessageSound = new JCheckBox(
+                localize("SoundUseMessageSound"),
+                prefSoundUseMessageSound);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1036,7 +1052,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mSoundUseMessageSound, c);
 
-            mSoundUsePresenceSounds = new JCheckBox(LABEL_SOUNDUSEPRESENCESOUNDS, prefSoundUsePresenceSounds);
+            mSoundUsePresenceSounds = new JCheckBox(
+                localize("SoundUsePresenceSounds"),
+                prefSoundUsePresenceSounds);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1047,7 +1065,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mSoundUsePresenceSounds, c);
 
-            mSoundUseBuddySounds = new JCheckBox(LABEL_SOUNDUSEBUDDYSOUNDS, prefSoundUseBuddySounds);
+            mSoundUseBuddySounds = new JCheckBox(
+                localize("SoundUseBuddySounds"),
+                prefSoundUseBuddySounds);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1058,7 +1078,9 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(GAP, 2*MARGIN, 0, MARGIN);
             pane.add(mSoundUseBuddySounds, c);
 
-            mSoundUseErrorSound = new JCheckBox(LABEL_SOUNDUSEERRORSOUND, prefSoundUseErrorSound);
+            mSoundUseErrorSound = new JCheckBox(
+                localize("SoundUseErrorSound"),
+                prefSoundUseErrorSound);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1080,7 +1102,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mTabPane.addTab("Sound", pane);
+            mTabPane.addTab(localize("TabSound"), pane);
         }
 
         {
@@ -1088,7 +1110,8 @@ public class PrefsDialog extends JFrame
             
             int row = 0;
             
-            mDebugShowRPCs = new JCheckBox(LABEL_DEBUGSHOWRPCS, prefDebugShowRPCs);
+            mDebugShowRPCs = new JCheckBox(
+                localize("DebugShowRPCs"), prefDebugShowRPCs);
             c = new GridBagConstraints();
             c.gridx = 0;
             c.gridy = row++;
@@ -1110,7 +1133,7 @@ public class PrefsDialog extends JFrame
             c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
             pane.add(label, c);
 
-            mTabPane.addTab("Debug", pane);
+            mTabPane.addTab(localize("TabDebug"), pane);
         }
 
 
