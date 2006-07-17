@@ -22,6 +22,7 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.*;
@@ -71,10 +72,6 @@ public class JavolinApp extends JFrame
 
     private final static String NODENAME = "MainAppWin";
 
-    private final static String ADDUSER_LABEL = "Add";
-    private final static String DELETEUSER_LABEL = "Delete";
-    private final static String CHAT_LABEL = "Chat";
-    private final static String STATS_LABEL = "Stats";
     private final static ImageIcon CONNECTED_ICON;
     private final static ImageIcon DISCONNECTED_ICON;
     private final static ImageIcon ADDUSER_ICON;
@@ -150,7 +147,7 @@ public class JavolinApp extends JFrame
 
         PrefsDialog.loadPreferences();
 
-        setTitle(APPNAME + " Roster");
+        setTitle(APPNAME + " " + localize("WindowTitle"));
         buildUI();
 
         setSize(200, 400);
@@ -614,7 +611,7 @@ public class JavolinApp extends JFrame
     {
         if (isConnected())
         {
-            if (confirmCloseTableWindows("Disconnect"))
+            if (confirmCloseTableWindows(localize("ActionDisconnect")))
             {
 
                 doDisconnect();
@@ -756,7 +753,7 @@ public class JavolinApp extends JFrame
      * If any game table windows are open, this method asks the user for confirmation of
      *  an action that would cause all table windows to be closed.
      *
-     * @param action  The name of the action to take. It will appear in the message.
+     * @param action  The name of the action to take. It will appear in the message. (Should be localized.)
      * @return        true if the user has confirmed the action (or if the user was
      *  never asked since no table windows were open), false if the action should be
      *  cancled.
@@ -772,13 +769,13 @@ public class JavolinApp extends JFrame
 
             if (tableWinCount == 1)
             {
-                message = "You still have a game window open. " + action + " anyway?";
+                message = localize("ErrorWindowOpen");
             }
             else
             {
-                message = "You still have " + tableWinCount + " game windows open. " +
-                    action + " anyway?";
+                message = localize("ErrorWindowsOpen", new Integer(tableWinCount));
             }
+            message = message + " " + localize("ErrorActionAnyway", action);
 
             int result = JOptionPane.showConfirmDialog(this, message,
                 getAppName() + ": Confirm " + action, JOptionPane.YES_NO_OPTION);
@@ -877,7 +874,7 @@ public class JavolinApp extends JFrame
      */
     void doQuit()
     {
-        if (confirmCloseTableWindows("Exit"))
+        if (confirmCloseTableWindows(localize("ActionExit")))
         {
             doDisconnect();
             if (mCommandWatcher != null) 
@@ -1279,11 +1276,13 @@ public class JavolinApp extends JFrame
             showStr = nickname + " (" + userStr + ")";
         }
 
-        // Show confrimation dialog
-        String message = "Delete " + showStr + " from your roster?";
+        // Show confirmation dialog
+        String message = localize("MessageDeleteUser", showStr);
 
-        int result = JOptionPane.showConfirmDialog(this, message,
-            JavolinApp.getAppName() + ": Confirm Delete User", JOptionPane.YES_NO_OPTION);
+        int result = JOptionPane.showConfirmDialog(this,
+            message,
+            JavolinApp.getAppName() + ": " + localize("ConfirmDeleteUser"),
+            JOptionPane.YES_NO_OPTION);
 
         // Delete user from roster
         if (result == JOptionPane.YES_OPTION)
@@ -1317,12 +1316,12 @@ public class JavolinApp extends JFrame
         if (isConnected())
         {
             mConnectedLabel.setIcon(CONNECTED_ICON);
-            mConnectedLabel.setToolTipText("Connected");
+            mConnectedLabel.setToolTipText(localize("TTConnectionConnected"));
         }
         else
         {
             mConnectedLabel.setIcon(DISCONNECTED_ICON);
-            mConnectedLabel.setToolTipText("Disconnected");
+            mConnectedLabel.setToolTipText(localize("TTConnectionDisconnected"));
         }
 
         // Do toolbar buttons
@@ -1560,14 +1559,11 @@ public class JavolinApp extends JFrame
 
         String jid = presence.getFrom();
 
-        String[] options = { "Permit", "Permit and Add", "Refuse" };
+        String[] options = { localize("ButtonPermit"), localize("ButtonPermitAdd"), localize("ButtonRefuse") };
         //### untether!
         int res = JOptionPane.showOptionDialog(this,
-            "The user " + jid + "\n"
-            +"wishes to add you to his or her buddy list.\n"
-            +"Do you want to permit this? If so, do you also\n"
-            +"want to add this user to yours?",
-            getAppName() + ": Request",
+            localize("MessagePermitRoster", jid),
+            getAppName() + ": " + localize("ConfirmPermitRoster"),
             JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
             null,
             options, options[0]);
@@ -1619,6 +1615,28 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * Localization helper.
+     */
+    protected String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("RosterWindow_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+"RosterWindow__"+key;
+        }
+    }
+
+    protected String localize(String key, Object arg1) {
+        try {
+            String pattern = JavolinApp.resources.getString("RosterWindow_"+key);
+            return MessageFormat.format(pattern, new Object[] { arg1 });
+        }
+        catch (MissingResourceException ex) {
+            return "???"+"RosterWindow__"+key;
+        }
+    }
+
+    /**
      * Populates the frame with UI controls.
      */
     private void buildUI()
@@ -1631,23 +1649,23 @@ public class JavolinApp extends JFrame
         toolbar.setFloatable(false);
         cPane.add(toolbar, BorderLayout.NORTH);
 
-        mAddUserBut = new JButton(ADDUSER_LABEL, ADDUSER_ICON);
-        mAddUserBut.setToolTipText("Add new user");
+        mAddUserBut = new JButton(localize("ButtonAddUser"), ADDUSER_ICON);
+        mAddUserBut.setToolTipText(localize("TTAddUser"));
         mAddUserBut.addActionListener(this);
         toolbar.add(mAddUserBut);
 
-        mDelUserBut = new JButton(DELETEUSER_LABEL, DELETEUSER_ICON);
-        mDelUserBut.setToolTipText("Delete user");
+        mDelUserBut = new JButton(localize("ButtonDeleteUser"), DELETEUSER_ICON);
+        mDelUserBut.setToolTipText(localize("TTDeleteUser"));
         mDelUserBut.addActionListener(this);
         toolbar.add(mDelUserBut);
 
-        mChatBut = new JButton(CHAT_LABEL, CHAT_ICON);
-        mChatBut.setToolTipText("Chat with user");
+        mChatBut = new JButton(localize("ButtonChat"), CHAT_ICON);
+        mChatBut.setToolTipText(localize("TTChat"));
         mChatBut.addActionListener(this);
         toolbar.add(mChatBut);
 
-        mStatsBut = new JButton(STATS_LABEL, STATS_ICON);
-        mStatsBut.setToolTipText("Game stats of user");
+        mStatsBut = new JButton(localize("ButtonStats"), STATS_ICON);
+        mStatsBut.setToolTipText(localize("TTStats"));
         mStatsBut.addActionListener(this);
         toolbar.add(mStatsBut);
 
@@ -1661,7 +1679,7 @@ public class JavolinApp extends JFrame
 
         mConnectedLabel = new JLabel(DISCONNECTED_ICON);
         mConnectedLabel.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
-        mConnectedLabel.setToolTipText("Disconnected");
+        mConnectedLabel.setToolTipText(localize("TTConnectionDisconnected"));
         panel.add(mConnectedLabel, BorderLayout.WEST);
 
         cPane.add(panel, BorderLayout.SOUTH);

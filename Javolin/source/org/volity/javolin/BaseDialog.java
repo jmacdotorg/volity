@@ -99,7 +99,7 @@ public class BaseDialog extends JDialog
         }
     }
 
-    protected String localize(String key, String arg1) {
+    protected String localize(String key, Object arg1) {
         try {
             String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
             return MessageFormat.format(pattern, new Object[] { arg1 });
@@ -109,7 +109,7 @@ public class BaseDialog extends JDialog
         }
     }
 
-    protected String localize(String key, String arg1, String arg2) {
+    protected String localize(String key, Object arg1, Object arg2) {
         try {
             String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
             return MessageFormat.format(pattern, new Object[] { arg1, arg2 });
