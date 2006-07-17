@@ -426,6 +426,13 @@ public class JavolinApp extends JFrame
 
         // Set up the locale information.
         localeApp = Locale.getDefault();
+        // We also accept "--lang XX", mostly for debugging purposes.
+        for (int ix=0; ix<args.length; ix++) {
+            if (args[ix].equals("--lang") && (ix < args.length-1)) {
+                localeApp = new Locale(args[ix+1]);
+                break;
+            }
+        }
         resources = ResourceBundle.getBundle("ResBundle", localeApp);
         localeGame = localeApp;
         TranslateToken.setLanguage(localeGame);

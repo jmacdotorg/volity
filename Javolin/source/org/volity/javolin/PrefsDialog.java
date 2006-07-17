@@ -594,7 +594,7 @@ public class PrefsDialog extends JFrame
             return JavolinApp.resources.getString(NODENAME+"_"+key);
         }
         catch (MissingResourceException ex) {
-            return "???"+key;
+            return "???"+NODENAME+"_"+key;
         }
     }
 

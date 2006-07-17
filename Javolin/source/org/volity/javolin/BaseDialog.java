@@ -19,6 +19,8 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.text.MessageFormat;
+import java.util.MissingResourceException;
 import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 
@@ -35,6 +37,7 @@ public class BaseDialog extends JDialog
     protected final static int SPACING = 6; // Space between related controls
     protected final static int GAP = 12; // Space between unrelated controls
 
+    private String mNodeName;
     protected SizeAndPositionSaver mSizePosSaver;
 
     /**
@@ -49,6 +52,7 @@ public class BaseDialog extends JDialog
     public BaseDialog(Frame owner, String title, boolean modal, String nodeName)
     {
         super(owner, title, modal);
+        mNodeName = nodeName;
         mSizePosSaver = new SizeAndPositionSaver(this, nodeName);
 
         // Save window size and position when closing
@@ -70,14 +74,51 @@ public class BaseDialog extends JDialog
      * input.
      */
     public void complainMustEnter(JComponent comp, String desc) {
+        String pattern = JavolinApp.resources.getString("Dialog_MustEnterField");
+        String val = MessageFormat.format(pattern, new Object[] { desc });
+
         JOptionPane.showMessageDialog(this,
-            "You must enter " + desc + ".",
+            val,
             JavolinApp.getAppName() + ": Error",
             JOptionPane.ERROR_MESSAGE);
 
         if (comp != null)
             comp.requestFocusInWindow();
     }
+
+    /**
+     * Localization helper. Uses the dialog's NODENAME as a resource
+     * prefix.
+     */
+    protected String localize(String key) {
+        try {
+            return JavolinApp.resources.getString(mNodeName+"_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+mNodeName+"_"+key;
+        }
+    }
+
+    protected String localize(String key, String arg1) {
+        try {
+            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
+            return MessageFormat.format(pattern, new Object[] { arg1 });
+        }
+        catch (MissingResourceException ex) {
+            return "???"+mNodeName+"_"+key;
+        }
+    }
+
+    protected String localize(String key, String arg1, String arg2) {
+        try {
+            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
+            return MessageFormat.format(pattern, new Object[] { arg1, arg2 });
+        }
+        catch (MissingResourceException ex) {
+            return "???"+mNodeName+"_"+key;
+        }
+    }
+
 
     private final static String DEFAULT_HOST = "volity.net";
 

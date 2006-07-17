@@ -1064,7 +1064,7 @@ public class TableWindow extends JFrame
             return JavolinApp.resources.getString("TableWindow_"+key);
         }
         catch (MissingResourceException ex) {
-            return "???"+key;
+            return "???TableWindow_"+key;
         }
     }
 

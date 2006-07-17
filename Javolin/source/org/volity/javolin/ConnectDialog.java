@@ -45,23 +45,6 @@ public class ConnectDialog extends BaseDialog implements ActionListener
     private final static String PASSWORD_KEY = "Password";
     private final static String REMEMBER_KEY = "RememberPW";
 
-    private final static String HELP_TEXT_CONNECT = 
-        "If you are new to Volity, select this option."       +
-        " If you already have a Volity ID, enter it above"    +
-        " and press Connect.\n\n"                             +
-        "If you have a Jabber ID from another service"        +
-        " (such as Gmail.com) and you wish to use that as"    +
-        " your Volity ID, you may enter that instead.";
-    private final static String HELP_TEXT_REGISTER = 
-        "If you wish to connect with an existing Volity ID,"  +
-        " turn off this option.\n\n"                          +
-        "Choose a Volity ID and a password.";
-    private final static String HELP_TEXT_ADDITIONAL = 
-        "You may leave the name and email fields blank, if"   +
-        " you wish. However, if you do not enter a valid"     +
-        " email address, we will have no way to remind you"   +
-        " of a forgotten password.";
-
     private static String staticResourceString = null;
 
     private JTextField mJIDField;
@@ -94,7 +77,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
      */
     public ConnectDialog(Frame owner)
     {
-        super(owner, JavolinApp.getAppName() + ": Connect", true, NODENAME);
+        super(owner, "Connect", true, NODENAME);
+        setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         // Decide this now -- we don't want to change our minds until the
         // dialog box closes.
@@ -178,7 +162,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         String jid = expandJIDField(mJIDField);
         if (jid == null) {
-            complainMustEnter(mJIDField, "a Volity ID (a Jabber address)");
+            complainMustEnter(mJIDField, localize("MustEnterJID"));
             return;
         }
 
@@ -217,22 +201,17 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                 {
                 case 502:
                 case 504:
-                    message = "Could not connect to Jabber host " +
-                        jidhost + ".";
+                    message = localize("ErrorCouldNotConnect", jidhost);
                     break;
                 case 401:
-                    message = "Unable to log into Jabber host " +
-                        jidhost +
-                        ".\nMake sure your Volity ID and password are correct.";
+                    message = localize("ErrorCouldNotAuth", jidhost);
                     break;
                 }
             }
             else 
             {
                 if (message.startsWith("SASL authentication failed")) {
-                    message = "Unable to log into Jabber host " +
-                        jidhost +
-                        ".\nMake sure your Volity ID and password are correct.";
+                    message = localize("ErrorCouldNotAuth", jidhost);
                 }
             }
 
@@ -259,15 +238,15 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         // people who set up empty passwords.
         if (mJIDField.getText().equals("")
             || mJIDField.getText().startsWith("/")) {
-            complainMustEnter(mJIDField, "a Volity ID (a Jabber address)");
+            complainMustEnter(mJIDField, localize("MustEnterJID"));
             return;
         }
         if (mPasswordField.getPassword().length == 0) {
-            complainMustEnter(mPasswordField, "a password");
+            complainMustEnter(mPasswordField, localize("MustEnterPassword"));
             return;
         }
         if (mPasswordAgainField.getPassword().length == 0) {
-            complainMustEnter(mPasswordAgainField, "your password again");
+            complainMustEnter(mPasswordAgainField, localize("MustEnterPasswordAgain"));
             return;
         }
 
@@ -280,7 +259,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
          * with a jidhost and no jidname. */
 
         if (jidhost.equals("")) {
-            complainMustEnter(mJIDField, "a Volity ID with an @ sign");
+            complainMustEnter(mJIDField, localize("MustEnterJIDAt"));
             return;
         }
 
@@ -304,7 +283,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         String password2 = new String(mPasswordAgainField.getPassword());
         if (!password.equals(password2)) {
             JOptionPane.showMessageDialog(this, 
-                "You did not retype your password correctly.",
+                localize("ErrorPasswordsDidNotMatch"),
                 JavolinApp.getAppName() + ": Error", 
                 JOptionPane.ERROR_MESSAGE);
             mPasswordAgainField.requestFocusInWindow();
@@ -323,8 +302,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             if (!manager.supportsAccountCreation()) {
                 JOptionPane.showMessageDialog(this, 
-                    "This Jabber host does not permit you to\n" +
-                    "register an account through this client.",
+                    localize("ErrorHostDisallowsRegister"),
                     JavolinApp.getAppName() + ": Error", 
                     JOptionPane.ERROR_MESSAGE);
                 mJIDField.requestFocusInWindow();
@@ -360,10 +338,8 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             if (otherRequired) {
                 JOptionPane.showMessageDialog(this, 
-                    JavolinApp.getAppName() +
-                    " is not smart enough to register\n" +
-                    "at this host. (Additional fields needed:\n" +
-                    otherFields + ")",
+                    localize("ErrorAppNotSmartEnough",
+                        JavolinApp.getAppName(), otherFields),
                     JavolinApp.getAppName() + ": Error", 
                     JOptionPane.ERROR_MESSAGE);
                 mJIDField.requestFocusInWindow();
@@ -374,8 +350,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             if (nameRequired && mFullNameField.getText().equals("")) {
                 JOptionPane.showMessageDialog(this, 
-                    "You must enter your full name to\n" +
-                    "register at this host.",
+                    localize("ErrorNeedsFullName"),
                     JavolinApp.getAppName() + ": Error", 
                     JOptionPane.ERROR_MESSAGE);
                 mFullNameField.requestFocusInWindow();
@@ -386,8 +361,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
             if (emailRequired && mEmailField.getText().equals("")) {
                 JOptionPane.showMessageDialog(this, 
-                    "You must enter an email address to\n" +
-                    "register at this host.",
+                    localize("ErrorNeedsEmail"),
                     JavolinApp.getAppName() + ": Error", 
                     JOptionPane.ERROR_MESSAGE);
                 mEmailField.requestFocusInWindow();
@@ -442,12 +416,10 @@ public class ConnectDialog extends BaseDialog implements ActionListener
                 {
                 case 502:
                 case 504:
-                    message = "Could not connect to Jabber host " +
-                        jidhost + ".";
+                    message = localize("ErrorCouldNotConnect", jidhost);
                     break;
                 case 409:
-                    message = "An account with that name already " +
-                        "exists at this host.";
+                    message = localize("ErrorJIDAlreadyExists");
                     break;
                 }
             }
@@ -555,15 +527,15 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             && !mShowRegistration);
 
         if (mShowRegistration)
-            mConnectButton.setText("Register");
+            mConnectButton.setText(localize("ButtonRegister"));
         else
-            mConnectButton.setText("Connect");
+            mConnectButton.setText(localize("ButtonConnect"));
 
         if (mHelpArea != null) {
             if (mShowRegistration)
-                mHelpArea.setText(HELP_TEXT_REGISTER);
+                mHelpArea.setText(localize("HelpRegister"));
             else
-                mHelpArea.setText(HELP_TEXT_CONNECT);
+                mHelpArea.setText(localize("HelpConnect"));
         }
 
         mRegisterHelpArea.setVisible(mShowRegistration);
@@ -586,7 +558,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         int gridY = 0;
 
         // Add JID label
-        JLabel someLabel = new JLabel("Volity ID:");
+        JLabel someLabel = new JLabel(localize("LabelJID"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -604,7 +576,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add password label
-        someLabel = new JLabel("Password:");
+        someLabel = new JLabel(localize("LabelPassword"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -622,7 +594,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add repeat-password label
-        mPasswordAgainLabel = new JLabel("Retype password:");
+        mPasswordAgainLabel = new JLabel(localize("LabelPasswordAgain"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -640,7 +612,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Remember checkbox
-        mRememberCheck = new JCheckBox("Remember password", false);
+        mRememberCheck = new JCheckBox(localize("LabelRememberPassword"), false);
         mRememberCheck.setFont(new Font("SansSerif", Font.PLAIN, 12));
         c = new GridBagConstraints();
         c.gridx = 1;
@@ -666,7 +638,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             gridY++;
 
             // Add "forgot password" link
-            mForgotPasswordLabel = new JLabel("Forgot your password?");
+            mForgotPasswordLabel = new JLabel(localize("LabelForgotPassword"));
             mForgotPasswordLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
             c = new GridBagConstraints();
             c.gridx = 0;
@@ -676,7 +648,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
             c.weightx = 0.5;
             mForgotPasswordPanel.add(mForgotPasswordLabel, c);
 
-            mForgotPasswordButton = new JButton("Recover It");
+            mForgotPasswordButton = new JButton(localize("ButtonRecoverPassword"));
             mForgotPasswordButton.addActionListener(this);
             mForgotPasswordButton.setFont(new Font("SansSerif", Font.PLAIN, 10));
             c = new GridBagConstraints();
@@ -688,7 +660,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         }
 
         // Add Register checkbox
-        mRegisterCheck = new JCheckBox("Register a new account",
+        mRegisterCheck = new JCheckBox(localize("LabelRegister"),
             mShowRegistration);
         mRegisterCheck.addActionListener(this);
         c = new GridBagConstraints();
@@ -702,7 +674,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
 
         if (mShowExtraHelp) 
         {
-            mHelpArea = new JTextArea(HELP_TEXT_CONNECT);
+            mHelpArea = new JTextArea(localize("HelpConnect"));
             mHelpArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
             mHelpArea.setOpaque(false);
             mHelpArea.setEditable(false);
@@ -720,7 +692,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         }
 
         // Add fullname address label
-        mFullNameLabel = new JLabel("Your name:");
+        mFullNameLabel = new JLabel(localize("LabelFullName"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -738,7 +710,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add email address label
-        mEmailLabel = new JLabel("Email address:");
+        mEmailLabel = new JLabel(localize("LabelEmail"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -756,7 +728,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         {
-            mRegisterHelpArea = new JTextArea(HELP_TEXT_ADDITIONAL);
+            mRegisterHelpArea = new JTextArea(localize("HelpAdditional"));
             mRegisterHelpArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
             mRegisterHelpArea.setOpaque(false);
             mRegisterHelpArea.setEditable(false);
@@ -786,7 +758,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Cancel button
-        mCancelButton = new JButton("Cancel");
+        mCancelButton = new JButton(localize("ButtonCancel"));
         mCancelButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -797,7 +769,7 @@ public class ConnectDialog extends BaseDialog implements ActionListener
         buttonPanel.add(mCancelButton, c);
 
         // Add Connect button
-        mConnectButton = new JButton("Connect");
+        mConnectButton = new JButton(localize("ButtonConnect"));
         mConnectButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;
