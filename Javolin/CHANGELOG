@@ -1,7 +1,7 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.3.8
 
 More localization: table window, chat window, roster window, connect dialog,
 prefs dialog. Spanish translation for all of these, as well as the menus,
