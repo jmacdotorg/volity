@@ -53,6 +53,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
     public NewTableAtDialog(JavolinApp owner, XMPPConnection connection)
     {
         super(owner, JavolinApp.getAppName() + ": New Table At", true, NODENAME);
+        setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         mOwner = owner;
         mConnection = connection;
@@ -97,12 +98,12 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
 
         String serverjid = expandJIDField(mServerIdField);
         if (serverjid == null) {
-            complainMustEnter(mServerIdField, "a parlor address");
+            complainMustEnter(mServerIdField, localize("MustEnterServerId"));
             return;
         }
 
         if (mNicknameField.getText().equals("")) {
-            complainMustEnter(mNicknameField, "a nickname for yourself");
+            complainMustEnter(mNicknameField, localize("MustEnterNickname"));
             return;
         }
 
@@ -167,7 +168,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         int gridY = 0;
 
         // Add game server ID label
-        JLabel someLabel = new JLabel("Game Parlor ID:");
+        JLabel someLabel = new JLabel(localize("LabelServerId"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -185,7 +186,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add nickname label
-        someLabel = new JLabel("Nickname:");
+        someLabel = new JLabel(localize("LabelNickname"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -215,7 +216,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Cancel button
-        mCancelButton = new JButton("Cancel");
+        mCancelButton = new JButton(localize("ButtonCancel"));
         mCancelButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -226,7 +227,7 @@ public class NewTableAtDialog extends BaseDialog implements ActionListener
         buttonPanel.add(mCancelButton, c);
 
         // Add Create button
-        mCreateButton = new JButton("Create");
+        mCreateButton = new JButton(localize("ButtonCreate"));
         mCreateButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;

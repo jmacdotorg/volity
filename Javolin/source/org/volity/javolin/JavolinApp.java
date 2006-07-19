@@ -421,15 +421,15 @@ public class JavolinApp extends JFrame
         if (bookkeeperJid != null)
             Bookkeeper.setDefaultJid(bookkeeperJid);
 
-        // Set up the locale information.
-        localeApp = Locale.getDefault();
         // We also accept "--lang XX", mostly for debugging purposes.
         for (int ix=0; ix<args.length; ix++) {
             if (args[ix].equals("--lang") && (ix < args.length-1)) {
-                localeApp = new Locale(args[ix+1]);
+                Locale.setDefault(new Locale(args[ix+1]));
                 break;
             }
         }
+        // Set up the locale information.
+        localeApp = Locale.getDefault();
         resources = ResourceBundle.getBundle("ResBundle", localeApp);
         localeGame = localeApp;
         TranslateToken.setLanguage(localeGame);

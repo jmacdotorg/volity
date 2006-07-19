@@ -52,6 +52,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
     public JoinTableAtDialog(JavolinApp owner, XMPPConnection connection)
     {
         super(owner, JavolinApp.getAppName() + ": Join Table At", true, NODENAME);
+        setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         mOwner = owner;
         mConnection = connection;
@@ -98,12 +99,12 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
             "conference.volity.net");
 
         if (tableid == null) {
-            complainMustEnter(mTableIdField, "a game table (MUC) address");
+            complainMustEnter(mTableIdField, localize("MustEnterTableId"));
             return;
         }
 
         if (mNicknameField.getText().equals("")) {
-            complainMustEnter(mNicknameField, "a nickname for yourself");
+            complainMustEnter(mNicknameField, localize("MustEnterNickname"));
             return;
         }
 
@@ -168,7 +169,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         int gridY = 0;
 
         // Add game table ID label
-        JLabel someLabel = new JLabel("Game Table ID:");
+        JLabel someLabel = new JLabel(localize("LabelTableId"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -186,7 +187,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add nickname label
-        someLabel = new JLabel("Nickname:");
+        someLabel = new JLabel(localize("LabelNickname"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -217,7 +218,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Cancel button
-        mCancelButton = new JButton("Cancel");
+        mCancelButton = new JButton(localize("ButtonCancel"));
         mCancelButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -228,7 +229,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
         buttonPanel.add(mCancelButton, c);
 
         // Add Join button
-        mJoinButton = new JButton("Join");
+        mJoinButton = new JButton(localize("ButtonJoin"));
         mJoinButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;
