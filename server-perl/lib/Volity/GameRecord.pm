@@ -63,8 +63,8 @@ use warnings;
 use strict;
 
 use URI;
-use Date::Parse;
-use Date::Format;
+use DateTime;
+use DateTime::Format::W3CDTF;
 
 use base qw( Volity );
 use fields qw( id signature winners start_time end_time game_uri_object
@@ -383,6 +383,9 @@ sub set {
             $_ = $self->massage_jid($_);
         }
     }
+
+    # We will massage time fields to make sure that they are in W3C format,
+    # and just to be nice we'll set them to GMT.
     elsif ( $field eq 'start_time' or $field eq 'end_time' ) {
         $values[0] = $self->massage_time( $values[0] );
     }
@@ -404,21 +407,25 @@ sub massage_jid {
 sub massage_time {
     my $self = shift;
     my ($time) = @_;
+    my $formatter = DateTime::Format::W3CDTF->new;
 
-    # Cure possible MySQLization that Date::Parse can't handle.
-    #  $time = '1979-12-31 19:00:00';
+    # Cure possible MySQLization by inserting a 'T'. Instant W3C format!
     $time =~ s/^(\d\d\d\d-\d\d-\d\d) (\d\d:\d\d:\d\d)$/$1T$2/;
-    if ( my $parsed = Date::Parse::str2time($time) ) {
-
-        # Transform it into W3C datetime format.
-        return ( Date::Format::time2str( "%Y-%m-%dT%H:%M:%S%z", $parsed ) );
-    }
-    else {
+    my $dt;			# DateTime object
+    eval {
+	$dt = $formatter->parse_datetime($time);
+    };
+    if ($@) {
         $self->logger->warn(
-"I can't parse this timestamp: $time\nPlease use a time string that Date::Parse can understand."
+"I can't parse this timestamp: $time\nThat was not valid W3C time format."
             );
 	return;
     }
+
+    # Set the time zone to GMT, and return the resulting string.
+    $dt->set_time_zone('GMT');
+    my $massaged_time = $formatter->format_datetime($dt);
+    return $massaged_time;
 }
 
 #########################
