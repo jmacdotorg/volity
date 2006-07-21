@@ -3,6 +3,7 @@ package org.volity.javolin.game;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Iterator;
+import java.util.MissingResourceException;
 import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.client.Player;
@@ -47,6 +48,18 @@ public class SeatContextMenu extends JPopupMenu
     }
 
     /**
+     * Localization helper.
+     */
+    protected static String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("PopupIt_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???PopupIt_"+key;
+        }
+    }
+
+    /**
      * Bring up the menu, attached to the given parent. The location (xpos,
      * ypos) should be relative to the parent.
      *
@@ -79,13 +92,13 @@ public class SeatContextMenu extends JPopupMenu
         mStatsMenuItem = null;
         mInvitesMenu = null;
 
-        mChatMenuItem = new JMenuItem("Chat With User");
+        mChatMenuItem = new JMenuItem(localize("Chat"));
         mChatMenuItem.addActionListener(this);
         if (isSelf || mPlayer.isBot())
             mChatMenuItem.setEnabled(false);
         add(mChatMenuItem);
 
-        mRosterAddMenuItem = new JMenuItem("Add to Roster...");
+        mRosterAddMenuItem = new JMenuItem(localize("RosterAdd"));
         mRosterAddMenuItem.addActionListener(this);
         if (isSelf || mPlayer.isBot()) {
             mRosterAddMenuItem.setEnabled(false);
@@ -101,11 +114,11 @@ public class SeatContextMenu extends JPopupMenu
 
         addSeparator();
 
-        mSitMenuItem = new JMenuItem("Sit Down");
+        mSitMenuItem = new JMenuItem(localize("Sit"));
         mSitMenuItem.addActionListener(this);
         add(mSitMenuItem);
 
-        mStandMenuItem = new JMenuItem("Stand Up");
+        mStandMenuItem = new JMenuItem(localize("Stand"));
         mStandMenuItem.addActionListener(this);
         add(mStandMenuItem);
 
@@ -123,7 +136,7 @@ public class SeatContextMenu extends JPopupMenu
         }
 
         if (mPlayer.isBot()) {
-            mRemoveBotMenuItem = new JMenuItem("Remove Bot");
+            mRemoveBotMenuItem = new JMenuItem(localize("RemoveBot"));
             mRemoveBotMenuItem.addActionListener(this);
             add(mRemoveBotMenuItem);
             if (mPlayer.getSeat() != null)
@@ -132,7 +145,7 @@ public class SeatContextMenu extends JPopupMenu
 
         addSeparator();
 
-        mInvitesMenu = new JMenu("Invite to");
+        mInvitesMenu = new JMenu(localize("InviteMenu"));
         add(mInvitesMenu);
         int count = 0;
         mInvitesMenu.removeAll();
@@ -152,7 +165,7 @@ public class SeatContextMenu extends JPopupMenu
         }
         mInvitesMenu.setEnabled(count > 0);
 
-        mStatsMenuItem = new JMenuItem("Game Stats");
+        mStatsMenuItem = new JMenuItem(localize("Stats"));
         mStatsMenuItem.addActionListener(this);
         add(mStatsMenuItem);
         if (!PlatformWrapper.launchURLAvailable())

@@ -3,6 +3,7 @@ package org.volity.javolin.roster;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Iterator;
+import java.util.MissingResourceException;
 import javax.swing.*;
 import org.jivesoftware.smack.packet.RosterPacket;
 import org.jivesoftware.smack.util.StringUtils;
@@ -38,6 +39,18 @@ public class RosterContextMenu extends JPopupMenu
         mParent = parent;
 
         buildUI();
+    }
+
+    /**
+     * Localization helper.
+     */
+    protected static String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("PopupIt_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???PopupIt_"+key;
+        }
     }
 
     /**
@@ -123,26 +136,26 @@ public class RosterContextMenu extends JPopupMenu
 
     /** Create the interface. */
     protected void buildUI() {
-        mChatMenuItem = new JMenuItem("Chat With User");
+        mChatMenuItem = new JMenuItem(localize("Chat"));
         mChatMenuItem.addActionListener(this);
         add(mChatMenuItem);
 
-        mChatUnavailMenuItem = new JMenuItem("Send Message to User");
+        mChatUnavailMenuItem = new JMenuItem(localize("ChatUnavail"));
         mChatUnavailMenuItem.addActionListener(this);
         add(mChatUnavailMenuItem);
 
-        mRosterAddMenuItem = new JMenuItem("Add to Roster...");
+        mRosterAddMenuItem = new JMenuItem(localize("RosterAdd"));
         mRosterAddMenuItem.addActionListener(this);
         add(mRosterAddMenuItem);
 
-        mRosterDeleteMenuItem = new JMenuItem("Delete User...");
+        mRosterDeleteMenuItem = new JMenuItem(localize("RosterDelete"));
         mRosterDeleteMenuItem.addActionListener(this);
         add(mRosterDeleteMenuItem);
 
-        mInvitesMenu = new JMenu("Invite to");
+        mInvitesMenu = new JMenu(localize("InviteMenu"));
         add(mInvitesMenu);
 
-        mStatsMenuItem = new JMenuItem("Game Stats");
+        mStatsMenuItem = new JMenuItem(localize("Stats"));
         mStatsMenuItem.addActionListener(this);
         add(mStatsMenuItem);
         if (!PlatformWrapper.launchURLAvailable())

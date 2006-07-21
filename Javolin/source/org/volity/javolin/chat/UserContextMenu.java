@@ -3,6 +3,7 @@ package org.volity.javolin.chat;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Iterator;
+import java.util.MissingResourceException;
 import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.jabber.JIDUtils;
@@ -37,6 +38,18 @@ public class UserContextMenu extends JPopupMenu
     public void dispose() {
         removeAll();
         mJID = null;
+    }
+
+    /**
+     * Localization helper.
+     */
+    protected static String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("PopupIt_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???PopupIt_"+key;
+        }
     }
 
     /**
@@ -117,18 +130,18 @@ public class UserContextMenu extends JPopupMenu
 
     /** Create the interface. */
     protected void buildUI() {
-        mChatMenuItem = new JMenuItem("Chat With User");
+        mChatMenuItem = new JMenuItem(localize("Chat"));
         mChatMenuItem.addActionListener(this);
         add(mChatMenuItem);
 
-        mRosterAddMenuItem = new JMenuItem("Add to Roster...");
+        mRosterAddMenuItem = new JMenuItem(localize("RosterAdd"));
         mRosterAddMenuItem.addActionListener(this);
         add(mRosterAddMenuItem);
 
-        mInvitesMenu = new JMenu("Invite to");
+        mInvitesMenu = new JMenu(localize("InviteMenu"));
         add(mInvitesMenu);
 
-        mStatsMenuItem = new JMenuItem("Game Stats");
+        mStatsMenuItem = new JMenuItem(localize("Stats"));
         mStatsMenuItem.addActionListener(this);
         add(mStatsMenuItem);
         if (!PlatformWrapper.launchURLAvailable())
