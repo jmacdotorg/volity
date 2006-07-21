@@ -1,8 +1,8 @@
 --- WHAT IS THIS? ---
 
 Frivolity is a free, Perl-based reference implementation of the Volity
-platform for Internet-based game play. It is released under the LGPL
-open-source license. (See the accompanying LICENSE file.)
+platform for Internet-based multiplayer games. It is released under
+the LGPL open-source license. (See the accompanying LICENSE file.)
 
 Volity is a complex platform, but I've endeavored to make it easy to
 get started creating games through the embedded perldocs. After
@@ -10,9 +10,12 @@ installing, "perldoc Volity" to get started.
 
 Further reading, including more general information about what Volity
 is and how it works, may be found on the Volity Developers' Site:
-http://www.volity.org
+<http://www.volity.org>. See especially the Wiki.
 
-See especially the Wiki.
+Volity's more public face is the Volity Network:
+<http://volity.net>. Some of the games running there are written using
+Frivolity. You can publish your own creations to the Network, too! See
+<http://volity.net/dev/>.
 
 --- PREREQUISITES ---
 
@@ -46,6 +49,9 @@ some nice test suites in the future.
 Once you've installed this software, type
 
  perldoc Volity
+
+Or, visit http://volity.org/docs/ for a link to a hypertext version of
+the most recent Frivolity documentation.
 
 Frivolity includes a lot of modules and a lot of documentation, but
 I've done my best to arrange it so that the most important stuff,
@@ -81,3 +87,8 @@ For community discussion about these modules, see the volity-devel
 mailing list:
 <http://lists.sourceforge.net/lists/listinfo/volity-devel>. Its
 archives are on the Web, and offers open subscription to all.
+
+Use can also use any Jabber client (including Gamut, the Volity
+project's official Java-based client) to visit the Volity devchat, at
+<devchat@conference.volity.net>.
+
