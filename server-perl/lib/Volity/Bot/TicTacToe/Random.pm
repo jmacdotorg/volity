@@ -9,6 +9,7 @@ use strict;
 use base qw(Volity::Bot);
 
 Volity::Bot::TicTacToe::Random->name("Tacky");
+Volity::Bot::TicTacToe::Random->algorithm("http://volity.org/games/tictactoe/bot/random");
 
 # Package variable of squares and the marks that fill them.
 our %squares;
