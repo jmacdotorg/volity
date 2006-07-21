@@ -186,6 +186,8 @@ use Volity::Player;
 use Volity::Seat;
 use Volity::GameRecord;
 use RPC::XML;
+use DateTime;
+use DateTime::Format::W3CDTF;
 
 use Carp qw(carp croak);
 
@@ -1166,7 +1168,9 @@ sub end_game {
 					parlor=>$self->basic_jid,
 				      });
   $record->game_uri($self->game_class->uri);
-  $record->end_time(scalar(localtime));
+#  $record->end_time(scalar(localtime));
+  my $time_formatter = DateTime::Format::W3CDTF->new;
+  $record->end_time($time_formatter->format_datetime(DateTime->now));
 
   my %recorded_seats = ();
   
