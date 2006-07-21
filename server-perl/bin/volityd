@@ -269,6 +269,7 @@ elsif (defined($opts{log_config}) || defined($opts{log_config_file})) {
 
 # $server->bot_classes(@bot_classes);
 $server->bot_configs($opts{bots});
+$server->require_bot_configs;
 
 foreach (keys(%volityd_info_for_server_object)) {
     my $method = "volityd_$_";

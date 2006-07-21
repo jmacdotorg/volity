@@ -181,6 +181,9 @@ use Carp qw(croak carp);
 sub initialize {
   my $self = shift;
   $self->SUPER::initialize(@_);
+
+  # We deal with a lot of classes for games, referees, and bots.
+  # Make sure that they all compile!
   if (my $referee_class = $self->referee_class) {
       eval "require $referee_class";
       if ($@) {
@@ -188,17 +191,29 @@ sub initialize {
       }
   }
   if (my $game_class = $self->game_class) {
-      
       eval "require $game_class";
       if ($@) {
 	  die "Failed to require game class $game_class: $@";
       }
   }
+
   $self->{referees} = [];
   $self->startup_time(time);
   $self->{admins} ||= [];
   $self->referee_count(0);
   return $self;
+}
+
+# require_bot_configs: Called by volityd as a volidation step.
+# It simply require()s each Bot class, and dies on compilation errors.
+sub require_bot_configs {
+  my $self = shift;
+  for my $bot_config ($self->bot_configs) {
+      eval "require $$bot_config{class}";
+      if ($@) {
+	  die "Failed to require bot class $$bot_config{class}: $@";
+      }
+  }
 }
 
 # This presence handler takes care of auto-approving all subscription
@@ -467,13 +482,13 @@ sub handle_disco_items_request {
 	    # ruleset URI.
 	    my $uri;
 	    $uri = $self->game_class->uri; 
-	    warn "Wah, I see no URI under $game_class: $uri.";
 	    push (@items, Volity::Jabber::Disco::Item->new({
 		jid=>$self->bookkeeper_jid,
 		node=>$uri,
 		name=>"ruleset information (URI: $uri )",
 	    }));
-	} elsif ( $nodes[0] eq 'open_games' ) {
+	}
+	elsif ( $nodes[0] eq 'open_games' ) {
 	    $self->logger->debug("It's an open_games request.");
 	    # Get a list of referees with open games, and return
 	    # pointers to them.
@@ -488,7 +503,19 @@ sub handle_disco_items_request {
 		    name=>$_->name,
 		}));
 	    } 
-	}     
+	}
+	elsif ( $nodes[0] eq 'bots' ) {
+	    $self->logger->debug("It's a bots request.");
+	    # Get a list of bots, and return pointers to them.
+	    for my $bot_config ($self->bot_configs) {
+		my $item = Volity::Jabber::Disco::Item->new({
+		    jid=>$self->jid,
+		});
+		$item->name($bot_config->{class}->name) if $bot_config->{class}->name;
+		$item->node($bot_config->{class}->algorithm) if $bot_config->{class}->algorithm;
+		push (@items, $item);
+	    }
+	}
     } else {
 	# Just return the two nodes we support.
 	foreach (qw(ruleset open_games)) {
