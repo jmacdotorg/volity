@@ -1,3 +1,24 @@
+0.6.3
+
+	- Volity::Referee now submits W3C-format time strings in its game
+          records.
+
+	- Volity::GameRecord no longer dies when it can't parse a date
+          string.
+
+	- Volity::GameRecord massages the values of end_time and
+    	  start_time to GMT.
+
+	- Added support for the bot-discovery protocol to Volity::Server.
+
+	- Added support for algorithm URIs to Volity::Bot.
+
+	- Added a dependency for DateTime and DateTime::Format::W3CDTF to
+	  Makefile.PL, and removed dependencies to other date formatting
+	  and parsing modules. Props to Dave Rolsky and the DateTime team
+	  for finally making a unified Perl module for handling all this
+	  stuff.
+
 0.6.2
 
 	- (version 0.6.1 was sacrificed to the CPAN gods.)
