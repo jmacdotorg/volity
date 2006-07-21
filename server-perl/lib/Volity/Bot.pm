@@ -69,9 +69,37 @@ final step, and you are welcome to override this in order to give your
 object some final preparations before sending it out into the world.
 
 If you do override this method, however, it I<must> have a return
-value of C<$self->SUPER::initialize(@_)> or untold chaos will result.
+value of C<$self-E<gt>SUPER::initialize(@_)> or untold chaos will result.
 
 =head1 METHODS
+
+=head2 Identifciation accessors
+
+Called with an argument, each of these class methods sets some
+information about the bot. Your subclass should, at the very least,
+define its algorithm URI, but it's not a fatal error to leave it
+blank.
+
+The Frivolity framework substitutes generic default values if you
+don't assign values to these fields yourself.
+
+=over
+
+=item name
+
+A name for this bot. It will appear under this name at the game
+table. (Multiple instances of the same bot will give themselves this
+name followed by a number.)
+
+=item description
+
+A brief description of this bot.
+
+=item algorithm
+
+This bot's algorithm URI.
+
+=back
 
 =head2 Information accessors
 
@@ -127,7 +155,7 @@ use Carp qw( croak );
 use POE;
 use Time::HiRes qw(gettimeofday);
 
-foreach (qw( name description )) {
+foreach (qw( name description algorithm )) {
     __PACKAGE__->mk_classdata($_);
 }
 
