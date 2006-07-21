@@ -13,8 +13,6 @@ lib/Volity/Referee.pm
 lib/Volity/Seat.pm
 lib/Volity/Server.pm
 lib/Volity/WinnersList.pm
-lib/POE/Filter/XML/Node.pm
-lib/POE/Component/Jabber/Client/Legacy.pm
 inc/ExtUtils/AutoInstall.pm
 examples/README
 examples/tictactoe/conf.yml

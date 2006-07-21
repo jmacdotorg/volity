@@ -22,11 +22,6 @@ Frivolity. You can publish your own creations to the Network, too! See
 Frivolity requires several Perl modules to work; the Makefile.PL
 checks for their presence on your system. All are available from CPAN.
 
-Note that we include our own forks of POE::Filter::XML::Node and
-POE::Component::Jabber::Client::Legacy, which repair errors found
-with the versions of those (otherwise just fine) modules as found on
-CPAN.
-
 --- INSTALLATION ---
 
 The usual incantation should suffice:
