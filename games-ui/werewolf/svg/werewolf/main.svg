@@ -12,7 +12,7 @@
 <metadata
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:volity="http://volity.org/protocol/metadata" >
-  <volity:version>1.0.2</volity:version>
+  <volity:version>1.0.3</volity:version>
   <volity:ruleset>http://volity.org/games/werewolf/</volity:ruleset>
   <dc:creator>Andrew Plotkin</dc:creator>
   <dc:modified>2006-06-27</dc:modified>
@@ -1223,6 +1223,10 @@ text {
 	font-size: 2.5;
 }
 
+.Subcredits {
+	font-size: 2.2;
+}
+
 .FaceLabel {
 	text-anchor: middle;
 	font-size: 0.23;
@@ -1368,18 +1372,29 @@ text {
 </g>
 
 <g id="credits">
-<text class="Credits" x="0" y="4" font-weight="bold" >A Mind Game</text>
-<text class="Credits" x="0" y="8">Implemented by</text>
-<text class="Credits" x="2" y="11">Andrew Plotkin</text>
+<text class="Credits" x="4" y="4" font-weight="bold" >A Mind Game</text>
+<text class="Subcredits" x="-2" y="8">Implemented by Andrew Plotkin</text>
 <line id="aboutunderline"
-	x1="0" y1="15.25" x2="24.0" y2="15.25" stroke="#55F" stroke-width="0.15" />
+	x1="1" y1="12.25" x2="25.0" y2="12.25" stroke="#55F" stroke-width="0.15" />
 <text id="aboutlink" class="Credits" 
-	x="0" y="15" fill="#00C" >How to play Werewolf</text>
+	x="1" y="12" fill="#00C" >How to play Werewolf</text>
 
 <a xlink:href="http://volity.org/games/werewolf/about.html">
-<rect x="-1" y="12" width="20" height="4" fill="none"
+<rect x="0" y="9" width="26" height="4" fill="none"
 	pointer-events="fill" />
 </a>
+
+<line id="aboutunderline"
+	x1="8" y1="16.25" x2="24.0" y2="16.25" stroke="#55F" stroke-width="0.15" />
+<text id="swaglink" class="Subcredits" 
+	font-style="oblique"
+	x="2" y="16" ><tspan>Buy a</tspan> <tspan  fill="#00C">Werewolf t-shirt!</tspan></text>
+
+<a xlink:href="http://zazzle.com/volity*">
+<rect x="7.8" y="14" width="17" height="3" fill="none"
+	pointer-events="fill" />
+</a>
+
 </g>
 
 </defs>
