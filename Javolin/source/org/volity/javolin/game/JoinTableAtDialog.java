@@ -51,7 +51,7 @@ public class JoinTableAtDialog extends BaseDialog implements ActionListener
      */
     public JoinTableAtDialog(JavolinApp owner, XMPPConnection connection)
     {
-        super(owner, JavolinApp.getAppName() + ": Join Table At", true, NODENAME);
+        super(owner, "Join Table At", true, NODENAME);
         setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         mOwner = owner;

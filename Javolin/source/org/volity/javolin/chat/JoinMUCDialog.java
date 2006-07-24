@@ -52,7 +52,8 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
      */
     public JoinMUCDialog(JavolinApp owner, XMPPConnection connection)
     {
-        super(owner, JavolinApp.getAppName() + ": Join Multi-user Chat", true, NODENAME);
+        super(owner, "Join Multi-User Chat", true, NODENAME);
+        setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         mOwner = owner;
         mConnection = connection;
@@ -97,12 +98,12 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
 
         String mucID = expandJIDField(mMucIdField, "conference.volity.net");
         if (mucID == null) {
-            complainMustEnter(mMucIdField, "a MUC address");
+            complainMustEnter(mMucIdField, localize("MustEnterMUC"));
             return;
         }
 
         if (mNicknameField.getText().equals("")) {
-            complainMustEnter(mNicknameField, "a nickname for yourself");
+            complainMustEnter(mNicknameField, localize("MustEnterNickname"));
             return;
         }
 
@@ -165,7 +166,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         int gridY = 0;
 
         // Add MUC ID label
-        JLabel someLabel = new JLabel("MUC ID:");
+        JLabel someLabel = new JLabel(localize("LabelMucId"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -183,7 +184,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add nickname label
-        someLabel = new JLabel("Nickname:");
+        someLabel = new JLabel(localize("LabelNickname"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -213,7 +214,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Cancel button
-        mCancelButton = new JButton("Cancel");
+        mCancelButton = new JButton(localize("ButtonCancel"));
         mCancelButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -224,7 +225,7 @@ public class JoinMUCDialog extends BaseDialog implements ActionListener
         buttonPanel.add(mCancelButton, c);
 
         // Add Join button
-        mJoinButton = new JButton("Join");
+        mJoinButton = new JButton(localize("ButtonJoin"));
         mJoinButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;
