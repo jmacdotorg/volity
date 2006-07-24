@@ -42,12 +42,12 @@ public class GetInvitationDialog extends BaseWindow
         mConnection = connection;
         mInProgress = false;
 
-        String title = "Invitation";
+        String title = JavolinApp.getAppName() + ": " + localize("WindowTitle");
         String fromjid = mInvite.getPlayerJID();
         if (fromjid != null) {
             fromjid = StringUtils.parseName(fromjid);
             if (fromjid != null && fromjid.length() > 0)
-                title = title + " (from " + fromjid + ")";
+                title = title + " " + localize("WindowSuffix", fromjid);
         }
         setTitle(title);
 
@@ -176,11 +176,10 @@ public class GetInvitationDialog extends BaseWindow
         if (gamename != null)
             gamename = gamename.trim();
 
-        msg = "  has invited you to join a game";
         if (gamename != null && !gamename.equals(""))
-            msg = msg + " of";
+            msg = "  " + localize("MessageInvitedOf");
         else
-            msg = msg + ".";
+            msg = "  " + localize("MessageInvited");
         label = new JLabel(msg);
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -227,7 +226,7 @@ public class GetInvitationDialog extends BaseWindow
             cPane.add(scroller, c);
         }
 
-        label = new JLabel("Nickname:");
+        label = new JLabel(localize("LabelNickname"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row;
@@ -255,7 +254,7 @@ public class GetInvitationDialog extends BaseWindow
         c.weightx = 1;
         cPane.add(buttonPanel, c);
 
-        mAcceptButton = new JButton("Accept");
+        mAcceptButton = new JButton(localize("ButtonAccept"));
         c = new GridBagConstraints();
         c.gridx = 2;
         c.gridy = 0;
@@ -263,7 +262,7 @@ public class GetInvitationDialog extends BaseWindow
         c.anchor = GridBagConstraints.EAST;
         buttonPanel.add(mAcceptButton, c);
 
-        mChatButton = new JButton("Decline and Chat");
+        mChatButton = new JButton(localize("ButtonDeclineChat"));
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = 0;
@@ -271,7 +270,7 @@ public class GetInvitationDialog extends BaseWindow
         c.anchor = GridBagConstraints.EAST;
         buttonPanel.add(mChatButton, c);
 
-        mDeclineButton = new JButton("Decline");
+        mDeclineButton = new JButton(localize("ButtonDecline"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = 0;

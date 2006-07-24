@@ -52,6 +52,7 @@ public class SendInvitationDialog extends BaseDialog
     public SendInvitationDialog(TableWindow owner, GameTable gameTable,
         String recipient) {
         super(owner, "Invite A Player", false, NODENAME);
+        setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         mOwner = owner;
         mGameTable = gameTable;
@@ -94,7 +95,7 @@ public class SendInvitationDialog extends BaseDialog
                 public void actionPerformed(ActionEvent ev) {
                     String jid = expandJIDField(mUserIdField);
                     if (jid == null) {
-                        complainMustEnter(mUserIdField, "a Volity ID (a Jabber address)");
+                        complainMustEnter(mUserIdField, localize("MustEnterJID"));
                         return;
                     }
 
@@ -154,7 +155,7 @@ public class SendInvitationDialog extends BaseDialog
             String selfbarejid = StringUtils.parseBareAddress(mGameTable.getConnection().getUser());
             if (jid.equals(selfbarejid)) {
                 JOptionPane.showMessageDialog(this, 
-                    "You are already at this table.",
+                    localize("ErrorAlreadyAtTable"),
                     app.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
                 return;
@@ -166,8 +167,7 @@ public class SendInvitationDialog extends BaseDialog
                 if (resources == null) {
                     // Logged off
                     JOptionPane.showMessageDialog(this, 
-                        "The user " + jid + "\n"
-                        +"is not presently available on Jabber.",
+                        localize("ErrorJIDNotAvailable", jid),
                         app.getAppName() + ": Error",
                         JOptionPane.ERROR_MESSAGE);
                     return;
@@ -175,10 +175,12 @@ public class SendInvitationDialog extends BaseDialog
 
                 if (resources.size() == 0) {
                     // Logged on, but not with a Volity client.
-                    String[] options = { "Begin Chat", "Cancel" };
+                    String[] options = { 
+                        localize("ButtonBeginChat"),
+                        localize("ButtonCancel") 
+                    };
                     int res = JOptionPane.showOptionDialog(this,
-                        "The user " + jid + "\n"
-                        +"is available, but is not using a Volity client.",
+                        localize("ErrorNoVolityClient", jid),
                         app.getAppName() + ": Error",
                         JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
                         null,
@@ -262,7 +264,7 @@ public class SendInvitationDialog extends BaseDialog
                 String errtext = mOwner.getTranslator().translate(ex);
                 JOptionPane.showMessageDialog(
                     SendInvitationDialog.this,
-                    "Unable to send invitation:\n" + errtext,
+                    localize("ErrorCannotSend")+"\n" + errtext,
                     app.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
             }
@@ -272,7 +274,7 @@ public class SendInvitationDialog extends BaseDialog
                         
                 JOptionPane.showMessageDialog(
                     SendInvitationDialog.this, 
-                    "Unable to send invitation:\n" + err.toString(),
+                    localize("ErrorCannotSend")+"\n" + err.toString(),
                     app.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
             }
@@ -408,7 +410,7 @@ public class SendInvitationDialog extends BaseDialog
         c.insets = new Insets(MARGIN, MARGIN, 0, MARGIN);
         cPane.add(label, c);
 
-        label = new JLabel("User:");
+        label = new JLabel(localize("LabelUser"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row;
@@ -425,7 +427,7 @@ public class SendInvitationDialog extends BaseDialog
         c.insets = new Insets(MARGIN, SPACING, 0, MARGIN);
         cPane.add(mUserIdField, c);
 
-        label = new JLabel("Message to include:");
+        label = new JLabel(localize("LabelMessage"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = row++;
@@ -461,7 +463,7 @@ public class SendInvitationDialog extends BaseDialog
         cPane.add(buttonPanel, c);
 
         // Add Cancel button
-        mCancelButton = new JButton("Cancel");
+        mCancelButton = new JButton(localize("ButtonCancel"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = 0;
@@ -471,7 +473,7 @@ public class SendInvitationDialog extends BaseDialog
         buttonPanel.add(mCancelButton, c);
 
         // Add Invite button
-        mInviteButton = new JButton("Invite");
+        mInviteButton = new JButton(localize("ButtonInvite"));
         c = new GridBagConstraints();
         c.gridx = 1;
         c.gridy = 0;

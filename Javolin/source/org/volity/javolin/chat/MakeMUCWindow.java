@@ -3,7 +3,9 @@ package org.volity.javolin.chat;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.text.MessageFormat;
 import java.util.Iterator;
+import java.util.MissingResourceException;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.jivesoftware.smack.XMPPConnection;
@@ -121,7 +123,7 @@ public class MakeMUCWindow
             new ErrorWrapper(ex);
             callbackFail();
 
-            String msg = "The chat room could not be joined.";
+            String msg = localize("ErrorCouldNotJoin");
 
             // Any or all of these may be null.
             String submsg = ex.getMessage();
@@ -130,22 +132,20 @@ public class MakeMUCWindow
 
             if (error != null && error.getCode() == 404) {
                 /* A common case: the JID was not found. */
-                msg = "No chat room exists at this address.";
+                msg = localize("ErrorNoSuchMUC");
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
                 msg = msg + "\n(" + mMucID + ")";
             }
             else if (error != null && error.getCode() == 409) {
                 /* A common case: your nickname conflicts. */
-                msg = "The nickname \"" + mNickname + "\" is already in\n"
-                    +"use in this chat room. Please choose another.";
+                msg = localize("ErrorNicknameConflict", mNickname);
             }
             else {
-                msg = "The chat room could not be joined";
                 if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
+                    msg = localize("ErrorCouldNotJoinColon") + " " + submsg;
                 else
-                    msg = msg + ".";
+                    msg = localize("ErrorCouldNotJoin");
                 if (subex != null)
                     msg = msg + "\n" + subex.toString();
                 if (error != null)
@@ -156,6 +156,28 @@ public class MakeMUCWindow
                 msg,
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Localization helper.
+     */
+    protected static String localize(String key) {
+        try {
+            return JavolinApp.resources.getString("MakeMUCWindow_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???MakeMUCWindow_"+key;
+        }
+    }
+
+    protected String localize(String key, Object arg1) {
+        try {
+            String pattern = JavolinApp.resources.getString("MakeMUCWindow_"+key);
+            return MessageFormat.format(pattern, new Object[] { arg1 });
+        }
+        catch (MissingResourceException ex) {
+            return "???"+"MakeMUCWindow_"+key;
         }
     }
 

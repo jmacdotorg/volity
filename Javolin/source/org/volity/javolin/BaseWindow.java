@@ -2,6 +2,8 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.text.MessageFormat;
+import java.util.MissingResourceException;
 import javax.swing.*;
 
 /**
@@ -25,11 +27,13 @@ public class BaseWindow extends JFrame
     protected final static int GAP = 12; // Space between unrelated controls
 
     protected JavolinApp mOwner;
+    private String mNodeName;
     protected SizeAndPositionSaver mSizePosSaver;
 
     public BaseWindow(JavolinApp owner, String title, String nodeName) {
         super(title);
         mOwner = owner;
+        mNodeName = nodeName;
 
         // Necessary for all windows, for Mac support
         AppMenuBar.applyPlatformMenuBar(this);
@@ -54,6 +58,39 @@ public class BaseWindow extends JFrame
                     AppMenuBar.notifyUpdateWindowMenu();
                 }
             });
+    }
+
+    /**
+     * Localization helper. Uses the dialog's NODENAME as a resource
+     * prefix.
+     */
+    protected String localize(String key) {
+        try {
+            return JavolinApp.resources.getString(mNodeName+"_"+key);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+mNodeName+"_"+key;
+        }
+    }
+
+    protected String localize(String key, Object arg1) {
+        try {
+            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
+            return MessageFormat.format(pattern, new Object[] { arg1 });
+        }
+        catch (MissingResourceException ex) {
+            return "???"+mNodeName+"_"+key;
+        }
+    }
+
+    protected String localize(String key, Object arg1, Object arg2) {
+        try {
+            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
+            return MessageFormat.format(pattern, new Object[] { arg1, arg2 });
+        }
+        catch (MissingResourceException ex) {
+            return "???"+mNodeName+"_"+key;
+        }
     }
 
     /**

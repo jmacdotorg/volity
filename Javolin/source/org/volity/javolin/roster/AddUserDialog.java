@@ -49,7 +49,8 @@ public class AddUserDialog extends BaseDialog implements ActionListener
      */
     public AddUserDialog(Frame owner, Roster roster, String jid)
     {
-        super(owner, JavolinApp.getAppName() + ": Add User", true, NODENAME);
+        super(owner, "Add User", true, NODENAME);
+        setTitle(JavolinApp.getAppName() + ": " + localize("WindowTitle"));
 
         mRoster = roster;
 
@@ -89,7 +90,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
     {
         String jid = expandJIDField(mUserIdField);
         if (jid == null) {
-            complainMustEnter(mUserIdField, "a Volity ID (a Jabber address)");
+            complainMustEnter(mUserIdField, localize("MustEnterJID"));
             return;
         }
 
@@ -120,7 +121,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
         int gridY = 0;
 
         // Add user ID label
-        JLabel someLabel = new JLabel("User ID:");
+        JLabel someLabel = new JLabel(localize("LabelUserId"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -138,7 +139,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add nickname label
-        someLabel = new JLabel("Nickname:");
+        someLabel = new JLabel(localize("LabelNickname"));
         c = new GridBagConstraints();
         c.gridx = 0;
         c.gridy = gridY;
@@ -168,7 +169,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
         gridY++;
 
         // Add Cancel button
-        mCancelButton = new JButton("Cancel");
+        mCancelButton = new JButton(localize("ButtonCancel"));
         mCancelButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 0;
@@ -179,7 +180,7 @@ public class AddUserDialog extends BaseDialog implements ActionListener
         buttonPanel.add(mCancelButton, c);
 
         // Add Add button
-        mAddButton = new JButton("Add");
+        mAddButton = new JButton(localize("ButtonAdd"));
         mAddButton.addActionListener(this);
         c = new GridBagConstraints();
         c.gridx = 1;
