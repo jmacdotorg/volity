@@ -215,7 +215,7 @@ public class MakeTableWindow
             new ErrorWrapper(ex);
             callbackFail();
 
-            String msg = "The table could not be contacted.";
+            String msg = localize("ErrorCouldNotContact");
 
             // Any or all of these may be null.
             String submsg = ex.getMessage();
@@ -225,17 +225,16 @@ public class MakeTableWindow
             if (error != null 
                 && (error.getCode() == 404 || error.getCode() == 400)) {
                 /* A common case: the JID was not found. */
-                msg = "No table exists at this address.";
+                msg = localize("ErrorNoSuchTable");
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
                 msg = msg + "\n(" + mTableID + ")";
             }
             else {
-                msg = "The table could not be contacted";
                 if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
+                    msg = localize("ErrorCouldNotContactColon") + " " + submsg;
                 else
-                    msg = msg + ".";
+                    msg = localize("ErrorCouldNotContact");
                 if (subex != null)
                     msg = msg + "\n" + subex.toString();
                 if (error != null)
@@ -255,8 +254,7 @@ public class MakeTableWindow
         if (!info.containsFeature("http://jabber.org/protocol/muc")) {
             callbackFail();
 
-            String msg = "This address (" + mTableID + ")\n"
-                +"does not refer to a Volity game table.";
+            String msg = localize("ErrorNotATable", mTableID);
 
             JOptionPane.showMessageDialog(mParentDialog, 
                 msg,
@@ -320,7 +318,7 @@ public class MakeTableWindow
             if (error != null && error.getCode() == 404) 
             {
                 /* A common case: the JID was not found. */
-                msg = "No table exists at this address.";
+                msg = localize("ErrorNoSuchTable");
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
                 msg = msg + "\n(" + mTableID + ")";
@@ -328,15 +326,13 @@ public class MakeTableWindow
             else if (error != null && error.getCode() == 409) 
             {
                 /* A common case: your nickname conflicts. */
-                msg = "The nickname \"" + mNickname + "\" is already in\n"
-                    +"use at this table. Please choose another.";
+                msg = localize("ErrorNicknameConflict", mNickname);
             }
             else {
-                msg = "The table could not be joined";
                 if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
+                    msg = localize("ErrorCouldNotJoinTableColon") + " " + submsg;
                 else
-                    msg = msg + ".";
+                    msg = localize("ErrorCouldNotJoinTable");
                 if (subex != null)
                     msg = msg + "\n" + subex.toString();
                 if (error != null)
@@ -360,7 +356,7 @@ public class MakeTableWindow
             }
 
             JOptionPane.showMessageDialog(mParentDialog, 
-                "Cannot join table:\n" + ex.toString(),
+                localize("ErrorCouldNotJoinTableColon") + "\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error", 
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -395,7 +391,7 @@ public class MakeTableWindow
             mGameTable.leave();
 
             JOptionPane.showMessageDialog(mParentDialog,
-                "Cannot contact referee:\n" + ex.toString(),
+                localize("ErrorCannotContactReferee") + "\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
             return;
@@ -437,7 +433,7 @@ public class MakeTableWindow
             mGameTable.leave();
 
             JOptionPane.showMessageDialog(mParentDialog,
-                "Cannot join table:\n" + ex.toString(),
+                localize("ErrorCouldNotJoinTableColon") + "\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -457,13 +453,13 @@ public class MakeTableWindow
                 String msg = JavolinApp.getTranslator().translate(ex);
 
                 JOptionPane.showMessageDialog(mParentDialog,
-                    "Cannot create table:\n" + msg,
+                    localize("ErrorCouldNotCreateTableColon") + "\n" + msg,
                     JavolinApp.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
             }
             else if (err instanceof XMPPException) {
                 XMPPException ex = (XMPPException)err;
-                String msg = "The table could not be created."; 
+                String msg = localize("ErrorCouldNotCreateTable");
 
                 // Any or all of these may be null.
                 String submsg = ex.getMessage();
@@ -472,22 +468,21 @@ public class MakeTableWindow
 
                 if (error != null && error.getCode() == 404) {
                     /* A common case: the JID was not found. */
-                    msg = "No game parlor exists at this address.";
+                    msg = localize("ErrorNoSuchParlor");
                     if (error.getMessage() != null)
                         msg = msg + " (" + error.getMessage() + ")";
                     msg = msg + "\n(" + mParlorID + ")";
                 }
                 else if (error != null && error.getCode() == 409) {
                     /* A common case: your nickname conflicts. */
-                    msg = "The nickname \"" + mNickname + "\" is already in\n"
-                        +"use at this table. Please choose another.";
+                    msg = localize("ErrorNicknameConflict", mNickname);
                 }
                 else {
-                    msg = "The table could not be created";
                     if (submsg != null && subex == null && error == null)
-                        msg = msg + ": " + submsg;
+                        msg = localize("ErrorCouldNotCreateTableColon")
+                            + " " + submsg;
                     else
-                        msg = msg + ".";
+                        msg = localize("ErrorCouldNotCreateTable");
                     if (subex != null)
                         msg = msg + "\n" + subex.toString();
                     if (error != null)
@@ -502,7 +497,8 @@ public class MakeTableWindow
             else {
                 Exception ex = err;
                 JOptionPane.showMessageDialog(mParentDialog, 
-                    "Cannot create table:\n" + ex.toString(),
+                    localize("ErrorCouldNotCreateTableColon")
+                    + "\n" + ex.toString(),
                     JavolinApp.getAppName() + ": Error",
                     JOptionPane.ERROR_MESSAGE);
             }
@@ -538,7 +534,7 @@ public class MakeTableWindow
             callbackFail();
             mGameTable.leave();
             JOptionPane.showMessageDialog(mParentDialog, 
-                "This table is not supplying a ruleset.",
+                localize("ErrorNoRuleset"),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
             return;
@@ -547,7 +543,7 @@ public class MakeTableWindow
             callbackFail();
             mGameTable.leave();
             JOptionPane.showMessageDialog(mParentDialog, 
-                "This table's ruleset is not a valid URI:\n" + ex.toString(),
+                localize("ErrorRulesetInvalid") + "\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
             return;
@@ -556,7 +552,7 @@ public class MakeTableWindow
             callbackFail();
             mGameTable.leave();
             JOptionPane.showMessageDialog(mParentDialog, 
-                "This table's ruleset has an invalid version number:\n" + ex.toString(),
+                localize("ErrorRulesetVersionInvalid") + "\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
             return;
@@ -571,7 +567,7 @@ public class MakeTableWindow
                     callbackFail();
                     mGameTable.leave();
                     JOptionPane.showMessageDialog(mParentDialog, 
-                        "Unable to select a UI for this game.",
+                        localize("ErrorCannotSelectUI"),
                         JavolinApp.getAppName() + ": Error",
                         JOptionPane.ERROR_MESSAGE);
                 }
@@ -602,9 +598,13 @@ public class MakeTableWindow
 
             String msg = JavolinApp.getTranslator().translate(ex);
 
+            if (mIsCreating)
+                msg = localize("ErrorCouldNotCreateTableColon") + "\n" + msg;
+            else
+                msg = localize("ErrorCouldNotJoinTableColon") + "\n" + msg;
+
             JOptionPane.showMessageDialog(mParentDialog,
-                "Cannot " + (mIsCreating ? "create" : "join") 
-                + " table:\n" + msg,
+                msg,
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
         }
@@ -615,9 +615,11 @@ public class MakeTableWindow
 
             mGameTable.leave();
 
-            String msg = "The table could not be " 
-                + (mIsCreating ? "created" : "joined") 
-                + ".";
+            String msg;
+            if (mIsCreating)
+                msg = localize("ErrorCouldNotCreateTable");
+            else
+                msg = localize("ErrorCouldNotJoinTable");
 
             // Any or all of these may be null.
             String submsg = ex.getMessage();
@@ -626,22 +628,29 @@ public class MakeTableWindow
 
             if (error != null && error.getCode() == 404) {
                 /* A common case: the JID was not found. */
-                msg = "No game parlor exists at this address.";
+                msg = localize("ErrorNoSuchParlor");
                 if (error.getMessage() != null)
                     msg = msg + " (" + error.getMessage() + ")";
                 msg = msg + "\n(" + mParlorID + ")";
             }
             else if (error != null && error.getCode() == 409) {
                 /* A common case: your nickname conflicts. */
-                msg = "The nickname \"" + mNickname + "\" is already in\n"
-                    +"use at this table. Please choose another.";
+                msg = localize("ErrorNicknameConflict", mNickname);
             }
             else {
-                msg = "The table could not be " + (mIsCreating ? "created" : "joined");
-                if (submsg != null && subex == null && error == null)
-                    msg = msg + ": " + submsg;
-                else
-                    msg = msg + ".";
+                if (submsg != null && subex == null && error == null) {
+                    if (mIsCreating)
+                        msg = localize("ErrorCouldNotCreateTableColon");
+                    else
+                        msg = localize("ErrorCouldNotJoinTableColon");
+                    msg = msg + " " + submsg;
+                }
+                else {
+                    if (mIsCreating)
+                        msg = localize("ErrorCouldNotCreateTable");
+                    else
+                        msg = localize("ErrorCouldNotJoinTable");
+                }
                 if (subex != null)
                     msg = msg + "\n" + subex.toString();
                 if (error != null)
@@ -660,9 +669,14 @@ public class MakeTableWindow
 
             mGameTable.leave();
 
+            String msg;
+            if (mIsCreating)
+                msg = localize("ErrorCouldNotJoinTableColon");
+            else
+                msg = localize("ErrorCouldNotCreateTableColon");
+
             JOptionPane.showMessageDialog(mParentDialog, 
-                "Cannot " + (mIsCreating ? "create" : "join") 
-                + " table:\n" + ex.toString(),
+                msg + "\n" + ex.toString(),
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
         }
