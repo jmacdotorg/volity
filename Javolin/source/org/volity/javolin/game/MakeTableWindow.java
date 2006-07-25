@@ -26,6 +26,7 @@ import org.volity.client.translate.TokenFailure;
 import org.volity.jabber.JIDUtils;
 import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.Localize;
 
 
 /**
@@ -665,6 +666,16 @@ public class MakeTableWindow
                 JavolinApp.getAppName() + ": Error",
                 JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /**
+     * Localization helper.
+     */
+    protected String localize(String key) {
+        return Localize.localize("MakeTableWindow", key);
+    }
+    protected String localize(String key, Object arg1) {
+        return Localize.localize("MakeTableWindow", key, arg1);
     }
 
     private void callbackFail() {

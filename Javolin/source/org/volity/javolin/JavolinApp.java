@@ -22,7 +22,6 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.*;
@@ -1618,22 +1617,10 @@ public class JavolinApp extends JFrame
      * Localization helper.
      */
     protected String localize(String key) {
-        try {
-            return JavolinApp.resources.getString("RosterWindow_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???"+"RosterWindow__"+key;
-        }
+        return Localize.localize("RosterWindow", key);
     }
-
     protected String localize(String key, Object arg1) {
-        try {
-            String pattern = JavolinApp.resources.getString("RosterWindow_"+key);
-            return MessageFormat.format(pattern, new Object[] { arg1 });
-        }
-        catch (MissingResourceException ex) {
-            return "???"+"RosterWindow__"+key;
-        }
+        return Localize.localize("RosterWindow", key, arg1);
     }
 
     /**

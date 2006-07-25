@@ -3,12 +3,12 @@ package org.volity.javolin.roster;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Iterator;
-import java.util.MissingResourceException;
 import javax.swing.*;
 import org.jivesoftware.smack.packet.RosterPacket;
 import org.jivesoftware.smack.util.StringUtils;
 import org.volity.jabber.JIDUtils;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.Localize;
 import org.volity.javolin.PlatformWrapper;
 import org.volity.javolin.game.TableWindow;
 
@@ -44,13 +44,8 @@ public class RosterContextMenu extends JPopupMenu
     /**
      * Localization helper.
      */
-    protected static String localize(String key) {
-        try {
-            return JavolinApp.resources.getString("PopupIt_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???PopupIt_"+key;
-        }
+    protected String localize(String key) {
+        return Localize.localize("PopupIt", key);
     }
 
     /**

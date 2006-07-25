@@ -19,8 +19,6 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.text.MessageFormat;
-import java.util.MissingResourceException;
 import javax.swing.*;
 import org.jivesoftware.smack.util.StringUtils;
 
@@ -74,8 +72,7 @@ public class BaseDialog extends JDialog
      * input.
      */
     public void complainMustEnter(JComponent comp, String desc) {
-        String pattern = JavolinApp.resources.getString("Dialog_MustEnterField");
-        String val = MessageFormat.format(pattern, new Object[] { desc });
+        String val = Localize.localize("Dialog", "MustEnterField", desc);
 
         JOptionPane.showMessageDialog(this,
             val,
@@ -91,34 +88,14 @@ public class BaseDialog extends JDialog
      * prefix.
      */
     protected String localize(String key) {
-        try {
-            return JavolinApp.resources.getString(mNodeName+"_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???"+mNodeName+"_"+key;
-        }
+        return Localize.localize(mNodeName, key);
     }
-
     protected String localize(String key, Object arg1) {
-        try {
-            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
-            return MessageFormat.format(pattern, new Object[] { arg1 });
-        }
-        catch (MissingResourceException ex) {
-            return "???"+mNodeName+"_"+key;
-        }
+        return Localize.localize(mNodeName, key, arg1);
     }
-
     protected String localize(String key, Object arg1, Object arg2) {
-        try {
-            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
-            return MessageFormat.format(pattern, new Object[] { arg1, arg2 });
-        }
-        catch (MissingResourceException ex) {
-            return "???"+mNodeName+"_"+key;
-        }
+        return Localize.localize(mNodeName, key, arg1, arg2);
     }
-
 
     private final static String DEFAULT_HOST = "volity.net";
 

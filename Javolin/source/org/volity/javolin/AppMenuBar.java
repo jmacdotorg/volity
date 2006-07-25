@@ -653,12 +653,7 @@ public class AppMenuBar extends JMenuBar
      * item.
      */
     private String localize(String key) {
-        try {
-            return JavolinApp.resources.getString("MenuIt_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???"+key;
-        }
+        return Localize.localize("MenuIt", key);
     }
 
     /**
@@ -666,12 +661,7 @@ public class AppMenuBar extends JMenuBar
      * title.
      */
     private String localizeTitle(String key) {
-        try {
-            return JavolinApp.resources.getString("Menu_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???"+key;
-        }
+        return Localize.localize("Menu", key);
     }
 
     /**

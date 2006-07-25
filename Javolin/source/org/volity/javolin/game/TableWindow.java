@@ -1060,12 +1060,7 @@ public class TableWindow extends JFrame
      * Localization helper.
      */
     protected static String localize(String key) {
-        try {
-            return JavolinApp.resources.getString("TableWindow_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???TableWindow_"+key;
-        }
+        return Localize.localize("TableWindow", key);
     }
 
     /**

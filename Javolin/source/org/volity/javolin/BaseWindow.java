@@ -2,8 +2,6 @@ package org.volity.javolin;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.text.MessageFormat;
-import java.util.MissingResourceException;
 import javax.swing.*;
 
 /**
@@ -65,32 +63,13 @@ public class BaseWindow extends JFrame
      * prefix.
      */
     protected String localize(String key) {
-        try {
-            return JavolinApp.resources.getString(mNodeName+"_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???"+mNodeName+"_"+key;
-        }
+        return Localize.localize(mNodeName, key);
     }
-
     protected String localize(String key, Object arg1) {
-        try {
-            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
-            return MessageFormat.format(pattern, new Object[] { arg1 });
-        }
-        catch (MissingResourceException ex) {
-            return "???"+mNodeName+"_"+key;
-        }
+        return Localize.localize(mNodeName, key, arg1);
     }
-
     protected String localize(String key, Object arg1, Object arg2) {
-        try {
-            String pattern = JavolinApp.resources.getString(mNodeName+"_"+key);
-            return MessageFormat.format(pattern, new Object[] { arg1, arg2 });
-        }
-        catch (MissingResourceException ex) {
-            return "???"+mNodeName+"_"+key;
-        }
+        return Localize.localize(mNodeName, key, arg1, arg2);
     }
 
     /**

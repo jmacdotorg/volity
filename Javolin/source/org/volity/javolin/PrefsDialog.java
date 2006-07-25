@@ -590,12 +590,7 @@ public class PrefsDialog extends JFrame
      * Localization helper.
      */
     protected String localize(String key) {
-        try {
-            return JavolinApp.resources.getString(NODENAME+"_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???"+NODENAME+"_"+key;
-        }
+        return Localize.localize(NODENAME, key);
     }
 
     /**

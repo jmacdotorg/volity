@@ -3,9 +3,7 @@ package org.volity.javolin.chat;
 import java.awt.Window;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.text.MessageFormat;
 import java.util.Iterator;
-import java.util.MissingResourceException;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.jivesoftware.smack.XMPPConnection;
@@ -13,6 +11,7 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.Localize;
 
 /**
  * The all-singing, all-dancing, fully-asynchronous MUCWindow factory.
@@ -162,23 +161,11 @@ public class MakeMUCWindow
     /**
      * Localization helper.
      */
-    protected static String localize(String key) {
-        try {
-            return JavolinApp.resources.getString("MakeMUCWindow_"+key);
-        }
-        catch (MissingResourceException ex) {
-            return "???MakeMUCWindow_"+key;
-        }
+    protected String localize(String key) {
+        return Localize.localize("MakeMUCWindow", key);
     }
-
     protected String localize(String key, Object arg1) {
-        try {
-            String pattern = JavolinApp.resources.getString("MakeMUCWindow_"+key);
-            return MessageFormat.format(pattern, new Object[] { arg1 });
-        }
-        catch (MissingResourceException ex) {
-            return "???"+"MakeMUCWindow_"+key;
-        }
+        return Localize.localize("MakeMUCWindow", key, arg1);
     }
 
     private void callbackFail() {

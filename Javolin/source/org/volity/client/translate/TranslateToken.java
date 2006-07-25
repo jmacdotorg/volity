@@ -61,7 +61,7 @@ public class TranslateToken {
     /**
      * Set the language used for all TranslateToken output.
      *
-     * @param locale the Locale
+     * @param loc the Locale
      */
     public static void setLanguage(Locale loc) {
         String val = loc.getLanguage();
