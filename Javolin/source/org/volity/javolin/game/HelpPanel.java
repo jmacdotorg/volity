@@ -13,6 +13,7 @@ import org.volity.client.Player;
 import org.volity.client.Seat;
 import org.volity.client.StatusListener;
 import org.volity.javolin.JavolinApp;
+import org.volity.javolin.Localize;
 import org.volity.javolin.PrefsDialog;
 
 /**
@@ -123,13 +124,29 @@ public class HelpPanel extends JPanel
     }
 
     /**
+     * Localization helper.
+     */
+    protected String localize(String key) {
+        return Localize.localize("HelpPanel", key);
+    }
+    protected String localize(String key, Object arg1) {
+        return Localize.localize("HelpPanel", key, arg1);
+    }
+    protected String localize(String key, Object arg1, Object arg2) {
+        return Localize.localize("HelpPanel", key, arg1, arg2);
+    }
+    protected String localize(String key, Object[] argls) {
+        return Localize.localize("HelpPanel", key, argls);
+    }
+
+    /**
      * Create a help text based on the current table status. Paragraphs should
      * be delimited by double newlines, with a single newline at the end of the
      * string.
      */
     private String buildHelpText() {
         if (mTable == null)
-            return "The window is closed.\n";
+            return localize("WindowClosed") + "\n";
 
         StringBuffer text = new StringBuffer();
 
@@ -174,117 +191,129 @@ public class HelpPanel extends JPanel
         }
 
         if (refstate == GameTable.STATE_UNKNOWN) {
-            text.append(JavolinApp.getAppName()
-                +" is contacting the game referee. Please wait...\n");
+            text.append(localize("ContactingReferee",
+                            JavolinApp.getAppName()) + "\n");
             return text.toString();
         }
 
         if (refstate == GameTable.STATE_SETUP && !everPlayed) {
-            text.append("The game has not yet begun.\n");
+            text.append(localize("StateSetup")+"\n");
         }
         else if (refstate == GameTable.STATE_SETUP) {
-            text.append("The game has ended. You can play again, change seats, or stand up. To leave the table, just close this window.\n");
+            text.append(localize("StateSetupAgain")+"\n");
         }
         else if (refstate == GameTable.STATE_SUSPENDED) {
-            text.append("The game has been suspended. You may change seats or summon bots.\n");
+            text.append(localize("StateSuspended")+"\n");
         }
         else if (refstate == GameTable.STATE_DISRUPTED) {
-            text.append("One of the players has disconnected. Unless he or she returns, you will probably not be able to continue playing. Use the Suspend Table command if you want to invite a person or bot into the empty seat. Or you can abandon this table by closing the window.\n");
+            text.append(localize("StateDisrupted")+"\n");
             readytime = false;
         }
         else if (refstate == GameTable.STATE_ABANDONED) {
-            text.append("All the human players have abandoned this table. If you wait a few minutes, the referee will suspend the game. At that time, you will be able to take over one of the empty seats.\n");
+            text.append(localize("StateAbandoned")+"\n");
             readytime = false;
         }
         else {
-            text.append("The game is in progress.\n");
+            text.append(localize("StateActive")+"\n");
             readytime = false;
         }
 
         if (!readytime) {
             if (!selfseated) {
-                text.append("\nYou are a bystander at this game. You can watch, and you may chat with the other participants. However, you will not be able to make moves.\n");
-                text.append("\nTo join a game, you will have to wait until this game ends.\n");
+                text.append("\n"+localize("ActiveBystander")+"\n");
             }
             else {
-                text.append("\nYou are now playing the game. Follow the instructions in the game area.");
+                text.append("\n"+localize("ActivePlaying"));
                 if (usesSeatMarks)
-                    text.append(" Watch the seat list above; a blue arrow will indicate whose turn it is.\n");
+                    text.append(" " + localize("ActiveSeatMarks"));
                 text.append("\n");
             }
             return text.toString();
         }
 
         if (!selfseated) {
+            String prefix, suffix;
             if (humancount <= 1 && !everPlayed)
-                text.append("\nThis table has just been created. To take part");
+                prefix = localize("ReadyStandingNew");
             else
-                text.append("\nAt the moment, you are a bystander. To take part in this game");
-            text.append(", press the Seat button");
+                prefix = localize("ReadyStandingAgain");
             if (reqseats > 0) 
-                text.append(" or drag your name to one of the seats");
+                suffix = " " + localize("ReadyStandingRequired");
             else if (optseatmarker) 
-                text.append(" or drag your name to the empty seat");
-            text.append(".\n");
+                suffix = " " + localize("ReadyStandingOptional");
+            else
+                suffix = "";
+            text.append("\n");
+            text.append(localize("ReadyStanding", prefix, suffix));
+            text.append("\n");
         }
         else {
             if (reqseatsempty > 0) {
-                text.append("\nThis game requires");
+                Object[] argls = new Object[4];
                 if (reqseats == 1)
-                    text.append(" one seat");
+                    argls[0] = localize("OneSeat");
                 else
-                    text.append(" " + String.valueOf(reqseats) + " seats");
-                text.append(" to be filled before the game can begin. You will need to wait for");
+                    argls[0] = localize("ManySeats", new Integer(reqseats));
                 if (reqseatsempty == 1)
-                    text.append(" another player");
+                    argls[1] = localize("OnePlayer");
                 else
-                    text.append(" more players");
-                text.append(". Or you can request");
+                    argls[1] = localize("ManyPlayers");
                 if (reqseatsempty == 1)
-                    text.append(" a bot");
+                    argls[2] = localize("OneBot");
                 else
-                    text.append(" bots");
-                text.append(", from the Game menu.\n");
+                    argls[2] = localize("ManyBots");
+                argls[3] = Localize.localize("Menu", "Game");
+                
+                text.append("\n");
+                text.append(localize("ReadyRequiredSeats", argls));
+                text.append("\n");
             }
             else {
-                String verb = "game will begin";
+                String verb = localize("GameWillBegin");
                 if (refstate == GameTable.STATE_SETUP && !everPlayed)
-                    verb = "game will begin";
+                    verb = localize("GameWillBegin");
                 else if (refstate == GameTable.STATE_SETUP) 
-                    verb = "next game will begin";
+                    verb = localize("GameWillBeginAgain");
                 else if (refstate == GameTable.STATE_SUSPENDED)
-                    verb = "game will resume";
+                    verb = localize("GameWillResume");
 
                 if (!selfready) {
-                    text.append("\nThe ");
-                    text.append(verb);
-                    text.append(" when all seated players have indicated that they are ready. If you are willing to start the game with these players, press the Ready button.\n");
+                    text.append("\n");
+                    text.append(localize("ReadySeatedUnready", verb));
+                    text.append("\n");
                 }
                 else {
-                    text.append("\nYou have already pressed the Ready button. The ");
-                    text.append(verb);
-                    text.append(" when all the other seated players have pressed theirs.\n");
+                    text.append("\n");
+                    text.append(localize("ReadySeatedReady", verb));
+                    text.append("\n");
                 }
             }
         }
 
         if (botseated > 0 && humanseated == 0) {
-            text.append("\nA game cannot begin with only bots at the table. At least one human be be seated. If you want to watch bots play against each other, share a bot's seat (by dragging yourself into it).\n");
+            text.append("\n");
+            text.append(localize("OnlyBots"));
+            text.append("\n");
         }
         else if (botseated < botcount) {
-            text.append("\n");
+            String botdesc, seatdesc;
+
             if (botcount-botseated == 1)
-                text.append("A bot has been summoned, but it is not yet taking part in the game");
+                botdesc = localize("OneBotStanding");
             else if (botseated == 0)
-                text.append("Bots have been summoned, but they are not yet taking part in the game");
+                botdesc = localize("ManyBotsStanding");
             else
-                text.append("Bots have been summoned, but they are not all taking part in the game");
-            text.append(". To place a bot into the game, drag it to the Seat button");
+                botdesc = localize("SomeBotsStanding");
             if (reqseats > 0)
-                text.append(" or to one of the seats");
+                seatdesc = " " + localize("BotsStandingRequired");
             else if (optseatmarker) 
-                text.append(" or to the empty seat");
-            text.append(".\n");
+                seatdesc = " " + localize("BotsStandingOptional");
+            else
+                seatdesc = "";
+
+            text.append("\n");
+            text.append(localize("Bots", botdesc, seatdesc));
+            text.append("\n");
         }
 
         return text.toString();

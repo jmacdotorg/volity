@@ -53,4 +53,18 @@ public class Localize
         }
     }
 
+    /**
+     * Get a key from a resource file, interpolating a list of strings. (The
+     * argument strings must already be localized.)
+     */
+    public static String localize(String node, String key, Object[] argls) {
+        try {
+            String pattern = JavolinApp.resources.getString(node+"_"+key);
+            return MessageFormat.format(pattern, argls);
+        }
+        catch (MissingResourceException ex) {
+            return "???"+node+"_"+key;
+        }
+    }
+
 }
