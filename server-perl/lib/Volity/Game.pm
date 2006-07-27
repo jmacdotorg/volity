@@ -279,20 +279,47 @@ sub turn_order {
 Called with no arguments, returns the seat whose turn is up.
 
 Called with a Volity::Seat object as an argument, sets that seat as
-the current seat, and then returns it.
+the current seat, and then returns it. Called with anything else, it
+logs a warning and returns the current seat (regardless of your
+argument).
 
 If you are making use of the C<turn_order> list, setting a new current
-seat does not affect the list, but it just advance the turn-order
-pointer to this seat's position on it, I<if the seat is a member of
-the list>. Subsequently calling C<rotate_current_seat()> will advance
-the pointer to (and return) the seat that is after the given one on
-the turn order list.
+seat does not affect the list, but it does advance the internal
+turn-order pointer to this seat's position on it, I<if the seat is a
+member of the list>. Subsequently calling C<rotate_current_seat()>
+will advance the pointer to (and return) the seat that is after the
+given one on the turn order list.
 
 If the given seat doesn't exist in the turn order list (as is the case
 when the list is not defined), then the list remains unaffected.
 
 Note that a game module implementing a ruleset that doesn't use turns
-won't use this.
+needn't use this method at all.
+
+=cut
+
+sub current_seat {
+    my $self = shift;
+    my ($seat) = @_;
+    if ($seat) {
+	if (ref($seat) && $seat->isa("Volity::Seat")) {
+	    $self->{current_seat} = $seat;
+	    # Now advance the turn queue so that this seat is at the front,
+	    # but only if the seat's ID is a member of the turn queue.
+	    if (grep($seat->id eq $_, $self->turn_queue)) {
+		while ($seat->id ne $self->{turn_queue}->[0]) {
+		    push (@{$self->{turn_queue}}, shift(@{$self->{turn_queue}}));
+		}
+	    }
+	}
+	else {
+	    my ($package, $filename, $line) = caller;
+	    $self->logger->warn("Volity::Game::current_seat must be called with a Volity::Game::Seat object or subclass. Instead, it was called with this: '$seat'. (Called from $filename, line $line.)");
+	}
+    }
+    
+    return $self->{current_seat};
+}
 
 =item rotate_current_seat
 
@@ -357,8 +384,6 @@ sub rotate_current_seat {
     
     if (@seats) {
 	$self->current_seat($seats[0]);
-	# Also give the turn-queue a spin before returning the seat.
-	push(@{$self->{turn_queue}}, shift(@{$self->{turn_queue}}));
 	return $seats[0];
     }
     else {
