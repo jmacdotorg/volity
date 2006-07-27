@@ -431,7 +431,7 @@ public class JavolinApp extends JFrame
         localeApp = Locale.getDefault();
         resources = ResourceBundle.getBundle("ResBundle", localeApp);
         localeGame = localeApp;
-        TranslateToken.setLanguage(localeGame);
+        TranslateToken.setLocale(localeGame);
 
         /* Invoke into the Swing thread to create the JavolinApp.
          *

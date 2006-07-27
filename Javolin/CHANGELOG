@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Moved the "volity" token table to a property file (TokenVolity.properties
+in the properties directory) for easier localization.
+
 Added the volity.message() RPC handler.
 
 More localization: new-table/join-table dialogs, invitation dialogs,

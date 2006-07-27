@@ -8,6 +8,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 import org.xmlpull.mxp1.MXParser;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -37,6 +39,11 @@ import org.xmlpull.v1.XmlPullParserException;
  * author of the UI file. There would have to be a way for the UI file
  * to specify that...)
  *
+ * The "volity" tokens are loaded from a resource bundle called "TokenVolity".
+ * This must be available when the app is run. For a JAR application, the
+ * property file "TokenVolity.properties" (and any translated versions) should
+ * be in the top level of the JAR.
+ *
  * @author Andrew Plotkin (erkyrath@eblong.com)
  */
 public class TranslateToken {
@@ -63,20 +70,21 @@ public class TranslateToken {
      *
      * @param loc the Locale
      */
-    public static void setLanguage(Locale loc) {
+    public static void setLocale(Locale loc) {
+        currentLocale = loc;
         String val = loc.getLanguage();
         if (val.length() == 0)
             val = "en";
-        setLanguage(val);
+        currentLanguage = val;
     }
 
     /**
-     * Set the language used for all TranslateToken output.
+     * Return the Locale being used for TranslateToken output.
      *
-     * @param lang the two-letter language code
+     * @return the Locale
      */
-    public static void setLanguage(String lang) {
-        currentLanguage = lang.toLowerCase();
+    public static Locale getLocale() {
+        return currentLocale;
     }
 
     /**
@@ -226,11 +234,19 @@ public class TranslateToken {
             return token;
         }
         if (ns.equals("volity")) {
-            Map tab = getCurrentTableVolity();
-            if (tab.containsKey(token)) {
-                return (String)tab.get(token);
+            ResourceBundle res = getCurrentTableVolity();
+            try {
+                return res.getString(token);
             }
-            /* else, fall through */
+            catch (MissingResourceException ex) {
+                if (token.equals("unknown_token")) {
+                    /* It would be super-bad for a translation map to be
+                     * missing "unknown_token" -- we'd get into an infinite
+                     * loop. So we handle that specially. */
+                    return "??? \\1";
+                }
+                /* else, fall through */
+            }
         }
         if (ns.equals("game") && localeDir != null) {
             Map tab = getCurrentTableGame();
@@ -284,40 +300,19 @@ public class TranslateToken {
      * This method is static, because "volity" tokens are translated
      * the same in all translator instances.
      *
-     * @return a Map which maps token names to Strings.
+     * @return a ResourceBundle.
      */
-    protected static Map getCurrentTableVolity() {
-        if (tableCacheVolity.containsKey(currentLanguage)) {
-            return (Map)tableCacheVolity.get(currentLanguage);
+    protected static ResourceBundle getCurrentTableVolity() {
+        String key = currentLocale.toString();
+
+        if (tableCacheVolity.containsKey(key)) {
+            return (ResourceBundle)tableCacheVolity.get(key);
         }
 
-        Map tab = new Hashtable();
-
-        String msglist[] = null;
-
-        if (currentLanguage.equals("en")) {
-            msglist = VolityMessageList_EN;
-        }
-        // XXX else other languages
-        else {
-            // default to English.
-            msglist = VolityMessageList_EN;
-        }
+        ResourceBundle res = ResourceBundle.getBundle("TokenVolity", currentLocale);
         
-        if (msglist != null) {
-            /* It would be super-bad for a translation map to be missing
-             * "unknown_token" -- we'd get into an infinite loop. So let's
-             * put in a default value, just in case the MessageList fails
-             * to define it. */
-            tab.put("unknown_token", "??? \\1");
-
-            for (int ix=0; ix<msglist.length; ix+=2) {
-                tab.put(msglist[ix], msglist[ix+1]);
-            }
-        }
-
-        tableCacheVolity.put(currentLanguage, tab);
-        return tab;
+        tableCacheVolity.put(key, res);
+        return res;
     }
 
     /**
@@ -571,42 +566,11 @@ public class TranslateToken {
     }
 
     static protected String currentLanguage = "en";
+    static protected Locale currentLocale = Locale.ENGLISH;
     private static Map tableCacheVolity = new Hashtable();
 
     protected File localeDir;
     private Map tableCacheGame = new Hashtable();
     private Map tableCacheUi = new Hashtable();
     private Map tableCacheSeat = new Hashtable();
-
-    /* Source tables for the "volity" namespace. Each of these is just
-     * a String array of length 2*N. Ultimately, we'll want one table
-     * for every language the client supports. */
-    // Should this be done with a property file? Probably.
-
-    /* But today, we only have English. */
-    private static String VolityMessageList_EN[] = {
-        /* "ok" never passes through the translation service, so we
-           have no entry for it */
-        "unknown_token", "(Untranslatable message: \\1)",
-        "invalid_seat", "(Invalid seat \"\\1\")",
-        "offline", "The service has been disabled by the administrator.",
-        "no_seat", "No seats are available.",
-        "seat_not_available", "That seat is not available.",
-        "bad_config", "The game cannot begin, because the current table configuration is not allowed.",
-        "empty_seats", "The game cannot begin, because not all required seats have players.",
-        "referee_not_ready", "The referee is not yet ready to service requests.",
-        "game_in_progress", "The game is in progress.",
-        "game_not_in_progress", "The game has not yet started.",
-        "jid_present", "The player \\1 has already joined the table.",
-        "jid_not_present", "The player \\1 has not joined the table.",
-        "jid_not_ready", "The player \\1 is not yet ready to take part in the game.",
-        "not_seated", "You are not seated.",
-        "are_seated", "You are seated.",
-        "not_your_turn", "It's not your turn.",
-        "relay_failed", "Your message could not be delivered to \\1.",
-        "no_bots_provided", "This game parlor does not provide bots.",
-        "bot_not_available", "That bot is not available.",
-        "not_bot", "The player \\1 is not a bot.",
-        "bot_seated", "That bot is seated.",
-    };
 }
