@@ -1,3 +1,10 @@
+0.6.4
+
+	- Bugfix release. Volity::Game's current_seat method didn't work
+	  exactly as advertised, not updating the internal turn queue and
+	  therefore sometimes causing turn order to misbehave. This is
+	  fixed. Thanks to named@volity.net for spotting the error.
+
 0.6.3
 
 	- Volity::Referee now submits W3C-format time strings in its game

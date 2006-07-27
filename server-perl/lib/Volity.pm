@@ -3,7 +3,7 @@ package Volity;
 use warnings;
 use strict;
 no warnings qw( deprecated );
-our $VERSION = '0.6.3';
+our $VERSION = '0.6.4';
 
 use base qw( Class::Accessor Class::Fields );
 use fields qw( logger );
