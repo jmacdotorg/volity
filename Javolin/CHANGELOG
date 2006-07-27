@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Added the volity.message() RPC handler.
+
 More localization: new-table/join-table dialogs, invitation dialogs,
 roster-add dialog, join-MUC dialogs, contextual menus, help pane.
 

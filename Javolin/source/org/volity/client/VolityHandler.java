@@ -147,6 +147,33 @@ public class VolityHandler implements RPCHandler {
             table.setAllPlayersUnready();
             callUI(gameUI.volity, "kill_game", params);
             k.respondValue(Boolean.TRUE);
+        } else if (methodName.equals("message")) {
+            /* The callUI() calls above throw the params into a type-checking
+             * script engine. This call, however, needs to extract the
+             * arguments directly. So we must be careful about argument
+             * types. */
+            if (params.size() != 1) {
+                k.respondFault(604, "volity.message: wrong number of arguments");
+                return;
+            }
+            Object arg = params.get(0);
+            if (!(arg instanceof List)) {
+                k.respondFault(605, "volity.message: argument is not array");
+                return;
+            }
+            List tokls = (List)arg;
+            if (tokls.size() == 0) {
+                k.respondFault(606, "volity.message: array is empty");
+                return;
+            }
+            for (int ix=0; ix<tokls.size(); ix++) {
+                if (!(tokls.get(ix) instanceof String)) {
+                    k.respondFault(605, "volity.message: array contains non-string");
+                    return;
+                }
+            }
+            gameUI.messageHandler.print(gameUI.translator.translate(tokls));
+            k.respondValue(Boolean.TRUE);
         } else {
             k.respondFault(603,
                 "unknown RPC request volity." + methodName);
