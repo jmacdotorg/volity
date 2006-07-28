@@ -11,6 +11,7 @@ import org.volity.client.GameTable;
 import org.volity.client.Player;
 import org.volity.client.data.JIDTransfer;
 import org.volity.javolin.Audio;
+import org.volity.javolin.Localize;
 import org.volity.javolin.MultiIcon;
 
 /**
@@ -240,6 +241,9 @@ public class SeatPanel extends JPanel
     public void adjustNames(Iterator iter) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
+        String emptytext = Localize.localize("TableWindow", "LabelEmptySeat");
+        String newseattext = Localize.localize("TableWindow", "LabelNewSeat");
+
         removeAll();
 
         boolean gameIsActive = mChart.mTable.isRefereeStateActive();
@@ -346,7 +350,7 @@ public class SeatPanel extends JPanel
              * size when it's empty as it does with one player. The icon has
              * the height of a player icon, but is only one pixel wide. (It
              * looks better that way, that's why.) */
-            label = new JLabel("<empty>", ICON_BLANK, SwingConstants.CENTER);
+            label = new JLabel(emptytext, ICON_BLANK, SwingConstants.CENTER);
             label.setFont(fontName);
             label.setForeground(Color.GRAY);
             c = new GridBagConstraints();
@@ -362,7 +366,7 @@ public class SeatPanel extends JPanel
 
         if (mIsNextSeat) {
             /* We throw in a blank icon -- see above. */
-            label = new JLabel("<new seat>", ICON_BLANK, SwingConstants.CENTER);
+            label = new JLabel(newseattext, ICON_BLANK, SwingConstants.CENTER);
             label.setFont(fontName);
             label.setForeground(Color.GRAY);
             c = new GridBagConstraints();
