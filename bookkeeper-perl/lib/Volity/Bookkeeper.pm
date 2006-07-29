@@ -23,8 +23,11 @@ use strict;
 use Data::Dumper;
 
 use base qw(Volity::Jabber);
+use fields qw(scheduled_game_info_by_rpc_id 
+	      scheduled_game_info_by_muc_jid
+	      );
 
-our $VERSION = '0.5.4';
+our $VERSION = '0.6';
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
@@ -32,6 +35,7 @@ use Volity::Info::Server;
 use Volity::Info::Game;
 use Volity::Info::Player;
 use Volity::Info::File;
+use Volity::Info::ScheduledGamePlayer;
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -40,6 +44,36 @@ use POE qw(
 	   Driver::SysRW
 	   Component::Jabber;
 	  );
+
+# Lazily set some constants for timeouts and such.
+our $NEW_TABLE_TIMEOUT = 60;
+our $JOIN_TABLE_TIMEOUT = 2;
+our $SCHEDULED_GAME_CHECK_INTERVAL = 60;
+our $INVITEE_JOIN_TIMEOUT = 60;
+
+sub initialize {
+  my $self = shift;
+
+  $self->SUPER::initialize(@_);
+
+   foreach (qw(scheduled_game_info_by_rpc_id scheduled_game_info_by_muc_jid)) {
+       $self->{$_} = {};
+   }
+
+   return $self;
+}
+
+sub init_finish {
+    my $self = shift;
+    # Set up some POE event handlers.
+    foreach (qw(time_to_check_the_schedule new_table_rpc_timed_out new_table_join_attempt_timed_out waiting_for_invitees_timed_out)) {
+	$self->kernel->state($_, $self);
+    }
+
+    # Perform the first schedule-check.
+    $self->time_to_check_the_schedule;
+    $self->SUPER::init_finish(@_);
+}
 
 # We override Volity::Jabber's send_presence in order to attach some
 # additional JEP-0115 information.
@@ -105,7 +139,9 @@ sub handle_rpc_request {
 }
 
 # This presence handler takes care of auto-approving all subscription
-# requests. Volity parlors are very social like that.
+# requests. Volity entities are very social like that.
+# It also handles all the work of joining MUCs and figuring out what to
+# do about it.
 sub jabber_presence {
   my $self = shift;
   my ($presence) = @_;		# POE::Filter::XML::Node object
@@ -118,6 +154,121 @@ sub jabber_presence {
 			 }
 			);
   }
+  elsif (my $x = $presence->get_tag('x', [xmlns=>"http://jabber.org/protocol/muc#user"])) {
+      my ($muc_jid) = $presence->attr('from') =~ /^(.*?)\//;
+      my $info = $self->scheduled_game_info_by_muc_jid->{$muc_jid};
+      # Aha, someone has entered the game MUC.
+      # Figure out who it's talking about.
+      my $new_person_jid;
+      # JID is always in an item tag, since the MUC is either non-anonymous
+      # or semi-anonymous, so the moderator (that's me) will have access to
+      # their full JIDs.
+      return unless $x->get_tag('item');
+      $new_person_jid = $x->get_tag('item')->attr('jid');
+      my $new_person_basic_jid;
+      if ($new_person_jid) {
+	  ($new_person_basic_jid) = $new_person_jid =~ /^(.*?)\//;
+      }
+      if ($info->{scheduled_game} && grep ($new_person_basic_jid eq $_, map($_->jid, $info->{scheduled_game}->players))) {
+	  # Hey, this is one of the people I've been waiting for!
+	  # That means I can go.
+	  $self->kernel->alarm_remove($info->{alarm_id});
+	  $self->send_message({
+	      to => $muc_jid,
+	      type => "groupchat",
+	      body => {
+		  en => "One of the people who wished to play this game has arrived. I'll be leaving, then. Have fun!",
+		  de => "Eine der Leute, die dieses Spiel spielen mochten, ist angekommen. Ich werde, dann verlassen. Spas haben!",
+		  es => "Uno de la gente que deseaba jugar este juego ha llegado. Me ire, entonces. !Tener diversion!",
+		  fr => "Un du peuple qui a souhaite jouer ce jeu est arrive. Je partirai, puis. Avoir l'amusement!",
+		  it => "Uno della gente che ha desiderato giocare questo gioco e arrivato. Andro, allora. Avere divertimento!",
+	      }
+	  });
+	  $self->leave_muc($muc_jid);
+	  delete($self->scheduled_game_info_by_muc_jid->{$muc_jid});
+	  $info->{scheduled_game}->delete;
+      }
+      elsif ((my $c = $presence->get_tag('c')) && 
+	     ($presence->get_tag('c')->attr('node') eq "http://volity.org/protocol/caps")) {
+	  my $volity_role = $c->attr('ext');
+	  if ($volity_role eq "referee") {
+	      # We've found the referee!
+	      # Therefore, we have all the information we need to send out
+	      # the invitations, so let's do it.
+
+	      $self->logger->debug("I have determined that the referree for the MUC with JID $muc_jid is $new_person_jid. I shall now send out invitations.");
+
+	      # Cancel the can't-join-the-table alarm.
+	      $self->kernel->alarm_remove($info->{alarm_id});
+
+	      # Set a new alarm in case nobody responds to our invitation.
+	      my $alarm_id = $self->kernel->delay_set("waiting_for_invitees_timed_out",
+						      $INVITEE_JOIN_TIMEOUT,
+						      $muc_jid,
+						      );
+	      $info->{alarm_id} = $alarm_id;
+
+	      # Now fire off the actual invitations.
+	      # XXX This needs alarms for response timeouts...
+	      # XXX Also, need to include a message.
+	      for my $player ($info->{scheduled_game}->players) {
+		  $self->logger->debug("I am sending an invitation to " . $player->jid);
+		  $self->send_rpc_request({
+		      id         => "player-invitation",
+		      to         => $new_person_jid,
+		      methodname => "volity.invite_player",
+		      args       => [$player->jid,
+				     ],
+		  });
+	      }
+	  }
+      }
+      
+  }
+}
+
+# We're expecting only one RPC response, so I'll keep the RPC response
+# handler simple for now.
+sub handle_rpc_response {
+    my $self = shift;
+    my ($args) = @_;
+    if ($args->{id} =~ /^scheduled-game-(\d+)$/) {
+	# It's a good response from a new_table request!
+	# Cancel the new_table timeout alarm,
+	# then join the table.
+	my $info = delete($self->scheduled_game_info_by_rpc_id->{$args->{id}});
+	$self->kernel->alarm_remove($info->{alarm_id});
+	if ($args->{response}->[0] eq 'volity.ok') {
+	    my $muc_jid = $args->{response}->[1];
+	    my $alarm_id = $self->kernel->delay_set("new_table_join_attempt_timed_out",
+						    $JOIN_TABLE_TIMEOUT,
+						    $muc_jid,
+						    );
+	    $info->{alarm_id} = $alarm_id;
+	    $self->join_muc({
+		nick => "schedule_bot",
+		jid  => $muc_jid,
+	    });
+	    # Remember this MUC JID.
+	    $self->{scheduled_game_info_by_muc_jid}{$muc_jid} = $info;
+	}
+	else {
+	    # XXX Ooh, we got some kind of other response?!
+	}
+    }
+    else {
+	$self->logger->warn("Received an unexpected RPC repsonse, with the ID $$args{id}.");
+    }
+}
+
+sub handle_rpc_fault {
+    my $self = shift;
+    my ($args) = @_;
+}
+
+sub handle_rpc_transmission_error {
+    my $self = shift;
+    my ($iq_node, $error_code, $error_message) = @_;
 }
 
 sub handle_disco_info_request {
@@ -312,6 +463,48 @@ sub get_parlor_with_jid {
     return $parlor;
 }
 
+# check_schedule: Called as the result of a time_to_check_the_shcedule POE event.
+# Sees if any games are supposed to happen this minute, and sets things in
+# motion for each one.
+sub check_schedule {
+    my $self = shift;
+    $self->logger->debug("Checking the schedule.");
+#    for my $scheduled_game (Volity::Info::ScheduledGame->search_with_current_minute) {
+    for my $scheduled_game (Volity::Info::ScheduledGame->retrieve_all) {
+	# Check for monkey business.
+	unless (ref($scheduled_game->parlor_id) && $scheduled_game->parlor_id->isa("Volity::Info::Server")) {
+	    $self->logger->error("The scheduled game with ID $scheduled_game doesn't appear to have a valid parlor_id.");
+	    next;
+	}
+
+	$self->logger->debug("There is a scheduled game to take care of! Its ID is $scheduled_game.");
+
+	# We will send a new_table RPC to this game's parlor.
+	# But first, we'll set an alarm to error out politely if we don't get
+	# a positive response back.
+
+	my $rpc_id = "scheduled-game-" . $scheduled_game->id;
+
+	my $alarm_id = $self->kernel->delay_set("new_table_rpc_timed_out", 
+						$NEW_TABLE_TIMEOUT,
+						$rpc_id,
+						);
+
+	# Remember the alarm ID, so we can cancel it later.
+	$self->scheduled_game_info_by_rpc_id->{$rpc_id} = {
+	    alarm_id       => $alarm_id,
+	    scheduled_game => $scheduled_game,
+	};
+
+	# We're clear to send the RPC.
+	$self->send_rpc_request({
+	    id         => $rpc_id,
+	    to         => $scheduled_game->parlor_id->jid . '/volity',
+	    methodname => "volity.new_table",
+	});
+    }
+}
+
 ####################
 # RPC methods
 ####################
@@ -343,15 +536,6 @@ sub _rpc_record_game {
     return ('606', 'Bad game struct.');
   }
 
-  # Verify the signature!
-  # XXX ...or don't. I'm hobbling this action while the whole notion of game
-  # record signatures enters a probationary period.
-#  unless ($game_record->verify) {
-#    $self->logger->warn("Uh oh... signature on game record doesn't seem to verify!!\n");
-#    # XXX Error response here.
-#    return ('999', 'Bad signature.');
-#  }
-
   # Looks good. Store it.
   return $self->store_record_in_db($game_record);
 }
@@ -360,7 +544,6 @@ sub _rpc_record_game {
 sub store_record_in_db {
   my $self = shift;
   my ($game_record) = @_;
-  use Data::Dumper; warn Dumper($game_record);
   my ($parlor) = Volity::Info::Server->search({jid=>$game_record->parlor});
   unless ($parlor) {
       $self->logger->warn("Bizarre... got a record with parlor JID " . $game_record->parlor . ", but couldn't get a parlor object from the DB from it. No record stored.");
@@ -378,11 +561,11 @@ sub store_record_in_db {
     # XXX Do other magic here to update the values.
     # XXX This is all kinds of not implemented yet.
   } else {
+
     $game = Volity::Info::Game->create({start_time=>$game_record->start_time || undef,
 					end_time=>$game_record->end_time || undef,
 					server_id=>$parlor->id,
 					ruleset_id=>$ruleset->id,
-#					signature=>$game_record->signature,
 				       });
 					
     $game_record->id($game->id);
@@ -494,8 +677,6 @@ sub record_winners {
         }
         $new_ratings{$seat_name} += $rating_delta;
     }
-
-    use Data::Dumper; warn "Burff.\n" . Dumper(\%new_ratings) . Dumper(\%ranks);
 
     # Third pass: Write to the DB.
     for my $seat_name (keys(%new_ratings)) {
@@ -631,6 +812,84 @@ sub get_rating_delta {
   my ($current_rating, $opponent_rating) = @_;
   return 1 / (1 + (10 ** (($opponent_rating - $current_rating) / 400)));
 }
+
+##########################
+# Other RPC handlers
+##########################
+
+sub _rpc_get_reputation {
+    my $self = shift;
+    my ($sender_jid, $target_identifier) = @_;
+}
+
+sub _rpc_get_stance {
+    my $self = shift;
+    my ($sender_jid, $target_identifier, $player_jid);
+}
+
+sub _rpc_get_stances {
+    my $self = shift;
+    my ($sender_jid, $target_identifier) = @_;
+}
+
+sub _rpc_set_stance {
+    my $self = shift;
+    my ($sender_jid, $target_identifier, $stance, $reason) = @_;
+}
+
+sub _rpc_get_rulesets {
+    my $self = shift;
+}
+
+sub _rpc_get_ruleset_info {
+    my $self = shift;
+    my ($uri) = @_;
+}
+
+sub _rpc_get_uis {
+    my $self = shift;
+    my ($uri, $constraints) = @_;
+}
+
+sub _rpc_get_ui_info {
+    my $self = shift;
+    my ($urls) = @_;
+    my @urls;
+    if (not(ref($urls))) {
+	@urls = ($urls);
+    }
+    elsif (ref($urls) || ref($urls) eq 'ARRAY') {
+	@urls = @$urls;
+    }
+    else {
+	# Return a fault.
+    }
+}
+
+sub _rpc_get_lobbies {
+    my $self = shift;
+    my ($uri) = @_;
+}
+
+sub _rpc_get_resource_uris {
+    my $self = shift;
+}
+
+sub _rpc_get_resources {
+    my $self = shift;
+    my ($uri, $constraints) = @_;
+    $constraints ||= {};
+    unless (ref($constraints eq 'HASH')) {
+	# Return a fault.
+    }
+}
+
+sub _rpc_get_resource_info {
+    my $self = shift;
+    my ($url) = @_;
+}
+
+
 
 ###############################
 # CAUTION
@@ -807,6 +1066,85 @@ sub jabber_authed {
   unless ($node->name eq 'handshake') {
 #    warn $node->to_str;
   }
+}
+
+# A bunch of scheduling-related POE events follows.
+
+# This event checks for new scheduled games, and then sets an alarm to
+# call itself again in one minute.
+sub time_to_check_the_schedule {
+    my $self = shift;
+    # Set this event to happen again in a minute.
+    $self->kernel->delay_set("time_to_check_the_schedule", $SCHEDULED_GAME_CHECK_INTERVAL);
+    # Actually check the schedule!
+    $self->check_schedule;
+}
+
+# This one is called when a new_table RPC times out.
+sub new_table_rpc_timed_out {
+    my $self = $_[OBJECT];
+    my $rpc_id = $_[ARG0];
+    $self->logger->warn("Failed to get a response from a new_table RPC.");
+    my $info = delete($self->scheduled_game_info_by_rpc_id->{$rpc_id});
+    # Tell all the players the bad news.
+    $self->apologize_to_players($info->{scheduled_game});
+    $info->{scheduled_game}->delete;
+}
+
+# This is called when the bookkeeper got a response from new_table, but then
+# finds that it can't actually join that new table.
+sub new_table_join_attempt_timed_out {
+    my $self = $_[OBJECT];
+    my $muc_jid = $_[ARG0];
+    $self->logger->warn("Failed to join the table at $muc_jid.");
+    my $info = delete($self->scheduled_game_info_by_muc_jid->{$muc_jid});
+    # Tell all the players the bad news.
+    $self->apologize_to_players($info->{scheduled_game});   
+    $info->{scheduled_game}->delete;
+}
+
+# This is called if none of the people invited to a table show up after
+# a long time.
+sub waiting_for_invitees_timed_out {
+    my $self = $_[OBJECT];
+    my $muc_jid = $_[ARG0];
+    $self->logger->warn("None of the people invited to a table showed up.");
+    my $info = delete($self->scheduled_game_info_by_muc_jid->{$muc_jid});
+    $self->grumble_at_players($info->{scheduled_game});   
+    $self->leave_muc($muc_jid);
+    $info->{scheduled_game}->delete;
+}
+
+# apologize_to_players: Oh no, I couldn't make a table for a scheduled game.
+# The players deserve to know what happened.
+sub apologize_to_players {
+    my $self = shift;
+    my ($scheduled_game) = @_;
+    my $time = $scheduled_game->time;
+    for my $player ($scheduled_game->players) {
+	$self->send_message({
+	    to => $player->jid,
+	    body => {
+		en => "Hello, this is the Volity Network game scheduling service.\n\nYou were on the invitation list for a game that was supposed to start at $time (GMT), but something went wrong when I tried to start the game. Sorry!"
+		}
+	});
+    }
+}
+
+# grumble_at_players: I made a game and nobody showed up for it.
+# Whatever, guys.
+sub grumble_at_players {
+    my $self = shift;
+    my ($scheduled_game) = @_;
+    my $time = $scheduled_game->time;
+    for my $player ($scheduled_game->players) {
+	$self->send_message({
+	    to => $player->jid,
+	    body => {
+		en => "Hello, this is the Volity Network game scheduling service.\n\nYou were on the invitation list for a game that was supposed to start at $time (GMT), but a long time went by and nobody showed up so I left. Sorry!"
+		}
+	});
+    }
 }
 
 1;
