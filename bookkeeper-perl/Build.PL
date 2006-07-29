@@ -7,7 +7,7 @@ my $build = Module::Build->new
    module_name=>'Volity::Bookkeeper',
    license=>'lgpl',
    requires=> {
-	       'Volity'=>undef,
+	       'Volity'=>"0.6.5",
 	       'Class::DBI'=>undef,
 	     },
    script_files=>[glob("bin/*.pl")],
