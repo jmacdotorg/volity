@@ -1117,6 +1117,21 @@ sub join_muc {
   return $muc_jid;
 }
 
+=head2 leave_muc ($muc_jid)
+
+Leave the multi-user conference whose JID matches the provided argument.
+
+=cut
+
+sub leave_muc {
+    my $self = shift;
+    my ($muc_jid) = @_;
+    $self->send_presence({
+	to   => $muc_jid,
+	type => "unavailable",
+    });
+}
+
 =head2 send_presence ($info_hashref)
 
 Send a presence packet. Its optional argument is a hashref containing
