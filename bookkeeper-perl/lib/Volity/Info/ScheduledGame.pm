@@ -26,4 +26,12 @@ sub search_with_current_minute {
     return $class->search(time=>$time_string);
 }
 
+sub most_recent_limited {
+    my $class = shift;
+    my ($limit) = @_;
+    Volity::Info::ScheduledGame->set_sql(most_recent_limited=>"select * from scheduled_game order by time desc limit 0,$limit");
+    return Volity::Info::ScheduledGame->search_most_recent_limited;
+}
+
+
 1;
