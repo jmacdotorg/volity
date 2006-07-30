@@ -116,6 +116,31 @@ CREATE TABLE `ruleset` (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 --
+-- Table structure for table `scheduled_game_player`
+--
+
+DROP TABLE IF EXISTS `scheduled_game_player`;
+CREATE TABLE `scheduled_game_player` (
+  `scheduled_game_id` int(11) default NULL,
+  `player_id` int(11) default NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `scheduled_game`
+--
+
+DROP TABLE IF EXISTS `scheduled_game`;
+CREATE TABLE `scheduled_game` (
+  `id` int(11) NOT NULL auto_increment,
+  `parlor_id` int(11) default NULL,
+  `time` datetime default NULL,
+  `creator_id` int(11) default NULL,
+  `message` text,
+  `is_open` tinyint(4) default '1',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `seat`
 --
 
