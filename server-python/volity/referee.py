@@ -10,6 +10,8 @@ import zymb.jabber.keepalive
 #### playeraddexternalbot should parse the return value for volity.ok
 #### or volity.TOKEN, really
 
+#### Game hook for chat messages, please (and private messages?)
+
 # Constants for the five referee states.
 STATE_SETUP     = intern('setup')
 STATE_ACTIVE    = intern('active')
@@ -587,7 +589,7 @@ class Referee(volent.VolEntity):
         Begin the configuration of a MUC room. Send out the query stanza
         which begins the process.
         """
-        
+
         msg = interface.Node('iq',
             attrs={'type':'get', 'to':unicode(self.muc)})
         msg.setchild('query', namespace=interface.NS_MUC_OWNER)
@@ -1866,8 +1868,8 @@ class Referee(volent.VolEntity):
         dic = {
             'winners' : winners,
             'seats' : seatmap,
-            'end_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime()),
-            'start_time' : time.strftime('%Y-%m-%dT%H:%M:%S%z', time.gmtime(self.gamestarttime)),
+            'end_time' : time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+            'start_time' : time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(self.gamestarttime)),
             'game_uri' : self.parlor.gameclass.ruleseturi,
             'parlor' : unicode(self.parlor.jid.getbare())
         }
