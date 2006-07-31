@@ -110,6 +110,7 @@ public class TableWindow extends JFrame
     private JPanel mGameViewWrapper;
     private SeatChart mSeatChart;
     private HelpPanel mHelpPanel;
+    private PayPanel mPayPanel;
     private JComponent mLoadingComponent;
     private AbstractAction mSendMessageAction;
     private GameTable.ReadyListener mTableReadyListener;
@@ -265,6 +266,7 @@ public class TableWindow extends JFrame
             mMetadataProvider, mTranslator, mMessageHandler);
 
         mHelpPanel = new HelpPanel(mGameTable);
+        mPayPanel = new PayPanel(mParlor, mGameTable);
 
         buildUI();
 
@@ -691,6 +693,11 @@ public class TableWindow extends JFrame
         if (mHelpPanel != null) {
             mHelpPanel.dispose();
             mHelpPanel = null;
+        }
+
+        if (mPayPanel != null) {
+            mPayPanel.dispose();
+            mPayPanel = null;
         }
 
         if (mLog != null) {
@@ -1670,11 +1677,27 @@ public class TableWindow extends JFrame
         // Right side, including SeatChart and HelpPanel
         JPanel rightSide = new JPanel(new GridBagLayout());
         {
-            JComponent chart = mSeatChart.getComponent();
-            JComponent scrollChart = new JScrollPane(chart);
-
             GridBagConstraints c;
             int row = 0;
+
+            /*
+            JScrollPane scrollPay = new JScrollPane(mPayPanel);
+            scrollPay.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+            scrollPay.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+            */
+
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.NORTH;
+            c.weightx = 1;
+            c.weighty = 0;
+            rightSide.add(mPayPanel, c);
+            row++;
+
+            JComponent chart = mSeatChart.getComponent();
+            JComponent scrollChart = new JScrollPane(chart);
 
             c = new GridBagConstraints();
             c.gridx = 0;
