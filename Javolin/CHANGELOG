@@ -11,6 +11,9 @@ Added the volity.message() RPC handler.
 More localization: new-table/join-table dialogs, invitation dialogs,
 roster-add dialog, join-MUC dialogs, contextual menus, help pane.
 
+Logging in with Unicode-based usernames works better. (This was
+largely due to changes we made in our fork of the Smack libraries.)
+
 * release 0.3.8
 
 More localization: table window, chat window, roster window, connect dialog,
