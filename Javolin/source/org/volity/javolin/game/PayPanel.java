@@ -2,17 +2,25 @@ package org.volity.javolin.game;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Map;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import javax.swing.text.*;
+import org.volity.client.Bookkeeper;
 import org.volity.client.DefaultStatusListener;
 import org.volity.client.GameServer;
 import org.volity.client.GameTable;
 import org.volity.client.Player;
 import org.volity.client.Seat;
+import org.volity.client.comm.RPCBackground;
+import org.volity.javolin.JavolinApp;
 import org.volity.javolin.Localize;
+import org.volity.javolin.PlatformWrapper;
 
-//### don't allow seat unless paid! Or does the ref handle that?
+/* ### Bug: if the game is suspended, the checkbox should say "Paid", not "I
+ * agree to pay". The protocol currently has no way to communicate this state
+ * to the client.
+ */
 
 /**
  * UI component which displays the payment or subscription information for a
@@ -26,7 +34,9 @@ public class PayPanel extends JPanel implements ActionListener
     private final static Color colorHyperlink = new Color(0.0f, 0.0f, 0.8f);
     private final static Color colorAuthPay = new Color(0xE0, 0xE0, 0x40);
     private final static Color colorUnauth = new Color(0xFF, 0x98, 0x88);
-    private final static Color colorAuth = new Color(0x80, 0xD0, 0x80);
+    private final static Color colorAuth = new Color(0x80, 0xD8, 0x80);
+    // Delimiter character, chosen to be something that will not show up
+    // in any real language. (U+203B: REFERENCE MARK)
     private final static char DELIMCHAR = '\u203B';
     private final static String DELIM = "\u203B";
 
@@ -41,9 +51,11 @@ public class PayPanel extends JPanel implements ActionListener
     GameTable mGameTable;
 
     boolean mIsSeated = false;
-    int mAuthType = AUTH_FREE; //###
-    int mAuthFee = 100; //###
-    int mYourCredits = 10; //###
+    boolean mInProgress = false;
+    int mAuthType = AUTH_FREE;
+    int mAuthFee = 0;
+    int mYourCredits = 0;
+    String mPayURL = null;
 
     DefaultStatusListener mTableStatusListener;
 
@@ -61,7 +73,25 @@ public class PayPanel extends JPanel implements ActionListener
         buildUI();
         adjustUI();
 
+        /*
+         * We need to adjust the "I agree" checkbox when the player sits or
+         * stands, and when the game begins and ends. It isn't a good idea to
+         * use adjustUI() at that time -- that causes undesirable flickering.
+         */
         mTableStatusListener = new DefaultStatusListener() {
+                public void stateChanged(final int newstate) { 
+                    // Called outside Swing thread!
+                    // Invoke into the Swing thread.
+                    SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                boolean val = mGameTable.isRefereeStateActive();
+                                if (val == mInProgress)
+                                    return;
+                                mInProgress = val;
+                                adjustCheckbox();
+                            }
+                        });
+                }
                 public void playerSeatChanged(final Player player, 
                     Seat oldseat, Seat newseat) {
                     // Called outside Swing thread!
@@ -80,7 +110,64 @@ public class PayPanel extends JPanel implements ActionListener
                 }
             };
         mGameTable.addStatusListener(mTableStatusListener);
-        
+
+        /*
+         * Fire off a game_player_authorized() RPC to the bookkeeper.
+         */
+        RPCBackground.Callback callback = new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock) {
+                    if (mParlor == null) {
+                        // panel has been closed.
+                        return;
+                    }
+                    if (result == null || !(result instanceof Map)) {
+                        // error or timeout -- assume game is free.
+                        updatePayInfo(AUTH_FREE, 0, 0, null);
+                        return;
+                    }
+
+                    Map map = (Map)result;
+                    Object val;
+
+                    int code = AUTH_FREE;
+                    int fee = -1;
+                    int credits = -1;
+                    String url = null;
+
+                    val = map.get("code");
+                    if (val == null)
+                        return;
+                    if (val.equals("free"))
+                        code = AUTH_FREE;
+                    else if (val.equals("fee"))
+                        code = AUTH_FEE;
+                    else if (val.equals("nofee"))
+                        code = AUTH_NOFEE;
+                    else if (val.equals("auth"))
+                        code = AUTH_AUTH;
+                    else if (val.equals("unauth"))
+                        code = AUTH_UNAUTH;
+
+                    val = map.get("url");
+                    if (val != null && val instanceof String)
+                        url = (String)val;
+                    val = map.get("fee");
+                    if (val != null && val instanceof Integer)
+                        fee = ((Integer)val).intValue();
+                    val = map.get("credits");
+                    if (val != null && val instanceof Integer)
+                        credits = ((Integer)val).intValue();
+
+                    updatePayInfo(code, fee, credits, url);
+                    return;
+                }
+            };
+        JavolinApp app = JavolinApp.getSoleJavolinApp();
+        Bookkeeper bookkeeper = app.getBookkeeper();
+        if (bookkeeper != null) {
+            bookkeeper.gamePlayerAuthorized(mParlorJID, app.getSelfJID(),
+                callback, null);
+        }        
     }
 
     /** Clean up this component. */
@@ -113,6 +200,41 @@ public class PayPanel extends JPanel implements ActionListener
     }
 
     /**
+     * Update the fields displayed in the panel. For the purposes of this call
+     * (but not the RPCs that invoke it), a negative value for authfee or
+     * yourcredits means "do not change".
+     */
+    public void updatePayInfo(int authtype, int authfee, int yourcredits,
+        String payurl) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        if (authfee < 0)
+            authfee = mAuthFee;
+        if (yourcredits < 0)
+            yourcredits = mYourCredits;
+
+        boolean sameurl;
+        if (payurl == null && mPayURL == null)
+            sameurl = true;
+        else if (payurl == null || mPayURL == null)
+            sameurl = false;
+        else
+            sameurl = mPayURL.equals(payurl);
+
+        if (mAuthType == authtype && mAuthFee == authfee 
+            && mYourCredits == yourcredits && sameurl) {
+            return;
+        }
+
+        mAuthType = authtype;
+        mAuthFee = authfee;
+        mYourCredits = yourcredits;
+        mPayURL = payurl;
+
+        adjustUI();
+    }
+
+    /**
      * Localization helper.
      */
     protected static String localize(String key) {
@@ -125,62 +247,37 @@ public class PayPanel extends JPanel implements ActionListener
         return Localize.localize(NODENAME, key, arg1, arg2);
     }
 
-    static protected void setText(JTextPane textpane, String msg, int fontsize) {
-        String[] ls = null;
-
-        Document doc = textpane.getDocument();
-
-        SimpleAttributeSet baseStyle = new SimpleAttributeSet();
-        StyleConstants.setFontFamily(baseStyle, "SansSerif");
-        StyleConstants.setFontSize(baseStyle, fontsize);
-        StyleConstants.setForeground(baseStyle, Color.BLACK);
-
-        SimpleAttributeSet linkStyle = null;
-
-        if (msg.indexOf(DELIMCHAR) >= 0) {
-            linkStyle = new SimpleAttributeSet();
-            StyleConstants.setFontFamily(linkStyle, "SansSerif");
-            StyleConstants.setFontSize(linkStyle, fontsize);
-            StyleConstants.setForeground(linkStyle, colorHyperlink);
-            StyleConstants.setUnderline(linkStyle, true);
-
-            ls = msg.split(DELIM);            
-        }
-        else {
-            ls = new String[] { msg };
-        }
-
-        try {
-            doc.remove(0, doc.getLength());
-            boolean link=false;
-            for (int ix=0; ix<ls.length; ix++, link=!link) {
-                if (ls[ix].length() == 0)
-                    continue;
-                SimpleAttributeSet style = (link ? linkStyle : baseStyle);
-                doc.insertString(doc.getLength(), ls[ix], style);
-            }
-        }
-        catch (BadLocationException ex) { }
-    }
-
+    /**
+     * Adjust the "I agree" checkbox, when the player sits or stands.
+     */
     private void adjustCheckbox() {
         if (mPayCheckBox == null) 
             return;
 
-        if (mIsSeated) {
+        if (mInProgress && mIsSeated) {
+            mPayCheckBox.setText(localize("AgreedPaid"));
+            mPayCheckBox.setSelected(true);
+            mPayCheckBox.setEnabled(false);
+        }
+        else if (mIsSeated) {
             mPayCheckBox.setText(localize("AgreePay"));
             Preferences prefs = Preferences.userNodeForPackage(getClass()).node(PAYING_PARLORS);
             boolean val = prefs.getBoolean(mParlorJID, false);
 
             mPayCheckBox.setSelected(val);
+            mPayCheckBox.setEnabled(true);
         }
         else {
             mPayCheckBox.setText(localize("AgreePayUnseated"));
-            mPayCheckBox.setSelected(false);
+            mPayCheckBox.setSelected(true);
+            mPayCheckBox.setEnabled(false);
         }
-        mPayCheckBox.setEnabled(mIsSeated);
     }
 
+    /**
+     * Remove and recreate the contents of the pane, as defined by mAuthType,
+     * etc.
+     */
     private void adjustUI() {
         setVisible(false);
         removeAll();
@@ -188,16 +285,18 @@ public class PayPanel extends JPanel implements ActionListener
         mPayCheckBox = null;
         boolean visible = true;
 
-        JTextPane textpane;
+        JTextPaneLink textpane;
         String msg, credits;
 
         GridBagConstraints c;
         int row = 0;
 
+        // Free: pane is entirely hidden.
         if (mAuthType == AUTH_FREE) {
             visible = false;
         }
 
+        // X credits per game.
         if (mAuthType == AUTH_FEE) {
             setBackground(colorAuthPay);
 
@@ -209,7 +308,7 @@ public class PayPanel extends JPanel implements ActionListener
             credits = localize("Credits");
             msg = localize("YourCredits", DELIM+credits+DELIM, obj);
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -221,7 +320,7 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(6, 8, 4, 4);
             add(textpane, c);
-            setText(textpane, msg, 10);
+            textpane.setMessage(msg, 10);
 
             if (mAuthFee == 1)
                 credits = localize("OneCredit");
@@ -229,7 +328,7 @@ public class PayPanel extends JPanel implements ActionListener
                 credits = localize("ManyCredits", new Integer(mAuthFee));
             msg = localize("GameWillCost", DELIM+credits+DELIM);
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -241,7 +340,7 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(4, 8, 4, 4);
             add(textpane, c);
-            setText(textpane, msg, 12);
+            textpane.setMessage(msg, 12);
 
             mPayCheckBox = new JCheckBox("XXX");
             mPayCheckBox.addActionListener(this);
@@ -258,7 +357,7 @@ public class PayPanel extends JPanel implements ActionListener
             add(mPayCheckBox, c);
             adjustCheckbox();
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -270,9 +369,10 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(0, 8, 6, 4);
             add(textpane, c);
-            setText(textpane, localize("WhenGameBegins"), 10);
+            textpane.setMessage(localize("WhenGameBegins"), 10);
         }
 
+        // X credits per game, which you do not have.
         if (mAuthType == AUTH_NOFEE) {
             setBackground(colorUnauth);
 
@@ -284,7 +384,7 @@ public class PayPanel extends JPanel implements ActionListener
             credits = localize("Credits");
             msg = localize("YourCredits", DELIM+credits+DELIM, obj);
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -296,7 +396,7 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(6, 8, 4, 4);
             add(textpane, c);
-            setText(textpane, msg, 10);
+            textpane.setMessage(msg, 10);
 
             if (mAuthFee == 1)
                 credits = localize("OneCredit");
@@ -304,7 +404,7 @@ public class PayPanel extends JPanel implements ActionListener
                 credits = localize("ManyCredits", new Integer(mAuthFee));
             msg = localize("GameWillCost", DELIM+credits+DELIM);
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -316,7 +416,7 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(4, 8, 4, 4);
             add(textpane, c);
-            setText(textpane, msg, 12);
+            textpane.setMessage(msg, 12);
 
             if (mYourCredits == 0) {
                 String val = localize("BuySome");
@@ -327,7 +427,7 @@ public class PayPanel extends JPanel implements ActionListener
                 msg = localize("NotEnoughCredits", DELIM+val+DELIM);
             }
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -339,9 +439,10 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(4, 8, 6, 4);
             add(textpane, c);
-            setText(textpane, msg, 12);
+            textpane.setMessage(msg, 12);
         }
 
+        // No subscription.
         if (mAuthType == AUTH_UNAUTH) {
             setBackground(colorUnauth);
 
@@ -350,7 +451,7 @@ public class PayPanel extends JPanel implements ActionListener
             msg = localize("GameNotAuthorized", DELIM+val1+DELIM,
                 DELIM+val2+DELIM);
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -362,16 +463,17 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(6, 8, 6, 4);
             add(textpane, c);
-            setText(textpane, msg, 12);
+            textpane.setMessage(msg, 12);
         }
 
+        // Subscription.
         if (mAuthType == AUTH_AUTH) {
             setBackground(colorAuth);
 
             String val = localize("Authorized");
             msg = localize("GameAuthorized", DELIM+val+DELIM);
 
-            textpane = new JTextPane();
+            textpane = new JTextPaneLink();
             textpane.setEditable(false);
             textpane.setOpaque(false);
             c = new GridBagConstraints();
@@ -383,7 +485,7 @@ public class PayPanel extends JPanel implements ActionListener
             c.anchor = GridBagConstraints.NORTHWEST;
             c.insets = new Insets(6, 8, 6, 4);
             add(textpane, c);
-            setText(textpane, msg, 12);
+            textpane.setMessage(msg, 12);
         }
 
         setVisible(visible);
@@ -393,10 +495,98 @@ public class PayPanel extends JPanel implements ActionListener
 
     /**
      * Create the permanent contents of the panel. Actually, there aren't any.
+     * We do set the thing to be opaque (color to be determined in adjustUI),
+     * and add a border.
      */
     private void buildUI() {
         setOpaque(true);
         setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
+    }
+
+    /**
+     * Subclass of JTextPane that can respond to mouse clicks.
+     */
+    protected class JTextPaneLink extends JTextPane {
+
+        /** Customized mouse handler that knows about hyperlinks. */
+        protected void processMouseEvent(MouseEvent ev) {
+            if (ev.getID() == MouseEvent.MOUSE_CLICKED
+                && ev.getClickCount() == 1
+                && PlatformWrapper.launchURLAvailable()
+                && mPayURL != null) {
+                if (launchURLAt(ev.getX(), ev.getY()))
+                    return;
+            }
+            
+            super.processMouseEvent(ev);
+        }
+
+        protected boolean launchURLAt(int xp, int yp) {
+            int pos = viewToModel(new Point(xp, yp));
+            StyledDocument doc = this.getStyledDocument();
+            Element el = doc.getCharacterElement(pos);
+            if (el == null)
+                return false;
+        
+            AttributeSet attrs = el.getAttributes();
+            if (attrs == null)
+                return false;
+            if (!StyleConstants.isUnderline(attrs))
+                return false;
+
+            return PlatformWrapper.launchURL(mPayURL);
+        }
+
+        /**
+         * Set the text of a JTextPane item to the given string, in the given
+         * font.
+         *
+         * If the msg contains delimiter characters (\u203B), these are assumed
+         * to begin and end hyperlinks to mPayURL.
+         */
+        public void setMessage(String msg, int fontsize) {
+            String[] ls = null;
+
+            Document doc = this.getDocument();
+
+            SimpleAttributeSet baseStyle = new SimpleAttributeSet();
+            StyleConstants.setFontFamily(baseStyle, "SansSerif");
+            StyleConstants.setFontSize(baseStyle, fontsize);
+            StyleConstants.setForeground(baseStyle, Color.BLACK);
+
+            SimpleAttributeSet linkStyle = null;
+
+            if (msg.indexOf(DELIMCHAR) >= 0) {
+                if (mPayURL != null) {
+                    linkStyle = new SimpleAttributeSet();
+                    StyleConstants.setFontFamily(linkStyle, "SansSerif");
+                    StyleConstants.setFontSize(linkStyle, fontsize);
+                    StyleConstants.setForeground(linkStyle, colorHyperlink);
+                    StyleConstants.setUnderline(linkStyle, true);
+                }
+                else {
+                    linkStyle = baseStyle;
+                }
+
+                ls = msg.split(DELIM);            
+            }
+            else {
+                ls = new String[] { msg };
+            }
+
+            try {
+                doc.remove(0, doc.getLength());
+                boolean link=false;
+                for (int ix=0; ix<ls.length; ix++, link=!link) {
+                    if (ls[ix].length() == 0)
+                        continue;
+                    SimpleAttributeSet style = (link ? linkStyle : baseStyle);
+                    doc.insertString(doc.getLength(), ls[ix], style);
+                }
+            }
+            catch (BadLocationException ex) { }
+        }
+
     }
 
     /**
