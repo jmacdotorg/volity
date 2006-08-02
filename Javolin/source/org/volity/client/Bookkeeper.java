@@ -11,11 +11,13 @@ import org.jivesoftware.smackx.packet.DiscoverInfo;
 import org.jivesoftware.smackx.packet.DiscoverItems;
 import org.volity.client.comm.DiscoBackground;
 import org.volity.client.comm.DiscoBatchBackground;
+import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.GameUIInfo;
+import org.volity.client.translate.TokenRequester;
 import org.volity.jabber.JIDUtils;
 
 /** A connection to a Volity bookkeeper. */
-public class Bookkeeper {
+public class Bookkeeper extends TokenRequester {
 
     protected static String defaultJid = "bookkeeper@volity.net/volity";
 
@@ -58,7 +60,7 @@ public class Bookkeeper {
      * @param jid the JID of the bookkeeper
      */
     public Bookkeeper(XMPPConnection connection, String jid) {
-        this.connection = connection;
+        super(connection, jid);
         this.jid = jid;
     }
 
@@ -74,12 +76,24 @@ public class Bookkeeper {
         this(connection, defaultJid);
     }
 
-    protected XMPPConnection connection;
     protected String jid;
 
     /** Clean up resources. */
     public void close() {
-        connection = null;
+        // nothing to do
+    }
+
+    /**
+     * Ask the bookkeeper whether a player is authorized to play a particular
+     * game.
+     */
+    public void gamePlayerAuthorized(String parlor, String player,
+        RPCBackground.Callback callback, Object rock) 
+    {
+        List args = Arrays.asList(new String[] { parlor, player });
+
+        new RPCBackground(this, callback, 
+            "volity.game_player_authorized", args, rock);
     }
 
     /**
@@ -105,7 +119,7 @@ public class Bookkeeper {
                 }
             };
 
-        DiscoBackground query = new DiscoBackground(connection,
+        DiscoBackground query = new DiscoBackground(getConnection(),
             subback,
             DiscoBackground.QUERY_ITEMS, jid, "rulesets", rock);
     }
@@ -137,7 +151,7 @@ public class Bookkeeper {
                 }
             };
 
-        DiscoBackground query = new DiscoBackground(connection,
+        DiscoBackground query = new DiscoBackground(getConnection(),
             subback,
             DiscoBackground.QUERY_ITEMS, jid, (ruleset + "|parlors"), rock);
     }
@@ -205,12 +219,13 @@ public class Bookkeeper {
                     }
 
                     DiscoBatchBackground batch = new DiscoBatchBackground(
-                        connection, subback2, DiscoBatchBackground.QUERY_INFO,
+                        getConnection(), subback2, 
+                        DiscoBatchBackground.QUERY_INFO,
                         queries, ls);
                 }
             };
 
-        DiscoBackground query = new DiscoBackground(connection,
+        DiscoBackground query = new DiscoBackground(getConnection(),
             subback,
             DiscoBackground.QUERY_ITEMS, jid, (ruleset + "|uis"), rock);
     }
