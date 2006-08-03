@@ -75,6 +75,7 @@ class Game:
     sendgamestate() -- send the (in-progress) game state to a player.
     seatchange() -- handle a player sitting or standing.
     presencechange() -- handle a player connecting or disconnecting.
+    acceptmessage() -- handle a Jabber chat message.
     destroy() -- finalize anything you want to finalize in your class.
 
     Methods your subclass calls:
@@ -1020,6 +1021,24 @@ class Game:
         will be the (real) JID of the player. The *action* will be
         ACTION_JOINED, ACTION_LEFT, or ACTION_NICKNAME (for a nickname
         change); these constants are defined in the referee module.
+
+        Conditions: can be called in any state.
+
+        Default: do nothing. Most games will not need to override this method.
+        """
+        pass
+
+    def acceptmessage(self, jid, body, msg):
+        """acceptmessage(jid, body, msg) -> None
+
+        Handle a chat message at the table. The *jid* will be the (real)
+        JID of the player sending the message. The *body* will be a string
+        containing the message text; the *msg* is the XML Node object
+        which represents the entire message.
+
+        Note: this method is also invoked if a player sends a private chat
+        message via the MUC, or if any Jabber user sends a message to the
+        referee's real JID.
 
         Conditions: can be called in any state.
 

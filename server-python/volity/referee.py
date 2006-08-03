@@ -10,8 +10,6 @@ import zymb.jabber.keepalive
 #### playeraddexternalbot should parse the return value for volity.ok
 #### or volity.TOKEN, really
 
-#### Game hook for chat messages, please (and private messages?)
-
 # Constants for the five referee states.
 STATE_SETUP     = intern('setup')
 STATE_ACTIVE    = intern('active')
@@ -450,6 +448,28 @@ class Referee(volent.VolEntity):
         if (self.log.isEnabledFor(logging.DEBUG)):
             self.log.info('received message')
             #self.log.debug('received message:\n%s', msg.serialize(True))
+
+        jid = None
+        bodystr = ''
+            
+        fromstr = msg.getattr('from')
+        if (fromstr):
+            jid = interface.JID(fromstr)
+            
+        # Most of the game APIs deal with real JIDs, so we translate a MUC
+        # JID to a real JID if necessary.
+        if (jid and self.muc.barematch(jid)):
+            nick = jid.getresource()
+            if (self.playernicks.has_key(nick)):
+                pla = self.playernicks[nick]
+                jid = pla.jid
+
+        body = msg.getchild('body')
+        if (body):
+            bodystr = body.getdata()
+
+        if (jid):
+            self.queueaction(self.game.acceptmessage, jid, bodystr, msg)
         raise interface.StanzaHandled()
 
     def handlepresence(self, msg):

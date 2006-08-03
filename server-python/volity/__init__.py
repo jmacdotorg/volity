@@ -68,6 +68,11 @@ config -- parses configuration files
 
 * Version history:
 
+- unreleased
+Added a Game module hook for player chat messages.
+Changed the timestamps in game records to end with "Z" instead of the
+    (invalid) "+0000".
+
 - 1.6.3:
 Added a "--jabber-security" option to force Jabber to run without
     encryption. (This may be necessary on Windows systems that lack an
