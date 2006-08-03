@@ -2,6 +2,9 @@
 
 	- Added support for game scheduling.
 
+	- The bookkeeper now sends back RPC faults if it receives
+          strange RPC requests.
+
 	- Various bugfixes.
 
 0.5

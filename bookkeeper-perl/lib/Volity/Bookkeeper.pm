@@ -131,10 +131,12 @@ sub handle_rpc_request {
 	  $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
       }
     } else {
-      $self->logger->warn("I received a $$rpc_info{method} RPC request from $$rpc_info{from}, but I don't know what to do about it.\n");
+      $self->logger->warn("I received a $$rpc_info{method} RPC request from $$rpc_info{from}, but I don't know what to do about it, so I'm sending back a fault.\n");
+      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown method.");
     }
   } else {
-    $self->logger->warn("Received a $$rpc_info{method} RPC request; it's not in the volity namespace, so I'm ignoring it.");
+    $self->logger->warn("Received a $$rpc_info{method} RPC request; it's not in the volity namespace, so I'm sending back a fault.");
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown namespace. I accept only RPCs in the 'volity.*' namespace.");
   }
 }
 
@@ -178,10 +180,7 @@ sub jabber_presence {
 	      type => "groupchat",
 	      body => {
 		  en => "One of the people who wished to play this game has arrived. I'll be leaving, then. Have fun!",
-		  de => "Eine der Leute, die dieses Spiel spielen mochten, ist angekommen. Ich werde, dann verlassen. Spas haben!",
-		  es => "Uno de la gente que deseaba jugar este juego ha llegado. Me ire, entonces. !Tener diversion!",
-		  fr => "Un du peuple qui a souhaite jouer ce jeu est arrive. Je partirai, puis. Avoir l'amusement!",
-		  it => "Uno della gente che ha desiderato giocare questo gioco e arrivato. Andro, allora. Avere divertimento!",
+		  es => "Una de las personas que desea participar en este juego ha llegado. Hasta otro momento, Ábuen juego!",
 	      }
 	  });
 	  $self->leave_muc($muc_jid);
@@ -1125,7 +1124,8 @@ sub apologize_to_players {
 	$self->send_message({
 	    to => $player->jid,
 	    body => {
-		en => "Hello, this is the Volity Network game scheduling service.\n\nYou were on the invitation list for a game that was supposed to start at $time (GMT), but something went wrong when I tried to start the game. Sorry!"
+		en => "Hello, this is the Volity Network game scheduling service.\n\nYou were on the invitation list for a game that was supposed to start at $time (GMT), but something went wrong when I tried to start the game. Sorry!",
+		es => "ÁHola!, este es el servicio de reservacion de la Red Volity. Usted estaba en la lista de invitacion para un juego que debia empezar a las $time (GMT), pero algo fallo cuando trate de empezar el juego. ÁLo siento!"
 		}
 	});
     }
@@ -1141,7 +1141,8 @@ sub grumble_at_players {
 	$self->send_message({
 	    to => $player->jid,
 	    body => {
-		en => "Hello, this is the Volity Network game scheduling service.\n\nYou were on the invitation list for a game that was supposed to start at $time (GMT), but a long time went by and nobody showed up so I left. Sorry!"
+		en => "Hello, this is the Volity Network game scheduling service.\n\nYou were on the invitation list for a game that was supposed to start at $time (GMT), but a long time went by and nobody showed up so I left. Sorry!",
+		es => "ÁHola!, este es el servicio de reservacion de la Red Volity. Usted estaba en la lista de invitacion para un juego que debia empezar a las $time (GMT), pero paso el tiempo y nadie aparecio, por tanto me fui. ÁLo siento!",
 		}
 	});
     }
