@@ -47,9 +47,9 @@ use POE qw(
 
 # Lazily set some constants for timeouts and such.
 our $NEW_TABLE_TIMEOUT = 60;
-our $JOIN_TABLE_TIMEOUT = 2;
+our $JOIN_TABLE_TIMEOUT = 60;
 our $SCHEDULED_GAME_CHECK_INTERVAL = 60;
-our $INVITEE_JOIN_TIMEOUT = 60;
+our $INVITEE_JOIN_TIMEOUT = 3600;
 
 sub initialize {
   my $self = shift;
@@ -468,8 +468,8 @@ sub get_parlor_with_jid {
 sub check_schedule {
     my $self = shift;
     $self->logger->debug("Checking the schedule.");
-#    for my $scheduled_game (Volity::Info::ScheduledGame->search_with_current_minute) {
-    for my $scheduled_game (Volity::Info::ScheduledGame->retrieve_all) {
+    for my $scheduled_game (Volity::Info::ScheduledGame->search_with_current_minute) {
+#    for my $scheduled_game (Volity::Info::ScheduledGame->retrieve_all) {
 	# Check for monkey business.
 	unless (ref($scheduled_game->parlor_id) && $scheduled_game->parlor_id->isa("Volity::Info::Server")) {
 	    $self->logger->error("The scheduled game with ID $scheduled_game doesn't appear to have a valid parlor_id.");
