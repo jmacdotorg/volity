@@ -194,8 +194,12 @@ public class PayPanel extends JPanel implements ActionListener
 
         if (source == mPayCheckBox) {
             Preferences prefs = Preferences.userNodeForPackage(getClass()).node(PAYING_PARLORS);
-            boolean val = mPayCheckBox.isSelected();
-            prefs.putBoolean(mParlorJID, val);
+            if (mPayCheckBox.isSelected()) {
+                prefs.putInt(mParlorJID, mAuthFee);
+            }
+            else {
+                prefs.remove(mParlorJID);
+            }
         }
     }
 
@@ -262,7 +266,7 @@ public class PayPanel extends JPanel implements ActionListener
         else if (mIsSeated) {
             mPayCheckBox.setText(localize("AgreePay"));
             Preferences prefs = Preferences.userNodeForPackage(getClass()).node(PAYING_PARLORS);
-            boolean val = prefs.getBoolean(mParlorJID, false);
+            boolean val = (prefs.getInt(mParlorJID, 0) == mAuthFee);
 
             mPayCheckBox.setSelected(val);
             mPayCheckBox.setEnabled(true);
