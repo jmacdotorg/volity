@@ -51,6 +51,7 @@ import org.volity.client.comm.FormPacketExtension;
 import org.volity.client.data.CommandStub;
 import org.volity.client.data.Invitation;
 import org.volity.client.translate.TranslateToken;
+import org.volity.jabber.RPCService;
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
 import org.volity.javolin.roster.*;
@@ -104,6 +105,7 @@ public class JavolinApp extends JFrame
     private SizeAndPositionSaver mSizePosSaver;
     private CommandWatcher mCommandWatcher;
     private XMPPConnection mConnection;
+    private RPCService mRPCService;
     private Bookkeeper mBookkeeper;
     private InvitationManager mInviteManager;
     List mMucWindows;
@@ -649,6 +651,9 @@ public class JavolinApp extends JFrame
             mConnection.addConnectionListener(this);
             updateSubscriptionPolicy();
 
+            // Accept Jabber-RPC
+            mRPCService = new RPCService(mConnection);
+
             PacketFilter filter;
             PacketListener listener;
 
@@ -841,6 +846,13 @@ public class JavolinApp extends JFrame
         {
             mInviteManager.stop();
             mInviteManager = null;
+        }
+
+        // Kill the Jabber-RPC service
+        if (mRPCService != null) 
+        {
+            mRPCService.stop();
+            mRPCService = null;
         }
 
         // Close connection if open

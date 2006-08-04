@@ -9,82 +9,65 @@ import org.volity.jabber.provider.*;
 import java.util.*;
 
 /**
- * A class for responding to Jabber-RPC requests.
+ * A class for responding to Jabber-RPC requests. This must be added to an
+ * RPCService, which is attached to an XMPPConnection.
  *
  * @author Doug Orleans (dougo@place.org)
  */
-public class RPCResponder implements PacketListener {
-  static {
-    // Register the provider so that request packets get parsed correctly.
-    ProviderManager.addIQProvider("query", "jabber:iq:rpc", new RPCProvider());
-  }
+public class RPCResponder {
+    /**
+     * @param connection a connection to an XMPP server
+     * @param filter a filter specifying which RPC requests to handle
+     * @param handler a handler for RPC requests
+     *
+     * If the filter is null, the responder will apply to all RPC requests.
+     */
+    public RPCResponder(XMPPConnection connection, 
+        PacketFilter filter,
+        RPCHandler handler) {
 
-  /**
-   * @param connection a connection to an XMPP server
-   * @param filter a filter specifying which RPC requests to handle
-   * @param handler a handler for RPC requests
-   */
-  public RPCResponder(XMPPConnection connection,
-                      PacketFilter filter,
-                      RPCHandler handler) {
-    this.connection = connection;
-    this.filter = filter;
-    this.handler = handler;
-  }
+        this.service = RPCService.getServiceForConnection(connection);
+        if (this.service == null)
+            throw new RuntimeException("Connection has no RPCService");
 
-  protected XMPPConnection connection;
-  public XMPPConnection getConnection() { return connection; }
+        this.filter = filter;
+        this.handler = handler;
+    }
 
-  protected PacketFilter filter;
-  public PacketFilter getFilter() { return filter; }
+    /**
+     * @param service an RPC-receiving service
+     * @param filter a filter specifying which RPC requests to handle
+     * @param handler a handler for RPC requests
+     *
+     * If the filter is null, the responder will apply to all RPC requests.
+     */
+    public RPCResponder(RPCService service, 
+        PacketFilter filter,
+        RPCHandler handler) {
+        this.service = service;
+        this.filter = filter;
+        this.handler = handler;
+    }
 
-  protected RPCHandler handler;
-  public RPCHandler getHandler() { return handler; }
+    protected RPCService service;
 
-  /**
-   * Start listening for requests.
-   */
-  public void start() {
-    PacketFilter filter = new PacketTypeFilter(RPCRequest.class);
-    if (this.filter != null) filter = new AndFilter(filter, this.filter);
-    connection.addPacketListener(this, filter);
-  }
+    protected PacketFilter filter;
+    public PacketFilter getFilter() { return filter; }
 
-  /**
-   * Stop listening for requests.
-   */
-  public void stop() {
-    connection.removePacketListener(this);
-  }
+    protected RPCHandler handler;
+    public RPCHandler getHandler() { return handler; }
 
-  // Inherited from PacketListener.
-  public void processPacket(Packet packet) {
+    /**
+     * Start listening for requests.
+     */
+    public void start() {
+        service.addResponder(this);
+    }
 
-    // This redundant check against the filter might be necessary
-    // because org.jivesoftware.smack.PacketReader runs the filters in
-    // a different thread from the listeners (!) and a filter might
-    // depend on previous packets having been processed.  A future
-    // version of Smack may fix this, in which case this check should
-    // be removed to avoid running the filter twice.
-    if (filter != null && !filter.accept(packet)) return;
-
-    final RPCRequest req = (RPCRequest) packet;
-    // Look, ma, continuation-passing style!
-    RPCResponseHandler k = new RPCResponseHandler() {
-        public void respondValue(Object value) {
-          respond(new RPCResult(value));
-        }
-        public void respondFault(int faultCode, String faultString) {
-          respond(new RPCFault(faultCode, faultString));
-        }
-        void respond(RPCResponse resp) {
-          resp.setTo(req.getFrom());
-          String id = req.getPacketID();
-          if (id != null)
-            resp.setPacketID(id);
-          connection.sendPacket(resp);
-        }
-      };
-    handler.handleRPC(req.getMethodName(), req.getParams(), k);
-  }
+    /**
+     * Stop listening for requests.
+     */
+    public void stop() {
+        service.removeResponder(this);
+    }
 }
