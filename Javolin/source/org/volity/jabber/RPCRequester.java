@@ -8,8 +8,8 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.volity.jabber.packet.*;
-import org.volity.jabber.provider.*;
-import java.util.*;
+import org.volity.jabber.provider.RPCProvider;
+import java.util.List;
 
 /**
  * A class for making Jabber-RPC requests.

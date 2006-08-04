@@ -1,11 +1,13 @@
 package org.volity.jabber;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
-import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.PacketListener;
+import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.filter.PacketFilter;
+import org.jivesoftware.smack.filter.PacketTypeFilter;
+import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.volity.jabber.packet.*;
-import org.volity.jabber.provider.*;
+import org.volity.jabber.provider.RPCProvider;
 import java.util.*;
 
 /**

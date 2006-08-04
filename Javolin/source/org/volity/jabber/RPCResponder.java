@@ -1,12 +1,7 @@
 package org.volity.jabber;
 
-import org.jivesoftware.smack.*;
-import org.jivesoftware.smack.filter.*;
-import org.jivesoftware.smack.packet.*;
-import org.jivesoftware.smack.provider.ProviderManager;
-import org.volity.jabber.packet.*;
-import org.volity.jabber.provider.*;
-import java.util.*;
+import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.filter.PacketFilter;
 
 /**
  * A class for responding to Jabber-RPC requests. This must be added to an
