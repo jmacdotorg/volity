@@ -1178,6 +1178,9 @@ sub end_game {
   if (@slots and defined($slots[0])) {
       my @winners_list;
       for my $slot (@slots) {
+	  # I don't know now why $slot is sometimes undef. Will investigate later.
+	  # --jmac 08/2006
+	  next unless $slot;
 	  my @seats = @$slot;
 	  for my $seat (@seats) {
 	      $recorded_seats{$seat->id} = [$seat->registered_player_jids];
