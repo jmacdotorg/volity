@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+Rearranged the org.volity.jabber RPC classes a little, so that they return
+an RPC fault to all unknown and illegal RPCs. (Previously, rejected RPCs
+could be dropped on the floor.)
+
 Moved the "volity" token table to a property file (TokenVolity.properties
 in the properties directory) for easier localization.
 
