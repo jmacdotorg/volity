@@ -83,6 +83,11 @@ public class Bookkeeper extends TokenRequester {
         // nothing to do
     }
 
+    /** Get the bookkeeper JID. */
+    public String getJID() {
+        return jid;
+    }
+
     /**
      * Ask the bookkeeper whether a player is authorized to play a particular
      * game.
