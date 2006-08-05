@@ -127,38 +127,7 @@ public class PayPanel extends JPanel implements ActionListener
                     }
 
                     Map map = (Map)result;
-                    Object val;
-
-                    int code = AUTH_FREE;
-                    int fee = -1;
-                    int credits = -1;
-                    String url = null;
-
-                    val = map.get("code");
-                    if (val == null)
-                        return;
-                    if (val.equals("free"))
-                        code = AUTH_FREE;
-                    else if (val.equals("fee"))
-                        code = AUTH_FEE;
-                    else if (val.equals("nofee"))
-                        code = AUTH_NOFEE;
-                    else if (val.equals("auth"))
-                        code = AUTH_AUTH;
-                    else if (val.equals("unauth"))
-                        code = AUTH_UNAUTH;
-
-                    val = map.get("url");
-                    if (val != null && val instanceof String)
-                        url = (String)val;
-                    val = map.get("fee");
-                    if (val != null && val instanceof Integer)
-                        fee = ((Integer)val).intValue();
-                    val = map.get("credits");
-                    if (val != null && val instanceof Integer)
-                        credits = ((Integer)val).intValue();
-
-                    updatePayInfo(code, fee, credits, url);
+                    updatePayInfo(map);
                     return;
                 }
             };
@@ -201,6 +170,45 @@ public class PayPanel extends JPanel implements ActionListener
                 prefs.remove(mParlorJID);
             }
         }
+    }
+
+    /**
+     * Update the fields displayed in the panel. The map structure is as
+     * defined in the bookkeeper RPCs.
+     */
+    public void updatePayInfo(Map map) {
+        Object val;
+
+        int code = AUTH_FREE;
+        int fee = -1;
+        int credits = -1;
+        String url = null;
+
+        val = map.get("code");
+        if (val == null)
+            return;
+        if (val.equals("free"))
+            code = AUTH_FREE;
+        else if (val.equals("fee"))
+            code = AUTH_FEE;
+        else if (val.equals("nofee"))
+            code = AUTH_NOFEE;
+        else if (val.equals("auth"))
+            code = AUTH_AUTH;
+        else if (val.equals("unauth"))
+            code = AUTH_UNAUTH;
+
+        val = map.get("url");
+        if (val != null && val instanceof String)
+            url = (String)val;
+        val = map.get("fee");
+        if (val != null && val instanceof Integer)
+            fee = ((Integer)val).intValue();
+        val = map.get("credits");
+        if (val != null && val instanceof Integer)
+            credits = ((Integer)val).intValue();
+
+        updatePayInfo(code, fee, credits, url);
     }
 
     /**

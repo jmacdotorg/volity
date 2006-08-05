@@ -44,13 +44,16 @@ import org.jivesoftware.smackx.packet.DataForm;
 import org.volity.client.Bookkeeper;
 import org.volity.client.InvitationListener;
 import org.volity.client.InvitationManager;
+import org.volity.client.VerificationManager;
 import org.volity.client.comm.CapExtensionProvider;
 import org.volity.client.comm.CapPacketExtension;
 import org.volity.client.comm.FormExtensionProvider;
 import org.volity.client.comm.FormPacketExtension;
 import org.volity.client.data.CommandStub;
+import org.volity.client.data.GameInfo;
 import org.volity.client.data.Invitation;
 import org.volity.client.translate.TranslateToken;
+import org.volity.jabber.JIDUtils;
 import org.volity.jabber.RPCService;
 import org.volity.javolin.chat.*;
 import org.volity.javolin.game.*;
@@ -62,6 +65,7 @@ import org.volity.javolin.roster.*;
 public class JavolinApp extends JFrame 
     implements ActionListener, ConnectionListener,
                RosterPanelListener, InvitationListener,
+               VerificationManager.Listener,
                CloseableWindow.Custom
 {
     private final static String APPNAME = "Gamut";
@@ -108,6 +112,7 @@ public class JavolinApp extends JFrame
     private RPCService mRPCService;
     private Bookkeeper mBookkeeper;
     private InvitationManager mInviteManager;
+    private VerificationManager mVerifyManager;
     List mMucWindows;
     List mTableWindows;
     List mChatWindows;
@@ -723,6 +728,11 @@ public class JavolinApp extends JFrame
 
         if (mConnection != null)
         {
+            VerificationManager vm = new VerificationManager(mConnection, mBookkeeper);
+            vm.start();
+            mVerifyManager = vm;
+            vm.addListener(this);
+
             InvitationManager im = new InvitationManager(mConnection);
             im.addInvitationListener(this);
             im.start();
@@ -839,6 +849,14 @@ public class JavolinApp extends JFrame
         {
             mBookkeeper.close();
             mBookkeeper = null;
+        }
+
+        // Kill the verification manager
+        if (mVerifyManager != null)
+        {
+            mVerifyManager.stop();
+            mVerifyManager.removeListener(this);
+            mVerifyManager = null;
         }
 
         // Kill the invite manager
@@ -1421,6 +1439,20 @@ public class JavolinApp extends JFrame
     }
 
     /**
+     * Return the TableWindow which corresponds to the given referee JID.
+     */
+    public TableWindow getTableWindowByReferee(String key) {
+        for (Iterator it = mTableWindows.iterator(); it.hasNext(); ) {
+            TableWindow win = (TableWindow)it.next();
+            String value = win.getRefereeJID();
+            if (value != null && key.equals(value))
+                return win;
+        }
+
+        return null;
+    }
+
+    /**
      * Return the RosterPanel. (Which is useful for the invitation mechanism.)
      */
     public RosterPanel getRosterPanel() 
@@ -1478,6 +1510,83 @@ public class JavolinApp extends JFrame
             mConnection, invitation);
         Audio.playInvited();
         box.setVisible(true);
+    }
+
+    /**
+     * VerificationManager.Listener interface method implementation.
+     *
+     * Called outside Swing thread!
+     */
+    public void verifyGame(String refereeJID, boolean hasFee, int authFee) {
+        System.out.println("### verifyGame(" + refereeJID + ", " + String.valueOf(hasFee) + ", " + String.valueOf(authFee) + ")");
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    //### 
+                }
+            });
+    }
+
+    /**
+     * VerificationManager.Listener interface method implementation.
+     *
+     * Called outside Swing thread!
+     */
+    public void notifyGameRecord(String recID) {
+        // Invoke into the Swing thread.
+        System.out.println("### notifyGameRecord(" + recID + ")");
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    //### 
+                }
+            });
+    }
+
+    /**
+     * VerificationManager.Listener interface method implementation.
+     *
+     * Called outside Swing thread!
+     */
+    public void gamePlayerReauthorized(final String player, final Map values) {
+        System.out.println("### gamePlayerReauthorized(" + player + ", " + values + ")");
+        // Invoke into the Swing thread.
+        SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    String selfjid = getSelfJID();
+                    if (selfjid == null)
+                        return;
+                    if (!JIDUtils.bareMatch(player, selfjid)) {
+                        JOptionPane.showMessageDialog(JavolinApp.this, 
+                            "game_player_reauthorized received for " + player,
+                            JavolinApp.getAppName() + ": Error",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    Object parlorobj = values.get("parlor");
+                    String parlorjid = null;
+                    if (parlorobj instanceof String)
+                        parlorjid = (String)parlorobj;
+                    if (parlorjid != null) {
+                        for (Iterator it = mTableWindows.iterator();
+                             it.hasNext(); ) {
+                            TableWindow win = (TableWindow)it.next();
+                            GameInfo info = win.getGameInfo();
+                            if (info == null)
+                                continue;
+                            String jid = info.getParlorJID();
+                            if (jid == null)
+                                continue;
+                            if (!parlorjid.equals(jid))
+                                continue;
+                            // This window sees an authorization change.
+                            win.gamePlayerReauthorized(values);
+                        }
+                        
+                    }
+                    
+                }
+            });
     }
 
     public void doShowLastError() {

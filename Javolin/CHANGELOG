@@ -3,6 +3,11 @@ SVN repository.
 
 * the present
 
+Added a VerificationManager class, which watches for the payment-protocol
+RPCs (notify_game_record, verify_game, game_player_reauthorized). Only
+the bookkeeper is allowed to send these, and it doesn't, so there is no
+visible change at this time.
+
 Rearranged the org.volity.jabber RPC classes a little, so that they return
 an RPC fault to all unknown and illegal RPCs. (Previously, rejected RPCs
 could be dropped on the floor.)

@@ -634,7 +634,7 @@ public class TableWindow extends JFrame
         referee.setMessageHandler(mMessageHandler);
 
         // Begin the flood of seating/config info.
-        referee.send_state(mDefaultCallback, null);
+        referee.sendState(mDefaultCallback, null);
     }
 
     /**
@@ -982,6 +982,18 @@ public class TableWindow extends JFrame
     public String getRoom()
     {
         return mGameTable.getRoom();
+    }
+
+    /**
+     * Return the referee JID (as a string) of the table. If no referee is
+     * known, return null.
+     */
+    public String getRefereeJID()
+    {
+        Referee ref = mGameTable.getReferee();
+        if (ref == null)
+            return null;
+        return ref.getResponderJID();
     }
 
     /**
@@ -1530,6 +1542,15 @@ public class TableWindow extends JFrame
                 };
             worker.start();
         }
+    }
+
+    /**
+     * A game_player_reauthorized call has arrived, and it applies to this
+     * game. Update the PayPanel appropriately.
+     */
+    public void gamePlayerReauthorized(Map values) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+        mPayPanel.updatePayInfo(values);
     }
 
     /**

@@ -157,7 +157,7 @@ public class Referee extends TokenRequester {
      * (After the first invocation, we will receive seating/config updates
      * as they occur.)
      */
-    public void send_state(RPCBackground.Callback callback, Object rock)
+    public void sendState(RPCBackground.Callback callback, Object rock)
     {
         new RPCBackground(this, callback, 
             "volity.send_state", rock);
