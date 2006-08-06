@@ -7,8 +7,9 @@
 	  game.not_your_turn. The former has recently been added as a core
 	  Volity translation token.
 
-	- Bugfix: Some endgame winner-list configurations would
-          mysteriously break things. No longer.
+	- Bugfixes: Some endgame winner-list configurations would
+          mysteriously break things; no longer. Also, the ref no longer
+          allows non-seated players to suspend games.
 
 0.6.4
 
