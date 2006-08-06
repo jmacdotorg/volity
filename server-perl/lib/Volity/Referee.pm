@@ -1394,7 +1394,11 @@ sub handle_suspend_request {
 	$self->send_rpc_fault($from_jid, $id, 609, "The game is not active.");
 	return;
     }
- 
+    unless ($player->seat) {
+	$self->send_rpc_fault($from_jid, $id, 607, "You can't suspend the game, because you are not seated.");
+	return;
+    }
+
     $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
     $self->suspend_game($player);
 }
