@@ -1,9 +1,21 @@
+0.6.5
+
+	- Added leave_muc() method to Volity::Jabber.
+
+	- Volity::Game::TicTacToe now returns the volity.not_your_turn
+	  translaton token when it isn't your turn, instead of
+	  game.not_your_turn. The former has recently been added as a core
+	  Volity translation token.
+
+	- Bugfix: Some endgame winner-list configurations would
+          mysteriously break things. No longer.
+
 0.6.4
 
 	- Bugfix release. Volity::Game's current_seat method didn't work
 	  exactly as advertised, not updating the internal turn queue and
 	  therefore sometimes causing turn order to misbehave. This is
-	  fixed. Thanks to named@volity.net for spotting the error.
+	  fixed. Thanks to Austin Henry for spotting the error.
 
 0.6.3
 
