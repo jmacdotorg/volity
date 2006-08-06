@@ -104,7 +104,7 @@ sub rpc_mark {
     }
     if ($seat ne $self->current_seat) {
 	$self->logger->debug("Hey, $seat is not " . $self->current_seat);
-	return ("game.not_your_turn");
+	return ("volity.not_your_turn");
     }
 
     my $method = "add_" . $seat->id . "_mark";
