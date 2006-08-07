@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Gamut now includes a "Volity-Identity: JID" HTTP header in all Game Finder
+requests. (If you're logged in.)
+
 Added a VerificationManager class, which watches for the payment-protocol
 RPCs (notify_game_record, verify_game, game_player_reauthorized). Only
 the bookkeeper is allowed to send these, and it doesn't, so there is no

@@ -19,6 +19,8 @@ import org.xhtmlrenderer.extend.UserAgentCallback;
 import org.xhtmlrenderer.simple.extend.XhtmlNamespaceHandler;
 import org.xhtmlrenderer.swing.BasicPanel;
 import org.xhtmlrenderer.swing.LinkListener;
+import org.xhtmlrenderer.swing.NaiveUserAgent;
+import org.xhtmlrenderer.util.XRLog;
 import org.xhtmlrenderer.util.XRRuntimeException;
 
 public class Finder extends JFrame
@@ -183,7 +185,7 @@ public class Finder extends JFrame
     private class XHTMLFinder extends XHTMLPane {
 
         public XHTMLFinder() {
-            super(Finder.this);
+            super(Finder.this, new VolityUserAgent());
         }
 
         public void setDocument(Document doc, String url) {
@@ -218,6 +220,36 @@ public class Finder extends JFrame
             }
 
             return HANDLE_EXTERNAL;
+        }
+    }
+
+    /**
+     * A customized XHTML component, which adds a header to each HTTP request:
+     *
+     *   Volity-Identity: name@volity.net/resource
+     *
+     * This is only present if the player is logged in via Jabber.
+     *
+     * Note: this header is easily forged! Web services should not rely on it
+     * for authentication.
+     */
+    private static class VolityUserAgent extends NaiveUserAgent {
+        protected InputStream getInputStream(String uri) {
+            InputStream is = null;
+            uri = resolveURI(uri);
+            try {
+                URLConnection conn = new URL(uri).openConnection();
+                String jid = JavolinApp.getSoleJavolinApp().getSelfJID();
+                if (jid != null) {
+                    conn.setRequestProperty("Volity-Identity", jid);
+                }
+                is = conn.getInputStream();
+            } catch (java.net.MalformedURLException e) {
+                XRLog.exception("bad URL given: " + uri, e);
+            } catch (java.io.IOException e) {
+                XRLog.exception("IO problem for " + uri, e);
+            }
+            return is;
         }
     }
 
