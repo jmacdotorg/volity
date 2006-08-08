@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Gamut now correctly responds to game_verify requests from the bookkeeper.
+
 Gamut now includes a "Volity-Identity: JID" HTTP header in all Game Finder
 requests. (If you're logged in.)
 
