@@ -21,7 +21,7 @@ public class VerificationManager implements PacketFilter, RPCHandler {
     RPCResponder mResponder;
     Bookkeeper mBookkeeper;
 
-    List mListeners = new ArrayList();
+    Listener mListener = null;
 
     public VerificationManager(XMPPConnection connection,
         Bookkeeper bookkeeper) {
@@ -41,24 +41,34 @@ public class VerificationManager implements PacketFilter, RPCHandler {
 
     /** Interface to be notified of verification calls. */
     public interface Listener {
-        public void verifyGame(String refereeJID, boolean hasFee, int authFee);
+        public void verifyGame(String refereeJID, boolean hasFee, int authFee,
+            VerifyGameCallback callback);
         public void notifyGameRecord(String recID);
         public void gamePlayerReauthorized(String player, Map values);
     }
+    /** Interface for reply to verifyGame(). The verifyGame() method of
+     * Listener must call the reply() method. */
+    public interface VerifyGameCallback {
+        public void reply(boolean val);
+    }
 
     /**
-     * Add an RPC listener.
+     * Add an RPC listener. Unlike the normal Java Listener pattern, there can
+     * be at most one Listener. (This is because the Listener actually has to
+     * do work, in the case of verify_game.)
      *
      * Note: the listener is notified on a Smack listener thread! Do not do UI
      * work in your Listener methods.
      */
     public void addListener(Listener listener) {
-        mListeners.add(listener);
+        assert (mListener == null);
+        mListener = listener;
     }
 
-    /** Remove a Listener. */
+    /** Remove the Listener. */
     public void removeListener(Listener listener) {
-        mListeners.remove(listener);
+        assert (mListener == listener);
+        mListener = null;
     }
 
     // Implements PacketFilter interface.
@@ -106,13 +116,11 @@ public class VerificationManager implements PacketFilter, RPCHandler {
 
         callback.respondValue(Boolean.TRUE);
 
-        for (Iterator it = mListeners.iterator(); it.hasNext(); ) {
-            Listener listener = (Listener)it.next();
-            listener.notifyGameRecord(recID);
-        }
+        if (mListener != null)
+            mListener.notifyGameRecord(recID);
     }
 
-    public void verifyGame(List params, RPCResponseHandler callback) {
+    public void verifyGame(List params, final RPCResponseHandler callback) {
         if (params.size() < 1) {
             callback.respondFault(604,
                 "verify_game: missing argument 1");
@@ -137,16 +145,22 @@ public class VerificationManager implements PacketFilter, RPCHandler {
                 return;
             }
             
-            hasFee = true;
             authFee = ((Integer)arg).intValue();
+            hasFee = (authFee != 0);
         }
 
-        callback.respondValue(Boolean.TRUE);
-
-        for (Iterator it = mListeners.iterator(); it.hasNext(); ) {
-            Listener listener = (Listener)it.next();
-            listener.verifyGame(refID, hasFee, authFee);
+        if (mListener == null) {
+            // No app? No verification.
+            callback.respondValue(Boolean.FALSE);
+            return;
         }
+
+        VerifyGameCallback reply = new VerifyGameCallback() {
+                public void reply(boolean val) {
+                    callback.respondValue(Boolean.valueOf(val));
+                }
+            };
+        mListener.verifyGame(refID, hasFee, authFee, reply);
     }
 
     public void gamePlayerReauthorized(List params,
@@ -180,9 +194,7 @@ public class VerificationManager implements PacketFilter, RPCHandler {
 
         callback.respondValue(Boolean.TRUE);
 
-        for (Iterator it = mListeners.iterator(); it.hasNext(); ) {
-            Listener listener = (Listener)it.next();
-            listener.gamePlayerReauthorized(playerID, authMap);
-        }
+        if (mListener != null)
+            mListener.gamePlayerReauthorized(playerID, authMap);
     }
 }

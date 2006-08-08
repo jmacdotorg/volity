@@ -1554,6 +1554,27 @@ public class TableWindow extends JFrame
     }
 
     /**
+     * A verify_game call has arrived for this game. Verify that we are seated
+     * and ready at this table. If hasFee is true, verify that we are willing
+     * to pay authFee.
+     */
+    public boolean verifyGame(boolean hasFee, int authFee) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        if (!mGameTable.isSelfSeated())
+            return false;
+        if (!mGameTable.isSelfReady())
+            return false;
+
+        if (hasFee) {
+            if (!mPayPanel.verifyGameFee(authFee))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Get the toolbar buttons into the correct state.
      */
     private void adjustButtons() {

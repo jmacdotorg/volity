@@ -1513,16 +1513,25 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * VerificationManager.Listener interface method implementation.
+     * VerificationManager.Listener interface method implementation. This
+     * *must* call the callback.reply() method eventually.
      *
      * Called outside Swing thread!
      */
-    public void verifyGame(String refereeJID, boolean hasFee, int authFee) {
+    public void verifyGame(final String refereeJID, 
+        final boolean hasFee, final int authFee,
+        final VerificationManager.VerifyGameCallback callback) {
         System.out.println("### verifyGame(" + refereeJID + ", " + String.valueOf(hasFee) + ", " + String.valueOf(authFee) + ")");
+
         // Invoke into the Swing thread.
         SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                    //### 
+                    boolean result = false;
+                    TableWindow win = getTableWindowByReferee(refereeJID);
+                    if (win != null) {
+                        result = win.verifyGame(hasFee, authFee);
+                    }
+                    callback.reply(result);
                 }
             });
     }
@@ -1557,7 +1566,7 @@ public class JavolinApp extends JFrame
                         return;
                     if (!JIDUtils.bareMatch(player, selfjid)) {
                         JOptionPane.showMessageDialog(JavolinApp.this, 
-                            "game_player_reauthorized received for " + player,
+                            "game_player_reauthorized received for wrong\nplayer: " + player,
                             JavolinApp.getAppName() + ": Error",
                             JOptionPane.ERROR_MESSAGE);
                         return;

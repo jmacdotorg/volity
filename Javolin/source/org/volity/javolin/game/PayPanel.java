@@ -247,6 +247,36 @@ public class PayPanel extends JPanel implements ActionListener
     }
 
     /**
+     * Check whether the player is really in agreement with paying the given
+     * sum. (This is in response to a bookkeeper query.) We are a little
+     * paranoid here, since money is involved.
+     */
+    public boolean verifyGameFee(int fee) {
+        // If we're not in a FEE authorization mode, then no.
+        if (mAuthType != AUTH_FEE)
+            return false;
+
+        // If the fee value doesn't match, then no.
+        if (fee != mAuthFee)
+            return false;
+
+        // If there is no check box, then no.
+        if (mPayCheckBox == null)
+            return false;
+
+        // If the check box is greyed out, then no.
+        if (!mPayCheckBox.isEnabled())
+            return false;
+
+        // If the check box is unchecked, then no.
+        if (!mPayCheckBox.isSelected())
+            return false;
+
+        // Ok then.
+        return true;
+    }
+
+    /**
      * Localization helper.
      */
     protected static String localize(String key) {
