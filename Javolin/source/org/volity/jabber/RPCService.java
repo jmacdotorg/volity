@@ -111,6 +111,7 @@ public class RPCService implements PacketListener {
         final RPCRequest req = (RPCRequest) packet;
 
         RPCResponseHandler callback = new RPCResponseHandler() {
+                private boolean in_progress = true;
                 public void respondValue(Object value) {
                     respond(new RPCResult(value));
                 }
@@ -118,11 +119,14 @@ public class RPCService implements PacketListener {
                     respond(new RPCFault(faultCode, faultString));
                 }
                 private void respond(RPCResponse resp) {
+                    assert (in_progress);
+                    in_progress = false;
                     resp.setTo(req.getFrom());
                     String id = req.getPacketID();
                     if (id != null)
                         resp.setPacketID(id);
-                    mConnection.sendPacket(resp);
+                    if (mConnection != null)
+                        mConnection.sendPacket(resp);
                 }
             };
 
