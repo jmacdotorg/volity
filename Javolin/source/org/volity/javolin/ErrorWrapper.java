@@ -68,6 +68,8 @@ public class ErrorWrapper
         }
 
         System.out.println("Detected exception: " + ex.toString());
+        // ex.printStackTrace(); // uncomment for serious debugging
+
         synchronized (lastErrorLock) {
             lastError = this;
         }

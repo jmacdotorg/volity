@@ -177,7 +177,7 @@ public class AppMenuBar extends JMenuBar
 
         mChatWithMenuItem = new JMenuItem(localize("ChatWith"));
         mChatWithMenuItem.addActionListener(this);
-        setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_C);
+        setPlatformMnemonic(mChatWithMenuItem, KeyEvent.VK_C);
         chatMenu.add(mChatWithMenuItem);
 
         mJoinMucMenuItem = new JMenuItem(localize("JoinMUC"));
