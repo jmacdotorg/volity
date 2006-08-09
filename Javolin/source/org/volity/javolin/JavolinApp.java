@@ -467,8 +467,8 @@ public class JavolinApp extends JFrame
     }
 
     /**
-     * Gets the name of the application, suitable for display to the user in dialog box
-     * titles and other appropriate places.
+     * Gets the name of the application, suitable for display to the user in
+     * dialog box titles and other appropriate places.
      *
      * @return   The name of the application.
      */
@@ -1098,8 +1098,8 @@ public class JavolinApp extends JFrame
      */
     void doJoinMuc()
     {
-        JoinMUCDialog joinMucDlg = new JoinMUCDialog(this, mConnection);
-        joinMucDlg.setVisible(true);
+        JoinMUCDialog box = new JoinMUCDialog(this, mConnection);
+        box.setVisible(true);
     }
 
     public void handleNewMucWindow(MUCWindow mucWin)
@@ -1136,6 +1136,15 @@ public class JavolinApp extends JFrame
         }
 
         chatWithUser(selItem.getId());
+    }
+
+    /**
+     * Handler for the Chat With User... menu item.
+     */
+    public void doChatWith() 
+    {
+        JoinChatDialog box = new JoinChatDialog(this, mConnection);
+        box.setVisible(true);
     }
 
     /**

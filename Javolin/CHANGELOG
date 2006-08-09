@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+Added a "Chat With User..." menu option to the main Chat menu. This lets you
+chat with a user by JID.
+
 Timestamps on delayed invitations and private messages are now displayed
 correctly.
 

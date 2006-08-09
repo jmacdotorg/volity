@@ -58,6 +58,7 @@ public class AppMenuBar extends JMenuBar
     private JMenuItem mNewTableAtMenuItem;
     private JMenuItem mJoinTableAtMenuItem;
     private JMenuItem mJoinMucMenuItem;
+    private JMenuItem mChatWithMenuItem;
     private JMenuItem mShowLastErrorMenuItem;
     private JMenuItem mClearCacheMenuItem;
     private JMenuItem mMemUsageMenuItem;
@@ -173,6 +174,11 @@ public class AppMenuBar extends JMenuBar
         // Chat menu
         JMenu chatMenu = new JMenu(localizeTitle("Chat"));
         setPlatformMnemonic(chatMenu, KeyEvent.VK_C);
+
+        mChatWithMenuItem = new JMenuItem(localize("ChatWith"));
+        mChatWithMenuItem.addActionListener(this);
+        setPlatformMnemonic(mJoinMucMenuItem, KeyEvent.VK_C);
+        chatMenu.add(mChatWithMenuItem);
 
         mJoinMucMenuItem = new JMenuItem(localize("JoinMUC"));
         mJoinMucMenuItem.addActionListener(this);
@@ -375,6 +381,7 @@ public class AppMenuBar extends JMenuBar
 
         mNewTableAtMenuItem.setEnabled(isConnected);
         mJoinTableAtMenuItem.setEnabled(isConnected);
+        mChatWithMenuItem.setEnabled(isConnected);
         mJoinMucMenuItem.setEnabled(isConnected);
 
         mDebugShowRPCsMenuItem.setState(PrefsDialog.getDebugShowRPCs());
@@ -735,6 +742,9 @@ public class AppMenuBar extends JMenuBar
         }
         else if (source == mJoinTableAtMenuItem) {
             mApplication.doJoinTableAt();
+        }
+        else if (source == mChatWithMenuItem) {
+            mApplication.doChatWith();
         }
         else if (source == mJoinMucMenuItem) {
             mApplication.doJoinMuc();
