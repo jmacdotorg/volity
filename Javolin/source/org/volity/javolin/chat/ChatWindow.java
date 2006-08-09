@@ -17,15 +17,15 @@ package org.volity.javolin.chat;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.text.*;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.prefs.Preferences;
 import javax.swing.*;
-import javax.swing.text.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.util.StringUtils;
+import org.jivesoftware.smackx.packet.DelayInformation;
 import org.volity.javolin.*;
 
 /**
@@ -311,7 +311,14 @@ public class ChatWindow extends JFrame
             String jid = msg.getFrom();
             if (jid != null) 
                 setUserResource(jid);
-            mLog.message(mRemoteIdFull, mRemoteNick, msg.getBody());
+
+            Date date = null;
+            PacketExtension ext = msg.getExtension("x", "jabber:x:delay");
+            if (ext != null && ext instanceof DelayInformation) {
+                date = ((DelayInformation)ext).getStamp();
+            }
+
+            mLog.message(mRemoteIdFull, mRemoteNick, msg.getBody(), date);
             Audio.playMessage();
         }
     }

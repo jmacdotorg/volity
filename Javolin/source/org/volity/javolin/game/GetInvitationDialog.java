@@ -149,7 +149,7 @@ public class GetInvitationDialog extends BaseWindow
 
         int row = 0;
 
-        label = new JLabel(sTimeStampFormat.format(new Date()));
+        label = new JLabel(sTimeStampFormat.format(mInvite.getTimestamp()));
         label.setFont(new Font("SansSerif", Font.PLAIN, 9));
         c = new GridBagConstraints();
         c.gridx = 0;
