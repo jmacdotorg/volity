@@ -461,5 +461,13 @@ public class ChatLogPanel extends LogTextPanel
             
             super.processMouseEvent(ev);
         }
+
+        /**
+         * Block the scrollRectToVisible() method, as required by
+         * LogTextPanel.
+         */
+        public void scrollRectToVisible(Rectangle rect) {
+            // Do nothing.
+        }
     }
 }

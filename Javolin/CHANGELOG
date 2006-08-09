@@ -3,6 +3,9 @@ SVN repository.
 
 * the present
 
+If you're holding the scroll bar up in a message pane, new messages will
+not autoscroll you to the bottom.
+
 Added a "Chat With User..." menu option to the main Chat menu. This lets you
 chat with a user by JID.
 

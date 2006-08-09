@@ -100,9 +100,11 @@ public class LogTextPanel extends JPanel implements ChangeListener
      */
     public void stateChanged(ChangeEvent e)
     {
-        // Test for flag. Otherwise, if we scroll unconditionally, the scroll bar will be
-        // stuck at the bottom even when the user tries to drag it. So we only scroll
-        // when we know we've added text.
+        /* If we scrolled unconditionally, the scroll bar would be stuck at the
+         * bottom even when the user tries to drag it. So we only scroll when
+         * we know we've added text.
+         */
+
         if (mShouldScroll)
         {
             JScrollBar vertBar = mLogScroller.getVerticalScrollBar();
@@ -114,9 +116,19 @@ public class LogTextPanel extends JPanel implements ChangeListener
     /**
      * Create a JTextPane. This is broken out so that subclasses can override
      * it.
+     *
+     * If you override it, you must change the scrollRectToVisible() method of
+     * the JTextPane to a no-op, as shown here. Otherwise, there will be
+     * autoscrolling bugs. (The default JTextPane tries to scroll to the point
+     * of new text insertions. You need to block that, because the LogTextPanel
+     * has its own autoscrolling mechanism.)
      */
     protected JTextPane buildTextPane() {
-        return new JTextPane();
+        return new JTextPane() {
+                public void scrollRectToVisible(Rectangle rect) {
+                    // do nothing
+                }
+            };
     }
 
     /**
