@@ -7,6 +7,14 @@
 	  game.not_your_turn. The former has recently been added as a core
 	  Volity translation token.
 
+	- If a parlor loses its connection to the Jabber server, it
+          will attempt to reconnect, and if still not successful try
+          again every fix seconds.
+
+	- There is now a logical separation between the the hostname of
+	  the Jabber server that Volity entities connect to, and the host
+	  part of their own JIDs. This allows proxying and such.
+
 	- Bugfixes: Some endgame winner-list configurations would
           mysteriously break things; no longer. Also, the ref no longer
           allows non-seated players to suspend games.
