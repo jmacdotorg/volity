@@ -41,6 +41,7 @@ Getopt::Long::Configure(qw(no_ignore_case no_auto_abbrev));
 
 my %valid_options = (
 		    host=>"h",
+		    jid_host=>"s",
 		    username=>"u",
 		    password=>"p",
 		    game_class=>"g",
@@ -69,15 +70,17 @@ GetOptions(\%opts,
 	   "bot_jabber_id|I=s@",
 	   "bot_username|U=s@",
 	   "bot_host|H=s@",
+	   "bot_jid_host|S=s@",
 	   "bot_password|P=s@",
 	   );
+
 
 # Parse out any command-line bot-config options.
 my @command_line_bot_configs;
 if ($opts{bot_class}) {
     for my $index (0..@{$opts{bot_class}} - 1) {
 	my %bot_config;
-	foreach (qw(bot_class bot_jabber_id bot_username bot_host bot_password)) {
+	foreach (qw(bot_class bot_jabber_id bot_username bot_host bot_jid_host bot_password)) {
 	    $bot_config{$_} = $opts{$_}[$index];
 	}
 	push (@command_line_bot_configs, \%bot_config);
@@ -119,14 +122,18 @@ push (@{$opts{bots}}, @command_line_bot_configs);
 # break it up and stuff the parts into other opts. Collisions are bad,
 # though.
 if ($opts{jabber_id}) {
-    if ($opts{username} || $opts{host} || $opts{resource}) {
-	die "If you provide a full login JID with the J flag, then you can't use the u, h, or r flags. Make up your mind and use one style or the other!\n";
+    if ($opts{username} || $opts{jid_host} || $opts{resource}) {
+	die "If you provide a full login JID with the J flag, then you can't use the u, H, or r flags. Make up your mind and use one style or the other!\n";
     }
-    ($opts{username}, $opts{host}, $opts{resource}) = $opts{jabber_id} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
+    ($opts{username}, $opts{jid_host}, $opts{resource}) = $opts{jabber_id} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
     unless ($opts{username}) {
 	die "I couldn't parse '$opts{jabber_id}' as a valid JID. Sorry!\n";
     }
 }
+
+# Set an undef host option to a defined jid_host, and vice versa.
+$opts{host} ||= $opts{jid_host};
+$opts{jid_host} ||= $opts{host};
 
 # Sanity-check the bot configs.
 my %seen_bot_jids;
@@ -142,11 +149,13 @@ for my $bot_config (@{$opts{bots}}) {
 	if ($resource) {
 	    warn "Config warning: It's meaningless to specify a resource string on Jabber IDs for bots to use. I'm interpreting '$$bot_config{bot_jabber_id}' as '$bot_jid'.\n";
 	}
-	if ($$bot_config{bot_username} || $$bot_config{bot_host} || $$bot_config{bot_resource}) {
-	    die "Bad config: If you provide a bot's full Jabber ID, as you do with $$bot_config{bot_jabber_id}, then you can't also define its bot_username and bot_host options\n";
+	if ($$bot_config{bot_username} || $$bot_config{bot_jid_host} || $$bot_config{bot_resource}) {
+	    die "Bad config: If you provide a bot's full Jabber ID, as you do with $$bot_config{bot_jabber_id}, then you can't also define its bot_username, bot_jid_host, or bot_resource options.\n";
 	}
 	$$bot_config{bot_username} = $username;
-	$$bot_config{bot_host} = $host;
+	$$bot_config{bot_jid_host} = $host;
+	$$bot_config{bot_host} ||= $$bot_config{bot_jid_host};
+	$$bot_config{bot_jid_host} ||= $$bot_config{bot_host};
     }
     else {
 	foreach (qw(bot_username bot_host)) {
@@ -154,12 +163,14 @@ for my $bot_config (@{$opts{bots}}) {
 		die "Bad config: You must provide either a bot_jid or a bot_username and bot_host for every bot in your config.\n";
 	    }
 	}
-	$bot_jid = "$$bot_config{bot_username}\@$$bot_config{bot_host}";
+	$$bot_config{bot_host} ||= $$bot_config{bot_jid_host};
+	$$bot_config{bot_jid_host} ||= $$bot_config{bot_host};
+	$bot_jid = "$$bot_config{bot_username}\@$$bot_config{bot_jid_host}";
     }
 
     unless ($$bot_config{bot_password}) {
 	if (($opts{username} eq $$bot_config{bot_username}) &&
-	    ($opts{host} eq $$bot_config{bot_host})) {
+	    ($opts{jid_host} eq $$bot_config{bot_jid_host})) {
 	    $$bot_config{bot_password} = $opts{password};
 	}
 	else {
@@ -180,14 +191,14 @@ for my $bot_config (@{$opts{bots}}) {
     else {
 	$seen_bot_classes{$$bot_config{bot_class}} = 1;
     }
-	foreach (qw(bot_username bot_password bot_host bot_class)) {
+	foreach (qw(bot_username bot_password bot_host bot_class bot_jid_host)) {
 	    my ($new_field) = /_(.*)$/;
 	    $$bot_config{$new_field} = $$bot_config{$_};
 	    delete($$bot_config{$_});
 	}
 }
 
-foreach (qw(username host password)) {
+foreach (qw(username host jid_host password)) {
     unless ($opts{$_}) {
 	die "You must define a $_, either on the command line or in a config file.\n";
   }
@@ -240,6 +251,7 @@ my $server = Volity::Server->new(
 				  user=>$opts{username},
 				  password=>$opts{password},
 				  port=>$opts{port} || 5222,
+				  jid_host=>$opts{jid_host},
 				  host=>$opts{host},
 				  resource=>$opts{resource} || 'volity',
 				  alias=>$alias,
@@ -324,6 +336,18 @@ achieve this.
 
 The hostname of the Jabber server that the parlor will use.
 
+If this is not defined but C<jid_host> is, then this will be set to
+the value of C<jid_host>.
+
+=item s jid_host
+
+The hostname that the parlor will use in its own Jabber ID.
+
+By default, this will be the same as the value of C<host>. You usually
+won't need to set this unless you are connecting to the jabber server
+via proxy, and the name of the host you are connecting to is different
+than the host part of your parlor's intended JID.
+
 =item u username
 
 The Jabber username that the parlor will use when connecting.
@@ -345,7 +369,7 @@ will run. It must be visible to @INC.
 =item J jabber_id
 
 The parlor's full Jabber ID. You can use this flag instead of using
-the C<username>, C<host> and C<resource> options. (But you can't use
+the C<username>, C<jid_host> and C<resource> options. (But you can't use
 both this I<and> them.)
 
 =back
@@ -523,9 +547,11 @@ The relevant I<command line> options include:
 
 =item U bot_username
 
-=item H bot_host
+=item H bot_host (Defaults to value of C<bot_jid_host>.)
 
-=item I bot_jabber_id (You can use this instead of bot_user & bot_host.)
+=item S bot_jid_host (Defaults to value of C<bot_host>.)
+
+=item I bot_jabber_id (You can use this instead of bot_user & bot_jid_host.)
 
 =item P bot_password (Not necessary if the bot and the parlor share a JID.)
 
@@ -549,9 +575,11 @@ From the I<config file>, define instead a YAML sequence under the key
 
 =item username
 
-=item host
+=item host (Defaults to value of C<jid_host>.)
 
-=item jabber_id (You can use this instead of user & host.)
+=item jid_host (Defaults to value of C<host>.)
+
+=item jabber_id (You can use this instead of C<username> and C<jid_host>.)
 
 =item password (Not necessary if the bot and the parlor have the same JID.)
 

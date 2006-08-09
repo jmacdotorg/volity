@@ -164,7 +164,7 @@ message: ") into its table's groupchat.
 =cut
 
 use base qw(Volity::Jabber);
-use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_configs contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown volityd_command volityd_cwd volityd_argv);
+use fields qw(referee_class game_class bookkeeper_jid referees referee_host referee_user referee_password muc_host bot_configs contact_email contact_jid volity_version visible referee_count startup_time admins in_graceful_shutdown volityd_command volityd_cwd volityd_argv reconnection_alarm_id);
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -177,6 +177,9 @@ use POE qw(
 use RPC::XML::Parser;
 use Volity::Referee;
 use Carp qw(croak carp);
+
+# Set some magic numbers.
+our $RECONNECTION_TIMEOUT = 5;
 
 sub initialize {
   my $self = shift;
@@ -214,6 +217,14 @@ sub require_bot_configs {
 	  die "Failed to require bot class $$bot_config{class}: $@";
       }
   }
+}
+
+sub init_finish {
+    my $self = shift;
+    $self->kernel->alarm_remove($self->reconnection_alarm_id) if defined($self->reconnection_alarm_id);
+    $self->reconnection_alarm_id(undef);
+
+    return $self->SUPER::init_finish;
 }
 
 # This presence handler takes care of auto-approving all subscription
@@ -264,11 +275,13 @@ sub new_table {
 				       password=>$self->password,
 				       resource=>$resource,
 				       host=>$self->host,
+				       jid_host=>$self->jid_host,
 				       muc_host=>$self->muc_host,
 				       game_class=>$self->game_class,
 				       alias=>$resource,
 				       bookkeeper_jid=>$self->bookkeeper_jid,
 				       bot_configs=>$self->{bot_configs},
+				       port=>$self->port,
 				      }
 				     );
 
@@ -389,6 +402,37 @@ sub exec_volityd {
     my $self = shift;
     chdir($self->volityd_cwd) or die "Can't chdir to " . $self->volityd_cwd . ": $!";
     exec { $self->volityd_command } ($self->volityd_command, $self->volityd_argv);
+}
+
+sub react_to_disconnection_error {
+    my $self = shift;
+    $self->logger->debug("Attempting to reconnect to the server...\n");
+    $self->attempt_reconnection;
+}
+
+sub attempt_reconnection {
+    my $self = shift;
+    $self->kernel->state("reconnection_timeout", $self);
+    my $alarm_id = $self->kernel->delay_set("reconnection_timeout", $RECONNECTION_TIMEOUT);
+    $self->reconnection_alarm_id($alarm_id);
+    $self->alias("volity" . time);
+#    eval {$self->kernel->alias_resolve($self->alias)};
+#    if ($@) {
+#    if ($self->kernel->alias_resolve($self->alias)) {
+	$self->logger->warn("Trying to reconnect..." . $self->host . $self->port);
+	$self->start_jabber_client;
+#    }
+#    else {
+#	$self->logger->warn("Hm, the volity POE session is still kicking around.");
+#    }
+
+}
+
+sub reconnection_timeout {
+    my $self = shift;
+    $self->logger->warn("Reconnection timeout!");
+    $self->logger->warn("I'll try again.");
+    $self->attempt_reconnection;
 }
 
 ####################

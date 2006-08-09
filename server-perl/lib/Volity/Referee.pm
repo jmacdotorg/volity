@@ -1132,6 +1132,7 @@ sub create_bot {
   my $bot_class = $bot_config->{class};
   # Generate a resource for this bot to use.
   my $resource = $bot_class->name . gettimeofday();
+    
   my $bot = $bot_class->new(
 			    {
 			     password=>$bot_config->{password},
@@ -1140,6 +1141,8 @@ sub create_bot {
 			     muc_jid=>$self->muc_jid,
 			     user=>$bot_config->{username},
 			     host=>$bot_config->{host},
+			     jid_host=>$bot_config->{jid_host},
+			     port=>$bot_config->{port} || "5222",
 			    }
 			 );
   $self->logger->info("New bot (" . $bot->jid . ") created by referee (" . $self->jid . ").");

@@ -188,6 +188,12 @@ The 'nickname' under which this object's own POE session will be known to the ke
 
 The Jabber server's hostname (or IP address).
 
+=item jid_host
+
+The connection's concept of the hostname part of its Jabber ID. This
+is almost always identical to the value of the C<host> key, but if
+there's some proxy-connection magic afoot, these may be different.
+
 =item port
 
 The Jabber server's TCP port.
@@ -223,7 +229,7 @@ Like C<jid>, except it returns the non-resource part of the JID. (e.g. C<foo@bar
 
 =cut
 
-use fields qw(kernel alias host port user resource password jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification last_node);
+use fields qw(kernel main_session_id alias host jid_host port user resource password jid rpc_parser default_language query_handlers roster iq_notification last_id response_handler error_notification last_node);
 
 sub initialize {
     my $self = shift;
@@ -236,6 +242,7 @@ sub initialize {
 			  [qw(jabber_iq jabber_presence _start jabber_message input_event init_finish error_event)],
 			  ],
 			 );
+
     # Weaken some variables to prevent circularities & such.
     foreach (qw(kernel)) {
 	weaken($self->{$_});
@@ -247,7 +254,7 @@ sub initialize {
 	}
     }
     
-    $self->jid(sprintf("%s@%s/%s", $self->user, $self->host, $self->resource));
+    $self->jid(sprintf("%s@%s/%s", $self->user, $self->jid_host || $self->host, $self->resource));
     $self->rpc_parser(RPC::XML::Parser->new);
     $self->default_language('en') unless defined($self->default_language);
     
@@ -307,30 +314,38 @@ sub post_node {
 ################################
 
 sub _start {
-  my $self = $_[OBJECT];
-  my ($kernel, $session, $heap) = @_[KERNEL, SESSION, HEAP];
-  my $alias = $self->alias;
-  unless (defined($self->alias)) {
-    die "You haven't set an alias on $self! Please do that when constucting the object.";
-  }
-  POE::Component::Jabber::Client::Legacy->new(
-			      ALIAS=>$alias,
-			      STATE_PARENT=>$session->ID,
-			      STATES=>{
-				       INITFINISH=>'init_finish',
-				       INPUTEVENT=>'input_event',
-				       ERROREVENT=>'error_event',
-				     },
-			      XMLNS => +NS_JABBER_CLIENT,
-			      STREAM => +XMLNS_STREAM,
-			      IP=>$self->host,
-			      HOSTNAME=>$self->host,
-			      PORT=>$self->port,
-			      USERNAME=>$self->user,
-                              PASSWORD=>$self->password,
-                              RESOURCE=>$self->resource,
-#			      DEBUG=>1,
-			     );
+    my $self = $_[OBJECT];
+    my ($kernel, $session, $heap) = @_[KERNEL, SESSION, HEAP];
+    $self->main_session_id($session->ID);
+    $self->start_jabber_client;
+}
+
+sub start_jabber_client {
+    my $self = shift;
+    my $alias = $self->alias;
+    unless (defined($self->alias)) {
+	die "You haven't set an alias on $self! Please do that when constucting the object.";
+    }
+
+    my %config = (
+		  ALIAS=>$alias,
+		  STATE_PARENT=>$self->main_session_id,
+		  STATES=>{
+		      INITFINISH=>'init_finish',
+		      INPUTEVENT=>'input_event',
+		      ERROREVENT=>'error_event',
+		  },
+		  XMLNS => +NS_JABBER_CLIENT,
+		  STREAM => +XMLNS_STREAM,
+		  IP=>$self->host,
+		  HOSTNAME=>$self->jid_host,
+		  PORT=>$self->port,
+		  USERNAME=>$self->user,
+		  PASSWORD=>$self->password,
+		  RESOURCE=>$self->resource,
+		  );
+
+    POE::Component::Jabber::Client::Legacy->new(%config);
 }
 
 ################################
@@ -339,7 +354,6 @@ sub _start {
 
 sub init_finish {
   my $self = $_[OBJECT];
-  $self->logger->debug("In init_finish. Password is " . $self->password);
   $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
   # XXX EXPERIMENTAL
   # Always request roster. The roster's receipt will trigger an 'available'
@@ -354,9 +368,12 @@ sub input_event {
   my $method = "jabber_$element_type";
   $method =~ s/\W/_/g;
   if ($self->can($method)) {
-    $self->$method($node);
+      $self->$method($node);
+  }
+  elsif ($node->to_str eq "</stream:stream>") {
+      $self->logger->warn("The Jabber stream shut down!");
   } else {
-      die sprintf("Looks like the stream died.\nError: %s\nLast thing posted: %s", $node->to_str, $self->last_node->to_str);
+      $self->logger->error("Got an input event that I have no idea how to handle, so I'll ignore it and chug merrily along. Who knows what will happen next?\nThis was the XML:\n" . $node->to_str);
   }
 }
 
@@ -369,7 +386,8 @@ sub error_event {
       my ($call, $code, $err) = @_[ARG1..ARG3];
       $error_message = "Socket error: $call, $code, $err\n";
   } elsif ($error == +PCJ_SOCKDISC) {
-      $error_message = "We got disconneted\n";
+      $error_message = "We got disconnected.\n";
+      $self->react_to_disconnection_error;
   } elsif ($error == +PCJ_AUTHFAIL) {
       $error_message = "Failed to authenticate\n";
   } elsif ($error == +PCJ_BINDFAIL) {
@@ -382,6 +400,13 @@ sub error_event {
 
   $self->logger->warn($error_message);
 }
+
+# react_to_disconnection_error: Called as a result of the error_event method
+# getting notifcation that the Jabber stream has closed.
+# By default, it does nothing at all, and the object quietly accepts its fate.
+# Subclasses can ovveride this in order to do other things, such as attempt to
+# reconnect to the server
+sub react_to_disconnection_error { }
 
 # Actually, these are all just stubs. It's up to subclasses for making
 # these do real stuff.
@@ -850,12 +875,10 @@ sub send_rpc_request {
   # I don't like this so much, sliding in the request as raw data.
   # But then, I can't see why it would break.
   my $request_xml = $request->as_string;
-#  # The susbtr() chops off the XML prolog. I know, I know.
   $request_xml =~ s/^<\?\s*xml\s.*?\?>//;
   $iq->insert_tag('query', [xmlns=>'jabber:iq:rpc'])->
     rawdata($request_xml);
   $self->logger->debug("Full, outgoing RPC request:\n" . $iq->to_str);
-#  $self->kernel->post($self->alias, 'output_handler', $iq);
   $self->post_node($iq);
 }
 
