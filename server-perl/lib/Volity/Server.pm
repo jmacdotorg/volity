@@ -173,7 +173,7 @@ use POE qw(
 	   Driver::SysRW
 	   Component::Jabber;
 	  );
-#use Jabber::NS qw(:all);
+
 use RPC::XML::Parser;
 use Volity::Referee;
 use Carp qw(croak carp);
@@ -416,16 +416,8 @@ sub attempt_reconnection {
     my $alarm_id = $self->kernel->delay_set("reconnection_timeout", $RECONNECTION_TIMEOUT);
     $self->reconnection_alarm_id($alarm_id);
     $self->alias("volity" . time);
-#    eval {$self->kernel->alias_resolve($self->alias)};
-#    if ($@) {
-#    if ($self->kernel->alias_resolve($self->alias)) {
-	$self->logger->warn("Trying to reconnect..." . $self->host . $self->port);
-	$self->start_jabber_client;
-#    }
-#    else {
-#	$self->logger->warn("Hm, the volity POE session is still kicking around.");
-#    }
-
+    $self->logger->warn("Trying to reconnect..." . $self->host . $self->port);
+    $self->start_jabber_client;
 }
 
 sub reconnection_timeout {

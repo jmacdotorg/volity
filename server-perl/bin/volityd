@@ -123,7 +123,7 @@ push (@{$opts{bots}}, @command_line_bot_configs);
 # though.
 if ($opts{jabber_id}) {
     if ($opts{username} || $opts{jid_host} || $opts{resource}) {
-	die "If you provide a full login JID with the J flag, then you can't use the u, H, or r flags. Make up your mind and use one style or the other!\n";
+	die "If you provide a full login JID with the J flag, then you can't use the u, s, or r flags. Make up your mind and use one style or the other!\n";
     }
     ($opts{username}, $opts{jid_host}, $opts{resource}) = $opts{jabber_id} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
     unless ($opts{username}) {

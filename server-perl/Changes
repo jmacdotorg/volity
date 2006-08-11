@@ -9,7 +9,7 @@
 
 	- If a parlor loses its connection to the Jabber server, it
           will attempt to reconnect, and if still not successful try
-          again every fix seconds.
+          again every few seconds.
 
 	- There is now a logical separation between the the hostname of
 	  the Jabber server that Volity entities connect to, and the host
