@@ -18,6 +18,7 @@ Getopt::Long::Configure(qw(no_ignore_case no_auto_abbrev));
 my %opts;
 my %valid_options = (
 		     host=>"h",
+		     jid_host=>"s",
 		     username=>"u",
 		     password=>"p",
 		     game=>"g",
@@ -69,18 +70,20 @@ if ($opts{config}) {
 # though.
 
 if ($opts{jabber_id}) {
-    if ($opts{username} || $opts{host} || $opts{resource}) {
-	die "If you provide a full login JID with the J flag, then you can't use the u, h, or r flags. Make up your mind and use one style or the other!\n";
+    if ($opts{username} || $opts{jid_host} || $opts{resource}) {
+	die "If you provide a full login JID with the J flag, then you can't use the u, s, or r flags. Make up your mind and use one style or the other!\n";
     }
-    ($opts{username}, $opts{host}, $opts{resource}) = $opts{jabber_id} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
+    ($opts{username}, $opts{jid_host}, $opts{resource}) = $opts{jabber_id} =~ m|^(.*?)@(.*?)(?:/(.*?))?$|;
     unless ($opts{username}) {
 	die "I couldn't parse '$opts{jabber_id}' as a valid JID. Sorry!\n";
     }
 }
 
-# getopts('u:p:h:r:l:o:G:D:U:W:f:', \%opts);
-
 Volity::Info->set_db('Main', $opts{db_datasource}, $opts{db_username}, $opts{db_password});
+
+# Set an undef host option to a defined jid_host, and vice versa.
+$opts{host} ||= $opts{jid_host};
+$opts{jid_host} ||= $opts{host};
 
 foreach (qw(username host password)) {
     unless ($opts{$_}) {
@@ -106,6 +109,7 @@ my $bookkeeper = Volity::Bookkeeper->new(
 				  password=>$opts{password},
 				  port=>$opts{port} || 5222,
 				  host=>$opts{host},
+				  jid_host=>$opts{jid_host},
 				  resource=>$opts{resource},
 				  alias=>'bookkeeper',
 				}
@@ -186,6 +190,18 @@ achieve this.
 =item h host
 
 The hostname of the Jabber server that the bookkeeper will use.
+
+If this is not defined but C<jid_host> is, then this will be set to
+the value of C<jid_host>.
+
+=item s jid_host
+
+The hostname that the bookkeeper will use in its own Jabber ID.
+
+By default, this will be the same as the value of C<host>. You usually
+won't need to set this unless you are connecting to the jabber server
+via proxy, and the name of the host you are connecting to is different
+than the host part of the bookkeeper's intended JID.
 
 =item u username
 

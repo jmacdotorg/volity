@@ -25,6 +25,7 @@ use Data::Dumper;
 use base qw(Volity::Jabber);
 use fields qw(scheduled_game_info_by_rpc_id 
 	      scheduled_game_info_by_muc_jid
+	      reconnection_alarm_id
 	      );
 
 our $VERSION = '0.6';
@@ -50,6 +51,7 @@ our $NEW_TABLE_TIMEOUT = 60;
 our $JOIN_TABLE_TIMEOUT = 60;
 our $SCHEDULED_GAME_CHECK_INTERVAL = 60;
 our $INVITEE_JOIN_TIMEOUT = 3600;
+our $RECONNECTION_TIMEOUT = 5;
 
 sub initialize {
   my $self = shift;
@@ -65,6 +67,11 @@ sub initialize {
 
 sub init_finish {
     my $self = shift;
+    
+    # Cancel any pending reconnection alarms.
+    $self->kernel->alarm_remove($self->reconnection_alarm_id) if defined($self->reconnection_alarm_id);
+    $self->reconnection_alarm_id(undef);
+
     # Set up some POE event handlers.
     foreach (qw(time_to_check_the_schedule new_table_rpc_timed_out new_table_join_attempt_timed_out waiting_for_invitees_timed_out)) {
 	$self->kernel->state($_, $self);
@@ -89,6 +96,29 @@ sub send_presence {
     return $self->SUPER::send_presence($config);
 }
 
+
+sub react_to_disconnection_error {
+    my $self = shift;
+    $self->logger->debug("Attempting to reconnect to the server...\n");
+    $self->attempt_reconnection;
+}
+
+sub attempt_reconnection {
+    my $self = shift;
+    $self->kernel->state("reconnection_timeout", $self);
+    my $alarm_id = $self->kernel->delay_set("reconnection_timeout", $RECONNECTION_TIMEOUT);
+    $self->reconnection_alarm_id($alarm_id);
+    $self->alias("volity" . time);
+    $self->logger->warn("Trying to reconnect..." . $self->host . $self->port);
+    $self->start_jabber_client;
+}
+
+sub reconnection_timeout {
+    my $self = shift;
+    $self->logger->warn("Reconnection timeout!");
+    $self->logger->warn("I'll try again.");
+    $self->attempt_reconnection;
+}
 
 ####################
 # Jabber event handlers

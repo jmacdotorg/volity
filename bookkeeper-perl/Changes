@@ -5,6 +5,14 @@
 	- The bookkeeper now sends back RPC faults if it receives
           strange RPC requests.
 
+	- If the bookkeeper loses its connection to the Jabber server, it
+          will attempt to reconnect, and if still not successful try
+          again every few seconds.
+
+	- There is now a logical separation between the the hostname of
+	  the Jabber server that Volity entities connect to, and the host
+	  part of their own JIDs. This allows proxying and such.
+
 	- Various bugfixes.
 
 0.5
