@@ -81,6 +81,7 @@ public class TableWindow extends JFrame
 
     private final static ImageIcon INVITE_ICON;
     private final static ImageIcon BOT_ICON;
+    private final static ImageIcon STATS_ICON;
     private final static ImageIcon READY_ICON;
     private final static ImageIcon UNREADY_ICON;
     private final static ImageIcon SEAT_ICON;
@@ -96,6 +97,7 @@ public class TableWindow extends JFrame
         UNREADY_ICON = new ImageIcon(TableWindow.class.getResource("Unready_ButIcon.png"));
         SEAT_ICON = new ImageIcon(TableWindow.class.getResource("Seat_ButIcon.png"));
         UNSEAT_ICON = new ImageIcon(TableWindow.class.getResource("Unseat_ButIcon.png"));
+        STATS_ICON = new ImageIcon(TableWindow.class.getResource("Stats_ButIcon.png"));
     }
 
     private String mGameName;
@@ -121,6 +123,7 @@ public class TableWindow extends JFrame
 
     private JButton mBotButton;
     private JButton mInviteButton;
+    private JButton mStatsButton;
     private JButton mReadyButton;
     private JButton mSeatButton;
     private JLabel mRefereeStatusLabel;
@@ -427,6 +430,14 @@ public class TableWindow extends JFrame
         mSeatChart.addSeatMarkListener(mSeatMarkListener);
 
         // Set up button actions.
+
+        mStatsButton.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    URI ruleset = mParlor.getRuleset();
+                    String uri = ruleset.toString();
+                    JavolinApp.getSoleJavolinApp().showRulesetGameStats(uri);
+                }
+            });
 
         mBotButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent ev) {
@@ -1789,6 +1800,11 @@ public class TableWindow extends JFrame
 
         mBotButton = new JButton(localize("ButtonRequestBot"), BOT_ICON);
         toolbar.add(mBotButton);
+
+        toolbar.addSeparator();
+
+        mStatsButton = new JButton(localize("ButtonStats"), STATS_ICON);
+        toolbar.add(mStatsButton);
 
         toolbar.addSeparator(new Dimension(16, 10));
 

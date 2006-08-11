@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Added a "Stats" button to the table window.
+
 If you're holding the scroll bar up in a message pane, new messages will
 not autoscroll you to the bottom.
 

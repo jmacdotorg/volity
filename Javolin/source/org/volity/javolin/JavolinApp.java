@@ -73,6 +73,8 @@ public class JavolinApp extends JFrame
 
     private final static String PLAYER_STAT_QUERY_URL
         = "http://volity.net/history/player_detail.html?player_jid=";
+    private final static String RULESET_STAT_QUERY_URL
+        = "http://volity.net/games/ruleset_detail.html?ruleset_uri=";
 
     private final static String NODENAME = "MainAppWin";
 
@@ -1237,6 +1239,23 @@ public class JavolinApp extends JFrame
         try {
             jid = StringUtils.parseBareAddress(jid);
             String url = PLAYER_STAT_QUERY_URL + URLEncoder.encode(jid, "UTF-8");
+            PlatformWrapper.launchURL(url);
+        }
+        catch (UnsupportedEncodingException ex) {
+            new ErrorWrapper(ex);
+        }
+    }
+
+    /**
+     * Send the user's browser to a page showing the game stats of the given
+     * ruleset URI. 
+     */
+    public void showRulesetGameStats(String uri)
+    {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        try {
+            String url = RULESET_STAT_QUERY_URL + URLEncoder.encode(uri, "UTF-8");
             PlatformWrapper.launchURL(url);
         }
         catch (UnsupportedEncodingException ex) {
