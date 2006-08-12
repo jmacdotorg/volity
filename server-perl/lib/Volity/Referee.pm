@@ -137,7 +137,7 @@ referee.
 
 use base qw(Volity::Jabber);
 # See comment below for what all these fields do.
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_configs bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_configs bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed bot_factory_requests);
 # FIELDS:
 # muc_jid
 #   The JID of this game's MUC.
@@ -177,6 +177,8 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 #  Unix-time of the most recent game.* call.
 # games_completed
 #  The number of games that have come to an end under this referee.
+# bot_factory_requests
+#  Hash with info about outstanding RPC requests to bot factories.
 
 use warnings;  no warnings qw(deprecated);
 use strict;
@@ -408,6 +410,27 @@ sub handle_rpc_request {
 			    );
       
   }
+}
+
+# handle_rpc_response: The only RPC response we care about involves bot
+# factories. 
+sub handle_rpc_response {
+    my $self = shift;
+    my ($info_hash) = @_;
+    if ($info_hash->{id} =~ /^bot-factory-/) {
+	# This is the response to a new_bot RPC we sent earlier.
+	my $original_request_info = delete($self->{bot_factory_requests}->{$info_hash->{id}});
+
+	# Cancel the timeout alarm.
+	eval {$self->kernel->alarm_remove($original_request_info->{alarm_id})};
+
+	# Pass the response back to the original requestor.
+	$self->send_rpc_response(
+				 $original_request_info->{player_jid},
+				 $original_request_info->{rpc_id},
+				 $info_hash->{response},
+				 );
+    }
 }
 
 # handle_game_rpc_request: Called by handle_rpc_request upon receipt of an
@@ -1053,9 +1076,50 @@ sub add_bot {
   else {
       # A foreign source JID has been provided, so we are to employ a bot
       # factory.
-      $self->send_rpc_fault($from_jid, $id, 608, "Sorry, calling in foreign bots is not implemented yet on this game parlor.");
+
+      # Get a unqiue RPC ID for the request we're about to make.
+      my $factory_rpc_id = "bot-factory-" . $self->next_id;
+
+      # Set an alarm in case this request times out.
+      $self->kernel->state("bot_factory_timeout", $self);
+      my $alarm_id = $self->kernel->delay_set(
+					      "bot_factory_timeout",
+					      $self->internal_timeout,
+					      $factory_rpc_id,
+					      );
+
+      # File the alarm ID under the RPC ID, so that we can cancel the alarm
+      # once we get a response to the RPC.
+      $self->{bot_factory_requests}->{$factory_rpc_id} = 
+	  {
+	      alarm_id   => $alarm_id,
+	      player_jid => $from_jid,
+	      rpc_id     => $id,
+	  };
+	      
+      # Make the RPC.
+      $self->send_rpc_request({
+	  id         => $factory_rpc_id,
+	  to         => $bot_source_jid,
+	  methodname => "volity.new_bot",
+	  args       => [$algorithm_uri, $self->muc_jid],
+      });
+
   }
 
+}
+
+# bot_factory_timeout: Called as a POE event, when we spend too long waiting
+# for a bot factor to respond to a volity.new_bot() call.
+sub bot_factory_timeout {
+    my $self = shift;
+    my ($rpc_id) = @_;
+    my $original_request_info = delete($self->{bot_factory_requests}->{$rpc_id});
+    $self->send_rpc_response(
+			     $original_request_info->{player_jid},
+			     $original_request_info->{rpc_id},
+			     ["volity.replay_failed"],
+			     );
 }
 
 sub remove_bot {
