@@ -862,8 +862,6 @@ sub send_rpc_request {
     @args = ();
   }
 
-#  warn "Arr, me hearties, the args are this: @args\n";
-  
   if ( exists $$args{'handler'} ) {
       $self->add_response_handler( $$args{'id'}, $$args{'handler'} );
   }
@@ -1576,6 +1574,9 @@ sub receive_registration_error {
 # Stub:
 sub handle_registration_error { }
 
+# send_form: This doesn't actually work. You'll note that the incoming $form
+# variable get validated but never used.
+# Repair this once this method needs to become useful. --jmac 08/2006
 sub send_form {
     my $self = shift;
     my ($config) = @_;
@@ -1584,75 +1585,11 @@ sub send_form {
 	Carp::croak("The argument to send_form must be an object of class Volity::Jabber::Form.");
       }
     my $iq = POE::Filter::XML::Node->new('iq');
-    foreach (qw(from to id)) {
+    foreach (qw(to id)) {
 	$iq->attr($_=>$$config{$_}) if defined($$config{$_});
     }
     $iq->attr(type=>'set');
     $self->post_node($iq);
-}
-
-# send_form: Sends a form, as per JEP-0004.
-sub old_send_form {
-  my $self = shift;
-  my ($config) = @_;
-  my $iq = POE::Filter::XML::Node->new('iq');
-  # Sanity check...
-  unless (defined($$config{type})) {
-    croak("You must specify a form type through the 'type' argument key.");
-  }
-  unless (defined($$config{to})) {
-    croak("You must specify a desitination for the form through the 'to' argument key.");
-  }
-  foreach (qw(from to id)) {
-    $iq->attr($_=>$$config{$_}) if defined($$config{$_});
-  }
-  $iq->attr(type=>'set');
-
-  # The XML namespace of the query is just the form type.
-  my $query = $iq->insert_tag('query', [xmlns=>$$config{type}]);
-  my $x = $query->insert_tag('x', [xmlns=>"jabber:x:data"]);
-  $x->attr(type=>'submit');
-  
-  # Send the fields and values.
-  if (defined($$config{fields})) {
-    # (We may support field lists in forms other than hashrefs later.)
-    if (ref($$config{fields}) eq 'HASH') {
-      while (my ($field, $value) = each(%{$$config{fields}})) {
-	my $type; my $label; my @options;
-	if (ref($value)) {
-	  # It's a hashref describing the field.
-	  $type = $$value{type} || '';
-	  $label = $$value{label} || '';
-	  @options = @{$$value{options}} || ();
-	  $value = $$value{value} || '';
-	} else {
-	  # It's a straight-up value already.
-	  $type = ''; $label = ''; @options = ();
-	}
-	my $field_element = $x->insert_tag('field');
-	$field_element->attr(var=>$field);
-	$field_element->attr(label=>$label);
-	$field_element->attr(type=>$type);
-	for my $option (@options) {
-	  my ($value, $label);
-	  if (ref($option)) {
-	    ($value, $label) = @$option;
-	  } else {
-	    ($value, $label) = ($option, $option);
-	  }
-	  my $option_element = $field_element->insert_tag("option");
-	  $option_element->attr(label=>$label);
-	  $option_element->insert_tag('value')->data($value);
-	  }
-	$field_element->insert_tag('value')->data($value);
-      }
-    } else {
-      croak("Form fields arg must be a hashref.");
-    }
-  }
-
-  $self->post_node($iq);
-#  $iq->free;
 }
 
 =head2 disconnect
@@ -2371,7 +2308,7 @@ sub clear_values {
 
 sub clear_options {
     my $self = shift;
-    map ($self->detach_child($_), $self->get_tag('option'));
+    map ($self->detach_child($_), grep(defined($_), $self->get_tag('option')));
 }
 
 ################################
