@@ -1017,49 +1017,45 @@ sub handle_recorded_request {
 
 sub add_bot {
   my $self = shift;
-  my ($from_jid, $id, @args) = @_;
+  my ($from_jid, $id, $algorithm_uri, $bot_source_jid) = @_;
 
-  # First, check to see that we have bots, and return a fault if we don't.
-  unless ($self->bot_configs) {
-    $self->send_rpc_fault($from_jid, $id, 3, "Sorry, this game server doesn't host any bots.");
-    return;
+  if (not($bot_source_jid) || $bot_source_jid eq $self->jid || $bot_source_jid eq $self->server->jid) {
+      # This is a request for a bot that we supply, and not for an external
+      # "bot factory" bot.
+      
+      # First, check to see that we have bots, and return an error token if we don't.
+      unless ($self->bot_configs) {
+	  $self->send_rpc_response($from_jid, $id, ["volity.no_bots_provided"]);
+	  return;
+      }
+
+      unless ($algorithm_uri) {
+	  # The requestor didn't specify a preferred bot.
+	  # All righty, they'll just get the first one on our list, then.
+	  $algorithm_uri = $self->{bot_configs}->[0]->{class}->algorithm;
+      }
+
+      # Fetch the bot config that matches the requested algorithm URI.
+      my ($bot_config) = grep($_->{class}->algorithm eq $algorithm_uri,
+			      $self->bot_configs,
+			      );
+
+      unless ($bot_config) {
+	  $self->send_rpc_response($from_jid, $id, ["volity.bot_not_available"]);
+      }
+
+      if (my $bot = $self->create_bot($self->{bot_configs}->[0])) {
+	  $self->send_rpc_response($from_jid, $id, ["volity.ok", $bot->jid]);
+      } else {
+	  $self->send_rpc_fault($from_jid, $id, 608, "I couldn't create a bot for some reason.");
+      }
   }
-  
-  # If we offer only one flavor of bot, then Bob's your uncle.
-  my @bot_configs = $self->bot_configs;
-  if (@bot_configs == 1) {
-    if (my $bot = $self->create_bot($self->{bot_configs}->[0])) {
-      $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
-#      $bot->kernel->run;
-    } else {
-      $self->send_rpc_fault($from_jid, $id, 4, "I couldn't create a bot for some reason.");
-    }
-    return;
+  else {
+      # A foreign source JID has been provided, so we are to employ a bot
+      # factory.
+      $self->send_rpc_fault($from_jid, $id, 608, "Sorry, calling in foreign bots is not implemented yet on this game parlor.");
   }
 
-  # We seem to have more than one bot. Send back a form.
-  my @form_options;
-  my $default_name_counter;
-  for my $bot_config ($self->bot_configs) {
-    my $label = $bot_config->{class}->name || 'Bot' . ++$default_name_counter;
-    if (defined($bot_config->{class}->description)) {
-      $label .= ": " . $bot_config->{class}->description;
-    }
-    push (@form_options, [$bot_config, $label]);
-  }
-  $self->send_form({
-		    fields=>{bot=>{
-				   type=>'list-single',
-				   options=>\@form_options,
-				   label=>"Choose a bot to add...",
-				  }
-			    },
-		    to=>$from_jid,
-		    id=>'bot_form',
-		    type=>'form',
-		   });
-  # Form sent; we're done here.
-  $self->send_rpc_response($from_jid, $id, ["volity.ok"]);
 }
 
 sub remove_bot {
