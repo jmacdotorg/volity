@@ -1042,10 +1042,12 @@ sub add_bot {
   my $self = shift;
   my ($from_jid, $id, $algorithm_uri, $bot_source_jid) = @_;
 
+  $self->logger->debug("Got an add_bot request for algorithm $algorithm_uri.");
+
   if (not($bot_source_jid) || $bot_source_jid eq $self->jid || $bot_source_jid eq $self->server->jid) {
       # This is a request for a bot that we supply, and not for an external
       # "bot factory" bot.
-      
+
       # First, check to see that we have bots, and return an error token if we don't.
       unless ($self->bot_configs) {
 	  $self->send_rpc_response($from_jid, $id, ["volity.no_bots_provided"]);
@@ -1067,7 +1069,7 @@ sub add_bot {
 	  $self->send_rpc_response($from_jid, $id, ["volity.bot_not_available"]);
       }
 
-      if (my $bot = $self->create_bot($self->{bot_configs}->[0])) {
+      if (my $bot = $self->create_bot($bot_config)) {
 	  $self->send_rpc_response($from_jid, $id, ["volity.ok", $bot->jid]);
       } else {
 	  $self->send_rpc_fault($from_jid, $id, 608, "I couldn't create a bot for some reason.");
