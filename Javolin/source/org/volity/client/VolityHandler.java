@@ -74,6 +74,10 @@ public class VolityHandler implements RPCHandler {
             table.setRefereeState((String)params.get(0));
             callUI(gameUI.volity, "game_activity", params);
             k.respondValue(Boolean.TRUE);
+        } else if (methodName.equals("game_validation")) {
+            table.setRefereeState((String)params.get(0));
+            callUI(gameUI.volity, "game_validation", params);
+            k.respondValue(Boolean.TRUE);
         } else if (methodName.equals("player_ready")) {
             table.setPlayerReadiness((String)params.get(0), true);
             callUI(gameUI.volity, "player_ready", params);

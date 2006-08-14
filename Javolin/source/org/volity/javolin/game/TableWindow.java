@@ -375,6 +375,9 @@ public class TableWindow extends JFrame
                     case GameTable.STATE_SUSPENDED:
                         str = localize("RefStatusSuspended");
                         break;
+                    case GameTable.STATE_AUTHORIZING:
+                        str = localize("RefStatusAuthorizing");
+                        break;
                     }
                     final String label = str;
                     // Invoke into the Swing thread.

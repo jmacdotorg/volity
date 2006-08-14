@@ -196,6 +196,11 @@ public class HelpPanel extends JPanel
             return text.toString();
         }
 
+        if (refstate == GameTable.STATE_AUTHORIZING) {
+            text.append(localize("StateAuthorizing"));
+            return text.toString();
+        }
+
         if (refstate == GameTable.STATE_SETUP && !everPlayed) {
             text.append(localize("StateSetup")+"\n");
         }
