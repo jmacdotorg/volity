@@ -60,7 +60,7 @@ public class TestbenchApp extends JFrame
     private SizeAndPositionSaver mSizePosSaver;
     private SimpleDateFormat mTimeStampFormat;
 
-    private Throwable lastException;
+    private Throwable lastException = null;
 
     /**
      * The main program for the TestbenchApp class.
@@ -350,7 +350,8 @@ public class TestbenchApp extends JFrame
     private void noticeException(Throwable ex) 
     {
         lastException = ex;
-        mLastExceptionMenuItem.setEnabled(true);
+        if (mLastExceptionMenuItem != null)
+            mLastExceptionMenuItem.setEnabled(true);
     }
 
     /**
@@ -403,7 +404,7 @@ public class TestbenchApp extends JFrame
         mLastExceptionMenuItem = new JMenuItem(MENUCMD_LASTEXCEPTION);
         mLastExceptionMenuItem.addActionListener(this);
         setPlatformMnemonic(mLastExceptionMenuItem, KeyEvent.VK_E);
-        mLastExceptionMenuItem.setEnabled(false);
+        mLastExceptionMenuItem.setEnabled(lastException != null);
         fileMenu.add(mLastExceptionMenuItem);
 
         if (true) {
