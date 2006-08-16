@@ -76,7 +76,8 @@ public class HelpPanel extends JPanel
     /* All these methods are called from outside the Swing thread. */
 
     public void stateChanged(int newstate) {
-        if (newstate != GameTable.STATE_SETUP)
+        if (newstate != GameTable.STATE_SETUP
+            && newstate != GameTable.STATE_AUTHORIZING)
             everPlayed = true;
 
         invokeAdjustUI();
@@ -197,7 +198,7 @@ public class HelpPanel extends JPanel
         }
 
         if (refstate == GameTable.STATE_AUTHORIZING) {
-            text.append(localize("StateAuthorizing"));
+            text.append(localize("StateAuthorizing")+"\n");
             return text.toString();
         }
 
