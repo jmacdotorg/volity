@@ -492,6 +492,7 @@ class Werewolf(volity.game.Game):
             self.sendtable('no_deaths', reason)
         else:
             seat.isalive = False
+            seat.seteliminated()
             seat.deathreason = reason
             role = seat.role
             if (role == self.role_fool):
