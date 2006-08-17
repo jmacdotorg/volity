@@ -68,7 +68,11 @@ config -- parses configuration files
 
 * Version history:
 
-- unreleased
+- 2.0.0:
+Added the payment-processing system. This includes a new referee state
+    ("authorizing") and several new RPCs.
+Added an "eliminated" flag for seats. By eliminating a seat, the referee
+    declares that the player can leave without disrupting the game.
 Added a Game module hook for player chat messages.
 Changed the timestamps in game records to end with "Z" instead of the
     (invalid) "+0000".

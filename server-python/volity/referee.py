@@ -16,6 +16,7 @@ STATE_ACTIVE    = intern('active')
 STATE_DISRUPTED = intern('disrupted')
 STATE_ABANDONED = intern('abandoned')
 STATE_SUSPENDED = intern('suspended')
+STATE_AUTHORIZING = intern('authorizing')
 
 # Constants for the presencechange() game method.
 ACTION_JOINED   = intern('joined')
@@ -142,6 +143,7 @@ class Referee(volent.VolEntity):
     configkillgame() -- handle a player request to change the kill-game flag.
     unreadyall() -- mark all players as unready.
     sendfullstate() -- send the complete table state to a player.
+    removenonliveplayers() -- remove all players who are not connected.
     reportsit() -- report a player sitting.
     reportstand() -- report a player standing.
     reportreadiness() -- report a player changing readiness.
@@ -150,6 +152,7 @@ class Referee(volent.VolEntity):
     updatediscoinfo() -- update and return the disco-info form.
     parsewinners() -- turn a list of game seats (in winning order) into
         a standardized winners list (a list of lists of lists of players).
+    authorizinggame() -- game-authorization handler.
     begingame() -- game-start handler.
     endgame() -- game-end handler.
     suspendgame() -- game-suspend handler.
@@ -178,6 +181,9 @@ class Referee(volent.VolEntity):
         # Lots of internal state to set up.
 
         self.refstate = STATE_SETUP
+        # prevrefstate is only used during STATE_AUTHORIZING
+        self.prevrefstate = None
+        
         self.startuptime = time.time()
         self.activitytime = None
         self.gamescompleted = 0
@@ -401,9 +407,9 @@ class Referee(volent.VolEntity):
         # would be a security hole, to the extent that Python has such
         # things.
         methargs = [ self.resolvemetharg(val) for val in methargs ]
-        
-        self.rpccli.send(op, self.parlor.bookkeeperjid,
-            methname, *methargs, **keywords)
+
+        destjid = self.parlor.bookkeeperjid
+        self.rpccli.send(op, destjid, methname, *methargs, **keywords)
 
     def defaultcallback(self, tup):
         """defaultcallback(tup) -> None
@@ -786,6 +792,9 @@ class Referee(volent.VolEntity):
             else:
                 self.settimer(None)
             return
+        elif (self.refstate == STATE_AUTHORIZING):
+            self.settimer(None)
+            return
         else:   # STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED
             ls = [ player for player in self.players.values()
                 if player.live and player.seat and (not player.isbot) ]
@@ -796,7 +805,7 @@ class Referee(volent.VolEntity):
                 self.settimer('abandoned')
                 return
             for seat in self.gameseatlist:
-                if (False): ### seat is eliminated
+                if (seat.eliminated):
                     continue
                 ls = [ player for player in seat.playerlist
                     if player.live ]
@@ -819,7 +828,7 @@ class Referee(volent.VolEntity):
         None (for no timer). If the given timer is already set (or not set),
         this does nothing.
         """
-        
+
         if (reason == None):
             if (self.timeraction):
                 self.timeraction.remove()
@@ -973,7 +982,7 @@ class Referee(volent.VolEntity):
         
         player = self.players[jidstr]
 
-        if (not (self.refstate in [STATE_SETUP, STATE_SUSPENDED])
+        if ((not (self.refstate in [STATE_SETUP, STATE_SUSPENDED]))
             and player.seat):
             # We have to keep the player record around (and in the seat.)
             self.log.info('seated player %s has left the table',
@@ -988,7 +997,7 @@ class Referee(volent.VolEntity):
             self.queueaction(self.reportstand, player, seat)
             self.queueaction(self.game.presencechange, player.jid, ACTION_LEFT)
             return
-        
+            
         if (player.seat):
             # Presume player stood up before leaving.
             seat = player.seat
@@ -1125,7 +1134,9 @@ class Referee(volent.VolEntity):
         Finally, if all seated players are ready, the game actually begins
         (or resumes, or is killed).
         """
-        
+
+        assert (self.refstate in [STATE_SETUP, STATE_SUSPENDED])
+        newgame = (self.refstate == STATE_SETUP)
         player = self.players[unicode(sender)]
 
         if (player.ready):
@@ -1139,7 +1150,7 @@ class Referee(volent.VolEntity):
         if (not ls):
             raise rpc.RPCFault(609, 'no humans are seated')
 
-        if (self.refstate == STATE_SETUP):
+        if (newgame):
             # To leave setup mode, we need the game to check the config.
             self.game.checkconfig()
             self.game.checkseating()
@@ -1158,16 +1169,14 @@ class Referee(volent.VolEntity):
         self.queueaction(self.reportreadiness, player)
 
         ls = [ pla for pla in self.players.values() if pla.seat ]
+        if (not ls):
+            return
         subls = [ pla for pla in ls if (not pla.ready) ]
-        if (ls and not subls):
-            if (self.refstate == STATE_SETUP):
-                self.queueaction(self.begingame)
-            else:
-                if (not self.killgame):
-                    self.queueaction(self.unsuspendgame)
-                else:
-                    winlist = self.parsewinners(()) # everyone ties
-                    self.queueaction(self.endgame, winlist, True)
+        if (subls):
+            # Someone is unready
+            return
+
+        self.queueaction(self.authorizinggame, newgame)
             
     def playerunready(self, sender):
         """playerunready(sender) -> None
@@ -1636,7 +1645,9 @@ class Referee(volent.VolEntity):
         self.game.sendconfigstate(player)
 
         # Then, the game state (if in progress)
-        if (self.refstate != STATE_SETUP):
+        if (not (self.refstate == STATE_SETUP
+            or (self.refstate == STATE_AUTHORIZING
+                and self.prevrefstate == STATE_SETUP))):
             seat = player.seat
             ### or the last known seat, if in suspended state
             ### or no seat?
@@ -1645,12 +1656,33 @@ class Referee(volent.VolEntity):
             
         self.game.sendplayer(player, 'volity.state_sent')
 
+    def removenonliveplayers(self):
+        """removenonliveplayers() -> None
+
+        Remove all players from the player list who are not connected to
+        the table. We must do this whenever we enter the setup or suspended
+        states. (During other states, we need to keep track of absent
+        players.)
+        """
+        
+        for jidstr in self.players.keys():
+            player = self.players[jidstr]
+            if (not player.live):
+                seat = player.seat
+                if (seat):
+                    assert (player in seat.playerlist)
+                    seat.playerlist.remove(player)
+                    player.seat = None
+                self.players.pop(jidstr, None)
+
     def reportactivity(self):
         """reportactivity() -> None
 
         Report a new "in progress" state (one of ACTIVE, DISRUPTED, or
         ABANDONED).
         """
+        assert (self.refstate in
+            [STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED])
         self.log.info('game is now %s', self.refstate)
         self.sendall('volity.game_activity', self.refstate)
         
@@ -1803,6 +1835,164 @@ class Referee(volent.VolEntity):
 
     # ---- Game state transitions.
 
+    def authorizinggame(self, newgame):
+        """authorizinggame(newgame) -> None
+
+        Game-authorization handler. This is triggered when all the players
+        become ready. If *newgame* is true, the previous state was SETUP,
+        and this is a new game; otherwise, the previous state was SUSPENDED.
+        """
+
+        if (newgame):
+            prevstate = STATE_SETUP
+        else:
+            prevstate = STATE_SUSPENDED
+            
+        if (self.refstate != prevstate):
+            self.log.error('entered authorizinggame when state was %s, not %s',
+                self.refstate, prevstate)
+            return
+
+        self.log.info('game authorizing (from %s)', prevstate)
+        self.prevrefstate = prevstate
+        self.refstate = STATE_AUTHORIZING
+
+        if (newgame):
+            # We must compute the game seat list and so forth. (Although
+            # if the authorization fails, we'll be throwing that away.)
+            
+            self.gameseatlist = []
+            for seat in self.seatlist:
+                if (seat.playerlist):
+                    seat.ingame = True
+                    seat.eliminated = False
+                    self.gameseatlist.append(seat)
+                else:
+                    seat.ingame = False
+                    seat.eliminated = False
+
+            # From this point on, the seat listings are immutable. Also,
+            # we don't discard a seated Player object even if it
+            # disconnects.
+        
+            # Prepare the history lists.
+            for seat in self.seatlist:
+                seat.playerhistory.clear()
+
+        # Generate the list of full JIDs which are involved in the game.
+        # This only includes players who are currently connected.
+        ls = []
+        for seat in self.gameseatlist:
+            for pla in seat.playerlist:
+                if (pla.live):
+                    ls.append(pla.jid)
+
+        self.queueaction(self.checktimersetting)
+        
+        self.sendall('volity.game_validation', self.refstate)
+        self.sendbookkeeper('volity.prepare_game',
+            newgame, ls, callback=self.gotpreparegame)
+
+    def gotpreparegame(self, tup):
+        reason = 'error'
+        reasonlist = []
+        
+        try:
+            try:
+                res = sched.Deferred.extract(tup)
+            except rpc.RPCFault, ex:
+                self.log.info('prepare_game rpc returned fault, ignoring: %s',
+                    ex)
+                res = True
+            
+            if (res == True):
+                # Authorized!
+                if (self.prevrefstate == STATE_SETUP):
+                    self.queueaction(self.begingame)
+                    return
+                if (self.prevrefstate == STATE_SUSPENDED):
+                    self.queueaction(self.unsuspendgame)
+                    return
+                self.log.error('prepare_game returned in wrong prevstate %s',
+                    self.prevrefstate)
+                return
+                
+            if (type(res) != list):
+                raise rpc.RPCFault(605, 'prepare_game did not return array')
+            if (len(res) < 1):
+                raise rpc.RPCFault(606, 'prepare_game returned empty array')
+            if (not (type(res[0]) in [str, unicode])):
+                raise rpc.RPCFault(605, 'prepare_game array element 1 not string')
+            reason = res[0]
+            if (len(res) >= 2):
+                if (type(res[1]) != list):
+                    raise rpc.RPCFault(605, 'prepare_game array element 2 not list')
+                reasonlist = res[1]
+
+            self.log.info('game authorization failed: %s, %s',
+                reason, reasonlist)
+                
+        except sched.TimeoutException, ex:
+            self.log.warning('prepare_game rpc timed out: %s', ex)
+        except rpc.RPCFault, ex:
+            self.log.warning('prepare_game rpc returned fault: %s', ex)
+        except interface.StanzaError, ex:
+            self.log.warning('prepare_game rpc returned stanza error: %s', ex)
+        except Exception, ex:
+            self.log.warning('prepare_game rpc raised exception',
+                exc_info=True)
+
+        # We now know that authorization failed. (Or we got a bad return
+        # value, which counts as the same thing.) We must unready some or
+        # all players, go back to setup/suspended state, and then tell
+        # the table what happened.
+
+        self.removenonliveplayers()
+        
+        ls = []
+        if (reasonlist):
+            for pla in self.players.values():
+                if (pla.ready and pla.jid in reasonlist):
+                    ls.append(pla)
+        
+        if (not ls):
+            ls = [ pla for pla in self.players.values() if pla.ready ]
+
+        if (ls):
+            self.log.info('marking %d player(s) unready due to auth failure',
+                len(ls))
+            for pla in ls:
+                pla.ready = False
+            self.queueaction(self.reportunreadylist, ls)
+        
+        self.refstate = self.prevrefstate
+        self.prevrefstate = None
+        self.log.info('game is now in %s', self.refstate)
+        
+        if (self.refstate == STATE_SETUP):
+            self.gameseatlist = None
+            for seat in self.seatlist:
+                seat.ingame = False
+                seat.eliminated = False
+            
+        self.sendall('volity.game_validation', self.refstate)
+
+        if (reason in ['players_not_responding', 'players_not_authorized']):
+            lstext = ', '.join(reasonlist)
+            tok = game.FailureToken('volity.'+reason, game.Literal(lstext))
+        elif (reason in ['game_record_conflict', 'game_record_missing']):
+            tok = game.FailureToken('volity.'+reason)
+        elif (reason == 'error'):
+            tok = game.FailureToken('volity.prepare_game_failure',
+                game.Literal('internal referee error'))
+        else:
+            tok = game.FailureToken('volity.prepare_game_failure',
+                'volity.'+reason)
+        self.sendall('volity.message', tok.getlist())
+
+        # We changed back to setup/suspended, so we need to kick the timers
+        self.queueaction(self.checktimersetting)
+        
     def begingame(self):
         """begingame() -> None
 
@@ -1816,34 +2006,23 @@ class Referee(volent.VolEntity):
         creating the game record.
         """
         
-        if (self.refstate != STATE_SETUP):
-            self.log.error('entered begingame when state was %s',
-                self.refstate)
+        if (self.refstate != STATE_AUTHORIZING
+            or self.prevrefstate != STATE_SETUP):
+            self.log.error(
+                'entered begingame when state was %s, previous state was %s',
+                self.refstate, self.prevrefstate)
             return
         
         self.log.info('game beginning!')
         self.refstate = STATE_ACTIVE
+        self.prevrefstate = None
         self.gamestarttime = time.time()
 
-        self.gameseatlist = []
-        for seat in self.seatlist:
-            if (seat.playerlist):
-                seat.ingame = True
-                self.gameseatlist.append(seat)
-            else:
-                seat.ingame = False
-
         # add current seat.playerlists to seat accumulated totals
-        for seat in self.seatlist:
-            seat.playerhistory.clear()
         for seat in self.gameseatlist:
             for pla in seat.playerlist:
                 barejid = pla.jid.getbare()
                 seat.playerhistory[barejid] = True
-        
-        # From this point on, the seat listings are immutable. Also,
-        # we don't discard a seated Player object even if it
-        # disconnects.
         
         self.game.begingame()
         self.unreadyall(False)
@@ -1865,7 +2044,8 @@ class Referee(volent.VolEntity):
         """
         
         if (not cancelled):
-            if (self.refstate in [STATE_SETUP, STATE_SUSPENDED]):
+            if (self.refstate in
+                [STATE_SETUP, STATE_SUSPENDED, STATE_AUTHORIZING]):
                 self.log.error('entered endgame when state was %s',
                     self.refstate)
                 return
@@ -1897,27 +2077,21 @@ class Referee(volent.VolEntity):
             dic['finished'] = False
 
         if (self.recordgames):
+            ### check callback result, async
             self.queueaction(self.sendbookkeeper, 'volity.record_game', dic)
 
-        # Get rid of all non-live players
-        for jidstr in self.players.keys():
-            player = self.players[jidstr]
-            if (not player.live):
-                seat = player.seat
-                if (seat):
-                    assert (player in seat.playerlist)
-                    seat.playerlist.remove(player)
-                    player.seat = None
-                self.players.pop(jidstr, None)
+        self.removenonliveplayers()
             
         self.log.info('game ending!')
         self.refstate = STATE_SETUP
+        self.prevrefstate = None
         self.killgame = False
         self.gamescompleted += 1
 
         self.gameseatlist = None
         for seat in self.seatlist:
             seat.ingame = False
+            seat.eliminated = False
             
         # Check just in case the room is empty of all but bots.
         self.queueaction(self.checktimersetting)
@@ -1945,16 +2119,7 @@ class Referee(volent.VolEntity):
         self.sendall('volity.suspend_game', jidstr)
         self.game.suspendgame()
 
-        # Get rid of all non-live players
-        for jidstr in self.players.keys():
-            player = self.players[jidstr]
-            if (not player.live):
-                seat = player.seat
-                if (seat):
-                    assert (player in seat.playerlist)
-                    seat.playerlist.remove(player)
-                    player.seat = None
-                self.players.pop(jidstr, None)
+        self.removenonliveplayers()
             
         self.log.info('game suspended')
         self.refstate = STATE_SUSPENDED
@@ -1972,9 +2137,11 @@ class Referee(volent.VolEntity):
         seated players to each seat's history.
         """
 
-        if (self.refstate != STATE_SUSPENDED):
-            self.log.error('tried to unsuspendgame when state was %s',
-                self.refstate)
+        if (self.refstate != STATE_AUTHORIZING
+            or self.prevrefstate != STATE_SUSPENDED):
+            self.log.error(
+                'tried unsuspendgame when state was %s, previous state was %s',
+                self.refstate, self.prevrefstate)
             return
 
         for seat in self.gameseatlist:
@@ -1985,6 +2152,7 @@ class Referee(volent.VolEntity):
 
         self.log.info('game unsuspended')
         self.refstate = STATE_ACTIVE
+        self.prevrefstate = None
 
         # add current seat.playerlists to seat accumulated totals
         for seat in self.gameseatlist:
@@ -2006,7 +2174,9 @@ class Referee(volent.VolEntity):
         its best to blow away all of the referee's member fields, so that
         everything can be garbage-collected efficiently.
         """
-        
+
+        self.settimer(None)
+                
         if (self.mucrunning):
             try:
                 msg = interface.Node('iq',
@@ -2029,6 +2199,7 @@ class Referee(volent.VolEntity):
         self.playernicks.clear()
         self.seats.clear()
         self.seatlist = []
+        self.gameseatlist = None
         self.rpccli = None
         self.discoinfo = None
         self.gamewrapperopset = None
@@ -2120,8 +2291,8 @@ class Validator:
         state=*str*
             Require the referee to be in a particular state. The state
             may be one of 'setup', 'active', 'disrupted', 'suspended',
-            'abandoned'. Or, it may contain several of those values,
-            as a space-delimited string.
+            'abandoned', 'authorizing'. Or, it may contain several of
+            those values, as a space-delimited string.
         afoot=*bool*
             If the value is True, this requires the referee to be 'active',
             'disrupted', or 'abandoned'. If False, it requires the referee
@@ -2226,6 +2397,7 @@ class Validator:
         self.phasedisrupted = True
         self.phaseabandoned = True
         self.phasesuspended = True
+        self.phaseauthorizing = True
         self.seated = True
         self.observer = True
         self.administrator = False
@@ -2264,6 +2436,7 @@ class Validator:
             self.phasedisrupted = False
             self.phaseabandoned = False
             self.phasesuspended = False
+            self.phaseauthorizing = False
             val = keywords.pop('state')
             ls = val.split()
             if (STATE_SETUP in ls):
@@ -2276,6 +2449,8 @@ class Validator:
                 self.phaseabandoned = True
             if (STATE_SUSPENDED in ls):
                 self.phasesuspended = True
+            if (STATE_AUTHORIZING in ls):
+                self.phaseauthorizing = True
             
         if (keywords.has_key('afoot')):
             val = keywords.pop('afoot')
@@ -2285,12 +2460,14 @@ class Validator:
                 self.phasedisrupted = True
                 self.phaseabandoned = True
                 self.phasesuspended = False
+                self.phaseauthorizing = False
             else:
                 self.phasesetup = True
                 self.phaseactive = False
                 self.phasedisrupted = False
                 self.phaseabandoned = False
                 self.phasesuspended = True
+                self.phaseauthorizing = False
         if (keywords.has_key('seated')):
             val = keywords.pop('seated')
             if (val):
@@ -2342,6 +2519,8 @@ class Validator:
             raise game.FailureToken('volity.game_in_progress')
         if (ref.refstate == STATE_SUSPENDED and not self.phasesuspended):
             raise game.FailureToken('volity.game_not_in_progress')
+        if (ref.refstate == STATE_AUTHORIZING and not self.phaseauthorizing):
+            raise game.FailureToken('volity.authorizing_in_progress')
 
         if (not self.seated):
             pla = ref.game.getplayer(sender)
@@ -2796,6 +2975,7 @@ class RefAdminOpset(rpc.MethodOpset):
         dic['id'] = seat.id
         dic['required'] = seat.required
         dic['ingame'] = seat.ingame
+        dic['eliminated'] = seat.eliminated
         dic['players'] = [ pla.jidstr for pla in seat.playerlist ]
         dic['history'] = seat.getplayerhistory()
         return dic

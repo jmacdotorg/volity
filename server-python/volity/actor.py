@@ -89,6 +89,8 @@ class Actor(volent.VolEntity):
     endgame() -- game-end handler.
     suspendgame() -- game-suspend handler.
     unsuspendgame() -- game-resume handler.
+    gameactivity() -- referee state handler.
+    gamevalidation() -- referee state handler.
     sendref() -- send an RPC to the referee.
     defaultcallback() -- generic RPC callback, used to catch errors.
     handlemessage() -- handle a Jabber message stanza.
@@ -105,8 +107,10 @@ class Actor(volent.VolEntity):
         self.creator = creator
         if (isinstance(creator, referee.Referee)):
             self.referee = creator
+            self.bookkeeperjid = self.referee.parlor.bookkeeperjid
         else:
             self.referee = None
+            self.bookkeeperjid = self.creator.bookkeeperjid
         self.refereejid = refjid
         self.muc = muc
         self.mucnickcount = 0
@@ -282,6 +286,8 @@ class Actor(volent.VolEntity):
             self.refstate = STATE_SETUP
         if (val == STATE_SUSPENDED):
             self.refstate = STATE_SUSPENDED
+        if (val == STATE_AUTHORIZING):
+            self.refstate = STATE_AUTHORIZING
         if (val in [ STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED ]):
             self.refstate = STATE_ACTIVE
         self.bot.receivestate()
@@ -351,6 +357,21 @@ class Actor(volent.VolEntity):
         """
         self.refstate = STATE_ACTIVE
         self.bot.unsuspendgame()
+
+    def gameactivity(self, newstate):
+        """gameactivity(newstate) -> None
+
+        Referee state handler.
+        """
+        # We don't distinguish active from disrupted or abandoned
+        self.refstate = STATE_ACTIVE
+
+    def gamevalidation(self, newstate):
+        """gamevalidation(newstate) -> None
+
+        Referee state handler.
+        """
+        self.refstate = newstate
 
     def sendref(self, methname, *methargs, **keywords):
         """sendref(methname, *methargs, **keywords) -> None
@@ -607,7 +628,9 @@ class BotVolityOpset(rpc.MethodOpset):
         if (self.actor.state != 'running'):
             raise rpc.RPCFault(609, 'bot not ready for RPCs')
 
-        if (sender != self.actor.refereejid):
+        # The bookkeeper can send a few of these
+        if (sender != self.actor.refereejid and
+            sender != self.actor.bookkeeperjid):
             raise rpc.RPCFault(607, 'sender is not referee')
             
     def __call__(self, sender, callname, *callargs):
@@ -711,6 +734,18 @@ class BotVolityOpset(rpc.MethodOpset):
             
     def rpc_resume_game(self, sender, *args):
         self.actor.queueaction(self.actor.unsuspendgame)
+            
+    def rpc_game_activity(self, sender, *args):
+        if (len(args) >= 1 and type(args[0]) in [str,unicode]):
+            self.actor.queueaction(self.actor.gameactivity, args[0])
+            
+    def rpc_game_validation(self, sender, *args):
+        if (len(args) >= 1 and type(args[0]) in [str,unicode]):
+            self.actor.queueaction(self.actor.gamevalidation, args[0])
+
+    def rpc_verify_game(self, sender, *args):
+        # always accept
+        return True
             
 class BotAdminOpset(rpc.MethodOpset):
     """BotAdminOpset: The Opset which responds to admin.* namespace
@@ -831,4 +866,4 @@ class Seat:
 import bot
 import referee
 from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED
-from referee import STATE_ABANDONED, STATE_SUSPENDED
+from referee import STATE_ABANDONED, STATE_SUSPENDED, STATE_AUTHORIZING

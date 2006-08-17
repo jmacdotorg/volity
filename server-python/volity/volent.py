@@ -295,7 +295,7 @@ class ClientRPCWrapperOpset(jabber.rpc.WrapperOpset):
         
         if (value == None):
             return ['volity.ok']
-        return ['volity.ok'] + [value]
+        return ['volity.ok', value]
     oktoken = staticmethod(oktoken)
 
 class Literal:
@@ -318,7 +318,11 @@ class FailureToken(Exception):
 
     FailureToken(*tokens) -- constructor.
 
-    The *tokens* list must contain at least one element. 
+    The *tokens* list must contain at least one element.
+
+    Method:
+
+    getlist() -- return the token list.
 
     Static method:
 
@@ -332,6 +336,14 @@ class FailureToken(Exception):
         return '<FailureToken: ' + (', '.join(self.list)) + '>'
     def __str__(self):
         return (', '.join(self.list))
+
+    def getlist(self):
+        """getlist() -> list
+
+        Return the token list, as a list of fully namespaced token strings.
+        (Do not modify the list returned by this call.)
+        """
+        return self.list
 
     def encode(val):
         """encode(val) -> str

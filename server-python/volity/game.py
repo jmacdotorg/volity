@@ -271,7 +271,7 @@ class Game:
     def getstate(self):
         """getstate() -> str
 
-        Get the Referee state. There are five possible states, which are
+        Get the Referee state. There are six possible states, which are
         defined as constants in this module:
         
             STATE_SETUP: The game has not yet begun.
@@ -286,6 +286,10 @@ class Game:
                 referee or by player request. Players may sit down, change
                 seats, or request bots to fill in seats, so that the game
                 can resume.
+            STATE_AUTHORIZING: The game is about to begin (or unsuspend),
+                but the referee first has to check that all the players are
+                present and authorized to play. This state should always
+                be brief.
 
         (These constants are actually defined as lower-case strings: 'setup',
         'active', etc.)
@@ -363,9 +367,9 @@ class Game:
             Require the referee to be in a particular state. The state may 
             be one of the STATE_* constants defined in this module. Or you
             can use the strings 'setup', 'active', 'disrupted', 'suspended',
-            'abandoned'. (Which are what the STATE_* constants are actually
-            defined as.) Or, it may contain several of those values, as a
-            space-delimited string.
+            'abandoned', 'authorizing'. (Which are what the STATE_* constants
+            are actually defined as.) Or, it may contain several of those
+            values, as a space-delimited string.
         afoot=*bool*
             If the value is True, this requires the referee to be 'active',
             'disrupted', or 'abandoned'. If False, it requires the referee
@@ -1087,6 +1091,8 @@ class Seat:
     isempty() -- is anyone sitting here?
     isrequired() -- is this a required seat?
     isingame() -- is this Seat involved in the current game?
+    seteliminated() -- eliminate this Seat from the current game.
+    iseliminated() -- has this Seat been eliminated from the current game?
     send() -- send an RPC to the players in this seat.
     sendothers() -- send an RPC to the players not sitting in this seat.
 
@@ -1099,6 +1105,7 @@ class Seat:
     id -- the seat ID.
     required -- whether this is a required seat.
     ingame -- whether this seat is participating in the current game.
+    eliminated -- whether this seat has been eliminated from the current game.
     playerlist -- the Players in this seat.
     playerhistory -- the bare JIDs of the players who have sat in this seat
         during the current game. (The *playerlist* is a subset of the
@@ -1131,6 +1138,7 @@ class Seat:
         self.id = id
         self.required = bool(required)
         self.ingame = False
+        self.eliminated = False
         self.playerlist = []
         self.playerhistory = {}
 
@@ -1197,6 +1205,28 @@ class Seat:
         """
         return self.ingame
 
+    def seteliminated(self):
+        """seteliminated() -> None
+
+        Declare that this Seat has been eliminated from the current game.
+        This is a hint to the referee that the seat will not be required
+        to make any decisions for the rest of the game. Therefore, if the
+        seat's players disconnect, the game should not be considered
+        disrupted. (The elimination flag is automatically cleared at the
+        beginning of the game. Once set, it cannot be cleared until the
+        end.)
+        """
+        if (self.ingame):
+            self.eliminated = True
+
+    def iseliminated(self):
+        """iseliminated() -> bool
+
+        Has this Seat been eliminated from the current game? (If the game
+        is not in progress, this will return False.)
+        """
+        return self.eliminated
+
     def send(self, methname, *args, **keywords):
         """send(methname, *args, **keywords)
 
@@ -1259,5 +1289,6 @@ from volent import FailureToken, Literal
 import referee
 
 # Import the STATE_* constants into this module's namespace.
-from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED, STATE_ABANDONED, STATE_SUSPENDED
+from referee import STATE_SETUP, STATE_ACTIVE, STATE_DISRUPTED
+from referee import STATE_ABANDONED, STATE_SUSPENDED, STATE_AUTHORIZING
 
