@@ -15,10 +15,20 @@
 	  the Jabber server that Volity entities connect to, and the host
 	  part of their own JIDs. This allows proxying and such.
 
-	- Bugfixes: Some endgame winner-list configurations would
-          mysteriously break things; no longer. Also, the ref no longer
-          allows non-seated players to suspend games.
+	- Multiple bot support now actually works as advertised.
 
+	- Some endgame winner-list configurations would mysteriously break
+          things; no longer.
+
+	- The ref no longer allows non-seated players to suspend games.
+
+	- Experimental bot factory support. A future release will feature
+	  full support as well as a new framework for building your own
+	  bot factories.
+
+	- Removed our POE module forks, as the CPAN versions now work fine
+	  with Frivolity.
+	
 0.6.4
 
 	- Bugfix release. Volity::Game's current_seat method didn't work
