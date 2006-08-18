@@ -24,10 +24,14 @@ sub search_with_exact_players {
 	push (@bind_values, $_->id);
 	$statement .= " and exists (select player_seat.id from player_seat where seat_id = seat.id and player_id = ?) ";
     }
-    no warnings;
-    Volity::Info::Seat->set_sql("with_players_internal", $statement);
-    use warnings;
-    return Volity::Info::Seat->search_with_players_internal(@bind_values);
+
+    my $sth = Volity::Info::Seat->db_Main->prepare($statement);
+    $sth->execute(@bind_values);
+    my @seats;
+    while (my ($seat_id) = $sth->fetchrow_array) { 
+	push (@seats, Volity::Info::Seat->retrieve($seat_id));
+    }
+    return @seats;
 }
 
 # Set some Ima::DBI SQL statements.
