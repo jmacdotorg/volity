@@ -496,7 +496,7 @@ sub is_active {
 sub is_disrupted {
     my $self = shift;
     if (
-        grep( { not $_->is_under_human_control }
+        grep( { not $_->is_under_control }
             grep( { not $_->is_eliminated } $self->seats ) )
         && not( $self->is_abandoned )
         )
