@@ -468,7 +468,9 @@ sub new_from_hashref {
     my ($hashref) = @_;
 
     # XXX HACK, to get around apparent bug where P::F::X::N strips newlines
-    $$hashref{signature} =~ s/==NEWLINE==/\n/g;
+    if ($$hashref{signature}) {
+	$$hashref{signature} =~ s/==NEWLINE==/\n/g;
+    }
 
     return $class->new($hashref);
 }
