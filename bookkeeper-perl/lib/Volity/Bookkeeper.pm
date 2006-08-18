@@ -201,7 +201,7 @@ sub jabber_presence {
       if ($new_person_jid) {
 	  ($new_person_basic_jid) = $new_person_jid =~ /^(.*?)\//;
       }
-      if ($info->{scheduled_game} && grep ($new_person_basic_jid eq $_, map($_->jid, $info->{scheduled_game}->players))) {
+      if (ref($info->{scheduled_game}) && grep ($new_person_basic_jid eq $_, map($_->jid, $info->{scheduled_game}->players))) {
 	  # Hey, this is one of the people I've been waiting for!
 	  # That means I can go.
 	  $self->kernel->alarm_remove($info->{alarm_id});
