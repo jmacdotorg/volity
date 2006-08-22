@@ -72,4 +72,5 @@ print OUT qq{
 <!ENTITY language-software SYSTEM "$dir/software.xml">
 <!ENTITY language-programming SYSTEM "$dir/programming.xml">
 <!ENTITY language-parlor SYSTEM "$dir/parlor.xml">
+<!ENTITY language-subtitle SYSTEM "$dir/subtitle.xml">
 };
