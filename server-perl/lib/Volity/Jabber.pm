@@ -327,6 +327,12 @@ sub start_jabber_client {
 	die "You haven't set an alias on $self! Please do that when constucting the object.";
     }
 
+    foreach (qw(host jid_host port user password resource)) {
+	unless (defined($self->$_)) {
+	    $self->expire("I can't start the Jabber connection without my '$_' field defined. Please define it and try again.");
+	}
+    }
+
     my %config = (
 		  ALIAS=>$alias,
 		  STATE_PARENT=>$self->main_session_id,
