@@ -1,3 +1,11 @@
+0.6.6
+
+	- Full bot factory support. This inlcudes a new Volity::Factory
+	  class, changes to volityd that allow you to have it launch
+	  factories instead of parlors, and another example config file
+	  under /examples/tictactoe that runs a Tic Tac Toe bot
+	  factory. The volityd perldoc explains all.
+
 0.6.5
 
 	- Added leave_muc() method to Volity::Jabber.
