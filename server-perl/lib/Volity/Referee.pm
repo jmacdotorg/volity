@@ -267,9 +267,12 @@ sub initialize {
   $self->internal_timeout($default_internal_timeout);
 
   unless (defined($self->name)) {
-      # XXX Fix this...
-#      $self->name($self->table_creator->nick . "'s game");
-      $self->name("Some game.");
+      if ($self->game_class->name) {
+	  $self->name($self->game_class->name);
+      }
+      else {
+	  $self->name($self->jid);
+      }
   }
 
   unless (defined($self->language)) {
