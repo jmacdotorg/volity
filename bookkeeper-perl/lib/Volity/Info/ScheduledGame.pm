@@ -29,8 +29,21 @@ sub search_with_current_minute {
 sub most_recent_limited {
     my $class = shift;
     my ($limit) = @_;
-    Volity::Info::ScheduledGame->set_sql(most_recent_limited=>"select * from scheduled_game order by time desc limit 0,$limit");
-    return Volity::Info::ScheduledGame->search_most_recent_limited;
+    my $dt = DateTime->now;
+    my $time_string = sprintf ("%02d-%02d-%02d %02d:%02d:00",
+			       $dt->year,
+			       $dt->month,
+			       $dt->mday,
+			       $dt->hour,
+			       $dt->minute,
+			       );
+    my $sth = Volity::Info::db_Main->prepare("select id from scheduled_game where time >= ? order by time desc limit 0,$limit");
+    $sth->execute($time_string);
+    my @scheduled_games;
+    while (my ($id) = $sth->fetchrow_array) {
+	push (@scheduled_games, Volity::Info::ScheduledGame->retrieve($id));
+    }
+    return @scheduled_games;
 }
 
 
