@@ -37,6 +37,8 @@ use Volity::Info::Game;
 use Volity::Info::Player;
 use Volity::Info::File;
 use Volity::Info::ScheduledGamePlayer;
+use Volity::Info::Resource;
+use Volity::Info::Factory;
 
 use POE qw(
 	   Wheel::SocketFactory
@@ -421,11 +423,7 @@ sub handle_disco_items_request {
 			      );
 		    }
 		} elsif ($nodes[1] eq 'lobby') {
-		    # The lobby's JID is based on the ruleset URI.
-		    # First, transform said URI into JID-legal characters.
-		    my $jid_legal_uri = $ruleset->uri;
-		    $jid_legal_uri =~ tr/:\//;|/;
-		    my $lobby_jid = "$jid_legal_uri\@conference.volity.net";
+		    my ($lobby_jid) = $self->lobby_jids_for_ruleset($ruleset);
 		    push (@items,
 			  Volity::Jabber::Disco::Item->new({
 			      jid=>$lobby_jid,
@@ -842,6 +840,22 @@ sub get_rating_delta {
   return 1 / (1 + (10 ** (($opponent_rating - $current_rating) / 400)));
 }
 
+# lobby_jids_for_ruleset: Return a list of JIDs of lobbies for the given
+# ruleset object. Even though this always returns only one item right now,
+# we return an array because it might be expanded later.
+sub lobby_jids_for_ruleset {
+    my $self = shift;
+    my ($ruleset) = @_;
+    my @lobby_jids;		# Return value
+    # The lobby's JID is based on the ruleset URI.
+    # First, transform said URI into JID-legal characters.
+    my $jid_legal_uri = $ruleset->uri;
+    $jid_legal_uri =~ tr/:\//;|/;
+    my $lobby_jid = "$jid_legal_uri\@conference.volity.net";
+    @lobby_jids = ($lobby_jid);
+    return @lobby_jids;
+}
+
 ##########################
 # Other RPC handlers
 ##########################
@@ -868,56 +882,260 @@ sub _rpc_set_stance {
 
 sub _rpc_get_rulesets {
     my $self = shift;
+    my @uris = map($_->uri, Volity::Info::Ruleset->retrieve_all);
+    return ("volity.ok", \@uris);
 }
 
 sub _rpc_get_ruleset_info {
     my $self = shift;
-    my ($uri) = @_;
+    my ($from_jid, $uri) = @_;
+    my $ruleset = Volity::Info::Ruleset->search(uri=>$uri);
+    unless ($ruleset) {
+	return ("volity.unknown_uri", "literal.$uri");
+    }
+    my %info_hash;
+    foreach (qw(description name uri)) {
+	$info_hash{$_} = $ruleset->$_;
+    }
+    return ("volity.ok", \%info_hash);
 }
 
 sub _rpc_get_uis {
     my $self = shift;
-    my ($uri, $constraints) = @_;
+    my ($from_jid, $uri, $constraints) = @_;
+    $constraints ||= {};
+    unless (ref($constraints eq 'HASH')) {
+	return (606, "The second argument to get_uis(), if present, must be a struct.");
+    }
+    my $uri_object = URI->new($uri);
+    my ($ruleset) = Volity::Info::Ruleset->search(uri => $uri);
+    if ($ruleset) {
+	my $version;
+	if ($uri_object->frag) {
+	    if ($constraints->{"ruleset-version"}) {
+		return (606, "You cannot supply both a version-spec fragment in the URI and a separate ruleset-version constraint to a get_resources() call.");
+	    }
+	    $version = $uri_object->frag;
+	}
+	# This could be a complex statement, so we'll roll our own SQL.
+	my @from = ("ui_file");
+	my @where = ("ui_file.ruleset_id = ?");
+	my @bind_values = ($ruleset->id);
+
+	if ($constraints->{language}) {
+	    push (@from, "ui_file_language");
+	    push (@where, "ui_file_language.ui_file_id = ui_file.id");
+	    push (@where, "ui_file_language.language_code = ?");
+	    push (@bind_values, $constraints->{language});
+	}
+	      
+
+	if ($version) {
+	    push (@where, "version = ?");
+	    push (@bind_values, $version);
+	}
+
+	if ($constraints->{reputation}) {
+	    push (@where, "reputation >= ?");
+	    push (@bind_values, $constraints->{reputation});
+	}
+
+	if ($constraints->{"ecmascript-api"}) {
+	    push (@where, "ecmascript_api_version = ?");
+	    push (@bind_values, $constraints->{"ecmascript-api"});
+	}
+
+	if ($constraints->{"client-type"}) {
+	    push (@from, "ui_file_feature", "ui_feature");
+	    push (@where, "ui_file_feature.ui_file_id = ui_file.id");
+	    push (@where, "ui_file_feature.ui_feature_id = ui_feature.id");
+	    push (@where, "ui_file_feature.uri = ?");
+	    push (@bind_values, $constraints->{"client-type"});
+	}
+
+	my $sth = Volity::Info->db_Main->prepare_cached
+	    (
+	     "select distinct ui_file.url from " . 
+	     join (", ", @from) .
+	     " where " .
+	     join(" and ", @where)
+	     );
+	$sth->execute(@bind_values);
+	
+	my @urls;
+	while (my ($url) = $sth->fetchrow_array) {
+	    push (@urls, $url);
+	}
+
+	return ("volity.ok", \@urls);
+
+    }
+    else {
+	return ("volity.unknown_uri", "literal.$uri");
+    }
+
 }
 
 sub _rpc_get_ui_info {
     my $self = shift;
-    my ($urls) = @_;
+    my ($from_jid, $urls) = @_;
     my @urls;
+    my $format;			# How does the user want the return value?
     if (not(ref($urls))) {
 	@urls = ($urls);
+	$format = "scalar";
     }
     elsif (ref($urls) || ref($urls) eq 'ARRAY') {
 	@urls = @$urls;
+	$format = "list";
     }
     else {
-	# Return a fault.
+	return (606, "The argument to get_ui_info() must be either a single URL or a list of URLs.");
+    }
+    my @info_hashes;
+    for my $url (@urls) {
+	my %info_hash;
+	my $file = $self->get_file_with_url($url);
+	unless ($file) {
+	    return ("volity.unknown_url", "literal.$url");
+	}
+	my $ruleset_uri = $file->ruleset_id->uri;
+	my @features = $file->features;
+	my @language_codes = $file->language_codes;
+	$info_hash{"client-type"} = map($_->uri, @features);
+	$info_hash{languages} = \@language_codes;
+	$info_hash{ruleset} = $ruleset_uri;
+	$info_hash{reputation} = $file->reputation || 0;
+	$info_hash{"contact-jid"} = $file->player_id->jid;
+	$info_hash{description} = $file->description;
+	push (@info_hashes, \%info_hash);
+    }
+    if ($format eq "scalar") {
+	return ("volity.ok", $urls[0]);
+    }
+    else {
+	return ("volity.ok", \@urls);
     }
 }
 
 sub _rpc_get_lobbies {
     my $self = shift;
-    my ($uri) = @_;
+    my ($from_jid, $uri) = @_;
+    my ($ruleset) = Volity::Info::Ruleset->search(uri => $uri);
+    if ($ruleset) {
+	return ("volity.ok", [$self->lobby_jids_for_ruleset]);
+    }
+    else {
+	return ("volity.unknown_uri", "literal.$uri");
+    }
 }
 
 sub _rpc_get_resource_uris {
     my $self = shift;
+    my @resources = Volity::Info::Resource->retrieve_all;
+    my @resource_uris = map($_->uri, @resources);
+    return ("volity.ok", \@resource_uris);
 }
 
 sub _rpc_get_resources {
     my $self = shift;
-    my ($uri, $constraints) = @_;
+    my ($from_jid, $uri, $constraints) = @_;
     $constraints ||= {};
-    unless (ref($constraints eq 'HASH')) {
-	# Return a fault.
+    unless (ref($constraints) eq 'HASH') {
+	return (606, "The second argument to get_resources(), if present, must be a struct.");
+    }
+    my $uri_object = URI->new($uri);
+    my ($resource_uri) = Volity::Info::ResourceURI->search(uri => $uri);
+    if ($resource_uri) {
+	my $version;
+	if ($uri_object->fragment) {
+	    if ($constraints->{"resource-version"}) {
+		return (606, "You cannot supply both a version-spec fragment in the URI and a separate resource-version constraint to a get_resources() call.");
+	    }
+	    $version = $uri_object->fragment;
+	}
+	# This could be a complex statement, so we'll roll our own SQL.
+	my $from;
+	my @where = ("resource.resource_uri_id = ?");
+	my @bind_values = ($resource_uri->id);
+	if ($constraints->{language}) {
+	    $from = "resource, resource_language";
+	    push (@where, "resource_language.resource_id = resource.id");
+	    push (@where, "resource_language.language_code = ?");
+	    push (@bind_values, $constraints->{language});
+	}
+	else {
+	    $from = "resource";
+	}
+	
+	if ($version) {
+	    push (@where, "version = ?");
+	    push (@bind_values, $version);
+	}
+
+	if ($constraints->{reputation}) {
+	    push (@where, "reputation >= ?");
+	    push (@bind_values, $constraints->{reputation});
+	}
+
+	my $sth = Volity::Info->db_Main->prepare_cached("select distinct url from $from where " . join(" and ", @where));
+	$sth->execute(@bind_values);
+	
+	my @urls;
+	while (my ($url) = $sth->fetchrow_array) {
+	    push (@urls, $url);
+	}
+
+	return ("volity.ok", \@urls);
+    }
+    else {
+	return ("volity.unknown_uri", "literal.$uri");
     }
 }
 
+
 sub _rpc_get_resource_info {
     my $self = shift;
-    my ($url) = @_;
+    my ($from_jid, $url) = @_;
+    my ($resource) = Volity::Info::Resource->search(url=>$url);
+    unless ($resource) {
+	return ("volity.unknown_url", "literal.$url");
+    }
+    my %info_hash;
+    my $resource_uri = $resource->resource_uri_id;
+    my $player = $resource->player_id;
+    unless ($resource_uri) {
+	return (608, "Internal error: couldn't find a resource URI for known reource at URL $url.");
+    }
+    unless ($player) {
+	return (608, "Internal error: couldn't find any contact info associated with the resource at URL $url.");
+    }
+
+    $info_hash{"provides-resource"} = $resource_uri->uri;
+    $info_hash{reputation} = $resource->reputation;
+    $info_hash{languages} = [map($_->language_code, 
+				 Volity::Info::ResourceLanguage->search
+				 (
+				  resource_id=>$resource,
+				  )
+				 )];
+    $info_hash{description} = $resource->description,
+    $info_hash{"contact-jid"} = $player->jid,
+
+    return ("volity.ok", \%info_hash);
 }
 
+sub _rpc_get_factories {
+    my $self = shift;
+    my ($from_jid, $uri) = @_;
+    my ($ruleset) = Volity::Info::Ruleset->search(uri => $uri);
+    if ($ruleset) {
+	return ("volity.ok", [map ($_->jid, $ruleset->factories)]);
+    }
+    else {
+	return ("volity.unknown_uri", "literal.$uri");
+    }
+}    
 
 
 ###############################

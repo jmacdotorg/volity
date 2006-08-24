@@ -1,5 +1,14 @@
 0.6
 
+	- Added support for UI-choosing RPCs.
+
+	- Added support for pluggable resource-choosing RPCs.
+	
+	- Added support for bot factory-related RPCs.
+
+	- Added new database classes and SQL stuff for bot factories and 
+          resources.
+
 	- Added support for game scheduling.
 
 	- The bookkeeper now sends back RPC faults if it receives
