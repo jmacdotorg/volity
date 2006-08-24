@@ -3,6 +3,8 @@ SVN repository.
 
 * the present
 
+Fetch game resource lists from the bookkeeper.
+
 Added a "Stats" button to the table window.
 
 If you're holding the scroll bar up in a message pane, new messages will

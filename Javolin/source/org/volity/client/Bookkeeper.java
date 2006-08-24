@@ -13,6 +13,7 @@ import org.volity.client.comm.DiscoBackground;
 import org.volity.client.comm.DiscoBatchBackground;
 import org.volity.client.comm.RPCBackground;
 import org.volity.client.data.GameUIInfo;
+import org.volity.client.data.ResourceInfo;
 import org.volity.client.translate.TokenRequester;
 import org.volity.jabber.JIDUtils;
 
@@ -247,5 +248,135 @@ public class Bookkeeper extends TokenRequester {
             this.name = name;
             this.query = new DiscoBatchBackground.Query(jid, location.toString());
         }
+    }
+
+    /**
+     * Ask the bookkeeper what resources are available for a particular
+     * resource URI.
+     *
+     * The result is a list of ResourceInfo objects.
+     */
+    public void getGameResources(final Callback callback, URI resuri,
+        final Object rock) {
+
+        final RPCBackground.Callback subback2 = new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object lsrock) {
+                    if (err != null) {
+                        // may have to wrap generic exception as XMPPException
+                        XMPPException ex; 
+                        if (err instanceof XMPPException)
+                            ex = (XMPPException)err;
+                        else
+                            ex = new XMPPException(err);
+                        callback.run(null, ex, rock);
+                        return;
+                    }
+
+                    assert (result != null);
+                    assert (lsrock != null && lsrock instanceof List);
+                    List urlls = (List)lsrock;
+
+                    if (!(result instanceof List)) {
+                        XMPPException ex = new XMPPException("volity.get_resource_info returned non-list");
+                        callback.run(null, ex, rock);
+                        return;
+                    }
+
+                    List ls = (List)result;
+                    if (ls.size() != urlls.size()) {
+                        XMPPException ex = new XMPPException("volity.get_resource_info returned wrong length list");
+                        callback.run(null, ex, rock);
+                        return;
+                    }
+                    for (int ix=0; ix<ls.size(); ix++) {
+                        Object obj = ls.get(ix);
+                        if (!(obj instanceof Map)) {
+                            XMPPException ex = new XMPPException("volity.get_resource_info returned non-struct in list");
+                            callback.run(null, ex, rock);
+                            return;
+                        }
+                    }
+
+                    List finalls = new ArrayList();
+
+                    for (int ix=0; ix<ls.size(); ix++) {
+                        URL url = (URL)urlls.get(ix);
+                        Map map = (Map)ls.get(ix);
+                        ResourceInfo info = new ResourceInfo(url, map);
+                        finalls.add(info);
+                    }
+
+                    callback.run(finalls, null, rock);
+                    return;
+                }
+            };
+
+        final RPCBackground.Callback subback = new RPCBackground.Callback() {
+                public void run(Object result, Exception err, Object rock2) {
+                    if (err != null) {
+                        // may have to wrap generic exception as XMPPException
+                        XMPPException ex; 
+                        if (err instanceof XMPPException)
+                            ex = (XMPPException)err;
+                        else
+                            ex = new XMPPException(err);
+                        callback.run(null, ex, rock);
+                        return;
+                    }
+                    
+                    if (result == null) {
+                        /* The bookkeeper shouldn't return an empty result, but
+                         * we check for that case anyway. Treat it as an empty
+                         * list. */
+                        result = new ArrayList();
+                    }
+
+                    assert (result != null);
+                    assert (rock == rock2);
+
+                    if (!(result instanceof List)) {
+                        XMPPException ex = new XMPPException("volity.get_resources returned non-list");
+                        callback.run(null, ex, rock);
+                        return;
+                    }
+
+                    List ls = (List)result;
+                    if (ls.size() == 0) {
+                        /* No point making a second call. */
+                        callback.run(new ArrayList(), null, rock);
+                        return;
+                    }
+
+                    List urlls = new ArrayList();
+
+                    for (int ix=0; ix<ls.size(); ix++) {
+                        Object obj = ls.get(ix);
+                        if (!(obj instanceof String)) {
+                            XMPPException ex = new XMPPException("volity.get_resources returned non-string in list");
+                            callback.run(null, ex, rock);
+                            return;
+                        }
+                        URL url;
+                        try {
+                            url = new URL((String)obj);
+                        }
+                        catch (MalformedURLException ex) {
+                            XMPPException ex2 = new XMPPException("volity.get_resources returned malformed url");
+                            callback.run(null, ex2, rock);
+                            return;
+                        }
+                        urlls.add(url);
+                    }
+
+                    List args = Arrays.asList(new Object[] { ls } );
+                    new RPCBackground(Bookkeeper.this, subback2,
+                        "volity.get_resource_info", args, urlls);
+                }
+            };
+
+        List args = Arrays.asList(new String[] { resuri.toString() });
+
+        new RPCBackground(this, subback, 
+            "volity.get_resources", args, rock);
     }
 }

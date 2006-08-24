@@ -12,10 +12,14 @@ import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.packet.XMPPError;
+import org.volity.client.Bookkeeper;
 import org.volity.client.data.Metadata;
 import org.volity.client.data.ResourceInfo;
 import org.volity.client.data.VersionNumber;
 import org.volity.client.data.VersionSpec;
+import org.volity.client.translate.TokenFailure;
 import org.volity.javolin.ErrorWrapper;
 import org.volity.javolin.JavolinApp;
 
@@ -137,10 +141,70 @@ public class SelectResource
             return;
         }
 
-        /* ### we should query the bookkeeper here, but those methods don't
-         * exist yet. */
+        /* Query the bookkeeper. */
+        Bookkeeper keeper = JavolinApp.getSoleJavolinApp().getBookkeeper();
+        if (keeper == null) {
+            // Emergency wipeout -- probably we're disconnected
+            callbackFail();
+            return;
+        }
 
-        mResourceInfoList = new ArrayList();
+        keeper.getGameResources(new Bookkeeper.Callback() {
+                public void run(Object result, XMPPException ex, Object rock) {
+                    contGotGameResources(result, ex);
+                }
+            }, mResURI, null);
+    }
+
+    private void contGotGameResources(Object result, XMPPException ex) {
+        assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+
+        if (result == null) {
+            assert (ex != null);
+            new ErrorWrapper(ex);
+
+            String msg = "The bookkeeper could not be found.";
+
+            // Any or all of these may be null.
+            String submsg = ex.getMessage();
+            XMPPError error = ex.getXMPPError();
+            Throwable subex = ex.getWrappedThrowable();
+            
+            if (error != null && error.getCode() == 404) {
+                /* A common case: the JID was not found. */
+                msg = "No bookkeeper exists at this address.";
+                if (error.getMessage() != null)
+                    msg = msg + " (" + error.getMessage() + ")";
+                msg = msg + "\n(" + Bookkeeper.getDefaultJid() + ")";
+            }
+            else if (subex != null && subex instanceof TokenFailure) {
+                msg = JavolinApp.getTranslator().translate((TokenFailure)subex);
+            }
+            else {
+                msg = "The bookkeeper could not be found";
+                if (submsg != null && subex == null && error == null)
+                    msg = msg + ": " + submsg;
+                else
+                    msg = msg + ".";
+                if (subex != null)
+                    msg = msg + "\n" + subex.toString();
+                if (error != null)
+                    msg = msg + "\nJabber error " + error.toString();
+            }
+
+            JOptionPane.showMessageDialog(null, 
+                msg,
+                JavolinApp.getAppName() + ": Error", 
+                JOptionPane.ERROR_MESSAGE);
+
+
+            /* We don't cancel the selection process; let the user continue
+             * with a manual selection dialog. */
+            result = new ArrayList();
+        }
+
+        assert (result instanceof List);
+        mResourceInfoList = (List)result;
         contPopDialog();
     }
 
