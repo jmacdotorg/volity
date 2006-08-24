@@ -16,6 +16,18 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `factory`
+--
+
+DROP TABLE IF EXISTS `factory`;
+CREATE TABLE `factory` (
+  `id` int(11) NOT NULL auto_increment,
+  `jid` char(128) default NULL,
+  `ruleset_id` int(11) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
 -- Table structure for table `game`
 --
 
@@ -99,6 +111,47 @@ CREATE TABLE `player_seat` (
   KEY `seat_id` (`seat_id`),
   KEY `seat_player` (`seat_id`,`player_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `resource`
+--
+
+DROP TABLE IF EXISTS `resource`;
+CREATE TABLE `resource` (
+  `id` int(11) NOT NULL auto_increment,
+  `version` char(32) default NULL,
+  `url` char(128) default NULL,
+  `resource_uri_id` int(11) default NULL,
+  `player_id` int(11) default NULL,
+  `name` char(128) default NULL,
+  `description` text,
+  `reputation` int(11) default '0',
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `resource_language`
+--
+
+DROP TABLE IF EXISTS `resource_language`;
+CREATE TABLE `resource_language` (
+  `id` int(11) NOT NULL auto_increment,
+  `resource_id` int(11) default NULL,
+  `language_code` char(2) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `resource_uri`
+--
+
+DROP TABLE IF EXISTS `resource_uri`;
+CREATE TABLE `resource_uri` (
+  `id` int(11) NOT NULL auto_increment,
+  `uri` char(128) default NULL,
+  `description` char(128) default NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
 -- Table structure for table `ruleset`
