@@ -1010,11 +1010,12 @@ sub _rpc_get_ui_info {
 	$info_hash{description} = $file->description;
 	push (@info_hashes, \%info_hash);
     }
+
     if ($format eq "scalar") {
-	return ("volity.ok", $urls[0]);
+	return ("volity.ok", $info_hashes[0]);
     }
     else {
-	return ("volity.ok", \@urls);
+	return ("volity.ok", \@info_hashes);
     }
 }
 
@@ -1096,33 +1097,59 @@ sub _rpc_get_resources {
 
 sub _rpc_get_resource_info {
     my $self = shift;
-    my ($from_jid, $url) = @_;
-    my ($resource) = Volity::Info::Resource->search(url=>$url);
-    unless ($resource) {
-	return ("volity.unknown_url", "literal.$url");
+    my ($from_jid, $urls) = @_;
+
+    my @urls;
+    my $format;			# How does the user want the return value?
+    if (not(ref($urls))) {
+	@urls = ($urls);
+	$format = "scalar";
     }
-    my %info_hash;
-    my $resource_uri = $resource->resource_uri_id;
-    my $player = $resource->player_id;
-    unless ($resource_uri) {
-	return (608, "Internal error: couldn't find a resource URI for known reource at URL $url.");
+    elsif (ref($urls) || ref($urls) eq 'ARRAY') {
+	@urls = @$urls;
+	$format = "list";
     }
-    unless ($player) {
-	return (608, "Internal error: couldn't find any contact info associated with the resource at URL $url.");
+    else {
+	return (606, "The argument to get_ui_info() must be either a single URL or a list of URLs.");
+    }
+    my @info_hashes;
+
+    for my $url (@urls) {
+	my ($resource) = Volity::Info::Resource->search(url=>$url);
+	unless ($resource) {
+	    return ("volity.unknown_url", "literal.$url");
+	}
+	my %info_hash;
+	my $resource_uri = $resource->resource_uri_id;
+	my $player = $resource->player_id;
+	unless ($resource_uri) {
+	    return (608, "Internal error: couldn't find a resource URI for known reource at URL $url.");
+	}
+	unless ($player) {
+	    return (608, "Internal error: couldn't find any contact info associated with the resource at URL $url.");
+	}
+	
+	$info_hash{"provides-resource"} = $resource_uri->uri;
+	$info_hash{reputation} = $resource->reputation;
+	$info_hash{name} = $resource->name;
+	$info_hash{languages} = [map($_->language_code, 
+				     Volity::Info::ResourceLanguage->search
+				     (
+				      resource_id=>$resource,
+				      )
+				     )];
+	$info_hash{description} = $resource->description,
+	$info_hash{"contact-jid"} = $player->jid,
+	push (@info_hashes, \%info_hash);
     }
 
-    $info_hash{"provides-resource"} = $resource_uri->uri;
-    $info_hash{reputation} = $resource->reputation;
-    $info_hash{languages} = [map($_->language_code, 
-				 Volity::Info::ResourceLanguage->search
-				 (
-				  resource_id=>$resource,
-				  )
-				 )];
-    $info_hash{description} = $resource->description,
-    $info_hash{"contact-jid"} = $player->jid,
+    if ($format eq "scalar") {
+	return ("volity.ok", $info_hashes[0]);
+    }
+    else {
+	return ("volity.ok", \@info_hashes);
+    }
 
-    return ("volity.ok", \%info_hash);
 }
 
 sub _rpc_get_factories {
