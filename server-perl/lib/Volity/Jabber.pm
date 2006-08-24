@@ -1903,13 +1903,15 @@ sub new {
 sub set {
   my $self = shift;
   my ($key, $value) = @_;
-  
-  # Apply XML escapes to the given value.
-  $value =~ s/&/&amp;/g;
-  $value =~ s/</&lt;/g;
-  $value =~ s/>/&gt;/g;
-  $value =~ s/'/&apos;/g;
-  $value =~ s/"/&quot;/g;
+
+  if (defined($value)) {
+      # Apply XML escapes to the given value.
+      $value =~ s/&/&amp;/g;
+      $value =~ s/</&lt;/g;
+      $value =~ s/>/&gt;/g;
+      $value =~ s/'/&apos;/g;
+      $value =~ s/"/&quot;/g;
+  }
 
   # Now make it an attribute on the current object.
   $self->attr($key=>$value);

@@ -25,6 +25,7 @@ use warnings;
 use strict;
 
 use Volity::Server;
+use Volity::Factory;
 use Getopt::Long;
 use Volity::GameRecord;
 
@@ -40,26 +41,28 @@ my %volityd_info_for_server_object = (
 Getopt::Long::Configure(qw(no_ignore_case no_auto_abbrev));
 
 my %valid_options = (
-		    host=>"h",
-		    jid_host=>"s",
-		    username=>"u",
-		    password=>"p",
-		    game_class=>"g",
-		    jabber_id=>"J",
-		    admins=>"a",
-		    bookkeeper=>"b",
-		    contact_email=>"c",
-		    pidfile=>"f",
-		    contact_jabber_id=>"j",
-		    log_config=>"l",
-		    log_config_info=>"i",
-		    log_config_file=>"F",
-		    muc_server=>"m",
-		    port=>"o",
-		    resource=>"r",
-		    volity_version=>"v",
-		    config=>"C",
-		    visibility=>"V",
+		     host=>"h",
+		     jid_host=>"s",
+		     username=>"u",
+		     password=>"p",
+		     game_class=>"g",
+		     jabber_id=>"J",
+		     admins=>"a",
+		     bookkeeper=>"b",
+		     contact_email=>"c",
+		     pidfile=>"f",
+		     contact_jabber_id=>"j",
+		     log_config=>"l",
+		     log_config_info=>"i",
+		     log_config_file=>"F",
+		     muc_server=>"m",
+		     port=>"o",
+		     resource=>"r",
+		     volity_version=>"v",
+		     config=>"C",
+		     visibility=>"V",
+		     role=>"R",
+		     ruleset_uri=>"L",
 		    );
 my @getopt_options = map("$_|$valid_options{$_}=s", keys(%valid_options));
 
@@ -73,7 +76,6 @@ GetOptions(\%opts,
 	   "bot_jid_host|S=s@",
 	   "bot_password|P=s@",
 	   );
-
 
 # Parse out any command-line bot-config options.
 my @command_line_bot_configs;
@@ -112,7 +114,18 @@ if ($opts{config}) {
     }
 
 }
-	   
+
+# Decide what role I am going to play.
+if (defined($opts{role})) {
+    unless ($opts{role} eq "parlor" || $opts{role} eq "factory") {
+	die "The 'role' option can only be set to 'parlor' or 'factory'. You have it set to '$opts{role}', which is invalid.";
+    }
+}
+else {
+    $opts{role} = "parlor";
+}
+
+
 # Merge command-line bot config info with bot config infro from the
 # config file.
 $opts{bots} ||= [];
@@ -246,26 +259,48 @@ if ($opts{admins}) {
 }
 
 
-my $server = Volity::Server->new(
-				 {
-				  user=>$opts{username},
-				  password=>$opts{password},
-				  port=>$opts{port} || 5222,
-				  jid_host=>$opts{jid_host},
-				  host=>$opts{host},
-				  resource=>$opts{resource} || 'volity',
-				  alias=>$alias,
-				  game_class=>$opts{game_class},
-				  bookkeeper_jid=>$opts{bookkeeper} || $default_bkp,
-				  muc_host=>$opts{muc_server} || 'conference.volity.net',
-				  volity_version=>$opts{volity_version} || '1.0',
-				  contact_email=>$opts{contact_email},
-				  contact_jid=>$opts{contact_jabber_id},
-				  visible=>defined($opts{visibility})? $opts{visibility} : 1,
-				  admins=>\@admin_jids,
-				 }
-				);
-
+# The class of the server object we'll make depends upon our role.    
+my $server;
+if ($opts{role} eq "parlor") {
+    $server = Volity::Server->new(
+				  {
+				      user=>$opts{username},
+				      password=>$opts{password},
+				      port=>$opts{port} || 5222,
+				      jid_host=>$opts{jid_host},
+				      host=>$opts{host},
+				      resource=>$opts{resource} || 'volity',
+				      alias=>$alias,
+				      game_class=>$opts{game_class},
+				      bookkeeper_jid=>$opts{bookkeeper} || $default_bkp,
+				      muc_host=>$opts{muc_server} || 'conference.volity.net',
+				      volity_version=>$opts{volity_version} || '1.0',
+				      contact_email=>$opts{contact_email},
+				      contact_jid=>$opts{contact_jabber_id},
+				      visible=>defined($opts{visibility})? $opts{visibility} : 1,
+				      admins=>\@admin_jids,
+				  }
+				  );
+}
+else {
+    $server = Volity::Factory->new(
+				  {
+				      user=>$opts{username},
+				      password=>$opts{password},
+				      port=>$opts{port} || 5222,
+				      jid_host=>$opts{jid_host},
+				      host=>$opts{host},
+				      resource=>$opts{resource} || 'volity',
+				      alias=>$alias,
+				      volity_version=>$opts{volity_version} || '1.0',
+				      contact_email=>$opts{contact_email},
+				      contact_jid=>$opts{contact_jabber_id},
+				      visible=>defined($opts{visibility})? $opts{visibility} : 1,
+				      admins=>\@admin_jids,
+				      ruleset_uri=>$opts{ruleset_uri},
+				  }
+				  );
+}
 if (defined($opts{log_config_info})) {
     if (defined($opts{log_config}) || defined($opts{log_config_file})) {
 	die "You can't use specify both log config info and a log config file. Please use one or the other.\n";
@@ -292,12 +327,14 @@ $server->start;
 
 =head1 NAME
 
-volityd -- A daemon that runs a Volity parlor
+volityd -- A daemon that runs a Volity parlor or bot factory
 
 =head1 DESCRIPTION
 
-This is a program for running Volity parlors. It uses the Volity
-hierarchy of Perl modules to run a game module specified at runtime.
+This is a program for running Volity servers, including parlors and
+bot fatcories. Run with valid configuration options, it acts a
+noninteractive daemon that either hosts a Volity game or makes
+available a bunch of bots for other Volity games to use.
 
 =head1 CONFIGURATION
 
@@ -309,13 +346,14 @@ format"> for more about the config file.
 
 Since there are many options, we recommend the use of a config
 file. The C<examples/> directory included with this distribution
-contains a config file for running a Tic Tac Toe parlor.
+contains one config file for running a Tic Tac Toe parlor, and another
+that runs a Tic Tac Toe bot factory.
 
 In the following documentation, each option has two names listed: its
 one-letter abbreviation followed by its long name. Either is usable on
 the command line, but the config file works with the only the long names.
 
-For example, to set the Jabber ID that your parlor should use as
+For example, to set the Jabber ID that your server should use as
 C<foo@example.com>, you can either supply B<-J foo@example.com> or
 B<-jabber_id=foo@example.com> on the command line, or the line
 C<jabber_id: foo@example.com> in the config file.
@@ -326,7 +364,7 @@ An exception comes in how you define bots; see L<"Configuring bots">.
 
 The program will immediately die (with a specific complaint) if you
 don't specify enough information on the command line to allow the
-parlor to authenticate with the Jabber server, or run a game
+parlor or factory to authenticate with the Jabber server, or run a game
 module. Use an appropriate combination of the following flags to
 achieve this.
 
@@ -334,27 +372,27 @@ achieve this.
 
 =item h host
 
-The hostname of the Jabber server that the parlor will use.
+The hostname of the Jabber server that the parlor or factory will use.
 
 If this is not defined but C<jid_host> is, then this will be set to
 the value of C<jid_host>.
 
 =item s jid_host
 
-The hostname that the parlor will use in its own Jabber ID.
+The hostname that the parlor or factory will use in its own Jabber ID.
 
 By default, this will be the same as the value of C<host>. You usually
 won't need to set this unless you are connecting to the jabber server
 via proxy, and the name of the host you are connecting to is different
-than the host part of your parlor's intended JID.
+than the host part of your parlor or factory's intended JID.
 
 =item u username
 
-The Jabber username that the parlor will use when connecting.
+The Jabber username that the parlor or factory will use when connecting.
 
 =item p password
 
-The password that the parlor will use when authenticating with
+The password that the parlor or factory will use when authenticating with
 the Jabber server.
 
 If you supply this on the command line, volityd will automatically
@@ -363,14 +401,24 @@ like B<ps>.
 
 =item g game_class
 
-The full Perl package name of the game module that the parlor
+The full Perl package name of the game module that the parlor or factory
 will run. It must be visible to @INC.
 
 =item J jabber_id
 
-The parlor's full Jabber ID. You can use this flag instead of using
+The parlor or factory's full Jabber ID. You can use this flag instead of using
 the C<username>, C<jid_host> and C<resource> options. (But you can't use
 both this I<and> them.)
+
+=item L ruleset_uri
+
+B<Bot factories only.> If you are running a C<volityd> process as a
+bot factory, then you must specify the URI of the Volity ruleset that
+you will provide bots for.
+
+If you're running this program as a parlor, you don't need to specify
+this, since your C<Volity::Game> subclass already should define its
+ruleset.
 
 =back
 
@@ -384,7 +432,7 @@ result in default behavior as described.
 =item a admins
 
 A comma-separated list of Jabber IDs that are allowed to send admin.*
-RPCs to this parlor. All admin.* calls from Jabber IDs not on this
+RPCs to this parlor or factory. All admin.* calls from Jabber IDs not on this
 list result in faults sent back to the caller.
 
 B<Default>: None.
@@ -397,15 +445,16 @@ B<Default>: bookkeeper@volity.net/volity
 
 =item c contact_email
 
-The contact email address of the person responsible for this parlor.
+The contact email address of the person responsible for this parlor or factory.
 
-Polite parlors set either this or the B<contact_jabber_id> option (or both).
+Polite servers set either this or the B<contact_jabber_id> option (or
+both).
 
 B<Default>: None.
 
 =item f pidfile
 
-The filesystem pathname of the pidfile to be created when the parlor
+The filesystem pathname of the pidfile to be created when the server
 starts.
 
 B<Default>: None, and no pidfile is used.
@@ -429,9 +478,9 @@ the B<log_config_file> option.
 
 =item j contact_jabber_id
 
-The contact Jabber ID of the person responsible for this parlor.
+The contact Jabber ID of the person responsible for this server.
 
-Polite parlors set either this or the C<contact_email> option (or both).
+Polite servers set either this or the C<contact_email> option (or both).
 
 B<Default>: None.
 
@@ -449,16 +498,16 @@ B<Default>: 5222 (the standard Jabber connection port)
 
 =item r resource
 
-The Jabber resource string that the parlor will use after
+The Jabber resource string that the server will use after
 authenticating. The string 'volity' (the default string) is a good
-choice for 'live' parlors; use something like 'testing'
+choice for 'live' servers; use something like 'testing'
 otherwise.
 
 B<Default>: 'volity'
 
 =item v volity_version
 
-The version number of the Volity platform protocol that this parlor supports.
+The version number of the Volity platform protocol that this server supports.
 
 Unless you're doing something highly unusual with the Volity Perl
 libraries, you're probably best sticking with the default value on
@@ -493,9 +542,16 @@ B<log_config_info>.
 B<Default>: None, and no logging occurs, unless you specify a value for the
 B<log_config_info> option. 
 
+=item R role
+
+The role that this server will play on the Volity network. There are
+only two legal values for this option: C<parlor> and C<factory>.
+
+B<Default>: parlor
+
 =item V visibility
 
-Whether or not this parlor is visble to Volity's game finder. Set to 1
+Whether or not this server is visble to Volity's game finder. Set to 1
 if it is, or 0 if it should go unlisted.
 
 B<Default>: 1
@@ -529,12 +585,18 @@ http://yaml.org .
 
 =head2 Configuring bots
 
-If you'd like your parlor to be able to use Perl bot classes installed
-on your machine (i.e. subclasses of C<Volity::Bot>), then you must
-specify several parameters for each class to use. These include the
-name of the bot's Perl class, a Jabber ID, and a password. (This
-latter is not necessary for bots whose basic Jabber ID matches that of
-your parlor.)
+You can configure your server to know about Perl-based Volity bot
+classes (subclasses of C<Volity::Bot>) that are installed on your
+machine. This is a requirement for bot factories (whose existence
+isn't very meaningful without them), and it's not required but
+recommended for parlors. A parlor that knows about local bot classes
+will make those bots available to its players without having to go
+through external bot factories.
+
+You must specify several parameters for each bot class to use. These
+include the name of the bot's Perl class, a Jabber ID, and a
+password. (This latter is not necessary for bots whose basic Jabber ID
+matches that of your parlor.)
 
 Because of the plurality of options involved, bot configuration from
 the command line works differently than from a config file.

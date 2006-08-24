@@ -246,7 +246,6 @@ sub initialize {
   $self->muc_jid($self->resource . '@' . $self->muc_host);
 
   # Set some query namespace handlers.
-  $self->query_handlers->{'volity:iq:botchoice'} = {set=>'choose_bot'};
   $self->query_handlers->{'http://jabber.org/protocol/muc#owner'} = {
       result=>'muc_creation',
       error=>'muc_failure',
@@ -577,6 +576,11 @@ sub jabber_presence {
 	  # they're coming or going.
 	  $self->logger->debug("Looks like a player just joined.\n");
 	  my ($nick) = $node->attr('from') =~ /\/(.*)$/;
+	  my $volity_role;
+	  if ((my $c = $node->get_tag('c')) && 
+	      ($node->get_tag('c')->attr('node') eq "http://volity.org/protocol/caps")) {
+	      $volity_role = $c->attr('ext');
+	  }
 	  if (defined($node->attr('type')) && ($node->attr('type') eq 'unavailable')) {
 	      # Someone's left.
 	      my $player = $self->look_up_player_with_jid($new_person_jid);
@@ -701,7 +705,7 @@ sub jabber_presence {
 	
 	      if (not($rejoined)) {
 		  # OK, this player is new to us.
-		  $player = $self->add_player({nick=>$nick, jid=>$new_person_jid});
+		  $player = $self->add_player({nick=>$nick, jid=>$new_person_jid, role=>$volity_role});
 		  # Also store this player's nickname, for later lookups.
 		  $self->logger->debug( "Storing $new_person_jid, under $nick");
 		  
@@ -797,8 +801,12 @@ sub add_player {
   $self->{players}{$$args{jid}} = $player;
   $self->{nicks}{$$args{nick}} = $$args{jid};
 
-  # Set the new player's bot-bit if it has the JID of a known bot.
+  # Set the new player's bot-bit if it has the JID of a known bot,
+  # or if their presence packet looked botty.
   if (exists($self->{bot_jids}{$$args{jid}})) {
+      $player->is_bot(1);
+  }
+  elsif ($$args{role} eq "bot") {
       $player->is_bot(1);
   }
 
@@ -1136,57 +1144,37 @@ sub remove_bot {
   }
   my $bot = $self->look_up_player_with_jid($bot_jid);
   unless ($bot) {
-      $self->send_rpc_fault($from_jid, $id, ["volity.jid_not_present"]);
+      $self->send_rpc_response($from_jid, $id, ["volity.jid_not_present", $bot_jid]);
       return;
   }
   unless ($bot->is_bot) {
-      $self->send_rpc_fault($from_jid, $id, ["volity.not_bot"]);
+      $self->send_rpc_response($from_jid, $id, ["volity.not_bot", $bot_jid]);
       return;
   }
   if ($bot->seat) {
-      $self->send_rpc_fault($from_jid, $id, ["volity.bot_seated"]);
+      $self->send_rpc_response($from_jid, $id, ["volity.bot_seated", $bot_jid]);
   }
 
   # Having survived this obstacle course, we have determined that $bot
   # is, in fact a bot. Whom we will now eject from the table.
   my ($bot_object) = grep($bot->jid eq $_->jid, $self->active_bots);
-  $bot_object->stop;
-  $self->active_bots(grep($bot->jid ne $_->jid, $self->active_bots));
+  if ($bot_object) {
+      # This bot is one of mine! I'll just kill its thread.
+      $bot_object->stop;
+      $self->active_bots(grep($bot->jid ne $_->jid, $self->active_bots));
+  }
+  else {
+      # This bot is from a bot factory! I'll ask it to leave.
+      my $rpc_id = "bot-leave-" . $self->next_id;
+
+      $self->send_rpc_request({
+	  id         => $rpc_id,
+	  to         => $bot_jid,
+	  methodname => "volity.leave_table",
+      });      
+  }
 }
   
-
-
-# choose_bot: Called on receipt of a form with bot choice.
-# XXX CAUTION XXXX
-# This won't work, since Volity::Jabber::Form is currently commented out.
-sub choose_bot {
-  my $self = shift;
-  my ($iq) = @_;
-  my $form = Volity::Jabber::Form->new_from_element($iq->get_tag('query')->get_tag('x'));
-  my $chosen_bot_class = $form->field_with_var('bot');
-  unless (defined($chosen_bot_class)) {
-    carp("Received a bot-choosing form with no choice?");
-    # XXX Send an error message here?
-    return;
-  }
-
-  # Make sure that the chosen class is one that we actually offer...
-  unless (grep($_->{class} eq $chosen_bot_class, $self->bot_configs)) {
-    carp("Got a request for bot class $chosen_bot_class, but I don't offer that?");
-    # XXX Send an error message here?
-    return;
-  }
-
-  if (my $bot = $self->create_bot(($chosen_bot_class))) {
-    # It's all good.
-    $bot->kernel->run;
-    return;
-  } else {
-    # Oh no, the bot didn't get added.
-    carp ("Failed to add a bot of class $chosen_bot_class.");
-    # XXX Do something errory here.
-  }
-}
 
 sub create_bot {
   my $self = shift;

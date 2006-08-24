@@ -332,20 +332,45 @@ sub handle_rpc_request {
     my ($rpc_info) = @_;
     my $method     = $$rpc_info{method};
 
+    my @response;
+
     if ( $method =~ /^game\.(.*)$/ ) {
 	my $subclass_method = "game_rpc_$1";
 
-	$self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
+	@response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
     }
     elsif ( $method =~ /^volity\.(.*)$/ ) {
 	my $subclass_method = "volity_rpc_$1";
-	$self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
+	@response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
 	# If I'm seated and not ready, try to become ready.
 	if ( $self->am_seated && not( $self->am_ready ) ) {
 	    $self->declare_readiness;
 	}
     }
 
+    # All this stuff about @response is copied from Volity::Bookkeeper.
+    # This uses the callback's return value (or lack thereof) to
+    # decide on what sort of response to make. It's not all that important
+    # because usually nobody cares what the bot's responses are, but there 
+    # are some RPCs (like volity.leave_table) where it can be important.
+    if (@response) {
+	my $response_flag = $response[0];
+	if ($response_flag eq 'fault') {
+	    # Oh, there's some in-game problem with the player's request.
+	    # (This is here for backwards compatibility.)
+	    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
+	} elsif ($response_flag =~ /^\d\d\d$/) {
+	    # Looks like a fault error code. So, send back a fault.
+	    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
+	} else {
+	    # The game has a specific, non-fault response to send back.
+	    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
+	}
+    } else {
+	# We have silently approved the request,
+	# so send back a minimal positive response.
+	$self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
+    }	
 }
 
 sub try_to_call_subclass_method {
@@ -433,6 +458,15 @@ sub volity_rpc_end_game {
 sub volity_rpc_suspend_game {
     my $self = shift;
     $self->am_ready(0);
+}
+
+sub volity_rpc_leave_table {
+    my $self = shift;
+    if ($self->seat) {
+	return ("609", "I can't leave while I'm sitting down.");
+    }
+    # So long, suckers.
+    $self->stop;
 }
 
 =head2 Action methods
