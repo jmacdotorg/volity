@@ -4,6 +4,7 @@ Changes
 lib/Volity.pm
 lib/Volity/Bot.pm
 lib/Volity/Bot/TicTacToe/Random.pm
+lib/Volity/Factory.pm
 lib/Volity/Game.pm
 lib/Volity/Game/TicTacToe.pm
 lib/Volity/GameRecord.pm
