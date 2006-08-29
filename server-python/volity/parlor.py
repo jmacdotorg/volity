@@ -9,6 +9,7 @@ from zymb.jabber import interface
 from zymb.jabber import rpc
 
 REFEREE_STARTUP_TIMEOUT = 120
+BOOKKEEPER_DEFAULT_RPC_TIMEOUT = 30
 
 class Parlor(volent.VolEntity):
     """Parlor: The implementation of a Volity parlor (i.e., game server).
@@ -88,6 +89,8 @@ class Parlor(volent.VolEntity):
 
     handlemessage() -- handle a Jabber message stanza.
     handlepresence() -- handle a Jabber presence stanza.
+    sendbookkeeper() -- send an RPC to the Volity bookkeeper.
+    defaultcallback() -- generic RPC callback, used to catch errors.
     newtable() -- create a new table and Referee.
     refereeready() -- callback invoked when a Referee is successfully
         (or unsuccessfully) created.
@@ -265,6 +268,8 @@ class Parlor(volent.VolEntity):
 
         # Set up the RPC service
         
+        self.rpccli = self.conn.getservice('rpcclience')
+        
         rpcserv = self.conn.getservice('rpcservice')
         assert isinstance(rpcserv.getopset(), volent.ClientRPCWrapperOpset)
         ops = rpcserv.getopset().getopset()
@@ -328,6 +333,62 @@ class Parlor(volent.VolEntity):
             else:
                 self.log.info('received presence \'%s\' from %s', typestr, unicode(jid))
         raise interface.StanzaHandled()
+            
+    def sendbookkeeper(self, methname, *methargs, **keywords):
+        """sendbookkeeper(methname, *methargs, **keywords) -> None
+
+        Send an RPC to the Volity bookkeeper.
+
+        The *methname* and *methargs* describe the RPC. The *keywords* may
+        contain either or both of:
+
+            timeout: How long to wait (in seconds) before considering the
+                RPC to have failed.
+            callback: A deferral callback to invoke when the outcome of
+                the RPC is known. See the defaultcallback() method for an
+                example of the callback model.
+        """
+        
+        op = keywords.pop('callback', self.defaultcallback)
+        if (not keywords.has_key('timeout')):
+            keywords['timeout'] = BOOKKEEPER_DEFAULT_RPC_TIMEOUT
+
+        methargs = [ self.resolvemetharg(val) for val in methargs ]
+
+        destjid = self.bookkeeperjid
+        destjid = 'zarf-volity-test0@volity.net/zymb' ####
+        self.rpccli.send(op, destjid, methname, *methargs, **keywords)
+
+    def defaultcallback(self, tup):
+        """defaultcallback(tup) -> None
+
+        Generic RPC callback, used to catch errors.
+
+        When an RPC completes (in any sense), the Zymb RPC-sending service
+        calls a completion routine. By default, it's this one. The callback
+        invokes sched.Deferred.extract(tup) on its *tup* argument to extract
+        the RPC outcome. This may return a value, or one of the following
+        exceptions might be raised:
+
+            TimeoutException: The RPC timed out.
+            RPCFault: The RPC response was an RPC fault.
+            StanzaError: The response was a Jabber stanza-level error.
+            Exception: Something else went wrong.
+
+        The defaultcallback() method logs all exceptions, ignores all normal
+        RPC responses, and that's all it does.
+        """
+        
+        try:
+            res = sched.Deferred.extract(tup)
+        except sched.TimeoutException, ex:
+            self.log.warning('rpc timed out: %s', ex)
+        except rpc.RPCFault, ex:
+            self.log.warning('rpc returned fault: %s', ex)
+        except interface.StanzaError, ex:
+            self.log.warning('rpc returned stanza error: %s', ex)
+        except Exception, ex:
+            self.log.warning('rpc raised exception', exc_info=True)
             
     def newtable(self, sender, *args):
         """newtable(sender, *args) -> <RPC outcome>
@@ -656,7 +717,7 @@ class ParlorAdminOpset(rpc.MethodOpset):
             tables_started: How many tables have been started since the
                 Parlor began.
         """
-        
+
         if (len(args) != 0):
             raise rpc.RPCFault(604, 'status: no arguments')
         dic = {}

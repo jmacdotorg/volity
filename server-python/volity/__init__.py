@@ -68,6 +68,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 2.0.1:
+Modification to the payment-processing protocol: the prepare_game RPC is
+    sent by the parlor (not the referee) and includes the referee JID.
+
 - 2.0.0:
 Added the payment-processing system. This includes a new referee state
     ("authorizing") and several new RPCs.

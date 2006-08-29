@@ -1890,8 +1890,12 @@ class Referee(volent.VolEntity):
         self.queueaction(self.checktimersetting)
         
         self.sendall('volity.game_validation', self.refstate)
-        self.sendbookkeeper('volity.prepare_game',
-            newgame, ls, callback=self.gotpreparegame)
+        
+        # The prepare_game is sent via the the parlor's connection, not the
+        # referee's.
+        self.parlor.sendbookkeeper('volity.prepare_game',
+            self.jid, newgame, ls,
+            callback=self.gotpreparegame, timeout=60)
 
     def gotpreparegame(self, tup):
         reason = 'error'
