@@ -299,7 +299,7 @@ class Factory(volent.VolEntity):
 
         Create a new bot, and have it join the given table. The RPC
         response will be the bot's full JID, but that doesn't happen in this
-        function; see the actorready() callback.
+        function; see the botready() callback.
         """
         
         if (len(args) != 2):
@@ -393,6 +393,8 @@ class Factory(volent.VolEntity):
         if (res == 'end'):
             self.log.warning('bot %s died before responding', act.resource)
             raise rpc.RPCFault(608, 'bot failed to start up')
+        self.activitytime = time.time()
+        self.actorsstarted += 1
         return unicode(act.jid)
 
     def actordied(self, act):

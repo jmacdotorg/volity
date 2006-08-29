@@ -356,7 +356,6 @@ class Parlor(volent.VolEntity):
         methargs = [ self.resolvemetharg(val) for val in methargs ]
 
         destjid = self.bookkeeperjid
-        destjid = 'zarf-volity-test0@volity.net/zymb' ####
         self.rpccli.send(op, destjid, methname, *methargs, **keywords)
 
     def defaultcallback(self, tup):

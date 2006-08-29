@@ -69,6 +69,8 @@ config -- parses configuration files
 * Version history:
 
 - 2.0.1:
+Fixed a factory bug where the last_new_bot and bots_started fields were not
+    being correctly reported in admin.status.
 Modification to the payment-processing protocol: the prepare_game RPC is
     sent by the parlor (not the referee) and includes the referee JID.
 
