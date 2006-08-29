@@ -41,10 +41,11 @@ public class PayPanel extends JPanel implements ActionListener
     private final static String DELIM = "\u203B";
 
     public static final int AUTH_FREE = 0;
-    public static final int AUTH_AUTH = 1;
-    public static final int AUTH_UNAUTH = 2;
-    public static final int AUTH_FEE = 3;
-    public static final int AUTH_NOFEE = 4;
+    public static final int AUTH_DEMO = 1;
+    public static final int AUTH_AUTH = 2;
+    public static final int AUTH_UNAUTH = 3;
+    public static final int AUTH_FEE = 4;
+    public static final int AUTH_NOFEE = 5;
 
     GameServer mParlor;
     String mParlorJID;
@@ -189,6 +190,8 @@ public class PayPanel extends JPanel implements ActionListener
             return;
         if (val.equals("free"))
             code = AUTH_FREE;
+        else if (val.equals("demo"))
+            code = AUTH_DEMO;
         else if (val.equals("fee"))
             code = AUTH_FEE;
         else if (val.equals("nofee"))
@@ -514,6 +517,29 @@ public class PayPanel extends JPanel implements ActionListener
 
             String val = localize("Authorized");
             msg = localize("GameAuthorized", DELIM+val+DELIM);
+
+            textpane = new JTextPaneLink();
+            textpane.setEditable(false);
+            textpane.setOpaque(false);
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = row++;
+            c.weightx = 1;
+            c.weighty = 0;
+            c.fill = GridBagConstraints.HORIZONTAL;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            c.insets = new Insets(6, 8, 6, 4);
+            add(textpane, c);
+            textpane.setMessage(msg, 12);
+        }
+
+        // Demo.
+        if (mAuthType == AUTH_DEMO) {
+            setBackground(colorAuth);
+
+            String val = localize("Authorized");
+            String val2 = localize("FreeTrial");
+            msg = localize("GameDemo", DELIM+val+DELIM, DELIM+val2+DELIM);
 
             textpane = new JTextPaneLink();
             textpane.setEditable(false);
