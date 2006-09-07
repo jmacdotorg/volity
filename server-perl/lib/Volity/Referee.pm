@@ -183,7 +183,6 @@ use fields qw(muc_jid game game_class players nicks starting_request_jid startin
 use warnings;  no warnings qw(deprecated);
 use strict;
 
-use lib qw(/Users/jmac/Library/Perl/);
 use Volity::Player;
 use Volity::Seat;
 use Volity::GameRecord;
