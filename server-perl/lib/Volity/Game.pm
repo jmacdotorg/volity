@@ -447,7 +447,8 @@ sub call_ui_function_on_seats {
 # We need to remember these for proper URI construction.
 sub register_config_variables {
     my $self  = shift;
-    my $class = ref($self);
+#    my $class = ref($self);
+    $self->{config_variables} ||= {};
     foreach (@_) {
         $self->config_variables->{$_} = 1;
     }
