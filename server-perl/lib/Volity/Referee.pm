@@ -313,103 +313,109 @@ sub init_finish {
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
-  my $method = $$rpc_info{method};
+  eval {
+      my $method = $$rpc_info{method};
 
-  # For security's sake, we explicitly accept only a few method names.
-  # In fact, the only one we care about right now is 'start_game'.
-  # XXX The above statement is no longer true... and the below if-chain
-  # XXX is only going to get longer. Refactoring is needed.
-  if ($method =~ /^volity\.(.*)$/) {
-      # This appears to be a system-level call (as opposed to a
-      # game-level one).
-      $method = $1;
-      if ($method eq 'start_game') {
-          # Still here for backwards compatibility. Read as "ready()".
-	  $self->handle_ready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'add_bot') {
-	  $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'remove_bot') {
-	  $self->remove_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'invite_player') {
-	  $self->invite_player($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'ready') {
-	  $self->handle_ready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'unready') {
-	  $self->handle_unready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'recorded') {
-	  $self->handle_recorded_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'stand') {
-	  $self->handle_stand_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'sit') {
-	  $self->handle_sit_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'set_language') {
-	  $self->handle_language_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'suspend_game') {
-	  $self->handle_suspend_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'kill_game') {
-	  $self->handle_kill_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      } elsif ($method eq 'send_state') {
-	  $self->handle_state_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});	  
-      } else {
-	  $self->logger->warn("Got weird RPC request 'volity.$method' from $$rpc_info{from}.");
-	  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown method: volity.$method");
-	  return;
-      }
-  } elsif ($method =~ /^game\.(.*)$/) {
-      # This appears to be a call to the game object.
-      # Reaction depends on whether or not the game is afoot.
-      my $method = $1;
-      my $ok_to_call = 0;
-      if ($self->game->is_afoot) {
-	  if ($self->game->is_config_variable($method)) {
-	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "You can't configure the game once it has started.");
+      # For security's sake, we explicitly accept only a few method names.
+      # In fact, the only one we care about right now is 'start_game'.
+      # XXX The above statement is no longer true... and the below if-chain
+      # XXX is only going to get longer. Refactoring is needed.
+      if ($method =~ /^volity\.(.*)$/) {
+	  # This appears to be a system-level call (as opposed to a
+	  # game-level one).
+	  $method = $1;
+	  if ($method eq 'start_game') {
+	      # Still here for backwards compatibility. Read as "ready()".
+	      $self->handle_ready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'add_bot') {
+	      $self->add_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'remove_bot') {
+	      $self->remove_bot($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'invite_player') {
+	      $self->invite_player($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'ready') {
+	      $self->handle_ready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'unready') {
+	      $self->handle_unready_player_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'recorded') {
+	      $self->handle_recorded_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'stand') {
+	      $self->handle_stand_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'sit') {
+	      $self->handle_sit_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'set_language') {
+	      $self->handle_language_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'suspend_game') {
+	      $self->handle_suspend_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'kill_game') {
+	      $self->handle_kill_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  } elsif ($method eq 'send_state') {
+	      $self->handle_state_request($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});	  
 	  } else {
-	      $ok_to_call = 1;
+	      $self->logger->warn("Got weird RPC request 'volity.$method' from $$rpc_info{from}.");
+	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 603, "Unknown method: volity.$method");
+	      return;
 	  }
-      } else {
-	  unless ($self->game->is_config_variable($method)) {
-	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "Can't call $method! The game hasn't started yet.");
+      } elsif ($method =~ /^game\.(.*)$/) {
+	  # This appears to be a call to the game object.
+	  # Reaction depends on whether or not the game is afoot.
+	  my $method = $1;
+	  my $ok_to_call = 0;
+	  if ($self->game->is_afoot) {
+	      if ($self->game->is_config_variable($method)) {
+		  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "You can't configure the game once it has started.");
+	      } else {
+		  $ok_to_call = 1;
+	      }
 	  } else {
-	      $ok_to_call = 1;
+	      unless ($self->game->is_config_variable($method)) {
+		  $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "Can't call $method! The game hasn't started yet.");
+	      } else {
+		  $ok_to_call = 1;
+	      }
 	  }
-      }
-      if ($ok_to_call) {
-	  $$rpc_info{method} = $method;
-	  $self->handle_game_rpc_request($rpc_info);
-	  $self->last_activity_time(time);
-      }
-  } elsif (my ($admin_method) = $$rpc_info{'method'} =~ /^admin\.(.*)$/) {
-      # Check that the sender is allowed to make this call.
-      my ($basic_sender_jid) = $$rpc_info{from} =~ /^(.*)\//;
-      if (grep($_ eq $basic_sender_jid, $self->server->admins)) {
-	  my $local_method = "admin_rpc_$admin_method";
-	  if ($self->can($local_method)) {
-	      $self->$local_method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  if ($ok_to_call) {
+	      $$rpc_info{method} = $method;
+	      $self->handle_game_rpc_request($rpc_info);
+	      $self->last_activity_time(time);
+	  }
+      } elsif (my ($admin_method) = $$rpc_info{'method'} =~ /^admin\.(.*)$/) {
+	  # Check that the sender is allowed to make this call.
+	  my ($basic_sender_jid) = $$rpc_info{from} =~ /^(.*)\//;
+	  if (grep($_ eq $basic_sender_jid, $self->server->admins)) {
+	      my $local_method = "admin_rpc_$admin_method";
+	      if ($self->can($local_method)) {
+		  $self->$local_method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	      } else {
+		  $self->send_rpc_fault($$rpc_info{from},
+					$$rpc_info{id},
+					603,
+					"Unknown methodName: '$$rpc_info{method}'",
+					);
+	      }
 	  } else {
+	      $self->logger->warn("$$rpc_info{from} attempted to call $$rpc_info{method}. But I don't recognize that JID as an admin, so I'm rejecting it.");
 	      $self->send_rpc_fault($$rpc_info{from},
 				    $$rpc_info{id},
-				    603,
-				    "Unknown methodName: '$$rpc_info{method}'",
+				    607,
+				    "You are not allowed to make admin calls on this parlor.",
 				    );
+	      return;
 	  }
+	  
       } else {
-	  $self->logger->warn("$$rpc_info{from} attempted to call $$rpc_info{method}. But I don't recognize that JID as an admin, so I'm rejecting it.");
+	  $self->logger->warn("Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
 	  $self->send_rpc_fault($$rpc_info{from},
-				   $$rpc_info{id},
-				   607,
-				   "You are not allowed to make admin calls on this parlor.",
-				   );
-	  return;
+				$$rpc_info{id},
+				603,
+				"Unknown methodName: '$$rpc_info{method}'",
+				);
+	  
       }
-
-  } else {
-      $self->logger->warn("Referee at " . $self->jid . " received a $$rpc_info{method} RPC request from $$rpc_info{from}. Eh?");
-      $self->send_rpc_fault($$rpc_info{from},
-			    $$rpc_info{id},
-			    603,
-			    "Unknown methodName: '$$rpc_info{method}'",
-			    );
-      
+  }; # End of loooong eval block
+  if ($@) {
+      $self->report_rpc_error(@_);
+      return;
   }
 }
 
@@ -432,6 +438,8 @@ sub handle_rpc_response {
 				 $info_hash->{response},
 				 );
     }
+
+     
 }
 
 # handle_game_rpc_request: Called by handle_rpc_request upon receipt of an
@@ -1807,7 +1815,8 @@ sub handle_rpc_fault {
     $self->send_rpc_fault($inviter, $original_rpc_id, $$fault_info{code}, $$fault_info{string});
     delete($self->invitations->{$$fault_info{id}});
   } else {
-    $self->logger->warn("Got unexpected RPC fault from $$fault_info{from}, id $$fault_info{id}: $$fault_info{code} - $$fault_info{string}");
+    $self->logger->warn("Got unexpected RPC fault from $$fault_info{from}, id $$fault_info{id}: $$fault_info{fault_code} - $$fault_info{fault_string}");
+
   }
 }
 
