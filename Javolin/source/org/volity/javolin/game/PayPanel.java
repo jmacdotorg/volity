@@ -35,10 +35,6 @@ public class PayPanel extends JPanel implements ActionListener
     private final static Color colorAuthPay = new Color(0xE0, 0xE0, 0x40);
     private final static Color colorUnauth = new Color(0xFF, 0x98, 0x88);
     private final static Color colorAuth = new Color(0x80, 0xD8, 0x80);
-    // Delimiter character, chosen to be something that will not show up
-    // in any real language. (U+203B: REFERENCE MARK)
-    private final static char DELIMCHAR = '\u203B';
-    private final static String DELIM = "\u203B";
 
     public static final int AUTH_FREE = 0;
     public static final int AUTH_DEMO = 1;
@@ -56,11 +52,14 @@ public class PayPanel extends JPanel implements ActionListener
     int mAuthType = AUTH_FREE;
     int mAuthFee = 0;
     int mYourCredits = 0;
+    boolean mPaymentOptions = false;
     String mPayURL = null;
 
     DefaultStatusListener mTableStatusListener;
 
     JCheckBox mPayCheckBox;
+    JButton mBuyButton;
+    JButton mOptionsButton;
 
     public PayPanel(GameServer parlor, GameTable table) {
         super(new SquishyGridBagLayout());
@@ -123,7 +122,8 @@ public class PayPanel extends JPanel implements ActionListener
                     }
                     if (result == null || !(result instanceof Map)) {
                         // error or timeout -- assume game is free.
-                        updatePayInfo(AUTH_FREE, 0, 0, null, false);
+                        //###updatePayInfo(AUTH_FREE, 0, 0, null, false);
+                        updatePayInfo(AUTH_FEE, 100, 32562, "http://blah", false); //###
                         return;
                     }
 
@@ -170,6 +170,10 @@ public class PayPanel extends JPanel implements ActionListener
             else {
                 prefs.remove(mParlorJID);
             }
+        }
+
+        if (source == mBuyButton || source == mOptionsButton) {
+            PlatformWrapper.launchURL(mPayURL);
         }
     }
 
@@ -241,6 +245,7 @@ public class PayPanel extends JPanel implements ActionListener
             sameurl = mPayURL.equals(payurl);
 
         if (mAuthType == authtype && mAuthFee == authfee 
+            && mPaymentOptions == options
             && mYourCredits == yourcredits && sameurl) {
             return;
         }
@@ -249,6 +254,7 @@ public class PayPanel extends JPanel implements ActionListener
         mAuthFee = authfee;
         mYourCredits = yourcredits;
         mPayURL = payurl;
+        mPaymentOptions = options;
 
         adjustUI();
     }
@@ -332,232 +338,300 @@ public class PayPanel extends JPanel implements ActionListener
         removeAll();
 
         mPayCheckBox = null;
+        mBuyButton = null;
         boolean visible = true;
 
+        Color color = colorAuth;
         JTextPaneLink textpane;
+        JLabel label;
         String msg, credits;
 
         GridBagConstraints c;
-        int row = 0;
 
         // Free: pane is entirely hidden.
         if (mAuthType == AUTH_FREE) {
             visible = false;
         }
 
-        // X credits per game.
-        if (mAuthType == AUTH_FEE) {
-            setBackground(colorAuthPay);
-
-            Object obj;
-            if (mYourCredits >= 0)
-                obj = new Integer(mYourCredits);
-            else
-                obj = "\u203B??\u203B";
-            credits = localize("Credits");
-            msg = localize("YourCredits", DELIM+credits+DELIM, obj);
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(6, 8, 4, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 10);
-
-            if (mAuthFee == 1)
-                credits = localize("OneCredit");
-            else
-                credits = localize("ManyCredits", new Integer(mAuthFee));
-            msg = localize("GameWillCost", DELIM+credits+DELIM);
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(4, 8, 4, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 12);
-
-            mPayCheckBox = new JCheckBox("XXX");
-            mPayCheckBox.addActionListener(this);
-            mPayCheckBox.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            mPayCheckBox.setBackground(new Color(0xFF, 0xFF, 0x60));
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.WEST;
-            c.insets = new Insets(0, 4, 4, 4);
-            add(mPayCheckBox, c);
-            adjustCheckbox();
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(0, 8, 6, 4);
-            add(textpane, c);
-            textpane.setMessage(localize("WhenGameBegins"), 10);
-        }
-
-        // X credits per game, which you do not have.
-        if (mAuthType == AUTH_NOFEE) {
-            setBackground(colorUnauth);
-
-            Object obj;
-            if (mYourCredits >= 0)
-                obj = new Integer(mYourCredits);
-            else
-                obj = "\u203B??\u203B";
-            credits = localize("Credits");
-            msg = localize("YourCredits", DELIM+credits+DELIM, obj);
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(6, 8, 4, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 10);
-
-            if (mAuthFee == 1)
-                credits = localize("OneCredit");
-            else
-                credits = localize("ManyCredits", new Integer(mAuthFee));
-            msg = localize("GameWillCost", DELIM+credits+DELIM);
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(4, 8, 4, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 12);
-
-            if (mYourCredits == 0) {
-                String val = localize("BuySome");
-                msg = localize("NotEnoughCreditsNone", DELIM+val+DELIM);
+        if (visible) {
+            if (mAuthType == AUTH_FEE) {
+                color = colorAuthPay;
             }
-            else {
-                String val = localize("BuyMore");
-                msg = localize("NotEnoughCredits", DELIM+val+DELIM);
+            else if (mAuthType == AUTH_NOFEE || mAuthType == AUTH_UNAUTH) {
+                color = colorUnauth;
+            }
+            else if (mAuthType == AUTH_AUTH || mAuthType == AUTH_DEMO 
+                || mAuthType == AUTH_FREE) {
+                color = colorAuth;
             }
 
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
+            JPanel subpane = new JPanel(new GridBagLayout());
+            subpane.setBackground(color);
+            subpane.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
+
+            int row = 0;
+
+            // X credits per game.
+            if (mAuthType == AUTH_FEE) {
+                setBackground(color);
+
+                if (mAuthFee == 1)
+                    credits = localize("OneCredit");
+                else
+                    credits = localize("ManyCredits", new Integer(mAuthFee));
+                msg = localize("GameWillCost", credits);
+
+                textpane = new JTextPaneLink();
+                textpane.setEditable(false);
+                textpane.setOpaque(false);
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(6, 8, 4, 4);
+                subpane.add(textpane, c);
+                textpane.setMessage(msg, 12);
+
+                mPayCheckBox = new JCheckBox("XXX");
+                mPayCheckBox.addActionListener(this);
+                mPayCheckBox.setFont(new Font("SansSerif", Font.PLAIN, 12));
+                mPayCheckBox.setBackground(new Color(0xFF, 0xFF, 0x60));
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.WEST;
+                c.insets = new Insets(0, 4, 6, 4);
+                subpane.add(mPayCheckBox, c);
+                adjustCheckbox();
+            }
+
+            // X credits per game, which you do not have.
+            if (mAuthType == AUTH_NOFEE) {
+                setBackground(color);
+
+                if (mAuthFee == 1)
+                    credits = localize("OneCredit");
+                else
+                    credits = localize("ManyCredits", new Integer(mAuthFee));
+                msg = localize("GameWillCost", credits);
+
+                textpane = new JTextPaneLink();
+                textpane.setEditable(false);
+                textpane.setOpaque(false);
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(6, 8, 4, 4);
+                subpane.add(textpane, c);
+                textpane.setMessage(msg, 12);
+
+                if (mYourCredits == 0)
+                    msg = localize("NotEnoughCreditsNone");
+                else
+                    msg = localize("NotEnoughCredits");
+                textpane = new JTextPaneLink();
+                textpane.setEditable(false);
+                textpane.setOpaque(false);
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(4, 8, 6, 4);
+                subpane.add(textpane, c);
+                textpane.setMessage(msg, 12);
+            }
+
+            // No subscription.
+            if (mAuthType == AUTH_UNAUTH) {
+                setBackground(color);
+
+                msg = localize("GameNotAuthorized");
+
+                textpane = new JTextPaneLink();
+                textpane.setEditable(false);
+                textpane.setOpaque(false);
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(6, 8, 6, 4);
+                subpane.add(textpane, c);
+                textpane.setMessage(msg, 12);
+            }
+
+            // Subscription.
+            if (mAuthType == AUTH_AUTH) {
+                setBackground(color);
+
+                msg = localize("GameAuthorized");
+
+                textpane = new JTextPaneLink();
+                textpane.setEditable(false);
+                textpane.setOpaque(false);
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(6, 8, 6, 4);
+                subpane.add(textpane, c);
+                textpane.setMessage(msg, 12);
+            }
+
+            // Demo.
+            if (mAuthType == AUTH_DEMO) {
+                setBackground(color);
+
+                msg = localize("GameDemo");
+
+                textpane = new JTextPaneLink();
+                textpane.setEditable(false);
+                textpane.setOpaque(false);
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.HORIZONTAL;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(6, 8, 6, 4);
+                subpane.add(textpane, c);
+                textpane.setMessage(msg, 12);
+            }
+
+            if (mPaymentOptions) {
+                mOptionsButton = new JButton(localize("PaymentOptions"));
+                mOptionsButton.addActionListener(this);
+                mOptionsButton.setEnabled(mPayURL != null);
+                mOptionsButton.setFont(new Font("SansSerif", Font.PLAIN, 10));
+                mOptionsButton.setMargin(new Insets(1, 6, 2, 6));
+                c = new GridBagConstraints();
+                c.gridx = 0;
+                c.gridy = row++;
+                c.weightx = 1;
+                c.weighty = 0;
+                c.fill = GridBagConstraints.NONE;
+                c.anchor = GridBagConstraints.NORTHWEST;
+                c.insets = new Insets(0, 6, 6, 4);
+
+                JToolBar toolbar = new JToolBar();
+                toolbar.setFloatable(false);
+                toolbar.setOpaque(false);
+                toolbar.add(mOptionsButton);
+                subpane.add(toolbar, c);
+            }
+
+            // add the pane itself
             c = new GridBagConstraints();
             c.gridx = 0;
-            c.gridy = row++;
+            c.gridy = 0;
             c.weightx = 1;
             c.weighty = 0;
             c.fill = GridBagConstraints.HORIZONTAL;
             c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(4, 8, 6, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 12);
+            add(subpane, c);
         }
 
-        // No subscription.
-        if (mAuthType == AUTH_UNAUTH) {
-            setBackground(colorUnauth);
+        // The subpanel that shows your credits.
 
-            String val1 = localize("Authorized");
-            String val2 = localize("PaymentOptions");
-            msg = localize("GameNotAuthorized", DELIM+val1+DELIM,
-                DELIM+val2+DELIM);
+        if (visible) {
+            JPanel subpane = new JPanel(new GridBagLayout());
+            subpane.setBackground(color);
+            subpane.setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
 
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
+            label = new JLabel(localize("YourBalance"));
+            label.setFont(new Font("SansSerif", Font.PLAIN, 10));
             c = new GridBagConstraints();
             c.gridx = 0;
-            c.gridy = row++;
+            c.gridy = 0;
+            c.weightx = 0;
+            c.weighty = 0;
+            c.fill = GridBagConstraints.NONE;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            c.insets = new Insets(6, 8, 4, 0);
+            subpane.add(label, c);            
+
+            if (mYourCredits >= 0)
+                msg = String.valueOf(mYourCredits);
+            else
+                msg = "??";
+            label = new JLabel(msg, JavolinApp.getCreditsSymbol(12), SwingConstants.LEFT);
+            label.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            label.setIconTextGap(0); //### ?
+            c = new GridBagConstraints();
+            c.gridx = 1;
+            c.gridy = 0;
+            c.weightx = 0;
+            c.weighty = 0;
+            c.fill = GridBagConstraints.NONE;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            c.insets = new Insets(6, 2, 4, 4);
+            subpane.add(label, c);
+
+            // Blank stretchy
+            label = new JLabel(" ");
+            label.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            c = new GridBagConstraints();
+            c.gridx = 2;
+            c.gridy = 0;
             c.weightx = 1;
             c.weighty = 0;
             c.fill = GridBagConstraints.HORIZONTAL;
             c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(6, 8, 6, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 12);
-        }
+            subpane.add(label, c);
 
-        // Subscription.
-        if (mAuthType == AUTH_AUTH) {
-            setBackground(colorAuth);
-
-            String val = localize("Authorized");
-            msg = localize("GameAuthorized", DELIM+val+DELIM);
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
+            if (mYourCredits == 0)
+                msg = localize("BuyCreditsNone");
+            else
+                msg = localize("BuyCredits");
+            mBuyButton = new JButton(msg);
+            mBuyButton.addActionListener(this);
+            mBuyButton.setEnabled(mPayURL != null);
+            mBuyButton.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            mBuyButton.setMargin(new Insets(1, 6, 2, 6));
             c = new GridBagConstraints();
             c.gridx = 0;
-            c.gridy = row++;
+            c.gridy = 1;
+            c.gridwidth = GridBagConstraints.REMAINDER;
+            c.weightx = 0;
+            c.weighty = 0;
+            c.fill = GridBagConstraints.NONE;
+            c.anchor = GridBagConstraints.NORTHWEST;
+            c.insets = new Insets(0, 6, 6, 4);
+
+            JToolBar toolbar = new JToolBar();
+            toolbar.setFloatable(false);
+            toolbar.setOpaque(false);
+            toolbar.add(mBuyButton);
+            subpane.add(toolbar, c);
+
+            // add the pane itself
+            c = new GridBagConstraints();
+            c.gridx = 0;
+            c.gridy = 1;
             c.weightx = 1;
             c.weighty = 0;
             c.fill = GridBagConstraints.HORIZONTAL;
             c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(6, 8, 6, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 12);
-        }
-
-        // Demo.
-        if (mAuthType == AUTH_DEMO) {
-            setBackground(colorAuth);
-
-            String val = localize("Authorized");
-            String val2 = localize("FreeTrial");
-            msg = localize("GameDemo", DELIM+val+DELIM, DELIM+val2+DELIM);
-
-            textpane = new JTextPaneLink();
-            textpane.setEditable(false);
-            textpane.setOpaque(false);
-            c = new GridBagConstraints();
-            c.gridx = 0;
-            c.gridy = row++;
-            c.weightx = 1;
-            c.weighty = 0;
-            c.fill = GridBagConstraints.HORIZONTAL;
-            c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(6, 8, 6, 4);
-            add(textpane, c);
-            textpane.setMessage(msg, 12);
+            add(subpane, c);
         }
 
         setVisible(visible);
@@ -567,12 +641,10 @@ public class PayPanel extends JPanel implements ActionListener
 
     /**
      * Create the permanent contents of the panel. Actually, there aren't any.
-     * We do set the thing to be opaque (color to be determined in adjustUI),
-     * and add a border.
+     * We do set the thing to be opaque.
      */
     private void buildUI() {
         setOpaque(true);
-        setBorder(BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
     }
 
     /**
@@ -612,9 +684,6 @@ public class PayPanel extends JPanel implements ActionListener
         /**
          * Set the text of a JTextPane item to the given string, in the given
          * font.
-         *
-         * If the msg contains delimiter characters (\u203B), these are assumed
-         * to begin and end hyperlinks to mPayURL.
          */
         public void setMessage(String msg, int fontsize) {
             String[] ls = null;
@@ -626,35 +695,11 @@ public class PayPanel extends JPanel implements ActionListener
             StyleConstants.setFontSize(baseStyle, fontsize);
             StyleConstants.setForeground(baseStyle, Color.BLACK);
 
-            SimpleAttributeSet linkStyle = null;
-
-            if (msg.indexOf(DELIMCHAR) >= 0) {
-                if (mPayURL != null) {
-                    linkStyle = new SimpleAttributeSet();
-                    StyleConstants.setFontFamily(linkStyle, "SansSerif");
-                    StyleConstants.setFontSize(linkStyle, fontsize);
-                    StyleConstants.setForeground(linkStyle, colorHyperlink);
-                    StyleConstants.setUnderline(linkStyle, true);
-                }
-                else {
-                    linkStyle = baseStyle;
-                }
-
-                ls = msg.split(DELIM);            
-            }
-            else {
-                ls = new String[] { msg };
-            }
-
             try {
                 doc.remove(0, doc.getLength());
-                boolean link=false;
-                for (int ix=0; ix<ls.length; ix++, link=!link) {
-                    if (ls[ix].length() == 0)
-                        continue;
-                    SimpleAttributeSet style = (link ? linkStyle : baseStyle);
-                    doc.insertString(doc.getLength(), ls[ix], style);
-                }
+                if (msg.length() == 0)
+                    return;
+                doc.insertString(doc.getLength(), msg, baseStyle);
             }
             catch (BadLocationException ex) { }
         }
