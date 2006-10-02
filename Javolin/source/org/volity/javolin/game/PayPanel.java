@@ -123,7 +123,7 @@ public class PayPanel extends JPanel implements ActionListener
                     }
                     if (result == null || !(result instanceof Map)) {
                         // error or timeout -- assume game is free.
-                        updatePayInfo(AUTH_FREE, 0, 0, null);
+                        updatePayInfo(AUTH_FREE, 0, 0, null, false);
                         return;
                     }
 
@@ -184,8 +184,9 @@ public class PayPanel extends JPanel implements ActionListener
         int fee = -1;
         int credits = -1;
         String url = null;
+        boolean options = false;
 
-        val = map.get("code");
+        val = map.get("status");
         if (val == null)
             return;
         if (val.equals("free"))
@@ -210,8 +211,11 @@ public class PayPanel extends JPanel implements ActionListener
         val = map.get("credits");
         if (val != null && val instanceof Integer)
             credits = ((Integer)val).intValue();
+        val = map.get("options");
+        if (val != null && val instanceof Boolean)
+            options = ((Boolean)val).booleanValue();
 
-        updatePayInfo(code, fee, credits, url);
+        updatePayInfo(code, fee, credits, url, options);
     }
 
     /**
@@ -220,7 +224,7 @@ public class PayPanel extends JPanel implements ActionListener
      * yourcredits means "do not change".
      */
     public void updatePayInfo(int authtype, int authfee, int yourcredits,
-        String payurl) {
+        String payurl, boolean options) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
         if (authfee < 0)
