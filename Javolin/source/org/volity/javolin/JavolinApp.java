@@ -84,6 +84,7 @@ public class JavolinApp extends JFrame
     private final static ImageIcon DELETEUSER_ICON;
     private final static ImageIcon CHAT_ICON;
     private final static ImageIcon STATS_ICON;
+    private final static ImageIcon CREDITS12_ICON;
 
     private static URI sClientTypeUri = URI.create("http://volity.org/protocol/ui/svg");
     private static UIFileCache sUIFileCache = new UIFileCache();
@@ -136,6 +137,8 @@ public class JavolinApp extends JFrame
             new ImageIcon(JavolinApp.class.getResource("DeleteUser_ButIcon.png"));
         CHAT_ICON = new ImageIcon(JavolinApp.class.getResource("Chat_ButIcon.png"));
         STATS_ICON = new ImageIcon(JavolinApp.class.getResource("Stats_ButIcon.png"));
+
+        CREDITS12_ICON = new ImageIcon(JavolinApp.class.getResource("Credits_12.png"));
     }
 
     /**
@@ -526,6 +529,17 @@ public class JavolinApp extends JFrame
     public static GameResourcePrefs getGameResourcePrefs()
     {
         return sGameResourcePrefs;
+    }
+
+    /**
+     * Get an icon of the Volity "credits" symbol. Currently only supports a
+     * 12-pixel-high version.
+     */
+    public static Icon getCreditsSymbol(int pixels)
+    {
+        if (pixels == 12)
+            return CREDITS12_ICON;
+        throw new IllegalArgumentException("Invalid size for getCreditsSymbol");
     }
 
     /**
