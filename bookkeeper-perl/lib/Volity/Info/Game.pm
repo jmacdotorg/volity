@@ -24,7 +24,7 @@ use strict;
 use base qw(Volity::Info);
 
 Volity::Info::Game->table('game');
-Volity::Info::Game->columns(All=>qw(id start_time end_time server_id signature ruleset_id));
+Volity::Info::Game->columns(All=>qw(id start_time end_time server_id referee_jid signature ruleset_id));
 Volity::Info::Game->has_a(ruleset_id=>"Volity::Info::Ruleset");
 Volity::Info::Game->has_a(server_id=>"Volity::Info::Server");
 Volity::Info::Game->has_many(seats=>["Volity::Info::GameSeat" => 'seat_id'], 'game_id');
@@ -78,5 +78,8 @@ Volity::Info::Game->set_sql(with_ruleset_and_seat_by_end_time =>
 
 Volity::Info::Game->set_sql(by_end_time =>
                             "select distinct game.id from game order by game.end_time desc limit ?, ?");
+
+Volity::Info::Game->set_sql(unfinished_with_referee_jid =>
+			    "select id from game where end_time is null and referee_jid = ?");
 
 1;

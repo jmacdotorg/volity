@@ -21,14 +21,22 @@ package Volity::Bookkeeper;
 use warnings;
 use strict;
 use Data::Dumper;
+use DateTime::Format::MySQL;
 
 use base qw(Volity::Jabber);
 use fields qw(scheduled_game_info_by_rpc_id 
 	      scheduled_game_info_by_muc_jid
 	      reconnection_alarm_id
+	      payment_class
+	      payment_object
+	      outstanding_verify_game_calls_by_rpc_id
+	      outstanding_verify_game_calls_by_referee
+	      outstanding_prepare_game_responses_by_referee
+	      slacker_players_by_referee
+	      refusing_players_by_referee
 	      );
 
-our $VERSION = '0.6';
+our $VERSION = '0.7';
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
@@ -54,17 +62,20 @@ our $JOIN_TABLE_TIMEOUT = 60;
 our $SCHEDULED_GAME_CHECK_INTERVAL = 60;
 our $INVITEE_JOIN_TIMEOUT = 3600;
 our $RECONNECTION_TIMEOUT = 5;
+our $VERIFY_GAME_TIMEOUT = 30;
 
 sub initialize {
   my $self = shift;
 
   $self->SUPER::initialize(@_);
 
-   foreach (qw(scheduled_game_info_by_rpc_id scheduled_game_info_by_muc_jid)) {
+   foreach (qw(scheduled_game_info_by_rpc_id scheduled_game_info_by_muc_jid outstanding_verify_game_calls_by_rpc_id outstanding_verify_game_calls_by_referee outstanding_prepare_game_responses_by_referee slacker_players_by_referee refusing_players_by_referee)) {
        $self->{$_} = {};
    }
 
-   return $self;
+  $self->payment_object($self->payment_class->new);
+
+  return $self;
 }
 
 sub init_finish {
@@ -75,7 +86,7 @@ sub init_finish {
     $self->reconnection_alarm_id(undef);
 
     # Set up some POE event handlers.
-    foreach (qw(time_to_check_the_schedule new_table_rpc_timed_out new_table_join_attempt_timed_out waiting_for_invitees_timed_out)) {
+    foreach (qw(time_to_check_the_schedule new_table_rpc_timed_out new_table_join_attempt_timed_out waiting_for_invitees_timed_out verify_game_timeout)) {
 	$self->kernel->state($_, $self);
     }
 
@@ -142,8 +153,13 @@ sub handle_rpc_request {
   if ($$rpc_info{method} =~ /^volity\.(.*)$/) {
     my $method = $1;
     $method = "_rpc_" . $method;
+    warn "******$method******\n";
     if ($self->can($method)) {
-      my @response = $self->$method($$rpc_info{from}, @{$$rpc_info{args}});
+      my @response = eval{$self->$method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});};
+      if ($@) {
+	  $self->report_rpc_error(@_);
+	  return;
+      }
       if (@response) {
 	  my $response_flag = $response[0];
 	  if ($response_flag eq 'fault') {
@@ -155,7 +171,7 @@ sub handle_rpc_request {
 	      $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
 	  } else {
 	      # The game has a specific, non-fault response to send back.
-	      $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
+	      $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, @response);
 	  }
       } else {
 	  # We have silently approved the request,
@@ -286,6 +302,23 @@ sub handle_rpc_response {
 	else {
 	    # XXX Ooh, we got some kind of other response?!
 	}
+    }
+    elsif ($args->{id} =~ /^verify-game-(\d+)$/) {
+	# It's a good response from a player about a verify_game call.
+	# Get the stored info about this call, cancel this player's
+	# timeout alarm, and clear this player from the people we're
+	# waiting for.
+	my $info_hash = delete($self->outstanding_verify_game_calls_by_rpc_id->{$args->{id}});
+	$self->kernel->alarm_remove($info_hash->{alarm_id});
+
+	delete($self->outstanding_verify_game_calls_by_referee->{$info_hash->{referee_jid}});
+
+	unless ($args->{response}) {
+	    # The player has refused this verify_game call. Well now.
+	    $self->refusing_players_by_referee->{$info_hash->{referee_jid}} ||= [];
+	    push (@{$self->refusing_players_by_referee->{$info_hash->{referee_jid}}}, $info_hash->{player_jid});
+	}
+
     }
     else {
 	$self->logger->warn("Received an unexpected RPC repsonse, with the ID $$args{id}.");
@@ -549,7 +582,7 @@ sub check_schedule {
 # the parlor, and then store the record in the DB.
 sub _rpc_record_game {
   my $self = shift;
-  my ($sender_jid, $game_record_hashref) = @_;
+  my ($sender_jid, $rpc_id, $game_record_hashref) = @_;
   
   unless (ref($game_record_hashref) && ref($game_record_hashref) eq 'HASH') {
       $self->logger->warn("Got a non-struct game record from $sender_jid.\n");
@@ -564,13 +597,13 @@ sub _rpc_record_game {
   }
 
   # Looks good. Store it.
-  return $self->store_record_in_db($game_record);
+  return $self->store_record_in_db($sender_jid, $game_record);
 }
 
 # store_record_in_db: This must return a value like into an _rpc_* method.
 sub store_record_in_db {
   my $self = shift;
-  my ($game_record) = @_;
+  my ($referee_jid, $game_record) = @_;
   my ($parlor) = Volity::Info::Server->search({jid=>$game_record->parlor});
   unless ($parlor) {
       $self->logger->warn("Bizarre... got a record with parlor JID " . $game_record->parlor . ", but couldn't get a parlor object from the DB from it. No record stored.");
@@ -583,19 +616,24 @@ sub store_record_in_db {
   }
   my $game;			# Volity::Info::Game object
   if (defined($game_record->id)) {
-    $game = Volity::Info::Game->retrieve($self->id);
-    # XXX Confirm that the record's owner is legit.
-    # XXX Do other magic here to update the values.
-    # XXX This is all kinds of not implemented yet.
+      $game = Volity::Info::Game->retrieve($self->id);
   } else {
+      # XXX NO UNDEFS ALLOWED IN TIMES. So, yeah, fix this.
+      ($game) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid);
+      unless ($game) {
+	  $self->logger->warn("Creating a NEW game record for a game that was just finished by the referee with JID $referee_jid. This is naughty; there should have already existed a record for this game.");
+	  $game = Volity::Info::Game->create({
+	      start_time  => $game_record->start_time || undef,
+	      server_id   => $parlor->id,
+	      ruleset_id  => $ruleset->id,
+	      referee_jid => $referee_jid
+	      });
+      }
+      $game->end_time($game_record->end_time || undef);
+      $game->update;
 
-    $game = Volity::Info::Game->create({start_time=>$game_record->start_time || undef,
-					end_time=>$game_record->end_time || undef,
-					server_id=>$parlor->id,
-					ruleset_id=>$ruleset->id,
-				       });
-					
-    $game_record->id($game->id);
+      # XXX Is the game record's ID ever used, after we set it here?
+      $game_record->id($game->id) unless $game_record->id;
   }
 
   # Winners list handling takes up the rest of this method...
@@ -619,7 +657,6 @@ sub record_winners {
     # the from database IDs.
     my %seats;
     unless (ref($game_record->seats) eq "HASH") {
-        warn "B";
         return ('606', 'Bad game struct: The value of "seats" must be a struct.');
     }
     for my $seat_name (keys(%{$game_record->seats})) {
@@ -710,7 +747,7 @@ sub record_winners {
         Volity::Info::GameSeat->create({seat_name=>$seat_name, rating=>$new_ratings{$seat_name}, place=>$ranks{$seat_name}, game_id=>$game, seat_id=>$seats{$seat_name}});
       }
     
-    return;			# This results in a volity.ok response.
+    return "volity.ok";
     
 }
 
@@ -831,7 +868,7 @@ sub record_winners_legacy {
       
   }
 
-  return;			# This results in a volity.ok response.
+  return "volity.ok";			# This results in a volity.ok response.
 }
 
 sub get_rating_delta {
@@ -862,22 +899,22 @@ sub lobby_jids_for_ruleset {
 
 sub _rpc_get_reputation {
     my $self = shift;
-    my ($sender_jid, $target_identifier) = @_;
+    my ($sender_jid, $rpc_id, $target_identifier) = @_;
 }
 
 sub _rpc_get_stance {
     my $self = shift;
-    my ($sender_jid, $target_identifier, $player_jid);
+    my ($sender_jid, $rpc_id, $target_identifier, $player_jid);
 }
 
 sub _rpc_get_stances {
     my $self = shift;
-    my ($sender_jid, $target_identifier) = @_;
+    my ($sender_jid, $rpc_id, $target_identifier) = @_;
 }
 
 sub _rpc_set_stance {
     my $self = shift;
-    my ($sender_jid, $target_identifier, $stance, $reason) = @_;
+    my ($sender_jid, $rpc_id, $target_identifier, $stance, $reason) = @_;
 }
 
 sub _rpc_get_rulesets {
@@ -888,7 +925,7 @@ sub _rpc_get_rulesets {
 
 sub _rpc_get_ruleset_info {
     my $self = shift;
-    my ($from_jid, $uri) = @_;
+    my ($from_jid, $rpc_id, $uri) = @_;
     my $ruleset = Volity::Info::Ruleset->search(uri=>$uri);
     unless ($ruleset) {
 	return ("volity.unknown_uri", "literal.$uri");
@@ -897,12 +934,12 @@ sub _rpc_get_ruleset_info {
     foreach (qw(description name uri)) {
 	$info_hash{$_} = $ruleset->$_;
     }
-    return ("volity.ok", \%info_hash);
+    return ["volity.ok", \%info_hash];
 }
 
 sub _rpc_get_uis {
     my $self = shift;
-    my ($from_jid, $uri, $constraints) = @_;
+    my ($from_jid, $rpc_id, $uri, $constraints) = @_;
     $constraints ||= {};
     unless (ref($constraints eq 'HASH')) {
 	return (606, "The second argument to get_uis(), if present, must be a struct.");
@@ -967,18 +1004,18 @@ sub _rpc_get_uis {
 	    push (@urls, $url);
 	}
 
-	return ("volity.ok", \@urls);
+	return ["volity.ok", \@urls];
 
     }
     else {
-	return ("volity.unknown_uri", "literal.$uri");
+	return ["volity.unknown_uri", "literal.$uri"];
     }
 
 }
 
 sub _rpc_get_ui_info {
     my $self = shift;
-    my ($from_jid, $urls) = @_;
+    my ($from_jid, $rpc_id, $urls) = @_;
     my @urls;
     my $format;			# How does the user want the return value?
     if (not(ref($urls))) {
@@ -997,7 +1034,7 @@ sub _rpc_get_ui_info {
 	my %info_hash;
 	my $file = $self->get_file_with_url($url);
 	unless ($file) {
-	    return ("volity.unknown_url", "literal.$url");
+	    return ["volity.unknown_url", "literal.$url"];
 	}
 	my $ruleset_uri = $file->ruleset_id->uri;
 	my @features = $file->features;
@@ -1012,22 +1049,22 @@ sub _rpc_get_ui_info {
     }
 
     if ($format eq "scalar") {
-	return ("volity.ok", $info_hashes[0]);
+	return ["volity.ok", $info_hashes[0]];
     }
     else {
-	return ("volity.ok", \@info_hashes);
+	return ["volity.ok", \@info_hashes];
     }
 }
 
 sub _rpc_get_lobbies {
     my $self = shift;
-    my ($from_jid, $uri) = @_;
+    my ($from_jid, $rpc_id, $uri) = @_;
     my ($ruleset) = Volity::Info::Ruleset->search(uri => $uri);
     if ($ruleset) {
-	return ("volity.ok", [$self->lobby_jids_for_ruleset]);
+	return ["volity.ok", [$self->lobby_jids_for_ruleset]];
     }
     else {
-	return ("volity.unknown_uri", "literal.$uri");
+	return ["volity.unknown_uri", "literal.$uri"];
     }
 }
 
@@ -1035,12 +1072,12 @@ sub _rpc_get_resource_uris {
     my $self = shift;
     my @resources = Volity::Info::Resource->retrieve_all;
     my @resource_uris = map($_->uri, @resources);
-    return ("volity.ok", \@resource_uris);
+    return ["volity.ok", \@resource_uris];
 }
 
 sub _rpc_get_resources {
     my $self = shift;
-    my ($from_jid, $uri, $constraints) = @_;
+    my ($from_jid, $rpc_id, $uri, $constraints) = @_;
     $constraints ||= {};
     unless (ref($constraints) eq 'HASH') {
 	return (606, "The second argument to get_resources(), if present, must be a struct.");
@@ -1087,17 +1124,17 @@ sub _rpc_get_resources {
 	    push (@urls, $url);
 	}
 
-	return ("volity.ok", \@urls);
+	return ["volity.ok", \@urls];
     }
     else {
-	return ("volity.unknown_uri", "literal.$uri");
+	return ["volity.unknown_uri", "literal.$uri"];
     }
 }
 
 
 sub _rpc_get_resource_info {
     my $self = shift;
-    my ($from_jid, $urls) = @_;
+    my ($from_jid, $rpc_id, $urls) = @_;
 
     my @urls;
     my $format;			# How does the user want the return value?
@@ -1117,7 +1154,7 @@ sub _rpc_get_resource_info {
     for my $url (@urls) {
 	my ($resource) = Volity::Info::Resource->search(url=>$url);
 	unless ($resource) {
-	    return ("volity.unknown_url", "literal.$url");
+	    return ["volity.unknown_url", "literal.$url"];
 	}
 	my %info_hash;
 	my $resource_uri = $resource->resource_uri_id;
@@ -1144,26 +1181,274 @@ sub _rpc_get_resource_info {
     }
 
     if ($format eq "scalar") {
-	return ("volity.ok", $info_hashes[0]);
+	return ["volity.ok", $info_hashes[0]];
     }
     else {
-	return ("volity.ok", \@info_hashes);
+	return ["volity.ok", \@info_hashes];
     }
 
 }
 
 sub _rpc_get_factories {
     my $self = shift;
-    my ($from_jid, $uri) = @_;
+    my ($from_jid, $rpc_id, $uri) = @_;
     my ($ruleset) = Volity::Info::Ruleset->search(uri => $uri);
     if ($ruleset) {
-	return ("volity.ok", [map ($_->jid, $ruleset->factories)]);
+	return ["volity.ok", [map ($_->jid, $ruleset->factories)]];
     }
     else {
-	return ("volity.unknown_uri", "literal.$uri");
+	return ["volity.unknown_uri", "literal.$uri"];
     }
 }    
 
+
+sub _rpc_prepare_game {
+    my $self = shift;
+    my ($from_jid, $rpc_id, $referee_jid, $is_newgame, $player_jid_list) = @_;
+    my $basic_jid = $from_jid;
+    $basic_jid =~ s|^(.*?)/.*$|$1|;
+    my ($parlor) = Volity::Info::Server->search(jid=>$basic_jid);
+
+    # Basic sanity-checking.
+    unless ($parlor) {
+	return (607, "You are not a parlor that I recognize! Sending JID: $from_jid. Basic JID: $basic_jid.");
+    }
+    unless (defined($is_newgame) && $player_jid_list) {
+	return (604, "You must call volity.prepare_game with three arguments: the referee of this game, a new-game boolean, and a player JID list.");
+    }
+    unless (ref($player_jid_list) eq "ARRAY") {
+	return (605, "The third argument to volity.prepare_game must be an array.");
+    }
+    
+    # Is there a game record already in the DB? Should there be one?
+    my $game_record;
+    ($game_record) = Volity::Info::Game->search_unfinished_with_referee_jid($from_jid);
+    
+    if (not($is_newgame) && not($game_record)) {
+	return ["game_record_missing"];
+    }
+    elsif ($is_newgame && $game_record) {
+	return ["game_record_conflict"];
+    }
+
+    # Remember this parlor for later.
+    $self->outstanding_prepare_game_responses_by_referee->{$referee_jid} = {
+	parlor_db_object => $parlor,
+	rpc_id           => $rpc_id,
+    };
+
+    my @unauthorized_players;
+    my @players_to_ping;
+    my %players_to_charge;
+    for my $full_player_jid (@$player_jid_list) {
+	my $player_jid = $full_player_jid;
+	$player_jid =~ s|^(.*?)/.*$|$1|;
+	
+	my ($player) = Volity::Info::Player->search(jid=>$player_jid);
+	unless ($player) {
+	    return (606, "There is no player on the system with the JID '$player_jid'.");
+	}
+	my $credit_balance = $self->get_credit_balance_for_player($player);
+	my $fee_to_play;
+	my ($payment_status, $arg) = $self->get_payment_status_for_player_with_parlor($player, $parlor);
+	# XXX bleah.
+	$self->logger->debug("The payment status for this player is '$payment_status'.");
+	if (defined($arg)) {
+	    $self->logger->debug("The fee, in credits, will be $arg.");
+	}
+	else {
+	    $self->logger->debug("No fee.");
+	}
+#	if ($payment_status eq "must_pay") {
+	if ($payment_status eq "fee") {
+	    if ($arg > $credit_balance) {
+		$self->logger->debug("Oh, this player can't afford to pay, though.");
+		# This player can't afford to play at this parlor.
+		push (@unauthorized_players, $player->jid);
+	    }
+	    else {
+		$fee_to_play = $arg;
+		push (@players_to_ping, [$full_player_jid, $fee_to_play]);
+		$players_to_charge{$player} = {player=>$player, credits=>$fee_to_play};
+	    }
+	}
+#	elsif ($payment_status eq "not_subscribed") {
+	elsif ($payment_status eq "noauth") {
+	    # This parlor offers no pay-per-play, and this player
+	    # is not subscribed. So, fooey on them.
+	    push (@unauthorized_players, $player->jid);
+	}
+	else {
+	    # The request is sane, and the player has the right payment
+	    # status. Send a ping their way.
+	    push (@players_to_ping, [$full_player_jid, $arg]);
+	}
+    }
+    
+    if (@unauthorized_players) {
+	return ["players_not_authorized", \@unauthorized_players];
+    }
+
+    
+    $self->logger->debug("Players to ping: @players_to_ping");
+    foreach (@players_to_ping) {
+	my ($full_player_jid, $fee_to_play) = @$_;
+
+	$fee_to_play ||= 0;
+	$self->logger->debug("I'm about to tell the player with the JID $full_player_jid that they have to pony up $fee_to_play credits.");
+
+	my $outgoing_rpc_id = "verify-game-" . $self->next_id;
+	
+	# First, set an alarm in case of timeout.
+	my $alarm_id = $self->kernel->delay_set("verify_game_timeout", $VERIFY_GAME_TIMEOUT, $outgoing_rpc_id);
+	
+	# Store this for later.
+	# Either the timeout alarm or the RPC result handler will use it.
+	my %info_hash = 
+	(
+	    rpc_id      => $outgoing_rpc_id,
+	    alarm_id    => $alarm_id,
+	    player_jid  => $full_player_jid,
+	    referee_jid => $referee_jid,
+	);
+
+	$self->{outstanding_verify_game_calls_by_rpc_id}->{$outgoing_rpc_id} = \%info_hash;
+
+	$self->{outstanding_verify_game_calls_by_referee}->{$referee_jid}->{$full_player_jid} = \%info_hash;
+
+	my @outgoing_rpc_args = ($referee_jid);
+	if (defined($fee_to_play)) {
+	    push (@outgoing_rpc_args, $fee_to_play);
+	}
+	$self->send_rpc_request({
+	    id         => $outgoing_rpc_id,
+	    to         => $full_player_jid,
+	    methodname => "volity.verify_game",
+	    args       => \@outgoing_rpc_args,
+	});
+    }
+
+    # Twiddle thumbs until all the players report in.
+    $self->logger->debug("Waiting for all pinged players to report back.");
+    while ($self->get_outstanding_verify_game_calls($referee_jid)) {
+	$self->kernel->run_one_timeslice();
+    }
+    $self->logger->debug("All pinged players have reported back.");
+
+    # OK, all players we pinged are spoken for. Time to take action.
+    # We need to send an RPC response to the parlor that made the call,
+    # and we might need to make a new game record as well.
+
+    my $rpc_response_value;
+    my $info_hash = delete($self->outstanding_prepare_game_responses_by_referee->{$referee_jid});
+    
+    # Check for slackerly or refusing players at this table?
+    if (my $slackers = $self->slacker_players_by_referee->{$referee_jid}) {
+	$self->logger->debug("I will tell the parlor at $from_jid that there are players not responding.");
+	$rpc_response_value = ["players_not_responding",
+			       $slackers,
+			       ];
+    }
+    elsif (my $refusers = $self->refusing_players_by_referee->{$referee_jid}) {
+	$self->logger->debug("I will tell the parlor at $from_jid that there are players refusing.");
+	$rpc_response_value = ["players_not_authorized",
+			       $refusers,
+			       ];
+    }
+    else {
+	$self->logger->debug("All players approve of starting this game.");
+	$rpc_response_value = RPC::XML::boolean->new("true");
+    }
+
+    # Now make a new game record, if there's need of one.
+    unless (Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid)) {
+	my $start_time = DateTime::Format::MySQL->format_datetime(DateTime->now);
+	Volity::Info::Game->create({
+	    referee_jid => $referee_jid,
+	    server_id   => $info_hash->{parlor_db_object},
+	    start_time  => $start_time,
+	});
+    }
+
+    # Charge the players' accounts as necessary.
+    foreach (values(%players_to_charge)) {
+	$self->charge_player_at_parlor($_->{player},
+				       $parlor,
+				       $_->{credits},
+				       );
+    }
+
+    # And finally, return the RPC response value.
+    return $rpc_response_value;
+}
+
+
+sub _rpc_game_player_authorized {
+    my $self = shift;
+    my ($from_jid, $rpc_id, $parlor_jid, $player_jid) = @_;
+    
+    my $basic_parlor_jid = $parlor_jid;
+    my $basic_sender_jid = $from_jid;
+    my $basic_player_jid = $player_jid;
+    foreach ($basic_parlor_jid, $basic_sender_jid, $basic_player_jid) {
+	s|^(.*?)/.*$|$1| if defined($_);
+    }
+
+    $self->logger->debug("I got a game_player_authorized call from $basic_sender_jid, a-wondering about how $basic_player_jid stands in the eyes of $basic_parlor_jid.");
+
+    # For now, this call is allowed only from the player in question.
+    # (if a player is specified).
+    if (defined($player_jid)) {
+	unless ($basic_sender_jid eq $basic_player_jid) {
+	    return (607, "You don't have the authority to ask about the player with JID '$basic_player_jid'.");
+	}
+    }
+
+    my ($parlor) = Volity::Info::Server->search(jid=>$basic_parlor_jid);
+
+    unless ($parlor) {
+	return (606, "$basic_parlor_jid not a parlor that I recognize! Sending JID: $from_jid. Basic JID: $basic_sender_jid.");
+    }
+    
+    my ($player) = Volity::Info::Player->search(jid=>$basic_player_jid);
+    unless ($player) {
+	return (606, "There is no player on the system with the JID '$basic_player_jid'.");
+    }
+   
+    my %return_hash;
+    $return_hash{credits} = $self->get_credit_balance_for_player($player);
+
+    ($return_hash{code}, $return_hash{fee}) = $self->get_payment_status_for_player_with_parlor($player, $parlor);
+    
+    $return_hash{parlor} = $parlor_jid;
+    # XXX This will need to be updated once we have a webpage.
+    $return_hash{url} = $self->get_payment_url_for_parlor($parlor);
+
+    return ["volity.ok", \%return_hash];
+
+}
+
+##################
+# Credit balance fetching
+##################
+
+# get_credit_balance_for_player: Convenience method for getting both the 
+# refundanble and nonrefundable balances for this player, summed together.
+sub get_credit_balance_for_player {
+    my $self = shift;
+    my ($player) = @_;
+    return $self->payment_object->get_credit_balance_for_player($player);
+}
+
+sub charge_player_at_parlor {
+    my $self = shift;
+    return $self->payment_object->charge_player_at_parlor(@_);
+}
+
+sub get_payment_url_for_parlor {
+    my $self = shift;
+    return $self->payment_object->get_payment_url_for_parlor(@_);
+}
 
 ###############################
 # CAUTION
@@ -1320,6 +1605,54 @@ sub _rpc_get_urls_for_ruleset_and_client_type {
 	push (@return_value, \%info);
     }
     return \@return_value;
+}
+
+####################
+# Game verification and payment stuff
+####################
+
+# Possible return values:
+# ("must_pay", $credit_amount)
+# ("subscribed", $time)
+# ("demo_timed", $time)
+# ("demo_plays", $plays_left)
+# ("free")
+# XXX This could be sexier, using more efficient SQL. Right now I'll do it this
+# XXX way coz it works.
+sub get_payment_status_for_player_with_parlor {
+    my $self = shift;
+    my ($player, $parlor) = @_;
+    return $self->payment_object->get_payment_status_for_player_with_parlor($player, $parlor);
+}
+
+# verify_game_timeout: This is a POE state that gets called if a player
+# doesn't respond in a timely way to a volity.verify_game() RPC.
+sub verify_game_timeout {
+    my $self = shift;
+    my ($rpc_id) = @_;
+
+    # Get the info we stored about the original RPC call,
+    # and clear this player from the list of people we're waiting to hear from.
+    my ($info_hash) = delete($self->{outstanding_verify_game_calls_by_rpc_id});
+    unless ($info_hash && ref($info_hash eq "HASH")) {
+	$self->logger->warn("I got a timeout from a verify_game RPC with id $rpc_id, but I don't seem to remember that RPC anymore. Very strange.");
+	return;
+    }
+    delete($self->{outstanding_verify_game_calls_by_referee}->{$info_hash->{referee_jid}}->{$info_hash->{player_jid}});
+
+    # Remember this player as a slacker.
+    $self->slacker_players_by_referee->{$info_hash->{referee_jid}} ||= [];
+    push (@{$self->slacker_players_by_referee->{$info_hash->{referee_jid}}}, $info_hash->{player_jid});
+
+}
+
+
+# get_outstanding_verify_game_calls: Given a referee JID, return a list of
+# info hashes describing volity.verify_game calls are are still outstanding.
+sub get_outstanding_verify_game_calls {
+    my $self = shift;
+    my ($referee_jid) = @_;
+    return values(%{$self->{outstanding_verify_game_calls_by_referee}->{$referee_jid}});
 }
 
 ####################

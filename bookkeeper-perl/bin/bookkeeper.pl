@@ -32,6 +32,7 @@ my %valid_options = (
 		     db_password=>"W",
 		     db_datasource=>"D",
 		     gpg=>"G",
+		     payment=>"P",
 		    );
 
 my @getopt_options = map("$_|$valid_options{$_}=s", keys(%valid_options));
@@ -63,6 +64,17 @@ if ($opts{config}) {
 	die "The config file must be a YAML file representation of a simple hash. Please see the volityd manpage for more information.\n";
     }
 
+}
+
+# Figure out the payment module, and barf if it's not a tenable solution.
+# The default payment module is Volity::PaymentSystem::Free.
+my $payment_class = $opts{payment} || "Volity::PaymentSystem::Free";
+eval "require $payment_class";
+if ($@) {
+    die "I couldn't load the payment module $payment_class: $@\n";
+}
+unless ($payment_class->isa("Volity::PaymentSystem") && $payment_class ne "Volity::PaymentSystem") {
+    die "Error: The class $payment_class is not a subclass of Volity::PaymentSystem.\n";
 }
 	   
 # Check to see if there's a J option, with a full login JID. If so,
@@ -112,6 +124,7 @@ my $bookkeeper = Volity::Bookkeeper->new(
 				  jid_host=>$opts{jid_host},
 				  resource=>$opts{resource},
 				  alias=>'bookkeeper',
+				  payment_class=>$payment_class,
 				}
 				);
 
@@ -225,6 +238,14 @@ the command line.
 =item D db_datasource
 
 The DBI resource string to use, such as 'dbi:mysql:volity'.
+
+=item P payment
+
+The Volity::PaymentSystem subclass that this bookkeeper will use. See L<Volity::Payment> for more information.
+
+B<Default>: C<Volity::PaymentSystem::Free>, which will have the
+bookkeeper treat all parlors as free. This is what you want if you
+aren't actually implementing your own payment system.
 
 =item U db_username
 

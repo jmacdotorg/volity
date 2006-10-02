@@ -1,3 +1,10 @@
+0.7
+
+	- Added support for payment system.
+
+	- The library is now far more resistant to exceptions arising
+          from bad RPC handling.
+
 0.6
 
 	- Added support for UI-choosing RPCs.

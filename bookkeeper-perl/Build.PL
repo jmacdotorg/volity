@@ -9,6 +9,7 @@ my $build = Module::Build->new
    requires=> {
 	       'Volity'=>"0.6.5",
 	       'Class::DBI'=>undef,
+	       'DateTime::Format::MySQL'=>undef,
 	     },
    script_files=>[glob("bin/*.pl")],
    install_path=>{script=>'/usr/local/volity/bin'},
