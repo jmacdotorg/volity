@@ -3,6 +3,10 @@ SVN repository.
 
 * the present
 
+The roster window now allows you to chat with an offline user. (The 
+messages will be stored at the user's server until he logs on -- this
+is standard Jabber behavior.)
+
 Added a "demo" authorization status.
 
 Fetch game resource lists from the bookkeeper.

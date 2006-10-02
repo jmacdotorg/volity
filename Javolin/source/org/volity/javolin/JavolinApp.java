@@ -1401,7 +1401,7 @@ public class JavolinApp extends JFrame
 
         mAddUserBut.setEnabled(isConnected());
         mDelUserBut.setEnabled(selectedUser != null);
-        mChatBut.setEnabled((selectedUser != null) && selectedUser.isAvailable());
+        mChatBut.setEnabled(selectedUser != null);
         mStatsBut.setEnabled(selectedUser != null);
     }
 
@@ -1662,10 +1662,7 @@ public class JavolinApp extends JFrame
     {
         RosterTreeItem item = e.getRosterTreeItem();
 
-        if (item.isAvailable())
-        {
-            chatWithUser(item.getId());
-        }
+        chatWithUser(item.getId());
     }
 
     /**
