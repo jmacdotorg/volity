@@ -122,8 +122,7 @@ public class PayPanel extends JPanel implements ActionListener
                     }
                     if (result == null || !(result instanceof Map)) {
                         // error or timeout -- assume game is free.
-                        //###updatePayInfo(AUTH_FREE, 0, 0, null, false);
-                        updatePayInfo(AUTH_FEE, 100, 32562, "http://blah", false); //###
+                        updatePayInfo(AUTH_FREE, 0, 0, null, false);
                         return;
                     }
 
