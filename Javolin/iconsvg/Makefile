@@ -6,7 +6,9 @@
 
 SVGTOPNG = svgtopng
 
-all: table_toolbar_buttons roster_treeicons seating_treeicons
+all: table_toolbar_buttons roster_treeicons seating_treeicons credit_icons
+
+credit_icons: Credits_14.png Credits_12.png Credits_10.png
 
 table_toolbar_buttons: Ready_ButIcon.png Unready_ButIcon.png Seat_ButIcon.png Unseat_ButIcon.png
 
@@ -122,9 +124,23 @@ Green_3_ColorIcon.png: green-3-coloricon.svg
 Green_4_ColorIcon.png: green-4-coloricon.svg
 	$(SVGTOPNG) green-4-coloricon.svg -a 0,0,100,100 -w 16 -h 16 -d Green_4_ColorIcon.png
 
+Credits_14.png: credits.svg
+	$(SVGTOPNG) credits.svg -a 0,0,100,100 -w 70 -h 70 -d Credits_tmp.png
+	pngtopnm -alpha Credits_tmp.png | pnmscale 0.2 > Credits_14_alpha.pgm
+	pngtopnm Credits_tmp.png | pnmscale 0.2 | pnmtopng -force -alpha Credits_14_alpha.pgm > Credits_14.png
+
+Credits_12.png: credits.svg
+	$(SVGTOPNG) credits.svg -a 0,0,100,100 -w 60 -h 60 -d Credits_tmp.png
+	pngtopnm -alpha Credits_tmp.png | pnmscale 0.2 > Credits_12_alpha.pgm
+	pngtopnm Credits_tmp.png | pnmscale 0.2 | pnmtopng -force -alpha Credits_12_alpha.pgm > Credits_12.png
+
+Credits_10.png: credits.svg
+	$(SVGTOPNG) credits.svg -a 0,0,100,100 -w 50 -h 50 -d Credits_tmp.png
+	pngtopnm -alpha Credits_tmp.png | pnmscale 0.2 > Credits_10_alpha.pgm
+	pngtopnm Credits_tmp.png | pnmscale 0.2 | pnmtopng -force -alpha Credits_10_alpha.pgm > Credits_10.png
 
 appicon.png: appicon.svg
 	$(SVGTOPNG) appicon.svg -a 10,10,80,80 -w 200 -h 200
 
 clean:
-	rm -f *~ *.png
+	rm -f *~ *.png *.pgm *.pnm
