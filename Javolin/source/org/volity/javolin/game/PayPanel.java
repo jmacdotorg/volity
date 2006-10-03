@@ -574,7 +574,7 @@ public class PayPanel extends JPanel implements ActionListener
                 msg = "??";
             label = new JLabel(msg, JavolinApp.getCreditsSymbol(12), SwingConstants.LEFT);
             label.setFont(new Font("SansSerif", Font.PLAIN, 10));
-            label.setIconTextGap(0); //### ?
+            label.setIconTextGap(1);
             c = new GridBagConstraints();
             c.gridx = 1;
             c.gridy = 0;
@@ -582,7 +582,7 @@ public class PayPanel extends JPanel implements ActionListener
             c.weighty = 0;
             c.fill = GridBagConstraints.NONE;
             c.anchor = GridBagConstraints.NORTHWEST;
-            c.insets = new Insets(6, 2, 4, 4);
+            c.insets = new Insets(6, 4, 4, 4);
             subpane.add(label, c);
 
             // Blank stretchy
