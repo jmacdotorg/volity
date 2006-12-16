@@ -3,7 +3,7 @@ package Volity;
 use warnings;
 use strict;
 no warnings qw( deprecated );
-our $VERSION = '0.6.6';
+our $VERSION = '0.7';
 
 use base qw( Class::Accessor Class::Fields );
 use fields qw( logger );
@@ -82,6 +82,16 @@ sub expire {
     my ($last_words) = @_;
     $self->logger->fatal($last_words);
     Carp::confess($last_words);
+}
+
+# report_rpc_error: This is a utility method that logs a verbose error about
+# an RPC handling that went awry. The argument is the same hashref that's
+# passed to Volity::Jabber::handle_rpc_request().
+sub report_rpc_error {
+    my $self = shift;
+    my ($rpc_info) = @_;
+    my @rpc_args = @{$rpc_info->{args}};
+    $self->logger->error("***RPC ERROR*** I got a Perl error from handling an RPC.\nRPC info:\nFrom: $$rpc_info{from}\nID: $$rpc_info{id}\nMethod: $$rpc_info{methodname}\nArgs: @rpc_args\nPerl error: $@\n\n");
 }
 
 =pod
