@@ -1,6 +1,8 @@
 package Volity::Jabber;
 use Carp;
 
+use Data::Dumper;
+
 ############################################################################
 # LICENSE INFORMATION - PLEASE READ
 ############################################################################
@@ -478,7 +480,7 @@ sub jabber_iq {
 	  $self->logger->warn("Failed to parse this response: $raw_xml");
 	  return;
       }
-      $self->logger->debug("The response is: " . $response_obj->value->value . "\n");
+      $self->logger->debug("The response is: " . Dumper($response_obj->value->value) . "\n");
       if ($response_obj->value->is_fault) {
 	$self->handle_rpc_fault({
 				 id=>$id,
