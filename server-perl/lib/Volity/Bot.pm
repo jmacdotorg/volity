@@ -255,7 +255,8 @@ sub jabber_presence {
 	    my $volity_role = $c->attr('ext');
 	    if ($volity_role eq "referee") {
 		# We've found the referee!
-		$self->referee_jid( $node->attr('from') );
+#		$self->referee_jid( $node->attr('from') );
+                $self->referee_jid( $x->get_tag('item')->attr('jid') );
 	    }
         }
 	
@@ -330,47 +331,54 @@ sub sit {
 sub handle_rpc_request {
     my $self       = shift;
     my ($rpc_info) = @_;
-    my $method     = $$rpc_info{method};
 
-    my @response;
-
-    if ( $method =~ /^game\.(.*)$/ ) {
-	my $subclass_method = "game_rpc_$1";
-
-	@response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
-    }
-    elsif ( $method =~ /^volity\.(.*)$/ ) {
-	my $subclass_method = "volity_rpc_$1";
-	@response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
-	# If I'm seated and not ready, try to become ready.
-	if ( $self->am_seated && not( $self->am_ready ) ) {
-	    $self->declare_readiness;
+    eval {
+	my $method     = $$rpc_info{method};
+	
+	my @response;
+	
+	if ( $method =~ /^game\.(.*)$/ ) {
+	    my $subclass_method = "game_rpc_$1";
+	    
+	    @response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
 	}
-    }
-
-    # All this stuff about @response is copied from Volity::Bookkeeper.
-    # This uses the callback's return value (or lack thereof) to
-    # decide on what sort of response to make. It's not all that important
-    # because usually nobody cares what the bot's responses are, but there 
-    # are some RPCs (like volity.leave_table) where it can be important.
-    if (@response) {
-	my $response_flag = $response[0];
-	if ($response_flag eq 'fault') {
-	    # Oh, there's some in-game problem with the player's request.
-	    # (This is here for backwards compatibility.)
-	    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
-	} elsif ($response_flag =~ /^\d\d\d$/) {
-	    # Looks like a fault error code. So, send back a fault.
-	    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
+	elsif ( $method =~ /^volity\.(.*)$/ ) {
+	    my $subclass_method = "volity_rpc_$1";
+	    @response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
+	    # If I'm seated and not ready, try to become ready.
+	    if ( $self->am_seated && not( $self->am_ready ) ) {
+		$self->declare_readiness;
+	    }
+	}
+	
+	# All this stuff about @response is copied from Volity::Bookkeeper.
+	# This uses the callback's return value (or lack thereof) to
+	# decide on what sort of response to make. It's not all that important
+	# because usually nobody cares what the bot's responses are, but there 
+	# are some RPCs (like volity.leave_table) where it can be important.
+	if (@response) {
+	    my $response_flag = $response[0];
+	    if ($response_flag eq 'fault') {
+		# Oh, there's some in-game problem with the player's request.
+		# (This is here for backwards compatibility.)
+		$self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
+	    } elsif ($response_flag =~ /^\d\d\d$/) {
+		# Looks like a fault error code. So, send back a fault.
+		$self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
+	    } else {
+		# The game has a specific, non-fault response to send back.
+		$self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
+	    }
 	} else {
-	    # The game has a specific, non-fault response to send back.
-	    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
-	}
-    } else {
-	# We have silently approved the request,
-	# so send back a minimal positive response.
-	$self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
-    }	
+	    # We have silently approved the request,
+	    # so send back a minimal positive response.
+	    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
+	}	
+    }; # End of eval block.
+    if ($@) {
+	$self->report_rpc_error(@_);
+	return;
+    }
 }
 
 sub try_to_call_subclass_method {
