@@ -965,6 +965,7 @@ sub non_bot_check {
     my $self = shift;
     for my $nickname (keys(%{$self->{nicks}})) {
 	my $player = $self->look_up_player_with_nickname($nickname);
+        next unless $player;
 	unless ($player->is_bot) {
 	    # This is a human.
 	    return 1;
@@ -1526,7 +1527,12 @@ sub handle_ready_player_request {
   $self->logger->debug("$from_jid has announced readiness.");
   my $player = $self->look_up_player_with_jid($from_jid);
   if ($player) {
-      if ($player->seat) {
+      if ($self->current_state eq 'active') {
+          $self->logger->debug("But the game is active!");
+          $self->send_rpc_fault ($from_jid, $rpc_id, 607, "You wish to state your readiness to play, but this game is already active.");
+          return;
+      }          
+      elsif ($player->seat) {
 	  # Make sure that the game is ready for readiness.
 	  # First, check that the required seats are occupied.
 	  my @empty_required_seats;
