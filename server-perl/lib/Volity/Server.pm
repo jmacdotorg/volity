@@ -311,40 +311,46 @@ sub stop {
 sub handle_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
-  my $ok = 0;
-  if ($$rpc_info{'method'} eq 'volity.new_table') {
-      $self->new_table($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-      $ok = 1;
-  } elsif (my ($admin_method) = $$rpc_info{'method'} =~ /^admin\.(.*)$/) {
-      # Check that the sender is allowed to make this call.
-      my ($basic_sender_jid) = $$rpc_info{from} =~ /^(.*)\//;
-      if (grep($_ eq $basic_sender_jid, $self->admins)) {
-	  my $local_method = "admin_rpc_$admin_method";
-	  if ($self->can($local_method)) {
-	      $self->$local_method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
-	      $ok = 1;
+  eval {
+      my $ok = 0;
+      if ($$rpc_info{'method'} eq 'volity.new_table') {
+	  $self->new_table($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+	  $ok = 1;
+      } elsif (my ($admin_method) = $$rpc_info{'method'} =~ /^admin\.(.*)$/) {
+	  # Check that the sender is allowed to make this call.
+	  my ($basic_sender_jid) = $$rpc_info{from} =~ /^(.*)\//;
+	  if (grep($_ eq $basic_sender_jid, $self->admins)) {
+	      my $local_method = "admin_rpc_$admin_method";
+	      if ($self->can($local_method)) {
+		  $self->$local_method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});
+		  $ok = 1;
+	      } else {
+		  $ok = 0;
+	      }
 	  } else {
-	      $ok = 0;
+	      $self->logger->warn("$basic_sender_jid (as $$rpc_info{from}) attempted to call $$rpc_info{method}. But I don't recognize that JID as an admin, so I'm rejecting it.");
+	      $self->send_rpc_fault($$rpc_info{from},
+				    $$rpc_info{id},
+				    607,
+				    "You are not allowed to make admin calls on this parlor.",
+				    );
+	      return;
 	  }
       } else {
-	  $self->logger->warn("$basic_sender_jid (as $$rpc_info{from}) attempted to call $$rpc_info{method}. But I don't recognize that JID as an admin, so I'm rejecting it.");
-	  $self->send_rpc_fault($$rpc_info{from},
-				   $$rpc_info{id},
-				   607,
-				   "You are not allowed to make admin calls on this parlor.",
-				   );
-	  return;
+	  $ok = 0;
       }
-  } else {
-      $ok = 0;
-  }
-  unless ($ok) {
-      $self->logger->warn("Got weird rpc request $$rpc_info{method} from $$rpc_info{from}.");
-      $self->send_rpc_fault($$rpc_info{from},
-			       $$rpc_info{id},
-			       603,
-			       "Unknown methodName: '$$rpc_info{method}'",
-			       );
+      unless ($ok) {
+	  $self->logger->warn("Got weird rpc request $$rpc_info{method} from $$rpc_info{from}.");
+	  $self->send_rpc_fault($$rpc_info{from},
+				$$rpc_info{id},
+				603,
+				"Unknown methodName: '$$rpc_info{method}'",
+				);
+      }
+  };
+  if ($@) {
+      $self->report_rpc_error(@_);
+      return;
   }
 }
 
