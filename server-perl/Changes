@@ -1,3 +1,9 @@
+0.7
+
+	- Payment protocol support.
+
+	- The libraies are now far more resistant to exceptions arising
+          from bad RPC handling.
 0.6.6
 
 	- Full bot factory support. This inlcudes a new Volity::Factory
