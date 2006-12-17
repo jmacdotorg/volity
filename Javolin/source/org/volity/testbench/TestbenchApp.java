@@ -30,6 +30,8 @@ public class TestbenchApp extends JFrame
     private final static String APPNAME = "Testbench";
     private final static String NODENAME = "MainAppWin";
 
+    private final static String SVGUIDIR_KEY = "SVG_UI_Dir";
+            
     private final static String MENUCMD_QUIT = "Exit";
     private final static String MENUCMD_LASTEXCEPTION = "Show Last Exception";
     private final static String MENUCMD_MEMUSAGE = "Show Memory Usage";
@@ -76,6 +78,16 @@ public class TestbenchApp extends JFrame
         }
         else {
             JFileChooser filer = new JFileChooser();
+
+            // Set directory in file chooser to UI directory from prefs 
+            Preferences prefs = 
+                Preferences.userNodeForPackage(TestbenchApp.class).node(NODENAME);
+				
+            String dir = prefs.get(SVGUIDIR_KEY, "");
+            if (!dir.equals("")) {
+                filer.setCurrentDirectory(new File(dir));
+            }
+
             filer.setDialogTitle("Select SVG UI");
             filer.setApproveButtonText("Select");
             filer.addChoosableFileFilter(new FileFilter() {
@@ -99,6 +111,13 @@ public class TestbenchApp extends JFrame
                 System.exit(1);
             }
             ui = filer.getSelectedFile();
+
+            // Save UI directory to prefs
+            try {
+                prefs.put(SVGUIDIR_KEY, filer.getCurrentDirectory().getCanonicalPath());
+            } catch (IOException ex) {
+                // getCanonicalPath() failed; can't do anything about it
+            }
         }
 
         if (!ui.exists()) {
