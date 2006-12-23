@@ -2,11 +2,8 @@ package org.volity.javolin.chat;
 
 import java.awt.*;
 import java.awt.event.MouseEvent;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.text.*;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.*;
@@ -31,6 +28,8 @@ public class ChatLogPanel extends LogTextPanel
     private final static Color colorDelayedTimestamp = new Color(0.3f, 0.3f, 0.3f);
     private final static Color colorHyperlink = new Color(0.0f, 0.0f, 0.8f);
     private final static SimpleDateFormat timeStampFormat = new SimpleDateFormat("HH:mm:ss");
+    private final static SimpleDateFormat dateTimeStampFormat = 
+        new SimpleDateFormat("yyyy-MM-dd, HH:mm:ss");
 
     private static Pattern sURLPattern = Pattern.compile(
         "(http|https|ftp):[^\\s]*[^\\s.?!,;\">)]+",
@@ -163,6 +162,12 @@ public class ChatLogPanel extends LogTextPanel
     public void message(String jid, boolean realjid, String nick,
         String text, Date date) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
+        
+        // Get today's date sans time
+        Calendar today = new GregorianCalendar();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.set(Calendar.SECOND, 0);
 
         // Append time stamp
         Style dateStyle;
@@ -173,7 +178,11 @@ public class ChatLogPanel extends LogTextPanel
         else {
             dateStyle = mStyleDelayedTimestamp;
         }
-        append("[" + timeStampFormat.format(date) + "]  ", dateStyle);
+    
+        DateFormat formatter = 
+            date.before(today.getTime()) ? dateTimeStampFormat : timeStampFormat;
+            
+        append("[" + formatter.format(date) + "] ", dateStyle);
 
         Entry ent = null;
         if (jid != null)
