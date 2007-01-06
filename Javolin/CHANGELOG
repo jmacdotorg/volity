@@ -1,7 +1,7 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.4.0
 
 Table window displays the payment status of the game, as described by the
 payment protocol.
