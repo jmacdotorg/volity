@@ -73,6 +73,10 @@ sub initialize {
        $self->{$_} = {};
    }
 
+  unless ($self->payment_class) {
+      $self->payment_class("Volity::PaymentSystem::Free");
+  }
+
   $self->payment_object($self->payment_class->new);
 
   return $self;

@@ -1,4 +1,4 @@
-package Volity::PaymentSystem::VolityNet;
+package Volity::PaymentSystem::Free;
 
 ############################################################################
 # LICENSE INFORMATION - PLEASE READ
@@ -23,7 +23,7 @@ use strict;
 
 use base qw(Volity::PaymentSystem);
 
-sub get_balance_for_player {
+sub get_credit_balance_for_player {
     return 0;
 }
 

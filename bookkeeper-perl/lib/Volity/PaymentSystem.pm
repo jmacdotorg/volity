@@ -47,7 +47,7 @@ methods. Subclasses I<must> define these class methods for themselves.
 
 =over
 
-=item get_balance_for_player ($player)
+=item get_credit_balance_for_player ($player)
 
 Given a Volity::Info::Player object, return the credit balance for
 that player.
