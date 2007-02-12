@@ -28,7 +28,7 @@ sub get_credit_balance_for_player {
 }
 
 sub get_payment_status_for_player_with_parlor {
-    return "free";
+    return ("free", 0, 0);
 }
 
 =head1 NAME

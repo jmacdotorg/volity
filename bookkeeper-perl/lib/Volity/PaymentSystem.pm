@@ -55,10 +55,12 @@ that player.
 =item get_payment_status_for_player_with_parlor ($player, $parlor)
 
 Given a Volity::Info::Player object and a Volity::Info::Server object,
-return one or two scalars. The first is always a short code describing
-this player's payment status with this parlor. If necessary, the
-second scalar is an integer describing the fee, in credits, that the
-player must pay (at minumum) to play this game.
+return three scalars. The first is always a short code describing this
+player's payment status with this parlor. The second scalar is an
+integer describing the fee, in tokens, that the player must pay (at
+minumum) to play this game. The third is treated as a boolean, and
+describes whether or not the client should prompt the player to view
+more payment options. Any Perl true or false value will do.
 
 =item charge_player ($player, $credits)
 

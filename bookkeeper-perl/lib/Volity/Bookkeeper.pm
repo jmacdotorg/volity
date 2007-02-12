@@ -77,6 +77,12 @@ sub initialize {
       $self->payment_class("Volity::PaymentSystem::Free");
   }
 
+  my $payment_class = $self->payment_class;
+  eval "require $payment_class;";
+  if ($@) {
+      croak ("Failed to require the payment class " . $self->payment_class . ":\n$@");
+  }
+  
   $self->payment_object($self->payment_class->new);
 
   return $self;
@@ -1365,9 +1371,10 @@ sub _rpc_prepare_game {
     }
 
     # Now make a new game record, if there's need of one.
-    unless (Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid)) {
+    my $game;
+    unless (($game) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid)) {
 	my $start_time = DateTime::Format::MySQL->format_datetime(DateTime->now);
-	Volity::Info::Game->create({
+	$game = Volity::Info::Game->create({
 	    referee_jid => $referee_jid,
 	    server_id   => $info_hash->{parlor_db_object},
 	    start_time  => $start_time,
@@ -1376,8 +1383,8 @@ sub _rpc_prepare_game {
 
     # Charge the players' accounts as necessary.
     foreach (values(%players_to_charge)) {
-	$self->charge_player_at_parlor($_->{player},
-				       $parlor,
+	$self->charge_player_for_game($_->{player},
+				       $game,
 				       $_->{credits},
 				       );
     }
@@ -1422,8 +1429,15 @@ sub _rpc_game_player_authorized {
     my %return_hash;
     $return_hash{credits} = $self->get_credit_balance_for_player($player);
 
-    ($return_hash{code}, $return_hash{fee}) = $self->get_payment_status_for_player_with_parlor($player, $parlor);
+    ($return_hash{status}, $return_hash{fee}, $return_hash{options}) = $self->get_payment_status_for_player_with_parlor($player, $parlor);
     
+    if ($return_hash{options}) {
+	$return_hash{options} = RPC::XML::boolean->new("true");
+    }
+    else {
+	$return_hash{options} = RPC::XML::boolean->new("false");
+    }
+
     $return_hash{parlor} = $parlor_jid;
     # XXX This will need to be updated once we have a webpage.
     $return_hash{url} = $self->get_payment_url_for_parlor($parlor);
@@ -1444,9 +1458,9 @@ sub get_credit_balance_for_player {
     return $self->payment_object->get_credit_balance_for_player($player);
 }
 
-sub charge_player_at_parlor {
+sub charge_player_for_game {
     my $self = shift;
-    return $self->payment_object->charge_player_at_parlor(@_);
+    return $self->payment_object->charge_player_for_game(@_);
 }
 
 sub get_payment_url_for_parlor {
