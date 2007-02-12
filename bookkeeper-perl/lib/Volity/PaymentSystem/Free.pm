@@ -31,6 +31,16 @@ sub get_payment_status_for_player_with_parlor {
     return ("free", 0, 0);
 }
 
+sub charge_player {
+}
+
+sub credit_player {
+}
+
+sub get_payment_url_for_parlor {
+    return '';
+}
+
 =head1 NAME
 
 Volity::PaymentSystem::Free - Default class for Volity's payment system
