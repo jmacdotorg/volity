@@ -129,6 +129,12 @@ Returns truth if the bot is seated; falsehood otherwise.
 
 Returns truth if the bot is seated I<and> ready to play, falsehood otherwise.
 
+=item occupied_seats
+
+A hash containing mappings of seat_id to lists of sitting player jids.
+Presently most useful to obtain a list of occupied seats with the I<keys>
+function
+
 =item seat_id
 
 Returns the ID of the seat where the bot current finds itself, if it
@@ -148,8 +154,7 @@ string.
 use warnings;
 use strict;
 use base qw( Volity::Jabber Class::Data::Inheritable );
-use fields
-    qw( muc_jid referee_jid name_modifier nickname am_seated am_ready seat_id );
+use fields qw( muc_jid referee_jid name_modifier nickname am_seated am_ready occupied_seats seat_id );
 
 use Carp qw( croak );
 use POE;
@@ -184,6 +189,7 @@ sub new {
     }
     my $self = $class->SUPER::new($config);
     $self->name_modifier(q{});
+    $self->occupied_seats({});
     return $self;
 }
 
@@ -257,6 +263,11 @@ sub jabber_presence {
 		# We've found the referee!
 #		$self->referee_jid( $node->attr('from') );
                 $self->referee_jid( $x->get_tag('item')->attr('jid') );
+
+		# Inform the referee that we're a volity-aware entity, rather
+		# than just a regular jabber client, so that it will honour us
+		# with RPC messages
+		$self->send_volity_rpc_to_referee("send_state");
 	    }
         }
 	
@@ -331,49 +342,47 @@ sub sit {
 sub handle_rpc_request {
     my $self       = shift;
     my ($rpc_info) = @_;
+    my $method     = $$rpc_info{method};
+
+    my @response;
 
     eval {
-	my $method     = $$rpc_info{method};
-	
-	my @response;
-	
-	if ( $method =~ /^game\.(.*)$/ ) {
-	    my $subclass_method = "game_rpc_$1";
-	    
-	    @response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
+    if ( $method =~ /^game\.(.*)$/ ) {
+        my $subclass_method = "game_rpc_$1";
+
+        @response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
+    }
+    elsif ( $method =~ /^volity\.(.*)$/ ) {
+        my $subclass_method = "volity_rpc_$1";
+	@response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
+	if ( $self->am_seated && not( $self->am_ready ) ) {
+	    $self->declare_readiness;
 	}
-	elsif ( $method =~ /^volity\.(.*)$/ ) {
-	    my $subclass_method = "volity_rpc_$1";
-	    @response = $self->try_to_call_subclass_method($subclass_method, @{$$rpc_info{args}});
-	    # If I'm seated and not ready, try to become ready.
-	    if ( $self->am_seated && not( $self->am_ready ) ) {
-		$self->declare_readiness;
-	    }
-	}
+    }
 	
-	# All this stuff about @response is copied from Volity::Bookkeeper.
-	# This uses the callback's return value (or lack thereof) to
-	# decide on what sort of response to make. It's not all that important
-	# because usually nobody cares what the bot's responses are, but there 
-	# are some RPCs (like volity.leave_table) where it can be important.
-	if (@response) {
-	    my $response_flag = $response[0];
-	    if ($response_flag eq 'fault') {
-		# Oh, there's some in-game problem with the player's request.
-		# (This is here for backwards compatibility.)
-		$self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
-	    } elsif ($response_flag =~ /^\d\d\d$/) {
-		# Looks like a fault error code. So, send back a fault.
-		$self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
-	    } else {
-		# The game has a specific, non-fault response to send back.
-		$self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
-	    }
+    # All this stuff about @response is copied from Volity::Bookkeeper.
+    # This uses the callback's return value (or lack thereof) to
+    # decide on what sort of response to make. It's not all that important
+    # because usually nobody cares what the bot's responses are, but there 
+    # are some RPCs (like volity.leave_table) where it can be important.
+    if (@response) {
+	my $response_flag = $response[0];
+	if ($response_flag eq 'fault') {
+	    # Oh, there's some in-game problem with the player's request.
+	    # (This is here for backwards compatibility.)
+	    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response[1..$#response]);
+	} elsif ($response_flag =~ /^\d\d\d$/) {
+	    # Looks like a fault error code. So, send back a fault.
+	    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, @response);
 	} else {
-	    # We have silently approved the request,
-	    # so send back a minimal positive response.
-	    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
-	}	
+	    # The game has a specific, non-fault response to send back.
+	    $self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, [@response]);
+	}
+    } else {
+	# We have silently approved the request,
+	# so send back a minimal positive response.
+	$self->send_rpc_response($$rpc_info{from}, $$rpc_info{id}, ["volity.ok"]);
+    }	
     }; # End of eval block.
     if ($@) {
 	$self->report_rpc_error(@_);
@@ -396,6 +405,7 @@ sub rpc_response_ready {
     my $self      = shift;
     my ($message) = @_;
     my ($flag)    = @{ $$message{response} };
+
     $self->logger->debug("Got a $flag response to my ready request.");
 }
 
@@ -427,18 +437,56 @@ sub rpc_response_seat {
 sub volity_rpc_player_sat {
     my $self = shift;
     my ($player_jid, $seat_id) = @_;
+
+    $self->logger->debug("volity_rpc_player_sat");
+    # update the list of sitting players -- first remove the player from the
+    # seat it's occupying (only a sat rpc gets sent when a player changes
+    # seats without standing in between)
+    foreach my $seat (keys(%{$self->occupied_seats})) {
+	my $players = $self->occupied_seats->{$seat};
+	@$players = grep($_ ne $player_jid, @$players);
+	delete $self->occupied_seats->{$seat} unless @$players;
+    }
+
+    # now add the player to its new seat
+    $self->occupied_seats->{$seat_id} = [] 
+    	unless exists($self->occupied_seats->{$seat_id});
+    push(@{$self->occupied_seats->{$seat_id}}, $player_jid);
+
+    # find ourselves
     if ( $player_jid eq $self->jid ) {
 	$self->am_seated(1);
 	$self->seat( $seat_id );
     }
+
+    # a player sitting unreadies everyone at the table
+    $self->am_ready(0);
 }
 
 sub volity_rpc_player_stood {
     my $self = shift;
     my ($player_jid) = @_;
+
+    $self->logger->debug("volity_rpc_player_stood");
+    # update the list of sitting players. Not the most efficient code, but for
+    # the number & size of the lists we'll be dealing with it should still be
+    # fast enough.
+    foreach my $seat (keys(%{$self->occupied_seats})) {
+	my $players = $self->occupied_seats->{$seat};
+	@$players = grep($_ ne $player_jid, @$players);
+	delete $self->occupied_seats->{$seat} unless @$players;
+    }
+
     if ( $player_jid eq $self->jid ) {
 	$self->am_seated(0);
     }
+
+    # the python referee doesn't send player_unready RPCs when someone
+    # stands. "...when handling RPCs that are documented as automatically 
+    # unreadying all players. (Sit, stand, and so on.) The client is 
+    # required to know about this automatic unreadying, so there's no 
+    # need for us to send out notices about it..."
+    $self->am_ready(0); 
 }
 
 sub volity_rpc_player_unready {
@@ -464,6 +512,31 @@ sub volity_rpc_end_game {
 }
 
 sub volity_rpc_suspend_game {
+    my $self = shift;
+    $self->am_ready(0);
+}
+
+sub volity_rpc_resume_game {
+    my $self = shift;
+    $self->am_ready(0);
+}
+
+sub volity_rpc_kill_game {
+    my $self = shift;
+    $self->am_ready(0);
+}
+
+sub volity_rpc_show_table {
+    my $self = shift;
+    $self->am_ready(0);
+}
+
+sub volity_rpc_record_games {
+    my $self = shift;
+    $self->am_ready(0);
+}
+
+sub volity_rpc_language {
     my $self = shift;
     $self->am_ready(0);
 }

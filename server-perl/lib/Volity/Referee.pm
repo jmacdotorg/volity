@@ -449,8 +449,11 @@ sub handle_game_rpc_request {
   my $self = shift;
   my ($rpc_info) = @_;
 
-  unless ($self->game->is_active) {
+  if (not $self->game->is_active and not $self->game->is_config_variable($$rpc_info{method})) {
     $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "There is no active game.");
+    return;
+  } elsif ($self->game->is_active and $self->game->is_config_variable($$rpc_info{method})) {
+    $self->send_rpc_fault($$rpc_info{from}, $$rpc_info{id}, 609, "You can't configure an active game");
     return;
   }
 
@@ -1265,17 +1268,20 @@ sub end_game {
   # Mark whether or not the game actually finished.
   $record->finished($self->game->is_finished);
   
-  # Send the record to the bookkeeper!
-  $self->send_record_to_bookkeeper($record);
+  # Send the record to the bookkeeper if this game was "on the books"
+  $self->send_record_to_bookkeeper($record) if $self->is_recorded;
+
+  # Clear the winners list, so that the next game record is accurate
+  $self->game->winners->clear();
 
   # Reset seat histories.
   foreach ($self->seats) {
       $_->clear_registry;
   }
 
-  # Create a fresh new game.
-  delete($self->{game});
-  $self->create_game;
+  # A fresh new game object used to be created here, but that interfered with
+  # preserving game configuration state between runs.  This also brings
+  # frivolity in line with the python parlor software.
 
   $self->games_completed($self->games_completed + 1);
 }

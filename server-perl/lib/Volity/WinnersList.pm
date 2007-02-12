@@ -153,6 +153,19 @@ sub seats_at_slot {
     }
 }
 
+=head2 clear ()
+
+Clears the winners list, getting it ready for another game
+
+=cut
+
+sub clear {
+    my $self = shift;
+
+    # abuse splice to empty the array
+    splice(@{$self->{slots}});
+}
+
 =head1 AUTHOR
 
 Jason McIntosh <jmac@jmac.org>

@@ -1,3 +1,24 @@
+0.7.1
+
+        - volityd no longer requires that you provide a Volity::Game
+	  subclass name if you're starting a bot factory and not a game
+	  parlor
+
+	- Volity::Bot instances now track the status of other seats at
+          the table, and offer an occupied_seats method.
+
+        - Bots now always request state on joining tables, and
+          generally have more complete default behavior for various
+          Volity-level RPCs that the referee might send.
+
+        - Referees now send game records to the bookkeeper only if the
+          game is configured to be recorded.
+
+        - Referees more cleanly handle game configuation information,
+          and keeping this infomation around between plays.
+
+        - Volity::WinnersList objects now offer a clear() method.
+
 0.7
 
 	- Payment protocol support.

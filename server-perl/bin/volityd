@@ -217,16 +217,18 @@ foreach (qw(username host jid_host password)) {
   }
 }
 
-if (defined($opts{game_class})) {
-    eval qq|require $opts{game_class}|;
-    if ($@) {
-	die "Couldn't load the game module $opts{game_class}: $@\n";
-    } 
-    unless ($opts{game_class}->isa("Volity::Game")) {
-	die "The class you define as your game module must be a subclass of Volity::Game.\n";
+if ($opts{role} eq 'parlor') {
+    if (defined($opts{game_class})) {
+	eval qq|require $opts{game_class}|;
+	if ($@) {
+	    die "Couldn't load the game module $opts{game_class}: $@\n";
+	} 
+	unless ($opts{game_class}->isa("Volity::Game")) {
+	    die "The class you define as your game module must be a subclass of Volity::Game.\n";
+	}
+    } else {
+      die "You must define a game class, either on the command line or in a config file.\n";
     }
-} else {
-  die "You must define a game class, either on the command line or in a config file.\n";
 }
 
 if (defined($opts{pidfile})) {
