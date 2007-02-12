@@ -984,6 +984,7 @@ sub non_missing_check {
     my $self = shift;
     for my $nickname (keys(%{$self->{nicks}})) {
 	my $player = $self->look_up_player_with_nickname($nickname);
+	next unless $player;
 	unless ($player->is_bot || $player->is_missing) {
 	    # This is a non-missing human.
 	    return 1;
