@@ -1374,8 +1374,12 @@ sub _rpc_prepare_game {
     my $game;
     unless (($game) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid)) {
 	my $start_time = DateTime::Format::MySQL->format_datetime(DateTime->now);
+        # It's rather redundant to store the ruleset ID when the referee
+        # is also getting stored, but for now we do this for historical
+        # reasons.
 	$game = Volity::Info::Game->create({
 	    referee_jid => $referee_jid,
+            ruleset_id  => $parlor->ruleset_id->id,
 	    server_id   => $info_hash->{parlor_db_object},
 	    start_time  => $start_time,
 	});
