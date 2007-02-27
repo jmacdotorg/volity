@@ -176,10 +176,6 @@ class JID:
         if (not self.domain):
             raise ValueError('JID must contain a domain')
         st = (self.node + self.domain + self.resource)
-        if ('@' in st):
-            raise ValueError('too many @ characters')
-        if ('/' in st):
-            raise ValueError('too many / characters')
 
     def __repr__(self):
         st = self.domain

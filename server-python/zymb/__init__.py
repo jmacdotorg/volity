@@ -30,6 +30,11 @@ simple tasks.
 
 * Version history:
 
+- ### unreleased
+The interface.JID class was overly paranoid about @ signs. Turns out, an
+    @ sign in a JID resource is legal -- or at least it's seen in the wild.
+    Same goes for / signs.
+
 - 1.3.4:
 Fixed several bugs in the send() methods of the tcp module. (Thanks to Phil.)
 Fixed the way I was catching SSL socket closed errors.

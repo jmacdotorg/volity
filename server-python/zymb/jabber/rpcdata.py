@@ -26,7 +26,8 @@ def nameisvalid(st):
 
     Determine whether the given string is legal for an XML-RPC methodName.
     (This module uses the same rule for struct member names, although the
-    spec doesn't explicitly say to.)
+    spec doesn't explicitly say to.) (#### allow dashes in struct member
+    names!)
     
     A legal name is any number of letters, digits, underscores, periods,
     colons, and forward slashes.
