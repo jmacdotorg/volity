@@ -138,7 +138,7 @@ class TCP(sched.Agent):
                 self.perform('error', ex, self)
                 break
         if (input):
-            self.log.debug('received (%d b): %s', len(input), input)
+            self.log.debug('received (%d b): %s', len(input), repr(input))
             self.perform('handle', input)
         if (broken):
             self.perform('closed')
@@ -180,7 +180,7 @@ class TCP(sched.Agent):
                 msg = 'socket never opened'
             self.log.warning('unable to send (%s)', msg)
             return None
-        self.log.debug('sending (%d b):  %s', len(dat), dat)
+        self.log.debug('sending (%d b):  %s', len(dat), repr(dat))
 
         try:
             res = 0
@@ -237,7 +237,7 @@ class TCP(sched.Agent):
                 msg = 'socket never opened'
             self.log.warning('unable to send (%s)', msg)
             return None
-        self.log.debug('sending (%d b):  %s', len(dat), dat)
+        self.log.debug('sending (%d b):  %s', len(dat), repr(dat))
 
         try:
             res = self.sock.send(dat)
@@ -359,7 +359,7 @@ class TCPSecure(TCP):
                 self.perform('error', ex, self)
                 break
         if (input):
-            self.log.debug('received (ssl, %d b): %s', len(input), input)
+            self.log.debug('received (ssl, %d b): %s', len(input), repr(input))
             self.perform('handle', input)
         if (broken):
             self.perform('closed')
@@ -390,7 +390,7 @@ class TCPSecure(TCP):
                 msg = 'socket never opened'
             self.log.warning('unable to send (%s)', msg)
             return None
-        self.log.debug('sending (ssl, %d b):  %s', len(dat), dat)
+        self.log.debug('sending (ssl, %d b):  %s', len(dat), repr(dat))
 
         try:
             res = 0
@@ -453,7 +453,7 @@ class TCPSecure(TCP):
                 msg = 'socket never opened'
             self.log.warning('unable to send (%s)', msg)
             return None
-        self.log.debug('sending (ssl, %d b):  %s', len(dat), dat)
+        self.log.debug('sending (ssl, %d b):  %s', len(dat), repr(dat))
 
         try:
             res = self.ssl.write(dat)
