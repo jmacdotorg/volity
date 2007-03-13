@@ -3,7 +3,7 @@
     Zymb home page: <http://eblong.com/zarf/zymb/>
 
 The Python source code in this module, and its submodules, is
-copyright 2005 by Andrew Plotkin. You may copy and distribute it
+copyright 2005-7 by Andrew Plotkin. You may copy and distribute it
 freely, by any means and under any conditions. You may incorporate
 this code into your own software and distribute that, or modify this
 code and distribute the modified version, as long as you retain a
@@ -30,7 +30,7 @@ simple tasks.
 
 * Version history:
 
-- ### unreleased
+- 1.3.5:
 The interface.JID class was overly paranoid about @ signs. Turns out, an
     @ sign in a JID resource is legal -- or at least it's seen in the wild.
     Same goes for / signs.
