@@ -60,13 +60,18 @@ SVG and Javascript, not of Python.)
 
 parlor -- contains the Parlor class
 referee -- contains the Referee class
-volent -- a base class for Parlor, Referee, and Actor
+volent -- a base class for Parlor, Referee, Factory, and Actor
 game -- the base class used to develop a new game
+factory -- contains the Factory class
 actor -- the framework for a robot player
 bot -- the base class used to develop a new bot
 config -- parses configuration files
 
 * Version history:
+
+- 2.0.2:
+Fixed the disco responses to better conform to the Entity Capabilities
+    (XEP-0115) specification.
 
 - 2.0.1:
 Fixed a factory bug where the last_new_bot and bots_started fields were not

@@ -273,8 +273,14 @@ class Referee(volent.VolEntity):
         self.discoinfo = info
         
         disco.addinfo(None, self.updatediscoinfo)
+        disco.addinfo(volent.VOLITY_CAPS_URI+'#'+volent.volityversion,
+            self.updatediscoinfo)
         disco.additems()
 
+        infocap = jabber.disco.DiscoInfo()
+        infocap.addfeature(volent.VOLITY_CAPS_URI+'#'+self.volityrole)
+        disco.addinfo(volent.VOLITY_CAPS_URI+'#'+self.volityrole, infocap)
+        
         # Set up the keepalive service
 
         sserv = self.parlor.conn.getservice('keepaliveservice')

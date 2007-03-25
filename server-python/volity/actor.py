@@ -156,14 +156,22 @@ class Actor(volent.VolEntity):
         # Set up the disco service
         
         disco = self.conn.getservice('discoservice')
-        info = disco.addinfo()
         
+        info = disco.addinfo()
         info.addidentity('volity', 'bot', self.bot.getname())
         info.addfeature(interface.NS_CAPS)
+        info2 = disco.addinfo(volent.VOLITY_CAPS_URI+'#'+volent.volityversion)
+        info2.addidentity('volity', 'bot', self.bot.getname())
+        info2.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
         form.addfield('volity-role', self.volityrole)
         info.setextendedinfo(form)
+        info2.setextendedinfo(form)
+
+        infocap = jabber.disco.DiscoInfo()
+        infocap.addfeature(volent.VOLITY_CAPS_URI+'#'+self.volityrole)
+        disco.addinfo(volent.VOLITY_CAPS_URI+'#'+self.volityrole, infocap)
 
         # Set up the keepalive service
 

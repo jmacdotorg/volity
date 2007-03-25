@@ -188,6 +188,9 @@ class Factory(volent.VolEntity):
         info = disco.addinfo()
         info.addidentity('volity', 'factory', self.botname)
         info.addfeature(interface.NS_CAPS)
+        info2 = disco.addinfo(volent.VOLITY_CAPS_URI+'#'+volent.volityversion)
+        info2.addidentity('volity', 'factory', self.botname)
+        info2.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
         val = config.get('entity-desc')
@@ -211,6 +214,11 @@ class Factory(volent.VolEntity):
             val = '0'
         form.addfield('visible', val)
         info.setextendedinfo(form)
+        info2.setextendedinfo(form)
+
+        infocap = jabber.disco.DiscoInfo()
+        infocap.addfeature(volent.VOLITY_CAPS_URI+'#'+self.volityrole)
+        disco.addinfo(volent.VOLITY_CAPS_URI+'#'+self.volityrole, infocap)
 
         # assumes resource didn't change
         items = disco.additems()
