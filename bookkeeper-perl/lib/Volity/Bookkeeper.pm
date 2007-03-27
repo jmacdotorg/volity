@@ -1244,7 +1244,7 @@ sub _rpc_prepare_game {
     
     # Is there a game record already in the DB? Should there be one?
     my $game_record;
-    ($game_record) = Volity::Info::Game->search_unfinished_with_referee_jid($from_jid);
+    ($game_record) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid);
     
     if (not($is_newgame) && not($game_record)) {
 	return ["game_record_missing"];
