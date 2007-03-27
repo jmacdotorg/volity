@@ -318,13 +318,18 @@ sub handle_rpc_response {
 	# Get the stored info about this call, cancel this player's
 	# timeout alarm, and clear this player from the people we're
 	# waiting for.
+        $self->logger->debug("Received a verify-game response from $args->{from}.");
 	my $info_hash = delete($self->outstanding_verify_game_calls_by_rpc_id->{$args->{id}});
 	$self->kernel->alarm_remove($info_hash->{alarm_id});
 
-	delete($self->outstanding_verify_game_calls_by_referee->{$info_hash->{referee_jid}});
+	delete($self->outstanding_verify_game_calls_by_referee->{$info_hash->{referee_jid}}->{$info_hash->{player_jid}});
 
-	unless ($args->{response}) {
+	if ($args->{response}) {
+            $self->logger->debug("They are accepting this game."):
+        }
+        else {
 	    # The player has refused this verify_game call. Well now.
+            $self->logger->debug("They are refusing this game."):
 	    $self->refusing_players_by_referee->{$info_hash->{referee_jid}} ||= [];
 	    push (@{$self->refusing_players_by_referee->{$info_hash->{referee_jid}}}, $info_hash->{player_jid});
 	}
@@ -1261,7 +1266,7 @@ sub _rpc_prepare_game {
 	my $credit_balance = $self->get_credit_balance_for_player($player);
 	my $fee_to_play;
 	my ($payment_status, $arg) = $self->get_payment_status_for_player_with_parlor($player, $parlor);
-	# XXX bleah.
+
 	$self->logger->debug("The payment status for this player is '$payment_status'.");
 	if (defined($arg)) {
 	    $self->logger->debug("The fee, in credits, will be $arg.");
@@ -1286,6 +1291,7 @@ sub _rpc_prepare_game {
 	elsif ($payment_status eq "noauth") {
 	    # This parlor offers no pay-per-play, and this player
 	    # is not subscribed. So, fooey on them.
+            $self->logger->debug("Refusing to authorize a player, because the parlor offers no pay-per-play and the player is not subscribed.");
 	    push (@unauthorized_players, $player->jid);
 	}
 	else {
