@@ -268,15 +268,22 @@ sub jabber_presence {
 	      # Now fire off the actual invitations.
 	      # XXX This needs alarms for response timeouts...
 	      # XXX Also, need to include a message.
-	      for my $player ($info->{scheduled_game}->players) {
-		  $self->logger->debug("I am sending an invitation to " . $player->jid);
-		  $self->send_rpc_request({
-		      id         => "player-invitation",
-		      to         => $new_person_jid,
-		      methodname => "volity.invite_player",
-		      args       => [$player->jid,
-				     ],
-		  });
+	      eval {
+		  for my $player ($info->{scheduled_game}->players) {
+		      $self->logger->debug("I am sending an invitation to " . $player->jid);
+		      $self->send_rpc_request({
+			  id         => "player-invitation",
+			  to         => $new_person_jid,
+			  methodname => "volity.invite_player",
+			  args       => [$player->jid,
+					 ],
+		      });
+		  }
+	      };
+	      if ($@) {
+		  use Data::Dumper;
+		  $self->logger->error("Yikes! a scheduled game info hash was broken. Here's the full dump.\n" . Dumper($info));
+		  return;
 	      }
 	  }
       }
@@ -325,11 +332,11 @@ sub handle_rpc_response {
 	delete($self->outstanding_verify_game_calls_by_referee->{$info_hash->{referee_jid}}->{$info_hash->{player_jid}});
 
 	if ($args->{response}) {
-            $self->logger->debug("They are accepting this game."):
+            $self->logger->debug("They are accepting this game.");
         }
         else {
 	    # The player has refused this verify_game call. Well now.
-            $self->logger->debug("They are refusing this game."):
+            $self->logger->debug("They are refusing this game.");
 	    $self->refusing_players_by_referee->{$info_hash->{referee_jid}} ||= [];
 	    push (@{$self->refusing_players_by_referee->{$info_hash->{referee_jid}}}, $info_hash->{player_jid});
 	}
