@@ -19,9 +19,11 @@
 
         - Volity::WinnersList objects now offer a clear() method.
 
+        - More correct handling of game abandonment.
+
 0.7
 
-	- Payment protocol support.
+	- Partial payment protocol support.
 
 	- The libraies are now far more resistant to exceptions arising
           from bad RPC handling.

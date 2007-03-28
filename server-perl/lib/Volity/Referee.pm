@@ -137,7 +137,7 @@ referee.
 
 use base qw(Volity::Jabber);
 # See comment below for what all these fields do.
-use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_configs bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed bot_factory_requests);
+use fields qw(muc_jid game game_class players nicks starting_request_jid starting_request_id bookkeeper_jid server muc_host bot_configs bot_jids active_bots last_rpc_id invitations ready_players is_recorded is_hidden name language internal_timeout seats max_seats kill_switch startup_time last_activity_time games_completed bot_factory_requests abandon_timeout_alarm suspend_timeout_alarm);
 # FIELDS:
 # muc_jid
 #   The JID of this game's MUC.
@@ -607,51 +607,40 @@ sub jabber_presence {
 		  $player->is_missing(1);
 		  # Check to see if that seat is now abandoned.
 		  my $seat = $player->seat;
+                  $self->logger->debug("Someone just bolted while the game was active.");
 		  if ($seat && not($seat->is_under_control)) {
 		      # The seat is uncontrolled!
+                      $self->logger->debug("They left a seat uncontrolled!");
 		      if ($self->game->is_abandoned) {
 			  # Holy crap, _everyone_ has left!
 			  # Tell the onlookers (and the bots, I guess).
+                          $self->logger->debug("The game has been abandoned!");
 			  foreach ($self->players) {
 			      $_->game_is_abandoned;
 			  }
 			  # All right, we'll wait for someone to come back.
 			  my $deadline = time + $self->internal_timeout;
-			  until ((time >= $deadline) or (not($self->game->is_abandoned))) {
-			      $self->kernel->run_one_timeslice;
-			  }
-			  if ($self->game->is_abandoned) {
-			      # OK, give up waiting.
-			      $self->suspend_game;
-			      # But now a new wait begins.
-			      # If no replacement humans show up in 90 seconds,
-			      # I'm outta here.
-			      my $deadline = time + 90;
-			      until (
-				     (time >= $deadline) or
-				     ($self->non_missing_check)
-				     ) {
-				  $self->kernel->run_one_timeslice;
-			      }
-			      if (not($self->non_missing_check)) {
-				  # No humans came. I am unloved.
-				  # I'll just shut down, then.
-				  $self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
-				  if ($self->game->is_afoot) {
-				      $self->logger->debug("But first, I'm sending a game record.");
-				      $self->end_game;
-				  }
-				  $self->stop;
-			      }
+                          $self->logger->debug("I am going to suspend the game at " . localtime($deadline));
 
-			  }
+                          $self->kernel->state("abandoned_game_timeout", $self);
+                          my $alarm_id = $self->kernel->alarm_set
+                              (
+                               "abandoned_game_timeout",
+                               $deadline,
+                           );
+                          $self->logger->debug("The alarm ID is $alarm_id");
+                          $self->abandon_timeout_alarm($alarm_id);
 		      }
 		      elsif ($self->game->is_disrupted) {
+                          $self->logger->debug("The game has been disrupted!");
 			  # Tell the players about the disruption.
 			  foreach ($self->players) {
 			      $_->game_is_disrupted;
 			  }
 		      }
+                      else {
+                          $self->logger->debug("The game is neither abandoned nor disrupted. (Huh?)");
+                      }                          
 		  }
 	      } else {
 		  # They left during game config? We'll just forget about them.
@@ -707,6 +696,13 @@ sub jabber_presence {
 			      foreach ($self->players) {
 				  $_->game_is_active;
 			      }
+                              # Also, cancel the abandonment timeout,
+                              # if there was one.
+                              if (my $alarm_id = $self->abandon_timeout_alarm) {
+                                  $self->logger->debug("Clearing abandon timeout alarm.");
+                                  $self->kernel->alarm_remove($alarm_id);
+                                  $self->abandon_timeout_alarm(undef);
+                              }
 			  }
 			  
 			  $rejoined = 1;
@@ -721,10 +717,18 @@ sub jabber_presence {
 		  $player = $self->add_player({nick=>$nick, jid=>$new_person_jid, role=>$volity_role});
 		  # Also store this player's nickname, for later lookups.
 		  $self->logger->debug( "Storing $new_person_jid, under $nick");
-		  
-	      }
+
+                  # Also, cancel the post-abandonment suspend timeout,
+                  # if there was one.
+                  if (my $alarm_id = $self->suspend_timeout_alarm) {
+                      $self->logger->debug("Clearing suspend timeout alarm.");
+                      $self->kernel->alarm_remove($alarm_id);
+                      $self->abandon_timeout_alarm(undef);
+                  }
+
+              }
 	  }
-  
+          
       }
   }
 }
@@ -2001,6 +2005,39 @@ sub admin_rpc_announce {
     $self->send_rpc_response($from_jid, $rpc_id, ["volity.ok"]);
 }
 
+# abandoned_game_timeout: Called via POE kernel alarm, if an abandoned game
+# doesn't get un-abandoned in time.
+sub abandoned_game_timeout {
+    my $self = shift;
+    $self->logger->debug(q{The abandoned game didn't recover. I'm suspending it.});
+    $self->abandon_timeout_alarm(undef);
+    $self->suspend_game;
+    # But now a new wait begins.
+    # If no humans show up soon, I'm outta here.
+    my $deadline = time + $self->internal_timeout;
+    $self->logger->debug("I am going to kill the game at " . localtime($deadline));
+    $self->kernel->state("suspended_game_timeout", $self);
+    my $alarm_id = $self->kernel->alarm_set
+        (
+         "suspended_game_timeout",
+         $deadline,
+     );
+    $self->suspend_timeout_alarm($alarm_id);
+}
+
+# suspended_game_timeout: Called via POE kernel alarm, if a suspended game
+# that was abandoned earlier doesn't see any humans in time.
+sub suspended_game_timeout {
+    my $self = shift;
+    # No humans came. I am unloved.
+    # I'll just shut down, then.
+    $self->logger->debug("There are no humans left here! I'm killing all the bots and leaving, too.");
+    if ($self->game->is_afoot) {
+        $self->logger->debug("But first, I'm sending a game record.");
+        $self->end_game;
+    }
+    $self->stop;
+}
 
 =head1 AUTHOR
 
@@ -2008,7 +2045,7 @@ Jason McIntosh <jmac@jmac.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2003-2006 by Jason McIntosh.
+Copyright (c) 2003-2007 by Jason McIntosh.
 
 =cut
 
