@@ -1313,6 +1313,10 @@ sub _rpc_prepare_game {
     }
 
     
+    # Clear any old refusing/slacker responses for this referee.
+    undef($self->refusing_players_by_referee->{$referee_jid});
+    undef($self->slacker_players_by_referee->{$referee_jid});
+
     $self->logger->debug("Players to ping: @players_to_ping");
     foreach (@players_to_ping) {
 	my ($full_player_jid, $fee_to_play) = @$_;
@@ -1350,7 +1354,7 @@ sub _rpc_prepare_game {
 	    args       => \@outgoing_rpc_args,
 	});
     }
-
+    
     # Twiddle thumbs until all the players report in.
     $self->logger->debug("Waiting for all pinged players to report back.");
     while ($self->get_outstanding_verify_game_calls($referee_jid)) {
