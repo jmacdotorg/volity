@@ -214,6 +214,12 @@ public class SVGTestCanvas extends JSVGCanvas
     public String getMimeType() {
         return "image/svg+xml";
     } 
+
+    // Inherited from InterpreterFactory.
+    public String[] getMimeTypes() {
+        String[] mimeTypes = {"image/svg+xml"};
+        return mimeTypes;
+    }
     
     SVGUI ui;
     ScriptableObject uiGlobalObject;
