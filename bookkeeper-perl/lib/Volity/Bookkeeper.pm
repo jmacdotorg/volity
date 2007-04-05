@@ -1385,30 +1385,32 @@ sub _rpc_prepare_game {
     else {
 	$self->logger->debug("All players approve of starting this game.");
 	$rpc_response_value = RPC::XML::boolean->new("true");
+
+	# Now make a new game record, if there's need of one.
+	my $game;
+	unless (($game) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid)) {
+	    my $start_time = DateTime::Format::MySQL->format_datetime(DateTime->now);
+	    # It's rather redundant to store the ruleset ID when the referee
+	    # is also getting stored, but for now we do this for historical
+	    # reasons.
+	    $game = Volity::Info::Game->create({
+		referee_jid => $referee_jid,
+		ruleset_id  => $parlor->ruleset_id->id,
+		server_id   => $info_hash->{parlor_db_object},
+		start_time  => $start_time,
+	    });
+	}
+
+	# Charge the players' accounts as necessary.
+	foreach (values(%players_to_charge)) {
+	    $self->charge_player_for_game($_->{player},
+					  $game,
+					  $_->{credits},
+					  );
+	}
+
     }
 
-    # Now make a new game record, if there's need of one.
-    my $game;
-    unless (($game) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid)) {
-	my $start_time = DateTime::Format::MySQL->format_datetime(DateTime->now);
-        # It's rather redundant to store the ruleset ID when the referee
-        # is also getting stored, but for now we do this for historical
-        # reasons.
-	$game = Volity::Info::Game->create({
-	    referee_jid => $referee_jid,
-            ruleset_id  => $parlor->ruleset_id->id,
-	    server_id   => $info_hash->{parlor_db_object},
-	    start_time  => $start_time,
-	});
-    }
-
-    # Charge the players' accounts as necessary.
-    foreach (values(%players_to_charge)) {
-	$self->charge_player_for_game($_->{player},
-				       $game,
-				       $_->{credits},
-				       );
-    }
 
     # And finally, return the RPC response value.
     return $rpc_response_value;
