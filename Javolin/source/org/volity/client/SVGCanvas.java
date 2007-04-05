@@ -276,6 +276,12 @@ public class SVGCanvas extends JSVGCanvas
         return "image/svg+xml";
     }
 
+    // Inherited from InterpreterFactory.
+    public String[] getMimeTypes() {
+        String[] mimeTypes = {"image/svg+xml"};
+        return mimeTypes;
+    }
+
     // The window containing this has closed. We need to do some cleanup.
     public void stop() {
         stopped = true;
