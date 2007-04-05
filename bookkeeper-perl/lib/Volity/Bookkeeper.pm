@@ -163,11 +163,16 @@ sub handle_rpc_request {
   if ($$rpc_info{method} =~ /^volity\.(.*)$/) {
     my $method = $1;
     $method = "_rpc_" . $method;
-    warn "******$method******\n";
     if ($self->can($method)) {
       my @response = eval{$self->$method($$rpc_info{from}, $$rpc_info{id}, @{$$rpc_info{args}});};
       if ($@) {
 	  $self->report_rpc_error(@_);
+          # Send back an internal-error fault.
+          $self->send_rpc_fault($$rpc_info{from},
+                                $$rpc_info{id},
+                                608,
+                                "Internal bookkeeper error."
+                            );
 	  return;
       }
       if (@response) {
