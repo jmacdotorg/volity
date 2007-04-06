@@ -77,6 +77,8 @@ public class TableWindow extends JFrame
     private final static String VIEW_GAME = "GameViewport";
     private final static String VIEW_LOADING = "LoadingMessage";
 
+    private final static int READY_RECENT_INTERVAL = 15; /* seconds */
+
     private static Map sGameNameNumberMap = new HashMap();
 
     private final static ImageIcon INVITE_ICON;
@@ -149,6 +151,7 @@ public class TableWindow extends JFrame
     private boolean mGameTableStarted = false;
     private boolean mGameViewportStarted = false;
     private boolean mGameStartFinished = false;
+    private Date mReadyPressedRecently = null;
 
     private InfoDialog mInfoDialog = null;
 
@@ -396,6 +399,7 @@ public class TableWindow extends JFrame
                             public void run() {
                                 if (player == mGameTable.getSelfPlayer()) {
                                     adjustButtons();
+                                    setRecentReady(false);
                                 }
                             }
                         });
@@ -407,6 +411,7 @@ public class TableWindow extends JFrame
                             public void run() {
                                 if (player == mGameTable.getSelfPlayer()) {
                                     adjustButtons();
+                                    setRecentReady(false);
                                 }
                             }
                         });
@@ -488,9 +493,11 @@ public class TableWindow extends JFrame
         mReadyButton.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     if (!mGameTable.isSelfReady()) {
+                        setRecentReady(true);
                         mGameTable.getReferee().ready(mDefaultCallback, null);
                     }
                     else {
+                        setRecentReady(false);
                         mGameTable.getReferee().unready(mDefaultCallback, null);
                     }
                 }
@@ -1575,17 +1582,65 @@ public class TableWindow extends JFrame
     public boolean verifyGame(boolean hasFee, int authFee) {
         assert (SwingUtilities.isEventDispatchThread()) : "not in UI thread";
 
-        if (!mGameTable.isSelfSeated())
+        if (!mGameTable.isSelfSeated()) {
             return false;
-        if (!mGameTable.isSelfReady())
+        }
+
+        /* We check readiness two ways: the temporary "pushed ready recently"
+         * flag, and the actual GameTable state.
+         */
+        boolean selfready = (getRecentReady() || mGameTable.isSelfReady());
+        if (!selfready) {
             return false;
+        }
 
         if (hasFee) {
-            if (!mPayPanel.verifyGameFee(authFee))
+            if (!mPayPanel.verifyGameFee(authFee)) {
                 return false;
+            }
         }
 
         return true;
+    }
+
+    /**
+     * Set the temporary "player pushed ready" flag.
+     *
+     * Due to an annoying quirk of the game-starting protocol, it is possible
+     * to push the Ready button, but receive the bookkeeper's verify_game() RPC
+     * *before* the referee's player_ready() RPC. If that happens, the
+     * GameTable will not yet have registered the ready condition.
+     *
+     * We must therefore keep track of a separate "pushed ready recently" flag.
+     * This is turned *on* whenever the player hits the ready button. It is
+     * turned *off* whenever we receive a player_ready(), because that gives us
+     * the official ready state (no need for the temporary flag).
+     *
+     * The flag is stored as a Date object in mReadyPressedRecently. When on,
+     * this is set to the flag's expiration date (15 seconds in the future).
+     */
+    protected void setRecentReady(boolean val) {
+        if (val) {
+            Date now = new Date();
+            mReadyPressedRecently = new Date(now.getTime() 
+                + 1000 * READY_RECENT_INTERVAL);
+        }
+        else {
+            mReadyPressedRecently = null;
+        }
+    }
+
+    /**
+     * Check the "player pushed ready" flag. If it does not exist, return
+     * false. If it exists but it's expired (i.e., it's been more than 15
+     * seconds since the player pushed ready) then again return false.
+     * Otherwise, it's still good, so return true.
+     */
+    protected boolean getRecentReady() {
+        if (mReadyPressedRecently == null)
+            return false;
+        Date now = new Date();
+        return now.before(mReadyPressedRecently);
     }
 
     /**
