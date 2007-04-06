@@ -88,8 +88,8 @@ Comments: This is Rhino as of 2006-03-24, plus the patch described at
 Name: Batik
 Home page: http://xmlgraphics.apache.org/batik/
 Version: 1.6
-Download: svn checkout -r 419879 http://svn.apache.org/repos/asf/xmlgraphics/batik/trunk
-    (The "-r 419879" fetches the source as of 2006-Jul-08, which works with
+Download: svn checkout -r 526187 http://svn.apache.org/repos/asf/xmlgraphics/batik/trunk
+    (The "-r 526187" fetches the source as of 2007-Apr-06, which works with
     the current Javolin source.)
     % cd trunk
     % setenv JAVA_HOME /usr
