@@ -1,7 +1,7 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
-* the present
+* release 0.4.1
 
 Fixed a race condition that would sometimes erroneously tell players
 that they were not authorized to play.
