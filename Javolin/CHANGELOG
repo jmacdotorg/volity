@@ -9,6 +9,8 @@ that they were not authorized to play.
 Updated the Gamut and Testbench SVGCanvas classes to implement the
 getMimeTypes() method that an updated Batik 1.7b abstract class wants.
 
+Improved adherence to Jabber XEP-0115.
+
 * release 0.4.0
 
 Table window displays the payment status of the game, as described by the
