@@ -128,7 +128,6 @@ sub rpc_mark {
 	    # There's nine marks made between the players, and no winner.
 	    # What a surprise!
 	    $self->call_ui_function_on_everyone("tie");
-#	    $self->winners->add_seat_to_slot([$self->seats], 1);
 	    for my $seat ($self->seats) {
 		$self->winners->add_seat_to_slot($seat, 1);
 	    }
