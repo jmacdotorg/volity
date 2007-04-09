@@ -21,6 +21,9 @@
 
         - More correct handling of game abandonment.
 
+        - Volity::Jabber (and its myriad subclasses) now require - and are
+          compatible with - POE::Component::Jabber v2.
+
 0.7
 
 	- Partial payment protocol support.
