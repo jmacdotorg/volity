@@ -7,7 +7,7 @@ use ExtUtils::AutoInstall (
 				       "POE"=>'',
 				       "RPC::XML"=>'',
 				       "Scalar::Util"=>'',
-				       'POE::Component::Jabber'=>'1.21',
+				       'POE::Component::Jabber'=>'2.01',
 				       'POE::Filter::XML'=>'0.29',
 				       'Class::Accessor'=>'',
 				       'Class::Fields'=>'',

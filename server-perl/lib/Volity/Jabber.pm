@@ -156,13 +156,12 @@ use POE qw(
 	   Wheel::ReadWrite
 	   Filter::Line
 	   Driver::SysRW
-	   Component::Jabber::Client::Legacy
            Component::Jabber::Error
+           Component::Jabber::ProtocolFactory
+           Component::Jabber::Status
 	  );
 use POE::Filter::XML::Node;
-# use POE::Filter::XML::NS qw( :JABBER :IQ );
 
-# use Jabber::NS qw(:all);
 use PXR::NS qw(:JABBER :IQ);
 use Scalar::Util qw(weaken);
 use Carp qw(croak);
@@ -241,7 +240,7 @@ sub initialize {
     POE::Session->create(
 			 object_states=>
 			 [$self=>
-			  [qw(jabber_iq jabber_presence _start jabber_message input_event init_finish error_event)],
+			  [qw(jabber_iq jabber_presence _start jabber_message input_event status_event error_event)],
 			  ],
 			 );
 
@@ -336,37 +335,51 @@ sub start_jabber_client {
     }
 
     my %config = (
-		  ALIAS=>$alias,
-		  STATE_PARENT=>$self->main_session_id,
-		  STATES=>{
-		      INITFINISH=>'init_finish',
-		      INPUTEVENT=>'input_event',
-		      ERROREVENT=>'error_event',
-		  },
-		  XMLNS => +NS_JABBER_CLIENT,
-		  STREAM => +XMLNS_STREAM,
+		  Alias=>$alias,
+#		  STATE_PARENT=>$self->main_session_id,
+		  States=>{
+                           StatusEvent=>'status_event',
+                           InputEvent=>'input_event',
+                           ErrorEvent=>'error_event',
+                       },
+#		  XMLNS => +NS_JABBER_CLIENT,
+#		  STREAM => +XMLNS_STREAM,
 		  IP=>$self->host,
-		  HOSTNAME=>$self->jid_host,
-		  PORT=>$self->port,
-		  USERNAME=>$self->user,
-		  PASSWORD=>$self->password,
-		  RESOURCE=>$self->resource,
+		  Hostname=>$self->jid_host,
+		  Port=>$self->port,
+                  ConnectionType => +LEGACY,
+		  Username=>$self->user,
+		  Password=>$self->password,
+		  Resource=>$self->resource,
 		  );
 
-    POE::Component::Jabber::Client::Legacy->new(%config);
+
+    POE::Component::Jabber->new(%config);
+
+    $poe_kernel->post($alias, 'connect');
+
+
 }
 
 ################################
 # POE States (Jabber)
 ################################
 
-sub init_finish {
+sub status_event {
   my $self = $_[OBJECT];
-  $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
-  # XXX EXPERIMENTAL
-  # Always request roster. The roster's receipt will trigger an 'available'
-  # presence packet (see 'receive_roster').
-  $self->request_roster;
+  my $event = $_[ARG0];
+  if ($event == +PCJ_INIT_FINISHED) {
+      $self->logger->debug("I got an init finished event!");
+      $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
+
+      # Always request roster. The roster's receipt will trigger an 'available'
+      # presence packet (see 'receive_roster').
+      $self->request_roster;
+  }
+  else {
+#      $self->logger->debug("I got some other kind of status update event!");
+  }
+  
 }
 
 sub input_event {
@@ -390,17 +403,17 @@ sub error_event {
   my $error = $_[ARG0];
   
   my $error_message;
-  if($error == +PCJ_SOCKFAIL)  {
+  if($error == +PCJ_SOCKETFAIL)  {
       my ($call, $code, $err) = @_[ARG1..ARG3];
       $error_message = "Socket error: $call, $code, $err\n";
-  } elsif ($error == +PCJ_SOCKDISC) {
+  } elsif ($error == +PCJ_SOCKETDISCONNECT) {
       $error_message = "We got disconnected.\n";
       $self->react_to_disconnection_error;
   } elsif ($error == +PCJ_AUTHFAIL) {
       $error_message = "Failed to authenticate\n";
   } elsif ($error == +PCJ_BINDFAIL) {
       $error_message = "Failed to bind a resource\n"; # XMPP/J2 Only
-  } elsif ($error == +PCJ_SESSFAIL) {
+  } elsif ($error == +PCJ_SESSIONFAIL) {
       $error_message = "Failed to establish a session\n"; # XMPP Only
   } else {
       $error_message = "Unknown PCJ Error: $error";
