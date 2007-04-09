@@ -1271,10 +1271,11 @@ sub _rpc_prepare_game {
 	my $player_jid = $full_player_jid;
 	$player_jid =~ s|^(.*?)/.*$|$1|;
 	
-	my ($player) = Volity::Info::Player->search(jid=>$player_jid);
-	unless ($player) {
-	    return (606, "There is no player on the system with the JID '$player_jid'.");
-	}
+#	my ($player) = Volity::Info::Player->search(jid=>$player_jid);
+#	unless ($player) {
+#	    return (606, "There is no player on the system with the JID '$player_jid'.");
+#	}
+        my $player = Volity::Info::Player->find_or_create({jid=>$player_jid});
 	my $credit_balance = $self->get_credit_balance_for_player($player);
 	my $fee_to_play;
 	my ($payment_status, $arg) = $self->get_payment_status_for_player_with_parlor($player, $parlor);
@@ -1449,11 +1450,12 @@ sub _rpc_game_player_authorized {
 	return (606, "$basic_parlor_jid not a parlor that I recognize! Sending JID: $from_jid. Basic JID: $basic_sender_jid.");
     }
     
-    my ($player) = Volity::Info::Player->search(jid=>$basic_player_jid);
-    unless ($player) {
-	return (606, "There is no player on the system with the JID '$basic_player_jid'.");
-    }
-   
+#    my ($player) = Volity::Info::Player->search(jid=>$basic_player_jid);
+#    unless ($player) {
+#	return (606, "There is no player on the system with the JID '$basic_player_jid'.");
+#    }
+    my $player = Volity::Info::Player->find_or_create({jid=>$basic_player_jid});
+    
     my %return_hash;
     $return_hash{credits} = $self->get_credit_balance_for_player($player);
 
