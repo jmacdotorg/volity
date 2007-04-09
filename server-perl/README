@@ -68,22 +68,23 @@ somewhere in your PATH):
  volityd -C examples/tictactoe/conf.yml
 
 If everything worked, you should now be able to create a new table at
-the parlor with any Volity client. In Javolin, this involves the
-Game->New Table At... command. (If you don't already have Javolin, you
-can download it from volity.org:
-http://www.volity.org/projects/javolin/)
+the parlor with any Volity client. In Gamut, this involves the
+Game->New Table At... command. (If you don't already have Gamut, you
+can download it from volity.net.)
 
 --- CONTACT ---
 
 Please send all questions, comments, bug reports, etc. to Jason
 McIntosh <jmac@jmac.org>.
 
-For community discussion about these modules, see the volity-devel
-mailing list:
-<http://lists.sourceforge.net/lists/listinfo/volity-devel>. Its
-archives are on the Web, and offers open subscription to all.
+For community discussion about these modules, see the Frivolity web
+forum: http://volity.net/community/forum.html?forum_id=2
 
 Use can also use any Jabber client (including Gamut, the Volity
 project's official Java-based client) to visit the Volity devchat, at
 <devchat@conference.volity.net>.
 
+Happy Hacking!
+
+Jason McIntosh
+April 9, 2007
