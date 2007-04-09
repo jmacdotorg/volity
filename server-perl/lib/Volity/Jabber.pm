@@ -370,16 +370,20 @@ sub status_event {
   my $event = $_[ARG0];
   if ($event == +PCJ_INIT_FINISHED) {
       $self->logger->debug("I got an init finished event!");
-      $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
-
-      # Always request roster. The roster's receipt will trigger an 'available'
-      # presence packet (see 'receive_roster').
-      $self->request_roster;
+      $self->init_finish;
   }
   else {
 #      $self->logger->debug("I got some other kind of status update event!");
   }
-  
+}
+
+sub init_finish {
+    my $self = shift;
+    $self->kernel->post($self->alias, 'set_auth', 'jabber_authed', $self->user, $self->password, $self->resource);
+
+    # Always request roster. The roster's receipt will trigger an 'available'
+    # presence packet (see 'receive_roster').
+    $self->request_roster;
 }
 
 sub input_event {

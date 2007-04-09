@@ -298,12 +298,9 @@ sub initialize {
 ################
 
 sub init_finish {
-  my $kernel = $_[KERNEL];
-  my $heap = $_[HEAP];
-  my $session = $_[SESSION];
-  my $self = $_[OBJECT];
+  my $self = shift;
   $self->logger->debug("***REFEREE*** We have authed!\n");
-  $kernel->post($self->alias, 'register', qw(iq presence message));
+  $self->kernel->post($self->alias, 'register', qw(iq presence message));
 
   # Join the game MUC.
   $self->join_muc({jid=>$self->muc_jid, nick=>'referee'});
