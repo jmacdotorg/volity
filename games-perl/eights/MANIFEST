@@ -1,6 +1,0 @@
-Build.PL
-lib/Volity/Game/CrazyEights.pm
-lib/Volity/Bot/CrazyEights.pm
-MANIFEST			This list of files
-META.yml
-README

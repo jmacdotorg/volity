@@ -1,8 +1,0 @@
-^_build
-^Build$
-^blib
-~$
-\.bak$
-DS_Store$
-^MANIFEST\.SKIP$
-CVS
