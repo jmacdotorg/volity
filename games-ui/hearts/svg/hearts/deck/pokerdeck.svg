@@ -1,0 +1,1157 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	width="1600" height="660">
+
+<title>Zarf's Simple Poker Deck</title>
+
+<metadata
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:volity="http://volity.org/protocol/metadata"
+  xmlns:game="http://volity.org/protocol/gamedata" >
+
+  <volity:provides-resource>http://volity.org/resources/carddeck/poker.html</volity:provides-resource>
+
+  <volity:version>1.2</volity:version>
+  <dc:creator>Andrew Plotkin</dc:creator>
+  <dc:modified>2006-08-21</dc:modified>
+
+  <game:aspect-ratio>0.7142857</game:aspect-ratio>
+  <game:stack-spacing>north 0.2</game:stack-spacing>
+  <game:stack-spacing>west 0.32</game:stack-spacing>
+
+  <game:suit-name-heart>Heart</game:suit-name-heart>
+  <game:suit-name-club>Club</game:suit-name-club>
+  <game:suit-name-diamond>Diamond</game:suit-name-diamond>
+  <game:suit-name-spade>Spade</game:suit-name-spade>
+  <game:suit-names-heart>Hearts</game:suit-names-heart>
+  <game:suit-names-club>Clubs</game:suit-names-club>
+  <game:suit-names-diamond>Diamonds</game:suit-names-diamond>
+  <game:suit-names-spade>Spades</game:suit-names-spade>
+</metadata>
+
+<defs>
+
+<text id="index-a"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>A</text>
+
+<text id="index-2"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>2</text>
+
+<text id="index-3"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>3</text>
+
+<text id="index-4"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>4</text>
+
+<text id="index-5"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>5</text>
+
+<text id="index-6"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>6</text>
+
+<text id="index-7"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>7</text>
+
+<text id="index-8"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>8</text>
+
+<text id="index-9"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>9</text>
+
+<text id="index-10"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>10</text>
+
+<text id="index-k"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>K</text>
+
+<text id="index-q"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>Q</text>
+
+<text id="index-j"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>J</text>
+
+<text id="index-p"
+	text-anchor="start"
+	pointer-events="none"
+	font-size="22"
+	font-weight="bold"
+	font-family='"Optima", "Helvetica", san-serif'
+	letter-spacing="-2"
+	fill="#332200"
+>P</text>
+
+
+<g id="cardborder">
+
+<path d="M 50 1  
+	L 89 1  Q 99 1 99 11  
+	L 99 129  Q 99 139 89 139  
+	L 11 139  Q 1 139 1 129
+	L 1 11  Q 1 1 11 1  z"
+	fill="#F0E0D0" />
+
+<path d="M 99 129  Q 99 139 89 139  
+	L 11 139  Q 1 139 1 129
+	L 1 120  Q 50 99 99 40
+	z"
+	fill="#E8D0C0" />
+
+<path d="M 50 1  
+	L 89 1  Q 99 1 99 11  
+	L 99 129  Q 99 139 89 139  
+	L 11 139  Q 1 139 1 129
+	L 1 11  Q 1 1 11 1  z"
+	fill="none" stroke="#422" stroke-width="2" />
+
+</g>
+
+<g id="crown">
+
+<path d="M -20 10
+	L -30 -23
+	L -15 -10
+	L 0 -26
+	L 15 -10
+	L 30 -23
+	L 20 10
+	z"
+	fill="#EECC33" stroke-width="2.5" />
+</g>
+
+<g id="necklace">
+
+<path d="M -30 -16
+	Q 0 -10  30 -16
+	C -70 50  70 50  -30 -16
+	z"
+	fill="#EECC33" stroke-width="2.5" />
+
+</g>
+
+<g id="sword">
+
+<path d="M 30 -35
+	Q 20 20 -20 37
+	L -23 47  L -33 22
+	L -25 28
+	Q 12 10  30 -35
+	z"
+	fill="#EECC33" stroke-width="2" />
+
+</g>
+
+<g id="scroll">
+<g transform="translate(0, 15), rotate(20), scale(0.8), scale(1, -1)">
+
+<path d="M 10 2
+	C 10 -14  -20 -10  -25 5
+	L -25 45
+	C -20 30  10 26  10 42
+	z"
+	fill="#EECC33" stroke-width="2.5" />
+
+<path d="M -10 5
+	C -10 13  10 14  10 2
+	L 10 42
+	C 10 54  -10 53  -10 45
+	z"
+	fill="#EECC33" stroke-width="2.5" />
+
+<path d="M -10 5
+	C -10 0  -4 -2  0 0
+	L 0 11"
+	fill="none" stroke-width="2.5" />
+
+</g>
+</g>
+
+<g id="scrollold">
+<path d="M 10 -20
+	C 0 0  -10 -20  -20 0
+	L 0 30
+	C 10 10  20 30  30 10
+	z"
+	transform="translate(-5,-3)"
+	fill="#EECC33" stroke-width="2" />
+
+</g>
+
+<g id="foolscap">
+
+<path d="M -20 15
+	Q -25 -6  -41 -23
+	Q -22 -22  10 0
+	Q -22 -5  -37 5
+	Q 0 -40  39 -48
+	Q 20 -30  20 25
+	Q 0 10  -20 18
+	z"
+	transform="translate(0,9)"
+	fill="#EECC33" stroke-width="2.5" />
+</g>
+
+
+<g id="2spot" transform="scale(1,0.933)">
+	<ellipse cx="33" cy="75" rx="10" ry="12" />
+	<ellipse cx="67" cy="75" rx="10" ry="12" />
+</g>
+
+<g id="3spot" transform="scale(1,0.933)">
+	<ellipse cx="50" cy="58" rx="10" ry="12" />
+	<ellipse cx="33" cy="90" rx="10" ry="12" />
+	<ellipse cx="67" cy="90" rx="10" ry="12" />
+</g>
+
+<g id="4spot" transform="scale(1,0.933)">
+	<ellipse cx="33" cy="95" rx="10" ry="12" />
+	<ellipse cx="67" cy="95" rx="10" ry="12" />
+	<ellipse cx="33" cy="55" rx="10" ry="12" />
+	<ellipse cx="67" cy="55" rx="10" ry="12" />
+</g>
+
+<g id="5spot" transform="scale(1,0.933)">
+	<ellipse cx="50" cy="80" rx="9" ry="10.8" />
+	<ellipse cx="28" cy="105" rx="9" ry="10.8" />
+	<ellipse cx="72" cy="105" rx="9" ry="10.8" />
+	<ellipse cx="28" cy="55" rx="9" ry="10.8" />
+	<ellipse cx="72" cy="55" rx="9" ry="10.8" />
+</g>
+
+<g id="6spot" transform="scale(1,0.933)">
+	<ellipse cx="28" cy="115" rx="9" ry="10.8" />
+	<ellipse cx="72" cy="115" rx="9" ry="10.8" />
+	<ellipse cx="34" cy="85" rx="9" ry="10.8" />
+	<ellipse cx="66" cy="85" rx="9" ry="10.8" />
+	<ellipse cx="28" cy="55" rx="9" ry="10.8" />
+	<ellipse cx="72" cy="55" rx="9" ry="10.8" />
+</g>
+
+<g id="7spot" transform="scale(1,0.933)">
+	<ellipse cx="34" cy="115" rx="9" ry="10.8" />
+	<ellipse cx="66" cy="115" rx="9" ry="10.8" />
+	<ellipse cx="20" cy="85" rx="9" ry="10.8" />
+	<ellipse cx="50" cy="85" rx="9" ry="10.8" />
+	<ellipse cx="80" cy="85" rx="9" ry="10.8" />
+	<ellipse cx="34" cy="55" rx="9" ry="10.8" />
+	<ellipse cx="66" cy="55" rx="9" ry="10.8" />
+</g>
+
+<g id="8spot" transform="scale(1,0.933)">
+	<ellipse cx="50" cy="130" rx="8" ry="9.6" />
+	<ellipse cx="28" cy="115" rx="8" ry="9.6" />
+	<ellipse cx="72" cy="115" rx="8" ry="9.6" />
+	<ellipse cx="34" cy="85" rx="8" ry="9.6" />
+	<ellipse cx="66" cy="85" rx="8" ry="9.6" />
+	<ellipse cx="28" cy="55" rx="8" ry="9.6" />
+	<ellipse cx="72" cy="55" rx="8" ry="9.6" />
+	<ellipse cx="50" cy="40" rx="8" ry="9.6" />
+</g>
+
+<g id="9spot" transform="scale(1,0.933)">
+	<ellipse cx="24" cy="120" rx="8" ry="9.6" />
+	<ellipse cx="50" cy="120" rx="8" ry="9.6" />
+	<ellipse cx="76" cy="120" rx="8" ry="9.6" />
+	<ellipse cx="24" cy="85" rx="8" ry="9.6" />
+	<ellipse cx="50" cy="85" rx="8" ry="9.6" />
+	<ellipse cx="76" cy="85" rx="8" ry="9.6" />
+	<ellipse cx="24" cy="50" rx="8" ry="9.6" />
+	<ellipse cx="50" cy="50" rx="8" ry="9.6" />
+	<ellipse cx="76" cy="50" rx="8" ry="9.6" />
+</g>
+
+<g id="10spot" transform="scale(1,0.933)">
+	<ellipse cx="24" cy="130" rx="8" ry="9.6" />
+	<ellipse cx="50" cy="130" rx="8" ry="9.6" />
+	<ellipse cx="76" cy="130" rx="8" ry="9.6" />
+	<ellipse cx="36" cy="100" rx="8" ry="9.6" />
+	<ellipse cx="64" cy="100" rx="8" ry="9.6" />
+	<ellipse cx="36" cy="70" rx="8" ry="9.6" />
+	<ellipse cx="64" cy="70" rx="8" ry="9.6" />
+	<ellipse cx="24" cy="40" rx="8" ry="9.6" />
+	<ellipse cx="50" cy="40" rx="8" ry="9.6" />
+	<ellipse cx="76" cy="40" rx="8" ry="9.6" />
+</g>
+
+<g id="heartsymbol"
+	transform="translate(0,5)" >
+
+<path d="M 0 -32
+	C 42 -65  42 -1   28 13
+	C 14  27   5 35   0  45
+	C -5  35 -14 27  -28 13
+	C -42 -1 -42 -65  0 -32
+	z" />
+
+</g>
+
+<g id="diamondsymbol"
+	transform="translate(0,5)" >
+
+<path d="M 0 -55
+	Q 18 -35   35 0
+	Q 15 25    0  55
+	Q -15 25  -35 0
+	Q -18 -35  0 -55
+	z" />
+
+</g>
+
+<g id="clubsymbol"
+	transform="translate(0,5)" >
+
+<ellipse cx="0" cy="-25" rx="22" ry="20" />
+<ellipse cx="22" cy="2" rx="20" ry="20" />
+<ellipse cx="-22" cy="2" rx="20" ry="20" />
+
+<path d="M 1 14
+	Q 5 30  15 35
+	Q 0 47  -15 35
+	Q -5 30  -1 14
+	z" />
+
+</g>
+
+<g id="spadesymbol"
+	transform="translate(0,5)" >
+
+<path d="M 0 -45
+	C 10 -20  50 -25  35 25
+	C 20 15  -20 15  -35 25
+	C -50 -25  -10 -20  0 -45
+	z" />
+
+<path d="M 5 15
+	Q  5 45  15 50
+	Q  0 55  -15 50
+	Q -5 45  -5 15
+	z" />
+</g>
+
+<g id="diamondsymbolcorner">
+	<use xlink:href="#diamondsymbol"
+		transform="translate(29, 15) scale(0.17)"
+		fill="#881000" />
+</g>
+
+<g id="heartsymbolcorner">
+	<use xlink:href="#heartsymbol"
+		transform="translate(29, 15) scale(0.17)"
+		fill="#880022" />
+</g>
+
+<g id="spadesymbolcorner">
+	<use xlink:href="#spadesymbol"
+		transform="translate(29, 14.5) scale(0.17)"
+		fill="#220099" />
+</g>
+
+<g id="clubsymbolcorner">
+	<use xlink:href="#clubsymbol"
+		transform="translate(29, 14.5) scale(0.17)"
+		fill="#300088" />
+</g>
+
+<g id="card-back"
+	transform="scale(-0.007142857) translate(-100,-140)">
+	<use xlink:href="#cardborder" />
+	<ellipse cx="50" cy="70" rx="35" ry="55"
+		fill="#D0B8A8" />
+</g>
+
+<g id="card-joker"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use xlink:href="#foolscap" x="50" y="70" 
+		 stroke="#550800" />
+</g>
+
+<g id="card-ace-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#881000" />
+	<use x="7" y="23" xlink:href="#index-a" />
+	<use xlink:href="#diamondsymbolcorner" />
+</g>
+
+<g id="card-ace-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#880022" />
+	<use x="7" y="23" xlink:href="#index-a" />
+	<use xlink:href="#heartsymbolcorner" />
+</g>
+
+<g id="card-ace-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#220099" />
+	<use x="7" y="23" xlink:href="#index-a" />
+	<use xlink:href="#spadesymbolcorner" x="1" />
+</g>
+
+<g id="card-ace-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#300088" />
+	<use x="7" y="23" xlink:href="#index-a" />
+	<use xlink:href="#clubsymbolcorner" x="1" />
+</g>
+
+<g id="card-2-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-2" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#2spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-2-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-2" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#2spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-2-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-2" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#2spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" x="-1" />
+</g>
+
+<g id="card-2-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-2" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#2spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" x="-1" />
+</g>
+
+<g id="card-3-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-3" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#3spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-3-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-3" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#3spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-3-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-3" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#3spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" />
+</g>
+
+<g id="card-3-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-3" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#3spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" />
+</g>
+
+<g id="card-4-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-4" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#4spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-4-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-4" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#4spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-4-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-4" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#4spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" />
+</g>
+
+<g id="card-4-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-4" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#4spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" />
+</g>
+
+<g id="card-5-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-5" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#5spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-5-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-5" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#5spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-5-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-5" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#5spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" />
+</g>
+
+<g id="card-5-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-5" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#5spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" />
+</g>
+
+<g id="card-6-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-6" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#6spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-6-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-6" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#6spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-6-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-6" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#6spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" />
+</g>
+
+<g id="card-6-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-6" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#6spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" />
+</g>
+
+<g id="card-7-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-7" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#7spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-7-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-7" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#7spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-7-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-7" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#7spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" x="-1" />
+</g>
+
+<g id="card-7-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-7" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#7spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" x="-1" />
+</g>
+
+<g id="card-8-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-8" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#8spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-8-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-8" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#8spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-8-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-8" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#8spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" />
+</g>
+
+<g id="card-8-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-8" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#8spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" />
+</g>
+
+<g id="card-9-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-9" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#9spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="-1" />
+</g>
+
+<g id="card-9-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-9" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#9spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="-1" />
+</g>
+
+<g id="card-9-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-9" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#9spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" />
+</g>
+
+<g id="card-9-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-9" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#9spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" />
+</g>
+
+<g id="card-10-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-10" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#10spot" fill="#881000" />
+	<use xlink:href="#diamondsymbolcorner" x="10" />
+</g>
+
+<g id="card-10-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-10" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#CC8888" />
+	<use xlink:href="#10spot" fill="#880022" />
+	<use xlink:href="#heartsymbolcorner" x="10" />
+</g>
+
+<g id="card-10-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-10" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#10spot" fill="#220099" />
+	<use xlink:href="#spadesymbolcorner" x="11" />
+</g>
+
+<g id="card-10-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-10" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#9999CC" />
+	<use xlink:href="#10spot" fill="#300088" />
+	<use xlink:href="#clubsymbolcorner" x="11" />
+</g>
+
+<g id="card-king-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-k" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#881000" />
+	<use xlink:href="#crown" x="50" y="70" 
+		 stroke="#550800" />
+	<use xlink:href="#diamondsymbolcorner" x="0" />
+</g>
+
+<g id="card-king-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-k" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#880022" />
+	<use xlink:href="#crown" x="50" y="70" 
+		stroke="#550008" />
+	<use xlink:href="#heartsymbolcorner" x="0" />
+</g>
+
+<g id="card-king-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-k" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#220099" />
+	<use xlink:href="#crown" x="50" y="70"
+		stroke="#110055" />
+	<use xlink:href="#spadesymbolcorner" x="1" />
+</g>
+
+<g id="card-king-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-k" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#300088" />
+	<use xlink:href="#crown" x="50" y="70"
+		stroke="#180055" />
+	<use xlink:href="#clubsymbolcorner" x="1" />
+</g>
+
+<g id="card-queen-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-q" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#881000" />
+	<use xlink:href="#necklace" x="50" y="70" 
+		 stroke="#550800" />
+	<use xlink:href="#diamondsymbolcorner" x="5" />
+</g>
+
+<g id="card-queen-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-q" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#880022" />
+	<use xlink:href="#necklace" x="50" y="70" 
+		stroke="#550008" />
+	<use xlink:href="#heartsymbolcorner" x="5" />
+</g>
+
+<g id="card-queen-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-q" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#220099" />
+	<use xlink:href="#necklace" x="50" y="70"
+		stroke="#110055" />
+	<use xlink:href="#spadesymbolcorner" x="6" />
+</g>
+
+<g id="card-queen-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-q" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#300088" />
+	<use xlink:href="#necklace" x="50" y="70"
+		stroke="#180055" />
+	<use xlink:href="#clubsymbolcorner" x="6" />
+</g>
+
+<g id="card-knight-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-j" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#881000" />
+	<use xlink:href="#sword" x="50" y="70" 
+		 stroke="#550800" />
+	<use xlink:href="#diamondsymbolcorner" x="-5" />
+</g>
+
+<g id="card-knight-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-j" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#880022" />
+	<use xlink:href="#sword" x="50" y="70" 
+		stroke="#550008" />
+	<use xlink:href="#heartsymbolcorner" x="-5" />
+</g>
+
+<g id="card-knight-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-j" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#220099" />
+	<use xlink:href="#sword" x="50" y="70"
+		stroke="#110055" />
+	<use xlink:href="#spadesymbolcorner" x="-4" />
+</g>
+
+<g id="card-knight-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-j" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#300088" />
+	<use xlink:href="#sword" x="50" y="70"
+		stroke="#180055" />
+	<use xlink:href="#clubsymbolcorner" x="-4" />
+</g>
+
+<g id="card-page-diamond"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-p" />
+	<use xlink:href="#diamondsymbol" x="50" y="70"
+		fill="#881000" />
+	<use xlink:href="#scroll" x="50" y="70" 
+		 stroke="#550800" />
+	<use xlink:href="#diamondsymbolcorner" x="0" />
+</g>
+
+<g id="card-page-heart"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-p" />
+	<use xlink:href="#heartsymbol" x="50" y="70"
+		fill="#880022" />
+	<use xlink:href="#scroll" x="50" y="70" 
+		stroke="#550008" />
+	<use xlink:href="#heartsymbolcorner" x="0" />
+</g>
+
+<g id="card-page-spade"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-p" />
+	<use xlink:href="#spadesymbol" x="50" y="70"
+		fill="#220099" />
+	<use xlink:href="#scroll" x="50" y="70"
+		stroke="#110055" />
+	<use xlink:href="#spadesymbolcorner" x="0" />
+</g>
+
+<g id="card-page-club"
+	transform="scale(0.007142857)">
+	<use xlink:href="#cardborder" />
+	<use x="7" y="23" xlink:href="#index-p" />
+	<use xlink:href="#clubsymbol" x="50" y="70"
+		fill="#300088" />
+	<use xlink:href="#scroll" x="50" y="70"
+		stroke="#180055" />
+	<use xlink:href="#clubsymbolcorner" x="0" />
+</g>
+
+<use id="card-jack-diamond" xlink:href="#card-knight-diamond" />
+<use id="card-jack-heart" xlink:href="#card-knight-heart" />
+<use id="card-jack-spade" xlink:href="#card-knight-spade" />
+<use id="card-jack-club" xlink:href="#card-knight-club" />
+
+</defs>
+
+<g transform="scale(140)" >
+
+<use xlink:href="#card-ace-diamond" x="0.2" y="0.2" />
+
+<use xlink:href="#card-ace-heart" x="0.2" y="1.3" />
+
+<use xlink:href="#card-ace-spade" x="0.2" y="2.4" />
+
+<use xlink:href="#card-ace-club" x="0.2" y="3.5" />
+
+<use xlink:href="#card-2-diamond" x="1.0" y="0.2" />
+
+<use xlink:href="#card-2-heart" x="1.0" y="1.3" />
+
+<use xlink:href="#card-2-spade" x="1.0" y="2.4" />
+
+<use xlink:href="#card-2-club" x="1.0" y="3.5" />
+
+<use xlink:href="#card-3-diamond" x="1.8" y="0.2" />
+
+<use xlink:href="#card-3-heart" x="1.8" y="1.3" />
+
+<use xlink:href="#card-3-spade" x="1.8" y="2.4" />
+
+<use xlink:href="#card-3-club" x="1.8" y="3.5" />
+
+<use xlink:href="#card-4-diamond" x="2.6" y="0.2" />
+
+<use xlink:href="#card-4-heart" x="2.6" y="1.3" />
+
+<use xlink:href="#card-4-spade" x="2.6" y="2.4" />
+
+<use xlink:href="#card-4-club" x="2.6" y="3.5" />
+
+<use xlink:href="#card-5-diamond" x="3.4" y="0.2" />
+
+<use xlink:href="#card-5-heart" x="3.4" y="1.3" />
+
+<use xlink:href="#card-5-spade" x="3.4" y="2.4" />
+
+<use xlink:href="#card-5-club" x="3.4" y="3.5" />
+
+<use xlink:href="#card-6-diamond" x="4.2" y="0.2" />
+
+<use xlink:href="#card-6-heart" x="4.2" y="1.3" />
+
+<use xlink:href="#card-6-spade" x="4.2" y="2.4" />
+
+<use xlink:href="#card-6-club" x="4.2" y="3.5" />
+
+<use xlink:href="#card-7-diamond" x="5.0" y="0.2" />
+
+<use xlink:href="#card-7-heart" x="5.0" y="1.3" />
+
+<use xlink:href="#card-7-spade" x="5.0" y="2.4" />
+
+<use xlink:href="#card-7-club" x="5.0" y="3.5" />
+
+<use xlink:href="#card-8-diamond" x="5.8" y="0.2" />
+
+<use xlink:href="#card-8-heart" x="5.8" y="1.3" />
+
+<use xlink:href="#card-8-spade" x="5.8" y="2.4" />
+
+<use xlink:href="#card-8-club" x="5.8" y="3.5" />
+
+<use xlink:href="#card-9-diamond" x="6.6" y="0.2" />
+
+<use xlink:href="#card-9-heart" x="6.6" y="1.3" />
+
+<use xlink:href="#card-9-spade" x="6.6" y="2.4" />
+
+<use xlink:href="#card-9-club" x="6.6" y="3.5" />
+
+<use xlink:href="#card-10-diamond" x="7.4" y="0.2" />
+
+<use xlink:href="#card-10-heart" x="7.4" y="1.3" />
+
+<use xlink:href="#card-10-spade" x="7.4" y="2.4" />
+
+<use xlink:href="#card-10-club" x="7.4" y="3.5" />
+
+<use xlink:href="#card-page-diamond" x="8.2" y="0.2" />
+
+<use xlink:href="#card-page-heart" x="8.2" y="1.3" />
+
+<use xlink:href="#card-page-spade" x="8.2" y="2.4" />
+
+<use xlink:href="#card-page-club" x="8.2" y="3.5" />
+
+<use xlink:href="#card-knight-diamond" x="9.0" y="0.2" />
+
+<use xlink:href="#card-knight-heart" x="9.0" y="1.3" />
+
+<use xlink:href="#card-knight-spade" x="9.0" y="2.4" />
+
+<use xlink:href="#card-knight-club" x="9.0" y="3.5" />
+
+<use xlink:href="#card-queen-diamond" x="9.8" y="0.2" />
+
+<use xlink:href="#card-queen-heart" x="9.8" y="1.3" />
+
+<use xlink:href="#card-queen-spade" x="9.8" y="2.4" />
+
+<use xlink:href="#card-queen-club" x="9.8" y="3.5" />
+
+<use xlink:href="#card-king-diamond" x="10.6" y="0.2" />
+
+<use xlink:href="#card-king-heart" x="10.6" y="1.3" />
+
+<use xlink:href="#card-king-spade" x="10.6" y="2.4" />
+
+<use xlink:href="#card-king-club" x="10.6" y="3.5" />
+
+</g>
+
+</svg>

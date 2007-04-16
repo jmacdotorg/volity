@@ -1,0 +1,14 @@
+<!ENTITY rules "Rules">
+<!ENTITY alice "Alice">
+<!ENTITY bob   "Bob">
+<!ENTITY carol "Carol">
+<!ENTITY dave  "Dave">
+
+<!ENTITY lasttrick "Last Trick">
+<!ENTITY score "Score">
+<!ENTITY letsplay "Let's play some hearts">
+<!ENTITY game_config "Game Configuration">
+<!ENTITY game_variant "Game Variant">
+<!ENTITY end_score "Ending Score">
+<!ENTITY standard "standard">
+<!ENTITY omnibus "omnibus">

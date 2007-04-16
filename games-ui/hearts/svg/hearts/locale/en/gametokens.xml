@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<volitytokens>
+	<token>
+		<key>invalid_configuration</key>
+		<value>That configuration directive was invalid.</value>
+	</token>
+	<token>
+		<key>not_passing</key>
+		<value>Cards are not presently being passed.</value>
+	</token>
+	<token>
+		<key>wrong_pass_count</key>
+		<value>Please pass \1 cards.</value>
+	</token>
+	<token>
+		<key>unowned_card</key>
+		<value>You can not play that card, because it's not in your hand.</value>
+	</token>
+	<token>
+		<key>no_play_during_passing</key>
+		<value>Cards can't be played during the passing phase.</value>
+	</token>
+	<token>
+		<key>follow_suit</key>
+		<value>Please follow suit, the led suit was \1.</value>
+	</token>
+	<token>
+		<key>no_points_first_trick</key>
+		<value>You can't play a point card during the first trick.</value>
+	</token>
+	<token>
+		<key>no_lead_hearts</key>
+		<value>You can't lead hearts until they've been played.</value>
+	</token>
+
+	<token>
+		<key>C</key>
+		<value>Clubs</value>
+	</token>
+	<token>
+		<key>D</key>
+		<value>Diamonds</value>
+	</token>
+	<token>
+		<key>H</key>
+		<value>Hearts</value>
+	</token>
+	<token>
+		<key>S</key>
+		<value>Spades</value>
+	</token>
+</volitytokens>

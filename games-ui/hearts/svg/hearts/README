@@ -1,0 +1,7 @@
+The art and source code that make up the Hearts UI, with the exception of the
+Poker deck in the deck directory, are licensed under the Creative Commons
+Attriribution 3.0 license.  See http://creativecommons.org/licenses/by/3.0/.
+
+The poker deck is copyright Andrew Plotkin (Zarf), and is used by permission.
+
+- Austin Henry <ahenry@games.staticcling.org>

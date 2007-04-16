@@ -1,0 +1,17 @@
+This is a Volity module which implements a hearts parlour, and a couple of
+bots. Please see the following URL for more information about the platform:
+	http://volity.org
+
+To run a hearts parlour, you need the Frivolity perl modules installed.
+	http://volity.org/projects/frivolity
+They're also available on CPAN, as module Volity.  The Games::Cards, also
+available on CPAN, is required as well.
+
+After everything is installed, running the parlour is as easy as editing
+inc/hearts.yml to use jabber ids that you own, and running the following
+command:
+	volityd -C hearts.yml
+
+Other than that, there's not much to say here :)  It's pretty simple.  Odds
+are, you're not going to want to run this module, especially if you just want
+to play hearts.  Just head to http://volity.net, and jump in!

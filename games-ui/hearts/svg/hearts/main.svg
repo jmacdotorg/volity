@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
+    <!ENTITY % deckdef SYSTEM "volresp://resource/deck/pokerdeck.svg?http://volity.org/resources/carddeck/poker.html#deck">
+    %deckdef;
+    <!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en#lang">
+    %localedef; %lang;
+]>
+
+<!-- TODO there are 5 more y units that will make the interface square again.
+Could/should put some UI configuration checkboxes down there, like hand sort
+order -->
+<svg xmlns="http://www.w3.org/2000/svg" 
+    xmlns:xlink="http://www.w3.org/1999/xlink" 
+    xmlns:ev="http://www.w3.org/2001/xml-events"
+    xmlns:xbl="http://www.w3.org/2004/xbl"
+    xmlns:widgets="http://games.staticcling.org/widgets/1.0"
+    viewBox="0 0 100 95" 
+    preserveAspectRatio="xMidYMid" 
+    zoomAndPan="magnify" 
+    version="1.1" 
+    contentScriptType="text/ecmascript" 
+    contentStyleType="text/css"
+    text-anchor="middle">
+
+    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:volity="http://volity.org/protocol/metadata" >
+        <volity:version>1.2</volity:version>
+        <volity:ruleset>http://games.staticcling.org:8088/hearts</volity:ruleset>
+        <volity:description-uri>http://games.staticcling.org:8088/hearts/about.html</volity:description-uri>
+        <volity:requires-ecmascript-api>3.2</volity:requires-ecmascript-api>
+        <volity:requires-resource>http://volity.org/resources/carddeck/poker.html</volity:requires-resource>
+        <dc:creator>Austin Henry</dc:creator>
+        <dc:created>20060-07-15</dc:created>
+        <dc:modified>2006-09-09</dc:modified>
+        <dc:title>Hearts UI</dc:title>
+        <dc:language>en</dc:language>
+
+        <!-- Licensed under the Creative Commons Attribution license. -->
+        <rdf:RDF xmlns="http://web.resource.org/cc/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <Work rdf:about="">
+                <license rdf:resource="http://creativecommons.org/licenses/by/3.0/" />
+            </Work>
+
+            <License rdf:about="http://creativecommons.org/licenses/by/3.0/">
+                <requires rdf:resource="http://web.resource.org/cc/Attribution" />
+                <permits rdf:resource="http://web.resource.org/cc/Reproduction" />
+                <permits rdf:resource="http://web.resource.org/cc/Distribution" />
+                <permits rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+            </License>
+        </rdf:RDF>
+    </metadata>
+
+    <!-- here be definitions that depend on XML entities -->
+    <script type="text/ecmascript">
+        var deckpath = "&deck;";
+    </script>
+
+    <!-- all of the UI code lives in code.js -->
+    <script type="text/ecmascript" xlink:href="widgets.js"/>
+    <script type="text/ecmascript" xlink:href="hearts.js"/>
+
+    <style type="text/css">
+        <![CDATA[
+            text {
+                pointer-events: none;
+            }
+            text.rjust {
+                text-anchor: end;
+            }
+            text.ljust {
+                text-anchor: start;
+            }
+            text.title {
+                font-weight: bold;
+            }
+            #last_trick text {
+                font-size: 2.8;
+                text-anchor: start;
+            }
+        ]]>
+    </style>
+
+    <defs id="defs">
+        <rect id="last_trick-highlight" x="0" y="0" width="1.4" height="1.08" 
+            rx="0.1" ry="0.1" style="fill:lightyellow; fill-opacity: 0.45; stroke: none;"/>
+        <rect id="first_card-highlight" x="0" y="0" width="0.71" height="1.00"
+            rx="0.05" ry="0.05" fill="none" fill-opacity="0.5" 
+            stroke="lightgreen" stroke-width="0.1" stroke-opacity="0.5"/>
+
+        <path id="label_path"
+            d="M -0.05 0.25
+            v 0.7
+            s 0 0.1 0.1 0.1
+            h 0.45"
+            style="fill: none; stroke: lightgray; stroke-width: 0.005" />
+
+        <!-- an initial text element to point the variant description stuff at -->
+        <text id="empty-variant-description">intentionally empty</text>
+
+        <!-- template bits for UI widgets -->
+
+        <!-- selection list widget template -->
+        <g id="selectionlist-template" transform="translate(0 0)">
+            <g id="selectionlist-collapsed">
+                <g id="selectionlist-value-decoration">
+                    <rect id="selectionlist-text-box" width="22" height="4" 
+                        stroke="black" stroke-width="0.1"
+                        fill="lightgray" fill-opacity="0.3" />
+                </g>
+
+                <g id="selectionlist-value" transform="translate(0 0)">
+                    <text id="selectionlist-content" x="1" y="3.2" class="ljust"/>
+                </g>
+
+                <g id="selectionlist-dropdown" transform="translate(22 0)">
+                    <rect width="4" height="4" 
+                        stroke="black" stroke-width="0.1" 
+                        fill="lightgray" fill-opacity="0.3"/>
+                    <path d="M 0.8 0.8 L 2 3.2 3.2 0.8 z" transform="rotate(0 2 2)"
+                        stroke="black" stroke-width="0.1" fill="gray"/>
+                </g>
+            </g>
+
+            <g id="selectionlist-choices" transform="translate(0 4)" display="none">
+                <g id="selectionlist-choices-decoration">
+                    <!-- the colour in this one comes from looking at the
+                    final composited colour of the lightgray at 30% against
+                    the bisque at whatever % against the gray of the
+                    background.  not the most robust, and will have to be
+                    changed if the "tablecloth" changes" -->
+                    <rect id="selectionlist-choices-rect" width="22" height="8" 
+                        stroke="black" stroke-width="0.1" 
+                        fill="#e1d1c0" fill-opacity="0.85"/>
+                </g>
+
+                <g id="selectionlist-choice-template" display="none">
+                    <rect id="selectionlist-choice-event-box" stroke="none" fill="white" fill-opacity="0" 
+                        onmouseover="change_opacity(evt, 0.8, false)"
+                        onmouseout="change_opacity(evt, 0, false)"/>
+                    <text id="selectionlist-choice-content" class="ljust"/>
+                </g>
+
+                <g id="selectionlist-choices-list">
+                    <!-- here go the acutal choices -->
+                </g>
+            </g>
+        </g>
+
+    </defs>
+
+    <!-- Permanent graphics...  -->
+    <rect id="tablecloth" x="0" y="0" style="fill: gray;" height="100" width="100"/>
+    <!-- presently, just link to the rules -->
+    <a xlink:href="http://en.wikipedia.org/wiki/Hearts_%28game%29">
+        <g id="rules_button" transform="translate(92 2)">
+            <rect id="rulesbutton" height="3" width="6.5" rx="0.5" ry="0.5"
+                stroke="black" stroke-width="0.2" fill="bisque" fill-opacity="0.5"
+                onmousedown="change_opacity(evt, 0.3, false)"
+                onmouseup="change_opacity(evt, 0.5, false)"
+                class="button_always">
+                <desc>Link to Wikipedia (english)</desc>
+            </rect>
+            <text x="3.25" y="2.3" style="font-size: 2">&rules;</text>
+        </g>
+    </a>
+
+    <!-- info & status get displayed here -->
+    <g id="infopane" transform="translate(0 75)">
+        <line id="divider" x1="0" y1="0" x2="100" y2="0" 
+            style="stroke: black; stroke-width: 0.5;"/>
+
+        <g id="last_trick" transform="translate(4 1)">
+            <!--text x="25" y="23" class="title">&lasttrick;</text-->
+            <g id="Seat_1-last_trick" transform="translate(0 4)">
+                <use id="Seat_1-last_trick-highlight" 
+                    transform="translate(-0.5 -0.5) scale(13)" display="none"
+                    xlink:href="#last_trick-highlight"/>
+                <use id="Seat_1-last_trick-card" transform="scale(13)"
+                    xlink:href="&deck;#card-back" />
+                <text id="Seat_1-last_trick-text" class="title" x="0.75" y="-0.8">&alice;</text>
+                <text x="10" y="3">&score;</text>
+                <text id="Seat_1-score" x="10" y="6">1</text>
+            </g>
+            <g id="Seat_2-last_trick" transform="translate(25 4)">
+                <use id="Seat_2-last_trick-highlight" 
+                    transform="translate(-0.5 -0.5) scale(13)" display="none"
+                    xlink:href="#last_trick-highlight"/>
+                <use id="Seat_2-last_trick-card" transform="scale(13)"
+                    xlink:href="&deck;#card-back" />
+                <text id="Seat_2-last_trick-text" class="title" x="0.75" y="-0.8">&bob;</text>
+                <text x="10" y="3">&score;</text>
+                <text id="Seat_2-score" x="10" y="6">1</text>
+            </g>
+            <g id="Seat_3-last_trick" transform="translate(50 4)">
+                <use id="Seat_3-last_trick-highlight" 
+                    transform="translate(-0.5 -0.5) scale(13)" display="none"
+                    xlink:href="#last_trick-highlight"/>
+                <use id="Seat_3-last_trick-card" transform="scale(13)"
+                    xlink:href="&deck;#card-back" />
+                <text id="Seat_3-last_trick-text" class="title" x="0.75" y="-0.8">&carol;</text>
+                <text x="10" y="3">&score;</text>
+                <text id="Seat_3-score" x="10" y="6">1</text>
+            </g>
+            <g id="Seat_4-last_trick" transform="translate(75 4)">
+                <use id="Seat_4-last_trick-highlight" 
+                    transform="translate(-0.5 -0.5) scale(13)" display="none"
+                    xlink:href="#last_trick-highlight"/>
+                <use id="Seat_4-last_trick-card" transform="scale(13)"
+                    xlink:href="&deck;#card-back" />
+                <text id="Seat_4-last_trick-text" class="title" x="0.75" y="-0.8">&dave;</text>
+                <text x="10" y="3">&score;</text>
+                <text id="Seat_4-score" x="10" y="6">75</text>
+            </g>
+        </g>
+    </g>
+
+    <!-- temporary debugging lines for telling where the centre of the playfield is -->
+    <!--line x1="0" y1="0" x2="100" y2="75" stroke="red" stroke-width="0.05" stroke-linecap="round" /-->
+    <!--line x2="0" y1="0" x1="100" y2="75" stroke="red" stroke-width="0.05" stroke-linecap="round" /-->
+
+    <!-- temporary debugging lines for telling where the centre of the screen is -->
+    <!--line x1="0" y1="0" x2="100" y2="100" stroke="blue" stroke-width="0.005" stroke-linecap="round" /-->
+    <!--line x2="0" y1="0" x1="100" y2="100" stroke="blue" stroke-width="0.005" stroke-linecap="round" /-->
+
+    <g id="playfield">
+        <!-- empty group for putting the player's cards in -->
+        <g id="hand" transform="translate(50 56) scale(18)">
+            <!-- ye ol' unbeatable hand -->
+            <!--use xlink:href="&deck;#card-2-club" x="-2.27" y="0"/-->
+            <use xlink:href="&deck;#card-3-club" x="-1.95" y="0"/>
+            <use xlink:href="&deck;#card-4-club" x="-1.63" y="0"/>
+            <use xlink:href="&deck;#card-5-club" x="-1.31" y="0"/>
+            <use xlink:href="&deck;#card-6-club" x="-0.99" y="0"/>
+            <use xlink:href="&deck;#card-7-club" x="-0.67" y="0"/>
+            <use xlink:href="&deck;#card-8-club" x="-0.35" y="0"/>
+            <use xlink:href="&deck;#card-9-club" x="-0.03" y="0"/>
+            <use xlink:href="&deck;#card-10-club" x="0.28" y="0"/>
+            <use xlink:href="&deck;#card-jack-club" x="0.60" y="0"/>
+            <use xlink:href="&deck;#card-queen-club" x="0.92" y="0"/>
+            <use xlink:href="&deck;#card-king-club" x="1.24" y="0"/>
+            <use xlink:href="&deck;#card-ace-club" x="1.56" y="0"/>
+        </g>
+
+        <!-- group(s) for making display of the current trick easy from the code -->
+        <!-- formula for laying out the cards:
+        player: x = -(aspect-ratio / 2) y = 0.15 (to give .3 spacing between cards)
+        across: x = -(aspect-ratio / 2) y = -1.15 (full card height, plus spacing)
+        left  : x = -((aspect-ratio * 1.5) + 0.15) (1.5 actual card widths, plus spacing)
+            y = -0.5 (half card height)
+        right : x = (aspect-ratio / 2) + 0.15 (half card width, plus spacing)
+            y = -0.5
+        TODO: calculate and adjust these translations from the javascript during
+          setup, and when a new resource has been loade (does this cause a
+          reload of the UI?)
+        The transforms for the seat labels were calculated like this:
+          (these are all obviously relative to the group they're part of)
+          player:
+              x = aspect-ratio / 2
+              y = 1.17
+          across:
+              x = aspect-ratio / 2
+              y = -0.05
+          left: right justified text
+              x = aspect-ratio
+              y = 1.17
+          right: left justified text
+              x = 0
+              y = -0.05
+          x = aspect-ratio / 2 (so they're centered in the card horizontally)
+          y = 1.15 for bottom labels (player, left, right)
+          y = -0.05 for to labels (across)
+        -->
+        <g id="current_trick" transform="translate(50 27.5) scale(18)" font-size="3">
+            <g id="player_trick-group" transform="translate(-0.35 0.15)">
+                <use id="player_trick-highlight" xlink:href="#first_card-highlight" display="none"/>
+                <g id="player_trick">
+                    <use id="player_trick-card" xlink:href="&deck;#card-2-club"/>
+                </g>
+                <use id="player_trick-label_path" xlink:href="#label_path" transform="translate(0.71 -0.0) scale(-1 1)" />
+                <text id="player_trick-label"
+                    transform="translate(0.35 1.17) scale(0.055555556)">
+                    &alice;
+                </text>
+            </g>
+            <g id="left_trick-group" transform="translate(-1.21 -0.5)">
+                <use id="left_trick-highlight" xlink:href="#first_card-highlight" display="none"/>
+                <g id="left_trick">
+                    <use id="left_trick-card" xlink:href="&deck;#card-ace-diamond"/>
+                </g>
+                <use id="left_trick-label_path" xlink:href="#label_path"/>
+                <text id="left_trick-label" class="rjust"
+                    transform="translate(0.7 1.17) scale(0.055555556)">
+                    <!--textPath xlink:href="#left_trick-label_path" startoffset="50%"-->
+                        &bob;
+                    <!--/textPath-->
+                </text>
+            </g>
+            <g id="across_trick-group" transform="translate(-0.35 -1.15)">
+                <use id="across_trick-highlight" xlink:href="#first_card-highlight" display="none"/>
+                <g id="across_trick">
+                    <use id="across_trick-card" xlink:href="&deck;#card-ace-spade"/>
+                </g>
+                <use id="across_trick-label_path" xlink:href="#label_path" transform="translate(0 1) scale(1 -1)" />
+                <text id="across_trick-label"
+                    transform="translate(0.35 -0.05) scale(0.055555556)">
+                    &carol;
+                </text>
+            </g>
+            <g id="right_trick-group" transform="translate(0.5 -0.5)">
+                <use id="right_trick-highlight" xlink:href="#first_card-highlight" display="none"/>
+                <g id="right_trick">
+                    <use id="right_trick-card" xlink:href="&deck;#card-ace-heart"/>
+                </g>
+                <use id="right_trick-label_path" xlink:href="#label_path" transform="translate(0.71 1) scale(-1 -1)"/>
+                <text id="right_trick-label" class="ljust"
+                    transform="translate(0 -0.05) scale(0.055555556)">
+                    <!--textPath xlink:href="#right-label_path" startoffset="50%"-->
+                    &dave;
+                    <!--/textPath-->
+                </text>
+            </g>
+        </g>
+    </g>
+  
+    <!-- the UI for selecting and receiving passed cards -->
+    <g id="passingbox" transform="translate(20, 13)" font-size="3" display="none">
+        <rect width="60" height="35" rx="3" ry="3"
+            style="stroke: black; stroke-width: 0.5; fill: bisque; fill-opacity: 0.90;"/>
+
+        <text id="pass_message" class="title" x="30" y="5"/>
+
+        <!-- width = card scale factor * aspect ratio - 2 -->
+        <rect x="8" y="10" rx="1" ry="1" width="10.78" height="16" style="stroke: black; stroke-width: 0.1; fill: none"/>
+        <rect x="25" y="10" rx="1" ry="1" width="10.78" height="16" style="stroke: black; stroke-width: 0.1; fill: none"/>
+        <rect x="42" y="10" rx="1" ry="1" width="10.78" height="16" style="stroke: black; stroke-width: 0.1; fill: none"/>
+
+        <g id="pass-button" class="button" transform="translate(42 28)">
+            <rect id="pass-button-box" width="10.78" height="5" rx="0.5" ry="0.5"
+                stroke="black" stroke-width="0.2" fill="lightgreen" fill-opacity="0.5"
+                onmousedown="change_opacity(evt, 0.9, false)" onmouseup="change_opacity(evt, 0.5)"
+                onmouseout="change_opacity(evt, 0.5, false)" onclick="pass_ok_clicked(evt)"/>
+            <text id="pass-button-text" x="5.39" y="3.5" onclick="pass_ok_clicked(evt)"/>
+        </g>
+
+        <g id="pass-card-0" transform="translate(7 9) scale(18)"/>
+        <g id="pass-card-1" transform="translate(24 9) scale(18)"/>
+        <g id="pass-card-2" transform="translate(41 9) scale(18)"/>
+    </g>
+
+    <!-- the UI for changing configuration variables -->
+    <g id="config-dialog" transform="translate(15 7)" font-size="3" display="none">
+        <rect width="70" height="47" rx="3" ry="3" 
+            stroke="black" stroke-width="0.3" 
+            fill="bisque" fill-opacity="0.8"/>
+        <text class="title" font-size="4" x="35" y="5">&game_config;</text>
+
+        <!-- these need to be put in here in reverse order, so that they stack
+        properly, the the widget highest on the screen on top -->
+        <g id="variant-description-group" transform="translate(4 24)"
+            font-size="2.6" font-family="times new roman, serif"
+			text-anchor="start">
+			<!-- FIXME I'm using a batik extension here, because moving the
+			interface to SVG1.2 tickles bugs in batik with hiding/unhiding
+			cards (or maybe just drawing them, dunno.  Should probably fix
+			this at some point... -->
+<!--            <flowText xmlns="http://xml.apache.org/batik/ext">
+                <flowRegion>
+                    <rect x="0" y="0" width="62" height="22"
+                        stroke="none" fill="lightgray" fill-opacity="0.15"/>
+                </flowRegion>
+                <flowDiv><flowPara id="variant-description">intentionally empty</flowPara></flowDiv>
+            </flowText>-->
+            <rect x="0" y="0" width="62" height="22" stroke="none" fill="lightgray" fill-opacity="0.25"/>
+			<use id="variant-description" xlink:href="#empty-variant-description"/>
+        </g>
+
+        <g id="variant-buttons" transform="translate(4 13)">
+            <text y="3.2" class="ljust">&end_score;:</text>
+
+            <g id="end_score-selection-group" transform="translate(21 0)" 
+                onload="create_end_score_config_selectionlist()"/>
+        </g>
+
+        <g id="end_score-buttons" transform="translate(4 8)">
+            <text y="3.2" class="ljust">&game_variant;:</text>
+
+            <g id="variant-selection-group" transform="translate(21 0)" 
+                onload="create_variants_config_selectionlist()"/>
+        </g>
+
+        <!-- commented out radio button approach, making a spinbox (I think)
+        <g id="score-buttons" transform="translate(4 14)"
+            widgets:buttons="25-game_end_score-button 50-game_end_score-button 75-game_end_score-button 100-game_end_score-button">
+            <text y="3" class="ljust">&end_score;:</text>
+
+            <g transform="translate(21 0)">
+                <rect id="25-game_end_score-button" x="0" y="0" width="6" height="4"
+                    rx="0.5" ry="0.5" stroke="black" stroke-width="0.2"
+                    fill="black" fill-opacity="0.5"
+                    onmousedown="change_opacity(evt, 0.9, false)"
+                    onmouseup="change_opacity(evt, 0.5)"
+                    onmouseout="change_opacity(evt, 0.5, false)" 
+                    onclick="config_button_clicked(evt, 'score-buttons')"/>
+                <text id="standard-variant-button-text" x="3" y="3">
+                    25
+                </text>
+            </g>
+
+            <g transform="translate(28 0)">
+                <rect id="50-game_end_score-button" x="0" y="0" width="6" height="4"
+                    rx="0.5" ry="0.5" stroke="black" stroke-width="0.2"
+                    fill="black" fill-opacity="0.5"
+                    onmousedown="change_opacity(evt, 0.9, false)"
+                    onmouseup="change_opacity(evt, 0.5)"
+                    onmouseout="change_opacity(evt, 0.5, false)" 
+                    onclick="config_button_clicked(evt, 'score-buttons')"/>
+                <text id="standard-variant-button-text" x="3" y="3">
+                    50
+                </text>
+            </g>
+
+            <g transform="translate(35 0)">
+                <rect id="75-game_end_score-button" x="0" y="0" width="6" height="4"
+                    rx="0.5" ry="0.5" stroke="black" stroke-width="0.2"
+                    fill="black" fill-opacity="0.5"
+                    onmousedown="change_opacity(evt, 0.9, false)"
+                    onmouseup="change_opacity(evt, 0.5)"
+                    onmouseout="change_opacity(evt, 0.5, false)" 
+                    onclick="config_button_clicked(evt, 'score-buttons')"/>
+                <text id="standard-variant-button-text" x="3" y="3">
+                    75
+                </text>
+            </g>
+
+            <g transform="translate(42 0)">
+                <rect id="100-game_end_score-button" x="0" y="0" width="7" height="4"
+                    rx="0.5" ry="0.5" stroke="black" stroke-width="0.2"
+                    fill="lightgreen" fill-opacity="0.5"
+                    onmousedown="change_opacity(evt, 0.9, false)"
+                    onmouseup="change_opacity(evt, 0.5)"
+                    onmouseout="change_opacity(evt, 0.5, false)" 
+                    onclick="config_button_clicked(evt, 'score-buttons')"/>
+                <text id="standard-variant-button-text" x="3.5" y="3">
+                    100
+                </text>
+            </g>
+        </g>
+        -->
+    </g>
+</svg>
+
+<!-- vim: set sw=4 ts=4 et ai fdm=indent-->

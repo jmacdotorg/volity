@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<volitytokens>
+	<token>
+		<key>standard-variant-description</key>
+		<value>This is a standard variant of hearts.  Hearts are worth === 1 point, the Queen of Spades is worth 13.  Hearts can't === be played until they've been broken; the queen doesn't === count as a heart.  No points can be laid in the first === trick of a hand. Shooting the moon requires taking all === point cards, and always increases your opponents' === scores by 26 points.</value>
+	</token>
+	<token>
+		<key>omnibus-variant-description</key>
+		<value>This variant uses all of the same rules as the standard === variant, except that the Jack of Diamonds is worth -10 === points.  The Jack is not needed to shoot the moon.</value>
+	</token>
+    <token>
+        <key>unknown-variant</key>
+        <value>We don't know anything about this variant, maybe === this version of the client is out of date?</value>
+    </token>
+	<token>
+		<key>pass_cards</key>
+		<value>Select 3 cards to pass</value>
+	</token>
+	<token>
+		<key>cards_passed</key>
+		<value>Cards passed to you</value>
+	</token>
+	<token>
+		<key>pass</key>
+		<value>Pass</value>
+	</token>
+	<token>
+		<key>ok</key>
+		<value>OK</value>
+	</token>
+	<token>
+		<key>left</key>
+		<value>left</value>
+	</token>
+	<token>
+		<key>right</key>
+		<value>right</value>
+	</token>
+	<token>
+		<key>across</key>
+		<value>across</value>
+	</token>
+</volitytokens>
