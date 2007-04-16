@@ -13,8 +13,8 @@ featureful Jabber clients, to register an account.)
 
 * This script, volityd.py.
 
-* The "zymb" and "volity" Python modules. (Available from Volity's CVS
-server <https://sourceforge.net/cvs/?group_id=91751>. Or, from
+* The "zymb" and "volity" Python modules. (Available from Volity's SVN
+server <http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/>. Or, from
 <http://eblong.com/zarf/zymb/> and <http://eblong.com/zarf/volity/>.)
 
 * A Python game module which implements a Volity game. (Some sample
@@ -392,7 +392,7 @@ def sethandler():
         roothandler = logging.StreamHandler(sys.stdout)
     else:
         roothandler = logging.FileHandler(logfilename)
-    rootform = logging.Formatter('%(levelname)-8s: (%(name)s) %(message)s')
+    rootform = logging.Formatter('%(asctime)s: %(levelname)-8s: (%(name)s) %(message)s', '%b-%d %H:%M:%S')
     roothandler.setFormatter(rootform)
     rootlogger.addHandler(roothandler)
 
@@ -449,7 +449,7 @@ def execself(delay):
         rootlogger.error('child process cannot fork again!')
         return
         
-    rootlogger.warning('will re-exec self...')
+    rootlogger.warning('will re-exec self (delay %s)...', delay)
 
     newargs = list(originalargs)
     try:
