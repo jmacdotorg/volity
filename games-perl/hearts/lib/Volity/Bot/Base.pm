@@ -4,6 +4,7 @@ package Volity::Bot::Hearts::Base;
 # bots.  Hopefully it's general enough because it started life as the Ducker
 # bot.
 
+use Volity::Game::Hearts::VariantFactory;
 use warnings;
 use strict;
 
@@ -18,6 +19,8 @@ __PACKAGE__->description("A totally neutered bot");
 # master_hand is a hand to hold all cards in the game, because the ::Deck
 #       object doesn't have the API that I need
 # hand is the hand that the bot is holding
+# variant is the name of the variant that's being played
+# rules is the ...::Hearts::Variant object implementing various rules bits
 # led_suit is the suit that was led for this trick, or "" if the bot is
 #       leading
 # flailing is a state variable that determines whether we've played an
@@ -25,10 +28,10 @@ __PACKAGE__->description("A totally neutered bot");
 #       play every card until the ref lets us play one.  We're in a flailing
 #       state if the value is > 0.  If > 0, this is the next index in the hand
 #       to try when the rpc response to the played card comes back negative.
-use fields qw( game deck master_hand hand led_suit hearts_broken flailing );
+use fields qw( game deck master_hand hand variant rules led_suit hearts_broken flailing );
 use Games::Cards;
 
-our $VERSION = "1.0";
+our $VERSION = "1.1";
 
 ################
 # RPC Handlers
@@ -68,6 +71,17 @@ sub volity_rpc_start_game {
 
     # uh, do I need to explain this one? :)
     $self->hand(Games::Cards::Hand->new($game, 'hand'));
+
+    # configure our rules object, so we can find out how many points a card is
+    # worth, etc.
+    unless (grep($self->variant eq $_, @Volity::Game::Hearts::VariantFactory::supported_variants)) {
+        # XXX chat with players and tell them that the bot doesn't know how to
+        # play this variant, but will try
+        $self->logger->error("can't play variant " . $self->variant . 
+            ", setting to standard");
+        $self->variant("standard");
+    }
+    $self->rules(Volity::Game::Hearts::VariantFactory->instantiate($self->variant));
 
     $self->led_suit("");
     $self->hearts_broken(0);
@@ -140,6 +154,32 @@ sub volity_rpc_game_activity {
     return unless $self->am_seated;
 }
 
+sub game_rpc_supported_variants {
+    my $self = shift;
+    my ($variants) = @_;
+
+    $self->logger->info("supported variants: " .  join(", ", @$variants));
+}
+
+# configuration RPCs
+sub game_rpc_variant {
+    my $self = shift;
+    my ($variant) = @_;
+
+#    return unless $self->am_seated;
+
+    # record the variant that everyone wants to play
+    $self->logger->info("setting variant to $variant");
+    $self->variant($variant);
+}
+
+sub game_rpc_game_end_score {
+    my $self = shift;
+
+    return unless $self->am_seated;
+}
+
+# gameplay RPCs
 sub game_rpc_receive_hand {
     my $self = shift;
     my ($cards) = @_;
@@ -287,6 +327,7 @@ sub game_rpc_seat_played_card {
 # don't care who won, just reset the led_suit parameter
 sub game_rpc_seat_won_trick {
     my $self = shift;
+    my ($winner, $trick) = @_;
 
     return unless $self->am_seated;
 
@@ -308,6 +349,8 @@ sub game_rpc_winners {
     my $self = shift;
 
     return unless $self->am_seated;
+
+    return 1;
 }
 
 #################### callback responses ####################
@@ -318,7 +361,7 @@ sub rpc_response_volity_send_state {
 
     if ($response->{response}->[0] ne 'volity.ok') {
         $self->logger->error($self->log_prefix . " response to state send request: " . 
-                join(', ', @{$response->{response}}))
+                join(', ', @{$response->{response}}));
     }
 }
 
@@ -388,9 +431,7 @@ sub point_card {
     my $self = shift; # only a method so we can inherit it
     my $card = shift;
 
-    return 1 if $card->suit eq 'H';
-    return 1 if $card->name eq 'Q' and $card->suit eq 'S';
-    return 0;
+    return $self->rules->card_score($card) > 0;
 }
 
 sub log_prefix {

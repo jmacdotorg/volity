@@ -19,11 +19,12 @@ use base qw(Volity::Game);
 use fields qw( game_end_score deck cards_in_play led_suit hearts_broken trick_count
     round_count pass_info variant variant_rules );
 use Games::Cards;
+use Volity::Game::Hearts::VariantFactory;
 
-our $VERSION = "1.2";
+our $VERSION = "1.3";
 
 # package data
-my @supported_variants = qw(standard omnibus);
+my @supported_variants = @Volity::Game::Hearts::VariantFactory::supported_variants;
 
 ################
 # Configuration
@@ -48,7 +49,7 @@ sub initialize {
 	$self->register_config_variables(qw( game_end_score variant ));
 
 	# XXX debugging
-	# $self->referee->is_recorded(0);
+	#$self->referee->is_recorded(0);
 
     # initial configuration state for all games
     $self->game_end_score(100);
@@ -66,12 +67,15 @@ sub initialize {
 sub start {
   my $self = shift;
 
-  # figure out which variant we're playing from the configuration variables,
-  # and instantiate the proper object to play it
-  if ($self->variant eq 'standard') {
-	  $self->variant_rules(Volity::Game::Hearts::StandardVariant->new({game => $self}));
-  } elsif ($self->variant eq 'omnibus') {
-	  $self->variant_rules(Volity::Game::Hearts::OmnibusVariant->new({game => $self}));
+  # Instantiate the proper object to play the requested variant, error
+  # checking has already been done to see if the desired variant is supported,
+  # but we can check again anyway
+  $self->variant_rules(Volity::Game::Hearts::VariantFactory->instantiate($self->variant));
+  unless ($self->variant_rules) {
+	  $self->logger->error("Unsuppoted variant " . $self->variant . " requested, " .
+		  "playing standard variant instead");
+	  $self->variant("standard");
+	  $self->variant_rules(Volity::Game::Hearts::VariantFactory->instantiate($self->variant));
   }
 
   # configure the card suits & values.  The suit order listed below affects
@@ -239,7 +243,7 @@ sub rpc_pass_cards {
     }
     
     # providing the correct number of cards would be good
-    my ($direction, $count) = $self->variant_rules->pass_count();
+    my ($direction, $count) = $self->variant_rules->pass_count($self->round_count);
     if ($count != scalar @$card_names) {
         return ("game.wrong_pass_count", $count);
     }
@@ -414,7 +418,7 @@ sub deal_cards {
     }
 
 	# figure out the passing for the round, and record it
-	my ($pass_dir, $pass_count) = $self->variant_rules->pass_count();
+	my ($pass_dir, $pass_count) = $self->variant_rules->pass_count($self->round_count);
 	$self->pass_info([$pass_dir, $pass_count]);
 
     # Tell the players about their shiny new hands
@@ -531,7 +535,8 @@ sub process_end_of_round ($) {
     my $self = shift;
 
 	# calculate and give out the points
-	$self->variant_rules->assign_scores();
+	my @seats_in_play = $self->seats_in_play;
+	$self->variant_rules->assign_scores(\@seats_in_play);
 
     # Tell everyone the scores
     foreach my $seat ($self->seats_in_play) {
@@ -547,7 +552,7 @@ sub process_end_of_round ($) {
         }
     }
 
-    unless ($self->variant_rules->is_game_over()) {
+    unless ($self->variant_rules->is_game_over(\@seats_in_play, $self->game_end_score)) {
         # most of these variables were reset in process_trick_winner, but
         # doing it twice doesn't hurt (during testing anyway)
         $self->hearts_broken(0);
@@ -562,7 +567,7 @@ sub process_end_of_round ($) {
         # if there's to be no passing, kickstart the round by playing
         # the 2 of clubs automatically -- this is otherwise handled in
         # the passing logic
-        my ($pass_dir, $pass_count) = $self->variant_rules->pass_count();
+        my ($pass_dir, $pass_count) = $self->variant_rules->pass_count($self->round_count);
         $self->start_round() if $pass_count == 0;
     } else  {
         $self->process_winners();
@@ -647,141 +652,6 @@ sub add_points {
     my ($points) = @_;
     $points ||= 0;
     $self->{score} += $points;
-}
-
-####################
-# Variants classes
-####################
-
-# These classes allow the main class to switch up how it behaves in key parts
-# of the game-flow.  It allows the config variables (which are settable by the
-# players) to control things like what conditions make a moon-shoot, etc They
-# all need the game object to be passed to their constructors, like
-# 	....->new({game => $self})
-
-package Volity::Game::Hearts::StandardVariant;
-use base qw( Volity );
-use fields qw( game );
-
-use Scalar::Util qw(weaken);
-
-sub initialize {
-	my $self = shift;
-
-	$self->SUPER::initialize(@_);
-
-	# make sure the garbage collector can figure out this curcular dependancy
-	weaken($self->{game});
-
-	return 1;
-}
-
-# returns the number of cards that need to be passed.  Presently only
-# implements the standard rules: left, right, across, hold (3 cards)
-sub pass_count ($$) {
-    my $self = shift;
-	my ($round_count) = @_;
-
-    my @dirs = ('left', 'right', 'across', 'hold');
-    my $count = 0;
-    my $direction = $self->game->round_count % 4;
-    $count = 3 unless $direction > 2;
-
-    return ($dirs[$direction], $count);
-}
-
-# Calculate the nubmer of points a card attracts.  To implement a variant
-# which differs only in card scoring, override this function, change the
-# ruleset URI, and you're done
-sub card_score ($$) {
-	my $self = shift;
-	my ($card) = @_;
-
-	return 1 if $card->suit eq 'H';
-	return 13 if $card->truename eq 'QS';
-}
-
-# Check to see the moon has been shot.  
-# 	score is the score for the hand just ended
-#   seat is the seat object in case it's needed to check moon shooting
-# Similar comments about variants as above.
-sub check_moon_shoot ($$$) {
-	my $self = shift;
-	my ($score, $seat) = @_;
-
-	return 1 if $score == 26;
-	return 0;
-}
-
-# Calculate and give out the points to the seats.  Can be overridden for
-# variants where scoring is different.
-sub assign_scores ($) {
-	my $self = shift;
-
-    # figure the scores out
-    foreach my $seat ($self->game->seats_in_play) {
-        my $score = 0;
-        foreach my $card (@{$seat->cards_taken->cards}) {
-			$score += $self->card_score($card);
-        }
-
-        # Add 26 to everyone else's score if this player shot the moon.
-		# Reduce the score which will be added to the player's total by 26 --
-		# this lets us unconditionally add $score to their total below,
-		# allowing this scoring routine to function for variants where more or
-		# fewer point cards exist than just the hearts & queen of spades
-        if ($self->check_moon_shoot($score, $seat)) {
-			$score -= 26;
-            foreach my $victim ($self->game->seats_in_play) {
-                next if $victim == $seat;
-                $victim->add_points(26);
-            }
-        }
-
-		# the player's score will either
-		$seat->add_points($score);
-    }
-}
-
-# Figure out if it's game over.  This may need overriding too
-sub is_game_over ($) {
-	my $self = shift;
-
-    foreach my $seat ($self->game->seats_in_play) {
-        return 1 if $seat->score >= $self->game->game_end_score;
-	}
-	
-	return 0;
-}
-
-# implements a Jack of Diamonds (omnibus) hearts variant
-package Volity::Game::Hearts::OmnibusVariant;
-use base qw(Volity::Game::Hearts::StandardVariant);
-
-# Calculate the nubmer of points a card attracts.
-# This variant has a -10 point score for the Jack of Diamonds
-sub card_score ($$) {
-	my $self = shift;
-	my ($card) = @_;
-
-	return 1 if $card->suit eq 'H';
-	return 13 if $card->truename eq 'QS';
-	return -10 if $card->truename eq 'JD';
-}
-
-# Check to see the moon has been shot.  
-sub check_moon_shoot ($$$) {
-	my $self = shift;
-	my ($score, $seat) = @_;
-
-	my $jd = 0;
-	foreach my $card (@{$seat->cards_taken->cards}) {
-		$jd = 1 if $card->truename eq 'JD';
-	}
-
-	return 1 if $score == 26 and not $jd;
-	return 1 if $score == 16 and $jd;
-	return 0;
 }
 
 1;

@@ -10,7 +10,7 @@ use strict;
 
 use base qw(Volity::Bot::Hearts::Base);
 
-our $VERSION = "1.0";
+our $VERSION = "1.1";
 
 __PACKAGE__->name("Crafty");
 __PACKAGE__->algorithm("http://games.staticcling.org:8088/hearts/bot/crafty");
@@ -22,7 +22,9 @@ __PACKAGE__->description("A somewhat intelligent automated player");
 #   See the initialize_suit_indices function for a data definition.
 # trick_cards keeps track of what cards have been played in the current trick
 # unsafe_suits is a hash of suits that no one else is holding anymore
-use fields qw( suit_indices trick_cards unsafe_suits );
+# seats is a hash of hashes containing information about the seats, see the
+#   volity_rpc_start_game function for a data definition
+use fields qw( suit_indices trick_cards unsafe_suits seats );
 
 sub initialize {
     my $self = shift;
@@ -40,6 +42,27 @@ sub initialize {
 
 # In almost every case, we want to call SUPER::rpc_handler first off, then do
 # any extra stuff we need to do.
+
+sub volity_rpc_start_game {
+    my $self = shift;
+
+    return unless $self->am_seated;
+
+    # exhibit all of the regular behaviour
+    $self->SUPER::volity_rpc_start_game();
+
+    # build the seats data structure
+    my %seats;
+    my $occupied_seats = $self->occupied_seats;
+    foreach my $seat_id (keys %$occupied_seats) {
+        $seats{$seat_id} = {   
+            game_score => 0,
+            round_score => 0,
+            taken_points => 0,
+            card_on_table => undef };
+    }
+    $self->seats(\%seats);
+}
 
 sub game_rpc_receive_hand {
     my $self = shift;
@@ -59,6 +82,13 @@ sub game_rpc_receive_hand {
 
     # all suits are safe again
     $self->unsafe_suits({});
+
+    # reset scores for the round
+    my $seats = $self->seats;
+    foreach my $seat (keys %$seats) {
+        $seats->{$seat}{round_score} = 0;
+        $seats->{$seat}{taken_points} = 0;
+    }
 
     if ($self->logger->is_debug()) {
         # log the start and end cards of every suit
@@ -97,16 +127,18 @@ sub game_rpc_seat_played_card {
     # keep track of which cards have been played
     my $index = $self->master_hand->index($card);
     push(@{$self->{trick_cards}}, $self->master_hand->cards->[$index]);
+    $self->seats->{$seat_id}->{card_on_table} = $self->master_hand->cards->[$index];
 
     return;
 }
 
 sub game_rpc_seat_won_trick {
     my $self = shift;
+    my ($winner, $trick) = @_;
 
     # preserve this, it gets cleared in the next statment
     my $led_suit = $self->led_suit;
-    $self->SUPER::game_rpc_seat_won_trick(@_);
+    $self->SUPER::game_rpc_seat_won_trick($winner, $trick);
 
     return unless $self->am_seated;
 
@@ -121,7 +153,37 @@ sub game_rpc_seat_won_trick {
     # clear the current trick out
     splice(@{$self->{trick_cards}});
 
+    # reset the seats for the new trick
+    my $seats = $self->seats;
+    foreach my $seat (keys %$seats) {
+        $seats->{$seat}->{card_on_table} = undef;
+    }
+
+    # update the running score totals for the hand
+    my $trick_score = 0;
+    foreach my $card (values %$trick) {
+        my $index = $self->master_hand->index($card);
+        $card = $self->master_hand->cards->[$index];
+        $trick_score += $self->rules->card_score($card);
+    }
+    $seats->{$winner}{round_score} += $trick_score;
+    $seats->{$winner}{taken_points} = 1 if $trick_score;
+
     return;
+}
+
+# keep track of everyone's current score so we can target people with low
+# scores if we want to
+sub game_rpc_seat_score {
+    my $self = shift;
+    my ($seat_id, $score) = @_;
+
+    # first off, do all of the regular things that every bot has to do
+    $self->SUPER::game_rpc_seat_score($seat_id, $score);
+
+    return unless $self->am_seated;
+
+    $self->seats->{$seat_id}->{game_score} = $score;
 }
 
 sub game_rpc_pass_accepted {
@@ -360,21 +422,72 @@ sub take_turn {
                 $self->suit_indices->{"H"}->{"end"}]; # all of our hearts
             my @highhearts = grep($_->value >= 10, @hearts);
 
+            # if hearts haven't been broken yet, don't play the highest heart
+            pop(@highhearts) if not $self->hearts_broken;
+
+            # Check to see if the hand is "safe" from a moon-shoot attempt --
+            # or at least one to be worried about (after a few cards have been
+            # played)
+            my @seats_with_points = 
+                grep($self->seats->{$_}->{taken_points}, keys %{$self->seats});
+            my $safe_hand = 1;
+            $safe_hand = 0 if scalar(@seats_with_points) == 1 and 
+                $self->hand->size <= 10;
+
+            # if there's a moon-shoot possible, figure out if we can
+            # safely(ish) play hearts to make the hand safe
+            my $no_hearts = 0;
+            if (not $safe_hand) {
+                $no_hearts = 1;
+
+                my $bad_seat = $seats_with_points[0];
+                # if the bad seat has already played, and isn't going to take
+                # the trick, it's safe to play hearts
+                my $bad_guy_card = $self->seats->{$bad_seat}->{card_on_table};
+                $no_hearts = 0 if defined $bad_guy_card and 
+                    ($bad_guy_card->suit ne $self->led_suit or
+                        $bad_guy_card->value < $trick[-1]->value);
+
+            }
+
+            $self->logger->debug("Safe: $safe_hand, no_hearts: $no_hearts");
+
+            # now that the prelims are over, actually get down to picking a
+            # card....
             if (not $first_trick and defined $queen_index) {
-                # toss the queen
+                # rule #1: toss the queen
                 $chosen_card = $self->hand->cards->[$queen_index];
             } elsif (not $first_trick and scalar @highhearts >= 1 
-                and rand() < 0.90)
+                and not $no_hearts and rand() < 0.90)
             {
                 # randomly toss one of our highest hearts
                 $chosen_card = $highhearts[int(rand(scalar @highhearts))];
+            } elsif (not $safe_hand and not $no_hearts and 
+                scalar(@hearts) >= 1)
+            {
+                # definitely play hearts in this case, 'cause it'll make the
+                # hand safe.  Play our highest, to get rid of it in this
+                # worthy cause
+                $chosen_card = $hearts[-1];
+            } elsif ($no_hearts and scalar(@hearts) == $self->hand->size) {
+                # in the not-horribly-rare case where we've been holding
+                # hearts because of a moon-run, and so have nothing left
+                # except hearts, play them from the bottom up
+                $chosen_card = $self->hand->cards->[0];
             } else {
                 # toss our highest card
                 $self->hand->sort_by_value();
-                if (rand() < 0.90 or scalar(@hand) < 2) {
-                    $chosen_card = $self->hand->cards->[-1];
+
+                my $pickable_cards = $self->hand->cards;
+                if ($no_hearts) { 
+                    my @trimmed = grep($_->suit ne 'H', @$pickable_cards);
+                    $pickable_cards = \@trimmed;
+                }
+
+                if (rand() < 0.90 or scalar(@$pickable_cards) < 2) {
+                    $chosen_card = $$pickable_cards[-1];
                 } else {
-                    $chosen_card = $self->hand->cards->[-2];
+                    $chosen_card = $$pickable_cards[-2];
                 }
 
                 # if this is the first trick of a round, don't play points if it's
