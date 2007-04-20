@@ -300,6 +300,46 @@ sub take_turn {
 
     my $cards_played_count = scalar @{$self->{trick_cards}};
     my $queen_index = $self->hand->index("QS");
+    my $points_in_trick = $self->points_in_trick();
+
+    # arrange the in-suit cards that have been played in ascending order
+    my @trick = sort cmp_card_value grep($_->suit eq $self->led_suit, @{$self->{trick_cards}});
+
+    # Check to see if the hand is "safe" from a moon-shoot attempt --
+    # or at least one to be worried about (after a few cards have been
+    # played)
+    my @seats_with_points = 
+        grep($self->seats->{$_}->{taken_points}, keys %{$self->seats});
+    my $safe_hand = 1;
+    $safe_hand = 0 if scalar(@seats_with_points) == 1 and 
+        $self->hand->size <= 10;
+
+    # if there's a moon-shoot possible, figure out if we can
+    # safely(ish) play hearts to make the hand safe
+    my $no_hearts = 0;
+    my $bleeding_hearts = 0;
+    my $bad_seat = undef;
+    if (not $safe_hand) {
+        $no_hearts = 1;
+
+        $bad_seat = $seats_with_points[0];
+        # if the bad seat has already played, and isn't going to take
+        # the trick, it's safe to play hearts
+        my $bad_guy_card = $self->seats->{$bad_seat}->{card_on_table};
+        $no_hearts = 0 if defined $bad_guy_card and 
+            ($bad_guy_card->suit ne $self->led_suit or
+                $bad_guy_card->value < $trick[-1]->value);
+
+        # if he's trying to bleed hearts, take note of this (through this VERY
+        # crude heuristic) so that we can attempt to take a hearts trick if
+        # possible
+        $bleeding_hearts = 1 if $self->led_suit eq 'H' and
+            defined $bad_guy_card and
+            $bad_guy_card->suit eq 'H' and
+            $bad_guy_card->value == $trick[-1]->value;
+    }
+
+    $self->logger->debug("Safe: $safe_hand, no_hearts: $no_hearts, bleeding: $bleeding_hearts");
 
     # if we're leading, just pick the lowest card we have, unless it's a
     # heart and they haven't been broken.
@@ -349,10 +389,8 @@ sub take_turn {
     } else {
         $action = "Playing ";
 
-        # determine whether we can follow suit, arrange the in-suit cards
-        # that have been played in ascending order
+        # determine whether we can follow suit
         my $can_follow_suit = $self->count_cards_in_suit($self->led_suit);
-        my @trick = sort cmp_card_value grep($_->suit eq $self->led_suit, @{$self->{trick_cards}});
         my @hand = @{$self->hand->cards};
 
         if ($can_follow_suit) {
@@ -369,9 +407,30 @@ sub take_turn {
                 # if the suit is spades, we have the queen, and someone's 
                 #  played a higher card, get rid of the queen
                 $chosen_card = $hand[$queen_index];
+            } elsif (not $safe_hand and $bleeding_hearts) {
+                # slightly obscure case: if the hand isn't safe, and hearts
+                # are being bled, try to take the trick if the "bad guy" has
+                # too many points (unless the queen's on the table, of course), 
+                # otherwise play a low heart
+                if ($valid_cards[-1]->value > $trick[-1]->value and
+                    $self->seats->{$bad_seat}->{round_score} >= 5 and
+                    not grep($_->truename eq 'QS', @{$self->{trick_cards}})) 
+                {
+                    $chosen_card = $valid_cards[-1];
+                } else {
+                    # if we've got a bunch, don't pick the lowest, keep it for
+                    # a ducking card later
+                    if (scalar @valid_cards > 2) {
+                        $chosen_card = $valid_cards[1];
+                    } else {
+                        $chosen_card = $valid_cards[0];
+                    }
+                }
             } elsif ($cards_played_count == 3) {
                 # special behaviour for the last card of the trick
-                if ($self->points_in_trick()) {
+                if (($safe_hand and $points_in_trick) or 
+                    (not $safe_hand and $points_in_trick > 2))
+                {
                     # if there are points in the trick, play the highest card
                     # that doesn't take the trick
                     $chosen_card = find_card_below($trick[-1], @valid_cards);
@@ -380,9 +439,7 @@ sub take_turn {
                     # that's the Queen of Spades, and we have anything else
                     unless (defined $chosen_card) {
                         $chosen_card = $valid_cards[-1];
-                        if ($chosen_card->truename eq "QS" and
-                            $can_follow_suit > 1) 
-                        {
+                        if ($chosen_card->truename eq "QS" and $can_follow_suit > 1) {
                                 $chosen_card = $valid_cards[-2];
                         }
                     }
@@ -425,33 +482,6 @@ sub take_turn {
             # if hearts haven't been broken yet, don't play the highest heart
             pop(@highhearts) if not $self->hearts_broken;
 
-            # Check to see if the hand is "safe" from a moon-shoot attempt --
-            # or at least one to be worried about (after a few cards have been
-            # played)
-            my @seats_with_points = 
-                grep($self->seats->{$_}->{taken_points}, keys %{$self->seats});
-            my $safe_hand = 1;
-            $safe_hand = 0 if scalar(@seats_with_points) == 1 and 
-                $self->hand->size <= 10;
-
-            # if there's a moon-shoot possible, figure out if we can
-            # safely(ish) play hearts to make the hand safe
-            my $no_hearts = 0;
-            if (not $safe_hand) {
-                $no_hearts = 1;
-
-                my $bad_seat = $seats_with_points[0];
-                # if the bad seat has already played, and isn't going to take
-                # the trick, it's safe to play hearts
-                my $bad_guy_card = $self->seats->{$bad_seat}->{card_on_table};
-                $no_hearts = 0 if defined $bad_guy_card and 
-                    ($bad_guy_card->suit ne $self->led_suit or
-                        $bad_guy_card->value < $trick[-1]->value);
-
-            }
-
-            $self->logger->debug("Safe: $safe_hand, no_hearts: $no_hearts");
-
             # now that the prelims are over, actually get down to picking a
             # card....
             if (not $first_trick and defined $queen_index) {
@@ -481,6 +511,16 @@ sub take_turn {
                 my $pickable_cards = $self->hand->cards;
                 if ($no_hearts) { 
                     my @trimmed = grep($_->suit ne 'H', @$pickable_cards);
+                    $pickable_cards = \@trimmed;
+                }
+
+                # don't break hearts with our highest
+                if (not $self->hearts_broken and 
+                    $$pickable_cards[-1]->suit eq 'H' and
+                    $$pickable_cards[-1]->value >= 10)
+                {
+                    my @trimmed = @$pickable_cards;
+                    pop(@trimmed);
                     $pickable_cards = \@trimmed;
                 }
 
@@ -535,7 +575,11 @@ sub take_turn {
 sub points_in_trick {
     my $self = shift;
 
-    my $count = grep {$self->point_card($_)} @{$self->{trick_cards}};
+    my $count = 0;
+    foreach my $card (@{$self->{trick_cards}}) {
+        $count += $self->rules->card_score($card);
+    }
+
     return $count;
 }
 
