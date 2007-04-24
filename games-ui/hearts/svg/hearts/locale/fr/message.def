@@ -1,0 +1,16 @@
+<!ENTITY rules "Règles">
+<!ENTITY rules_link "http://fr.wikipedia.org/wiki/Dame_de_Pique">
+<!ENTITY rules_desc "Lien vers Wikipedia">
+<!ENTITY alice "Alice">
+<!ENTITY bob   "Bob">
+<!ENTITY carol "Carol">
+<!ENTITY dave  "Dave">
+
+<!ENTITY lasttrick "Dernier tour">
+<!ENTITY score "Score">
+<!ENTITY letsplay "Possibilité de jouer du cœur">
+<!ENTITY game_config "Configuration du jeu">
+<!ENTITY game_variant "Variantes du jeu">
+<!ENTITY end_score "Score final">
+<!ENTITY standard "classique">
+<!ENTITY omnibus "omnibus">

@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<volitytokens>
+	<token>
+		<key>standard-variant-description</key>
+		<value>C'est une variante classique de la Dame de Pique. Les === cœurs valent 1 point, la Dame de Pique vaut 13 points. === Le premier cœur ne peut être joué qu'en l'absence d'un === autre choix. La Dame de Pique n'est pas un === cœur. Aucun point ne peut être posé au premier tour. === Le Grand Chelem nécessite de prendre toutes les cartes === de valeur, et augmente systématiquement les scores de === vos adversaires de 26 points.</value>
+	</token>
+	<token>
+		<key>omnibus-variant-description</key>
+		<value>Cette variante utilise les mêmes règles que la variante === classique, si ce n'est le Valet de Carreau valant === -10 points. Le Valet n'est pas nécessaire pour le === Grand Chelem.</value>
+	</token>
+    <token>
+        <key>unknown-variant</key>
+        <value>Nous ne connaissons pas cette variante, peut-être la === version du client n'est pas à jour ?</value>
+    </token>
+	<token>
+		<key>pass_cards</key>
+		<value>Choisir 3 cartes à donner</value>
+	</token>
+	<token>
+		<key>cards_passed</key>
+		<value>Les cartes reçues</value>
+	</token>
+	<token>
+		<key>pass</key>
+		<value>donner</value>
+	</token>
+	<token>
+		<key>ok</key>
+		<value>OK</value>
+	</token>
+	<token>
+		<key>left</key>
+		<value>à gauche</value>
+	</token>
+	<token>
+		<key>right</key>
+		<value>à droite</value>
+	</token>
+	<token>
+		<key>across</key>
+		<value>en face</value>
+	</token>
+</volitytokens>

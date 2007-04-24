@@ -1,4 +1,6 @@
 <!ENTITY rules "Rules">
+<!ENTITY rules_link "http://en.wikipedia.org/wiki/Hearts">
+<!ENTITY rules_desc "Link to Wikipedia">
 <!ENTITY alice "Alice">
 <!ENTITY bob   "Bob">
 <!ENTITY carol "Carol">

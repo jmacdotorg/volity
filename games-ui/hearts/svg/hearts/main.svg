@@ -2,7 +2,7 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" [
     <!ENTITY % deckdef SYSTEM "volresp://resource/deck/pokerdeck.svg?http://volity.org/resources/carddeck/poker.html#deck">
     %deckdef;
-    <!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en#lang">
+    <!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en,fr#lang">
     %localedef; %lang;
 ]>
 
@@ -33,6 +33,7 @@ order -->
         <dc:modified>2006-09-09</dc:modified>
         <dc:title>Hearts UI</dc:title>
         <dc:language>en</dc:language>
+        <dc:language>fr</dc:language>
 
         <!-- Licensed under the Creative Commons Attribution license. -->
         <rdf:RDF xmlns="http://web.resource.org/cc/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -150,14 +151,14 @@ order -->
     <!-- Permanent graphics...  -->
     <rect id="tablecloth" x="0" y="0" style="fill: gray;" height="100" width="100"/>
     <!-- presently, just link to the rules -->
-    <a xlink:href="http://en.wikipedia.org/wiki/Hearts_%28game%29">
+    <a xlink:href="&rules_link;">
         <g id="rules_button" transform="translate(92 2)">
             <rect id="rulesbutton" height="3" width="6.5" rx="0.5" ry="0.5"
                 stroke="black" stroke-width="0.2" fill="bisque" fill-opacity="0.5"
                 onmousedown="change_opacity(evt, 0.3, false)"
                 onmouseup="change_opacity(evt, 0.5, false)"
                 class="button_always">
-                <desc>Link to Wikipedia (english)</desc>
+                <desc>&rules_desc;</desc>
             </rect>
             <text x="3.25" y="2.3" style="font-size: 2">&rules;</text>
         </g>

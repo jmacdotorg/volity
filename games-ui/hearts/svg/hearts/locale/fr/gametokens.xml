@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<volitytokens>
+	<token>
+		<key>invalid_configuration</key>
+		<value>Cette option de configuration était invalide.</value>
+	</token>
+	<token>
+		<key>not_passing</key>
+		<value>Les cartes n'ont pas encore été échangées.</value>
+	</token>
+	<token>
+		<key>wrong_pass_count</key>
+		<value>Veuillez donner \1 cartes</value>
+	</token>
+	<token>
+		<key>unowned_card</key>
+		<value>Vous ne pouvez jouer cette carte, car vous ne l'avez pas en main.</value>
+	</token>
+	<token>
+		<key>no_play_during_passing</key>
+		<value>Les cartes ne sont pas jouées durant les échanges.</value>
+	</token>
+	<token>
+		<key>follow_suit</key>
+		<value>Veuillez fournir en \1.</value>
+	</token>
+	<token>
+		<key>no_points_first_trick</key>
+		<value>Vous ne pouvez jouer une carte de valeur au premier tour.</value>
+	</token>
+	<token>
+		<key>no_lead_hearts</key>
+		<value>Le premier cœur n'est posé qu'en l'absence d'autres choix.</value>
+	</token>
+
+	<token>
+		<key>C</key>
+		<value>Trèfle</value>
+	</token>
+	<token>
+		<key>D</key>
+		<value>Carreau</value>
+	</token>
+	<token>
+		<key>H</key>
+		<value>Cœur</value>
+	</token>
+	<token>
+		<key>S</key>
+		<value>Pique</value>
+	</token>
+</volitytokens>
