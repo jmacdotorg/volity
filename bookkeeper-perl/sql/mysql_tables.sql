@@ -39,6 +39,7 @@ CREATE TABLE `game` (
   `server_id` int(11) default NULL,
   `signature` text,
   `ruleset_id` int(11) NOT NULL default '0',
+  `finished` tinyint(4) default '0',
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 

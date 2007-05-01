@@ -645,7 +645,7 @@ sub store_record_in_db {
   if (defined($game_record->id)) {
       $game = Volity::Info::Game->retrieve($self->id);
   } else {
-      # XXX NO UNDEFS ALLOWED IN TIMES. So, yeah, fix this.
+
       ($game) = Volity::Info::Game->search_unfinished_with_referee_jid($referee_jid);
       unless ($game) {
 	  $self->logger->warn("Creating a NEW game record for a game that was just finished by the referee with JID $referee_jid. This is naughty; there should have already existed a record for this game.");
@@ -656,7 +656,16 @@ sub store_record_in_db {
 	      referee_jid => $referee_jid
 	      });
       }
+
+      if (defined ($game_record->finished)) {
+	  $game->finished($game_record->finished);
+      }
+      else {
+	  $game->finished(1);
+      }
+
       $game->end_time($game_record->end_time || undef);
+
       $game->update;
 
       # XXX Is the game record's ID ever used, after we set it here?
@@ -1404,6 +1413,7 @@ sub _rpc_prepare_game {
 		ruleset_id  => $parlor->ruleset_id->id,
 		server_id   => $info_hash->{parlor_db_object},
 		start_time  => $start_time,
+		finished    => 0,
 	    });
 	}
 
