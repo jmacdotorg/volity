@@ -1,3 +1,8 @@
+Present
+
+	- Fixed a bug where games closed due to abandonment would
+          result in game records with no seat information at all.
+
 0.7.1
 
         - volityd no longer requires that you provide a Volity::Game
