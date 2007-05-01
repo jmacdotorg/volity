@@ -1237,35 +1237,29 @@ sub end_game {
 					parlor=>$self->basic_jid,
 				      });
   $record->game_uri($self->game_class->uri);
-#  $record->end_time(scalar(localtime));
+
   my $time_formatter = DateTime::Format::W3CDTF->new;
   $record->end_time($time_formatter->format_datetime(DateTime->now));
 
   my %recorded_seats = ();
+  for my $seat ($self->game->seats) {
+      $recorded_seats{$seat->id} = [$seat->registered_player_jids];
+  }
   
   my @slots = $self->game->winners->slots;
   if (@slots and defined($slots[0])) {
       my @winners_list;
       for my $slot (@slots) {
-	  # I don't know now why $slot is sometimes undef. Will investigate later.
-	  # --jmac 08/2006
+	  # I don't know now why $slot is sometimes undef.
 	  next unless $slot;
 	  my @seats = @$slot;
-	  for my $seat (@seats) {
-	      $recorded_seats{$seat->id} = [$seat->registered_player_jids];
-	  }
 	  push (@winners_list, [map($_->id, @seats)]);
       }
       $record->winners(\@winners_list);
   }
+  
 
   $record->seats(\%recorded_seats);
-
-
-  # Give it the ol' John Hancock, if possible.
-  if (defined($Volity::GameRecord::gpg_bin) and defined($Volity::GameRecord::gpg_secretkey) and defined($Volity::GameRecord::gpg_passphrase)) {
-      $record->sign;
-  }
 
   # Mark whether or not the game actually finished.
   $record->finished($self->game->is_finished);
