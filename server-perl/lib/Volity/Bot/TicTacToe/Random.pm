@@ -7,10 +7,12 @@ use warnings;
 use strict;
 
 use base qw(Volity::Bot);
-use fields qw( squares );
 
 Volity::Bot::TicTacToe::Random->name("Tacky");
 Volity::Bot::TicTacToe::Random->algorithm("http://volity.org/games/tictactoe/bot/random");
+
+# Global of the squares and the marks that fill them.
+my %squares;
 
 ################
 # RPC Handlers
@@ -62,15 +64,14 @@ sub game_rpc_must_mark {
 sub mark_square {
     my $self = shift;
     my ($position, $mark) = @_;
-    $self->squares->[$position] = $mark;
+    $squares{$position} = $mark;
 }
 
 # reset_board: Initialize our hash of squares to all blank.
 sub reset_board {
     my $self = shift;
-    $self->squares([]);
     foreach (0..8) {
-	$self->squares->[$_] = '';
+	$squares{$_} = '';
     }
 }
 
@@ -79,7 +80,7 @@ sub reset_board {
 sub mark_at_positon {
     my $self = shift;
     my ($position) = @_;
-    return $self->squares->[$position];
+    return $squares{$position};
 }
 
 # take_turn: Take a turn, and send out an RPC.
@@ -87,7 +88,7 @@ sub mark_at_positon {
 # ( I note that one could try making a smarter bot by replacing this method. )
 sub take_turn {
     my $self = shift;
-    my @empty_squares = grep({ $_ eq ''} @{$self->squares});
+    my @empty_squares = grep($squares{$_} eq '', keys(%squares));
     my $index = int(rand(@empty_squares));
     my $chosen_square = $empty_squares[$index];
     $self->send_game_rpc_to_referee("mark", $chosen_square);
