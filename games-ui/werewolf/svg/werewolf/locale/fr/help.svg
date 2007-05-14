@@ -1,0 +1,369 @@
+<?xml version="1.0"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+	"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" >
+
+<script type="text/ecmascript">
+<![CDATA[
+
+
+// ]]>
+</script>
+
+
+<defs>
+
+<style type="text/css">
+<![CDATA[
+text {
+	pointer-events: none;
+	text-anchor: start;
+}
+
+.ConfigText {
+	font-size: 0.2;
+}
+
+.ConfigTextBig {
+	font-size: 0.35;
+}
+
+.ConfigTextGoal {
+	font-size: 0.2;
+	font-style: oblique;
+}
+
+.HelpBody {
+	font-size: 2;
+}
+
+]]>
+</style>
+
+<g id="simple_config_villager">
+<text y="0.25" class="ConfigText">
+Les villageois vivent dans la crainte des loups-garous, mais
+</text>
+<text y="0.50" class="ConfigText">
+les villageois sont nombreux et les loups-garous quelques-uns.
+</text>
+<text y="0.75" class="ConfigText">
+Chaque jour, les villageois se réunissent pour décider lequel
+</text>
+<text y="1.00" class="ConfigText">
+d'entre eux est peut-être un monstre. Mourir est ce que chacun
+</text>
+<text y="1.33" class="ConfigText">
+craint le plus.
+</text>
+<text y="1.66" class="ConfigTextGoal">
+Les villageois gagnent s'ils tuent tous les loups-garous.
+</text>
+</g>
+
+<g id="simple_config_werewolf">
+<text y="0.25" class="ConfigText">
+Les loups-garous semblent innocents le jour, mais ils
+</text>
+<text y="0.50" class="ConfigText">
+chassent les villageois la nuit. Chaque nuit, ils conviennent
+</text>
+<text y="0.75" class="ConfigText">
+d'une victime et la mettent en lambeaux. Le corps sera retrouvé
+</text>
+<text y="1.0" class="ConfigText">
+par les villageois survivants à l'aube.
+</text>
+<text y="1.33" class="ConfigTextGoal">
+Si la moitié au moins de la population sont des loups-garous,
+</text>
+<text y="1.66" class="ConfigTextGoal">
+ils gagnent.
+</text>
+</g>
+
+<g id="simple_config_seer">
+<text y="0.25" class="ConfigText">
+Un voyant a des pouvoirs de vision. Chaque nuit, le voyant
+</text>
+<text y="0.50" class="ConfigText">
+peut choisir de rêver de quelqu'un. À l'aube, le voyant saura
+</text>
+<text y="0.75" class="ConfigText">
+si cette personne est un loup-garou. Mais il est dangereux pour
+</text>
+<text y="1.00" class="ConfigText">
+le voyant de dévoiler son talent : les monstres savent qu'il
+</text>
+<text y="1.33" class="ConfigText">
+est une menace.
+</text>
+<text y="1.66" class="ConfigTextGoal">
+Le voyant gagne si les villageois gagnent.
+</text>
+</g>
+
+
+<g id="advanced_config_villager">
+<text y="0.4" class="ConfigTextBig">
+Pendant la journée, les villageois votent
+</text>
+<text y="0.85" class="ConfigTextBig">
+pour celui à lyncher. La nuit, ils dorment.
+</text>
+</g>
+
+<g id="advanced_config_werewolf">
+<text y="0.4" class="ConfigTextBig">
+La nuit, les loups-garous conviennent
+</text>
+<text y="0.85" class="ConfigTextBig">
+en secret d'une victime à tuer.
+</text>
+</g>
+
+<g id="advanced_config_seer">
+<text y="0.4" class="ConfigTextBig">
+La nuit, un voyant choisit en secret
+</text>
+<text y="0.85" class="ConfigTextBig">
+quelqu'un. Un rêve lui révélera si
+</text>
+<text y="1.30" class="ConfigTextBig">
+cette personne est un loup-garou.
+</text>
+</g>
+
+<g id="advanced_config_fool">
+<text y="0.4" class="ConfigTextBig">
+Un idiot croit être voyant, mais
+</text>
+<text y="0.85" class="ConfigTextBig">
+ses rêves sont confus et
+</text>
+<text y="1.30" class="ConfigTextBig">
+inexacts.
+</text>
+</g>
+
+<g id="advanced_config_warlock">
+<text y="0.4" class="ConfigTextBig">
+Une sorcière rêve comme un voyant,
+</text>
+<text y="0.85" class="ConfigTextBig">
+mais une sorcière aident les loups-garous.
+</text>
+<text y="1.30" class="ConfigTextBig">
+Elle veut qu'ils gagnent.
+</text>
+</g>
+
+<g id="advanced_config_granger">
+<text y="0.4" class="ConfigTextBig">
+Les francs-jardiniers se reconnaissent
+</text>
+<text y="0.85" class="ConfigTextBig">
+entre eux, ainsi ils se savent ne pas
+</text>
+<text y="1.30" class="ConfigTextBig">
+être loups-garous.
+</text>
+</g>
+
+<g id="advanced_config_wolfsbane">
+<text y="0.4" class="ConfigTextBig">
+Un tue-loup répugne les loups-garous :
+</text>
+<text y="0.85" class="ConfigTextBig">
+les loups ne peuvent le tuer la nuit.
+</text>
+<text y="1.30" class="ConfigTextBig">
+Mais il peut être lynché.
+</text>
+</g>
+
+<g id="advanced_config_herbalist">
+<text y="0.4" class="ConfigTextBig">
+Au soir, une herboriste choisit
+</text>
+<text y="0.85" class="ConfigTextBig">
+quelqu'un. Cette personne ne peut être
+</text>
+<text y="1.30" class="ConfigTextBig">
+tuée par des loups cette nuit-là.
+</text>
+</g>
+
+<g id="advanced_config_priest">
+<text y="0.4" class="ConfigTextBig">
+La nuit, une prêtresse offre l'asile à
+</text>
+<text y="0.85" class="ConfigTextBig">
+quelqu'un. Cette personne ne peut
+</text>
+<text y="1.30" class="ConfigTextBig">
+être lynchée le jour suivant.
+</text>
+</g>
+
+<g id="advanced_config_slayer">
+<text y="0.4" class="ConfigTextBig">
+La nuit, les tueuses conviennent en secret
+</text>
+<text y="0.85" class="ConfigTextBig">
+d'une victime à transperser d'un pieu. Elles
+</text>
+<text y="1.30" class="ConfigTextBig">
+veulent que les villageois gagnent.
+</text>
+</g>
+
+<g id="help_villager">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux villageois : Essayez de démasquer les loups-garous ! Faites attention à qui
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+accuse qui. Si quelqu'un accuse une personne qui se trouve être vraiment un
+</text>
+<text x="2.5" y="8" class="HelpBody">
+loup-garou, l'accusateur peut être un voyant. Souvenez-vous que les loups-garous peuvent
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+essayer de jeter la suspicion sur vous !
+</text>
+</g>
+
+<g id="help_werewolf">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux loups-garous : Ne laissez personne savoir que vous êtes loup-garou ! Jetez
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+la suspicion sur les autres. Si quelqu'un est sûr que vous êtes loup-garou, il est
+</text>
+<text x="2.5" y="8" class="HelpBody">
+peut-être voyant : tuez-le le plus vite possible.
+</text>
+</g>
+
+<g id="help_seer">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux voyants : Vos rêves vous donne un avantage. Essayez de faire lyncher les
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+loups-garous avérés et d'empêcher les villageois avérés d'être accusés. Mais ne soyez
+</text>
+<text x="2.5" y="8" class="HelpBody">
+pas trop expensif : si les loups-garous comprennent que vous êtes un voyant, ils vous
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+tueront.
+</text>
+</g>
+
+<g id="help_fool">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux idiots : S'il y a un idiot dans le village, et que vous pensez être voyant,
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+alors vous êtes peut-être un idiot. Les rêves des idiots sont souvent erronés. Si vous
+</text>
+<text x="2.5" y="8" class="HelpBody">
+faites deux rêves différents au sujet d'une même personne sur deux nuits,
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+indiscutablement vous êtes un idiot.
+</text>
+</g>
+
+<g id="help_warlock">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux sorcières : Vous gagnez (avec les loups-garous) s'il y a autant de
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+loups-garous que d'autres villageois (sans vous compter). Vous ne savez pas au départ
+</text>
+<text x="2.5" y="8" class="HelpBody">
+qui sont les loups-garous. Utilisez vos rêves pour vous renseigner, et ensuite
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+travaillez à faire lyncher les villageois innocents.
+</text>
+</g>
+
+<g id="help_granger">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux francs-jardiniers : Les francs-jardiniers forment une société secrète.
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+Vous connaissez vos semblables, et il est certain que ce ne sont pas des loups-garous.
+</text>
+<text x="2.5" y="8" class="HelpBody">
+Protégez vos semblables contre les lynchages. Mais si vous collaborez trop étroitement,
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+les autres villageois pourraient croire que vous êtes loups-garous !
+</text>
+</g>
+
+<g id="help_wolfsbane">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux tue-loup : si les loups-garous vous choisissent comme leur victime, ils ne
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+réussieront pas à vous tuer : ils ne peuvent vous approcher la nuit. Dès qu'ils l'auront
+</text>
+<text x="2.5" y="8" class="HelpBody">
+compris, ils chercheront probablement à vous faire lyncher.
+</text>
+</g>
+
+<g id="help_herbalist">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux herboristes : Chaque nuit vous pouvez entourer la maison d'un joueur avec
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+du tue-loup. Si les loups-garous choisissent cette personne comme leur victime, ils ne
+</text>
+<text x="2.5" y="8" class="HelpBody">
+réussieront pas à la tuer. (Si vous choisissez la maison d'un loup-garou, vos efforts sont
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+inutiles !) La protection ne dure qu'une nuit.
+</text>
+</g>
+
+<g id="help_priest">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux prêtresses : Vous pouvez secrètement choisir un joueur, et lui donner
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+l'asile. Le jour suivant, cette personne ne peut être lynchée. Essayez de protéger des
+</text>
+<text x="2.5" y="8" class="HelpBody">
+villageois, ou vous-même, ou une voyante (si vous en avez trouvé une). Ne laissez pas
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+les loups-garous deviner qui vous êtes !
+</text>
+</g>
+
+<g id="help_slayer">
+<text x="2.5" y="3" class="HelpBody">
+Conseils aux tueuses : Juste avant l'aube, vous pouvez vous faufiler et transpercer le
+</text>
+<text x="2.5" y="5.5" class="HelpBody">
+cœur d'un joueur (à moins que les loups-garous ne vous aient tué avant !). Essayez
+</text>
+<text x="2.5" y="8" class="HelpBody">
+d'éliminer les loups-garous. Ne laissez pas les loups-garous vous pousser à tuer vos
+</text>
+<text x="2.5" y="10.5" class="HelpBody">
+concitoyens villageois !
+</text>
+</g>
+
+</defs>
+
+</svg>

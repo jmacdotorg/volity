@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>villager</key>
+  <value>Villageois</value>
+</token>
+<token>
+  <key>villager_pl</key>
+  <value>Villageois</value>
+</token>
+<token>
+  <key>werewolf</key>
+  <value>Loup-garou</value>
+</token>
+<token>
+  <key>werewolf_pl</key>
+  <value>Loups-garous</value>
+</token>
+<token>
+  <key>seer</key>
+  <value>Voyant</value>
+</token>
+<token>
+  <key>seer_pl</key>
+  <value>Voyants</value>
+</token>
+<token>
+  <key>warlock</key>
+  <value>Sorcière</value>
+</token>
+<token>
+  <key>warlock_pl</key>
+  <value>Sorcières</value>
+</token>
+<token>
+  <key>fool</key>
+  <value>Idiot</value>
+</token>
+<token>
+  <key>fool_pl</key>
+  <value>Idiots</value>
+</token>
+<token>
+  <key>wolfsbane</key>
+  <value>Tue-loup</value>
+</token>
+<token>
+  <key>wolfsbane_pl</key>
+  <value>Tue-loup</value>
+</token>
+<token>
+  <key>herbalist</key>
+  <value>Herboriste</value>
+</token>
+<token>
+  <key>herbalist_pl</key>
+  <value>Herboristes</value>
+</token>
+<token>
+  <key>slayer</key>
+  <value>Tueuse</value>
+</token>
+<token>
+  <key>slayer_pl</key>
+  <value>Tueuses</value>
+</token>
+<token>
+  <key>priest</key>
+  <value>Prêtresse</value>
+</token>
+<token>
+  <key>priest_pl</key>
+  <value>Prêtresses</value>
+</token>
+<token>
+  <key>granger</key>
+  <value>Franc-jardinier</value>
+</token>
+<token>
+  <key>granger_pl</key>
+  <value>Francs-jardiniers</value>
+</token>
+<token>
+  <key>invalid_role</key>
+  <value>Ce rôle n'est pas identifié.</value>
+</token>
+<token>
+  <key>invalid_seat</key>
+  <value>Cette place n'est pas identifiée.</value>
+</token>
+<token>
+  <key>invalid_role_count</key>
+  <value>Il ne peut y avoir autant de joueurs dans un rôle.</value>
+</token>
+<token>
+  <key>cannot_set_villager_count</key>
+  <value>Vous ne pouvez pas décider directement du nombre de villageois.</value>
+</token>
+<token>
+  <key>need_min_players</key>
+  <value>Le jeu nécessite au minimum cinq places occupées.</value>
+</token>
+<token>
+  <key>not_enough_players</key>
+  <value>Trop peu de joueurs ont pris place pour pourvoir tous les rôles sélectionnés.</value>
+</token>
+<token>
+  <key>not_enough_wolves</key>
+  <value>Il faut au moins un loup-garou dans le village.</value>
+</token>
+<token>
+  <key>too_many_wolves</key>
+  <value>Il y a trop de loups-garous pour un village de cette taille.</value>
+</token>
+<token>
+  <key>not_enough_innocents</key>
+  <value>Il faut au moins un innocent dans le village.</value>
+</token>
+<token>
+  <key>no_fool_without_seer</key>
+  <value>Pour avoir un idiot, le village doit avoir au moins un voyant.</value>
+</token>
+<token>
+  <key>not_1_granger</key>
+  <value>S'il y a des francs-jardiniers dans le village, il doit y en avoir au moins deux.</value>
+</token>
+<token>
+  <key>has_sanctuary</key>
+  <value>Le joueur que vous avez choisi a reçu l'asile, et ne peut être lynché aujourd'hui.</value>
+</token>
+<token>
+  <key>must_lynch</key>
+  <value>Vous ne pouvez choisir de ne lyncher personne.</value>
+</token>
+<token>
+  <key>not_self</key>
+  <value>Vous ne pouvez vous choisir.</value>
+</token>
+<token>
+  <key>not_cohort</key>
+  <value>Vous ne pouvez choisir un(e) autre \1.</value>
+</token>
+<token>
+  <key>not_dead</key>
+  <value>Vous ne pouvez choisir un joueur décédé.</value>
+</token>
+<token>
+  <key>no_dead_vote</key>
+  <value>Vous êtes morts, et ne pouvez pas voter.</value>
+</token>
+<token>
+  <key>nothing_to_do</key>
+  <value>Vous n'avez pas à faire de choix pour l'instant.</value>
+</token>
+</volitytokens>

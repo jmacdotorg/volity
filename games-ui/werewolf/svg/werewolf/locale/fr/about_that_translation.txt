@@ -1,0 +1,33 @@
+Réaliser cette traduction a nécessité de faire certains choix importants quant au résultat final. Je consigne ici ces choix et leur motif, pour permettre à quiconque d'évaluer la pertinence de mes choix par rapport à ceux qu'il aurait fait :
+
+1) Pourquoi la parité dans les rôles spécialisés.
+
+Dans la version originale, chaque rôle peut être entendu aussi bien au féminin qu'au masculin («seer» peut aussi bien signifier voyant que voyante). Pour des raisons de lisibilité (exemple : un(e) voyant(e)), d'allongement de longueur des phrases (exemple : le voyant ou la voyante), mais aussi de concaténation de fragments de phrase, il était exclu de faire systématiquement apparaître les deux possibilités.
+
+Pour autant, même si l'Académie Française nous rappelle encore que le masculin est en français le genre non marqué et peut de ce fait désigner indifféremment les hommes et les femmes, il faut reconnaître que peu (à commencer par les politiques volontaristes depuis plus de 20 ans des gouvernements québécois et français pour la féminisation des noms de métier, fonctions, grades ou titres) les suivent encore sur cette voie. Et là j'avance une opinion personnelle : quand vous dites docteur, peu de gens vont, quoiqu'en pensent les immortel(le)s, envisager qu'il puisse s'agir d'une doctoresse, et pour ces rares personnes, la langue française permet de marquer le féminin, mais pas le masculin !
+
+C'est pourquoi, suivant l'exemple du jeu français les Loups-Garous de Thiercelieux, j'ai pris parti de répartir les rôles équitablement entre les deux sexes, qu'importe si le joueur a le même sexe ou pas.
+
+Voici comment j'ai procédé :
+- il n'y a pas le choix pour «wolfsban» (tue-loup), puisque le nom français de cette plante est masculin ;
+- on dit que chaque village a son idiot, et pas son idiote, j'ai donc respecté le dicton ;
+- et pour compenser, les méchants «warlocks» sont donc de méchantes sorcières ;
+- la plupart des branches du christianisme n'autorisent pas les femmes à accéder à la prêtrise, tout au contraire du paganisme qui de plus se fond mieux dans un univers de jeu rendu païen par la présence de loups-garous. C'est pourquoi j'ai opté pour des prêtresses (peut-être de la Lune ?;));
+- pour «slayer», traduire par tueur ou chasseur, sans être catastrophique, n'aurait rien évoqué à personne, alors que traduire par tueuse évoque Buffy, la tueuse de vampires, ce qui correspond exactement à la bonne fonction ;
+- enfin, j'ai fini la répartition pour que, sur les huit rôles spécialisés, quatre soit au masculin et quatre au féminin.
+
+2) Pourquoi les francs-jardiniers
+
+Les "grangers" correspondent à une réalité historique états-unienne très spécifique :
+http://en.wikipedia.org/wiki/Grange_movement
+Leur spécificité en terme de jeu tient à ce qu'ils sont agriculteurs et qu'à l'origine ils formaient une société secrète. Les trois idées immédiates qu'ont peut avoir ont chacune leur défaut :
+- l'anglicisme «granger» n'évoquera rien à personne ;
+- le terme paysan correspond à la bonne fonction professionnelle, mais les paysans ne sont pas réputés pour se réunir en société secrète ;
+- le terme franc-maçon renvoie bien à l'idée de société secrète, mais ils ne sont pas connus pour leurs talents de cultivateurs.
+
+Compte tenu de la situation, inventer les francs-jardiniers n'aurait pas été une mauvaise idée, mais c'est inutile dans la mesure où ils ont vraiment existé :
+http://fr.wikipedia.org/wiki/Ordre_des_francs-jardiniers
+J'ai donc choisi ce terme, même s'il ne correspond pas à la même société secrète que dans la version originale.
+
+
+idoric, xmpp:idoric@jabber.org
