@@ -2,7 +2,7 @@
 <volitytokens>
 <token>
   <key>death_villager</key>
-  <value>(pendu à un arbre)</value>
+  <value>(pendu &#224; un arbre)</value>
 </token>
 <token>
   <key>death_werewolf</key>
@@ -10,7 +10,7 @@
 </token>
 <token>
   <key>death_slayer</key>
-  <value>(le cœur transpercé)</value>
+  <value>(le c&#339;ur transperc&#233;)</value>
 </token>
 <token>
   <key>voting_for_day</key>
@@ -26,15 +26,15 @@
 </token>
 <token>
   <key>voting_for_priest</key>
-  <value>vote pour protéger : \1</value>
+  <value>vote pour prot&#233;ger : \1</value>
 </token>
 <token>
   <key>voting_for_herbalist</key>
-  <value>vote pour protéger : \1</value>
+  <value>vote pour prot&#233;ger : \1</value>
 </token>
 <token>
   <key>voting_for_vision</key>
-  <value>rêve de: \1</value>
+  <value>r&#234;ve de: \1</value>
 </token>
 <token>
   <key>doing_nothing</key>
@@ -42,7 +42,7 @@
 </token>
 <token>
   <key>button_advanced</key>
-  <value>Afficher les rôles spécialisés</value>
+  <value>Afficher les r&#244;les sp&#233;cialis&#233;s</value>
 </token>
 <token>
   <key>button_pass</key>
@@ -50,7 +50,7 @@
 </token>
 <token>
   <key>button_null</key>
-  <value>Réfléchir encore...</value>
+  <value>R&#233;fl&#233;chir encore...</value>
 </token>
 <token>
   <key>button_retract</key>
@@ -58,7 +58,7 @@
 </token>
 <token>
   <key>button_suppression</key>
-  <value>Retourner aux réglages</value>
+  <value>Retourner aux r&#233;glages</value>
 </token>
 <token>
   <key>button_tally</key>
@@ -66,47 +66,47 @@
 </token>
 <token>
   <key>as_of_start</key>
-  <value>(au début du jeu)</value>
+  <value>(au d&#233;but du jeu)</value>
 </token>
 <token>
   <key>startup</key>
-  <value>Il y a des hurlements dans la nuit et des empreintes d'animaux dans les champs. Le village est en proie aux accusations, à la méfiance et à la crainte...</value>
+  <value>Il y a des hurlements dans la nuit et des empreintes d'animaux dans les champs. Le village est en proie aux accusations, &#224; la m&#233;fiance et &#224; la crainte...</value>
 </token>
 <token>
   <key>you_are_villager</key>
-  <value>Vous êtes un simple villageois.</value>
+  <value>Vous &#234;tes un simple villageois.</value>
 </token>
 <token>
   <key>you_are_role</key>
-  <value>Vous êtes un(e) \1. Agissez normalement !</value>
+  <value>Vous &#234;tes un(e) \1. Agissez normalement !</value>
 </token>
 <token>
   <key>dream</key>
-  <value>Vos rêves vous révèlent que \1 est un(e) \2.</value>
+  <value>Vos r&#234;ves vous r&#233;v&#232;lent que \1 est un(e) \2.</value>
 </token>
 <token>
   <key>died_villager</key>
-  <value>Vous avez tous lynché \1, qui se trouve être un(e) \2.</value>
+  <value>Vous avez tous lynch&#233; \1, qui se trouve &#234;tre un(e) \2.</value>
 </token>
 <token>
   <key>died_werewolf</key>
-  <value>Vous découvrez \1, un(e) \2, mis en lambeaux pendant la nuit.</value>
+  <value>Vous d&#233;couvrez \1, un(e) \2, mis en lambeaux pendant la nuit.</value>
 </token>
 <token>
   <key>died_slayer</key>
-  <value>Vous découvrez \1, un(e) \2, le cœur transpercé d'un pieu.</value>
+  <value>Vous d&#233;couvrez \1, un(e) \2, le c&#339;ur transperc&#233; d'un pieu.</value>
 </token>
 <token>
   <key>no_death_villager</key>
-  <value>Personne n'a été lynché aujourd'hui.</value>
+  <value>Personne n'a &#233;t&#233; lynch&#233; aujourd'hui.</value>
 </token>
 <token>
   <key>no_death_werewolf</key>
-  <value>Étrangement, personne n'a été mis en lambeaux cette nuit.</value>
+  <value>&#233;trangement, personne n'a &#233;t&#233; mis en lambeaux cette nuit.</value>
 </token>
 <token>
   <key>no_death_slayer</key>
-  <value>Personne n'a eu le cœur transpercé cette nuit.</value>
+  <value>Personne n'a eu le c&#339;ur transperc&#233; cette nuit.</value>
 </token>
 <token>
   <key>choose</key>
@@ -118,15 +118,15 @@
 </token>
 <token>
   <key>msg_config</key>
-  <value>Décider pour chaque rôle combien il y aura de représentant dans votre village.</value>
+  <value>D&#233;cider pour chaque r&#244;le combien il y aura de repr&#233;sentant dans votre village.</value>
 </token>
 <token>
   <key>msg_choose_day</key>
-  <value>Choisir un autre joueur à lyncher.</value>
+  <value>Choisir un autre joueur &#224; lyncher.</value>
 </token>
 <token>
   <key>msg_corpse</key>
-  <value>Vous êtes mort, et ne pouvez plus qu'observer (Veuillez vous taire !).</value>
+  <value>Vous &#234;tes mort, et ne pouvez plus qu'observer (Veuillez vous taire !).</value>
 </token>
 <token>
   <key>msg_sleep</key>
@@ -134,42 +134,42 @@
 </token>
 <token>
   <key>msg_choose_werewolf</key>
-  <value>\1 un joueur à déchiqueter.</value>
+  <value>\1 un joueur &#224; d&#233;chiqueter.</value>
 </token>
 <token>
   <key>msg_choose_priest</key>
-  <value>\1 un joueur à protéger du lynchage de demain.</value>
+  <value>\1 un joueur &#224; prot&#233;ger du lynchage de demain.</value>
 </token>
 <token>
   <key>msg_choose_slayer</key>
-  <value>\1 un joueur à transpercer d'un pieu.</value>
+  <value>\1 un joueur &#224; transpercer d'un pieu.</value>
 </token>
 <token>
   <key>msg_choose_herbalist</key>
-  <value>\1 un joueur à protéger des loups-garous cette nuit.</value>
+  <value>\1 un joueur &#224; prot&#233;ger des loups-garous cette nuit.</value>
 </token>
 <token>
   <key>msg_choose_dream</key>
-  <value>Choisir le joueur dont vous allez rêver.</value>
+  <value>Choisir le joueur dont vous allez r&#234;ver.</value>
 </token>
 <token>
   <key>msg_suppression</key>
-  <value>La partie est finie. Vous pourrez retourner au panneau de réglages dès que possible.</value>
+  <value>La partie est finie. Vous pourrez retourner au panneau de r&#233;glages d&#232;s que possible.</value>
 </token>
 <token>
   <key>won_villager</key>
-  <value>Les villageois ont gagné !</value>
+  <value>Les villageois ont gagn&#233; !</value>
 </token>
 <token>
   <key>won_werewolf</key>
-  <value>Les loups-garous ont gagné !</value>
+  <value>Les loups-garous ont gagn&#233; !</value>
 </token>
 <token>
   <key>phase_day</key>
-  <value>Le soleil est levé.</value>
+  <value>Le soleil est lev&#233;.</value>
 </token>
 <token>
   <key>phase_night</key>
-  <value>Le soleil est couché.</value>
+  <value>Le soleil est couch&#233;.</value>
 </token>
 </volitytokens>

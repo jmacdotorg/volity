@@ -26,11 +26,11 @@
 </token>
 <token>
   <key>warlock</key>
-  <value>Sorcière</value>
+  <value>Sorci&#232;re</value>
 </token>
 <token>
   <key>warlock_pl</key>
-  <value>Sorcières</value>
+  <value>Sorci&#232;res</value>
 </token>
 <token>
   <key>fool</key>
@@ -66,11 +66,11 @@
 </token>
 <token>
   <key>priest</key>
-  <value>Prêtresse</value>
+  <value>Pr&#234;tresse</value>
 </token>
 <token>
   <key>priest_pl</key>
-  <value>Prêtresses</value>
+  <value>Pr&#234;tresses</value>
 </token>
 <token>
   <key>granger</key>
@@ -82,27 +82,27 @@
 </token>
 <token>
   <key>invalid_role</key>
-  <value>Ce rôle n'est pas identifié.</value>
+  <value>Ce r&#244;le n'est pas identifi&#233;.</value>
 </token>
 <token>
   <key>invalid_seat</key>
-  <value>Cette place n'est pas identifiée.</value>
+  <value>Cette place n'est pas identifi&#233;e.</value>
 </token>
 <token>
   <key>invalid_role_count</key>
-  <value>Il ne peut y avoir autant de joueurs dans un rôle.</value>
+  <value>Il ne peut y avoir autant de joueurs dans un r&#244;le.</value>
 </token>
 <token>
   <key>cannot_set_villager_count</key>
-  <value>Vous ne pouvez pas décider directement du nombre de villageois.</value>
+  <value>Vous ne pouvez pas d&#233;cider directement du nombre de villageois.</value>
 </token>
 <token>
   <key>need_min_players</key>
-  <value>Le jeu nécessite au minimum cinq places occupées.</value>
+  <value>Le jeu n&#233;cessite au minimum cinq places occup&#233;es.</value>
 </token>
 <token>
   <key>not_enough_players</key>
-  <value>Trop peu de joueurs ont pris place pour pourvoir tous les rôles sélectionnés.</value>
+  <value>Trop peu de joueurs ont pris place pour pourvoir tous les r&#244;les s&#233;lectionn&#233;s.</value>
 </token>
 <token>
   <key>not_enough_wolves</key>
@@ -126,7 +126,7 @@
 </token>
 <token>
   <key>has_sanctuary</key>
-  <value>Le joueur que vous avez choisi a reçu l'asile, et ne peut être lynché aujourd'hui.</value>
+  <value>Le joueur que vous avez choisi a re&#231;u l'asile, et ne peut &#234;tre lynch&#233; aujourd'hui.</value>
 </token>
 <token>
   <key>must_lynch</key>
@@ -142,14 +142,14 @@
 </token>
 <token>
   <key>not_dead</key>
-  <value>Vous ne pouvez choisir un joueur décédé.</value>
+  <value>Vous ne pouvez choisir un joueur d&#233;c&#233;d&#233;.</value>
 </token>
 <token>
   <key>no_dead_vote</key>
-  <value>Vous êtes morts, et ne pouvez pas voter.</value>
+  <value>Vous &#234;tes morts, et ne pouvez pas voter.</value>
 </token>
 <token>
   <key>nothing_to_do</key>
-  <value>Vous n'avez pas à faire de choix pour l'instant.</value>
+  <value>Vous n'avez pas &#224; faire de choix pour l'instant.</value>
 </token>
 </volitytokens>

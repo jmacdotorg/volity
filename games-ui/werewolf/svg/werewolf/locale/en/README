@@ -1,0 +1,10 @@
+To produce a new translation of this game UI, translate each *.xml file.
+(You can ignore the *.txt files.) Only translate the text inside each
+<value>...</value> tag. Do not touch the text in the <key>...</key>
+tags, or the tags themselves.
+
+Non-ASCII characters (characters with value 128 or greater) should be
+stored here using XML escape codes. Which means: take the Unicode
+value, *not* UTF-8 encoded, and write it as "&#00;" (decimal value) or
+"&#x00;" (hex value). "&#169;" is a copyright sign; "&#937;" is a
+Greek capital Omega.
