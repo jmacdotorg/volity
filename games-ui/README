@@ -1,6 +1,6 @@
-This CVS module contails UI files for several Volity games. Most of these
+This directory contains UI files for several Volity games. Most of these
 games are implemented (that is, their parlors are implemented) in the
-games-perl or games-python CVS modules. A couple of the UIs are solely
+games-perl/ or games-python/ directories. A couple of the UIs are solely
 intended to test client features, and do not correspond with any existing
 parlor code.
 
