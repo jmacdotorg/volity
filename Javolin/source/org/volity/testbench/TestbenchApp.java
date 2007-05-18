@@ -71,10 +71,27 @@ public class TestbenchApp extends JFrame
      */
     public static void main(String[] args)
     {
+        String filename = null;
         File ui = null;
 
-        if (args.length >= 1) {
-            ui = new File(args[0]);
+        for (int ix=0; ix<args.length; ix++) {
+            if (args[ix].equals("--lang") && (ix < args.length-1)) {
+                ix++;
+                Locale.setDefault(new Locale(args[ix]));
+                continue;
+            }
+            if (args[ix].startsWith("--")) {
+                System.err.println(getAppName() + ": Unknown option: " + args[ix]);
+                System.exit(1);
+            }
+            filename = args[ix];
+        }
+
+        Locale localeApp = Locale.getDefault();
+        TranslateToken.setLocale(localeApp);
+
+        if (filename != null) {
+            ui = new File(filename);
         }
         else {
             JFileChooser filer = new JFileChooser();
@@ -82,7 +99,7 @@ public class TestbenchApp extends JFrame
             // Set directory in file chooser to UI directory from prefs 
             Preferences prefs = 
                 Preferences.userNodeForPackage(TestbenchApp.class).node(NODENAME);
-				
+            
             String dir = prefs.get(SVGUIDIR_KEY, "");
             if (!dir.equals("")) {
                 filer.setCurrentDirectory(new File(dir));
