@@ -42,80 +42,74 @@ text {
 ]]>
 </style>
 
-<g id="simple_config_villager">
+<g id="simple_config_villager" transform="scale(0.9) translate(0,0.05)">
 <text y="0.25" class="ConfigText">
-Les villageois vivent dans la crainte des loups-garous, mais
+Les villageois vivent dans la crainte des loups-garous, mais les
 </text>
 <text y="0.50" class="ConfigText">
-les villageois sont nombreux et les loups-garous quelques-uns.
+villageois sont nombreux et les loups-garous quelques-uns. Chaque
 </text>
 <text y="0.75" class="ConfigText">
-Chaque jour, les villageois se r&#233;unissent pour d&#233;cider lequel
+jour, les villageois se r&#233;unissent pour d&#233;cider lequel d'entre eux
 </text>
 <text y="1.00" class="ConfigText">
-d'entre eux est peut-&#234;tre un monstre. Mourir est ce que chacun
+est peut-&#234;tre un monstre. Mourir est ce que chacun craint le plus.
 </text>
-<text y="1.33" class="ConfigText">
-craint le plus.
-</text>
-<text y="1.66" class="ConfigTextGoal">
+<text y="1.42" class="ConfigTextGoal">
 Les villageois gagnent s'ils tuent tous les loups-garous.
 </text>
 </g>
 
-<g id="simple_config_werewolf">
+<g id="simple_config_werewolf" transform="scale(0.9) translate(0,0.05)">
 <text y="0.25" class="ConfigText">
-Les loups-garous semblent innocents le jour, mais ils
+Les loups-garous semblent innocents le jour, mais ils chassent
 </text>
 <text y="0.50" class="ConfigText">
-chassent les villageois la nuit. Chaque nuit, ils conviennent
+les villageois la nuit. Chaque nuit, ils conviennent d'une victime
 </text>
 <text y="0.75" class="ConfigText">
-d'une victime et la mettent en lambeaux. Le corps sera retrouv&#233;
+et la mettent en lambeaux. Le corps sera retrouv&#233; par les
 </text>
 <text y="1.0" class="ConfigText">
-par les villageois survivants &#224; l'aube.
+villageois survivants &#224; l'aube.
 </text>
-<text y="1.33" class="ConfigTextGoal">
-Si la moiti&#233; au moins de la population sont des loups-garous,
-</text>
-<text y="1.66" class="ConfigTextGoal">
-ils gagnent.
+<text class="ConfigTextGoal" transform="translate(0,1.42) scale(0.95)" >
+Si la moiti&#233; au moins de la population sont des loups-garous, ils gagnent.
 </text>
 </g>
 
-<g id="simple_config_seer">
+<g id="simple_config_seer" transform="scale(0.9) translate(0,0.05)">
 <text y="0.25" class="ConfigText">
-Un voyant a des pouvoirs de vision. Chaque nuit, le voyant
+Un voyant a des pouvoirs de vision. Chaque nuit, le voyant peut
 </text>
 <text y="0.50" class="ConfigText">
-peut choisir de r&#234;ver de quelqu'un. &#192; l'aube, le voyant saura
+choisir de r&#234;ver de quelqu'un. &#192; l'aube, le voyant saura si cette
 </text>
 <text y="0.75" class="ConfigText">
-si cette personne est un loup-garou. Mais il est dangereux pour
+personne est un loup-garou. Mais il est dangereux pour le voyant de
 </text>
 <text y="1.00" class="ConfigText">
-le voyant de d&#233;voiler son talent : les monstres savent qu'il
+d&#233;voiler son talent : les monstres savent qu'il est une menace.
 </text>
-<text y="1.33" class="ConfigText">
-est une menace.
-</text>
-<text y="1.66" class="ConfigTextGoal">
+<text y="1.42" class="ConfigTextGoal">
 Le voyant gagne si les villageois gagnent.
 </text>
 </g>
 
 
-<g id="advanced_config_villager">
+<g id="advanced_config_villager" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
-Pendant la journ&#233;e, les villageois votent
+Pendant la journ&#233;e, les villageois
 </text>
 <text y="0.85" class="ConfigTextBig">
-pour celui &#224; lyncher. La nuit, ils dorment.
+votent pour celui &#224; lyncher. La nuit, ils
+</text>
+<text y="1.30" class="ConfigTextBig">
+dorment.
 </text>
 </g>
 
-<g id="advanced_config_werewolf">
+<g id="advanced_config_werewolf" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 La nuit, les loups-garous conviennent
 </text>
@@ -124,7 +118,7 @@ en secret d'une victime &#224; tuer.
 </text>
 </g>
 
-<g id="advanced_config_seer">
+<g id="advanced_config_seer" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 La nuit, un voyant choisit en secret
 </text>
@@ -136,7 +130,7 @@ cette personne est un loup-garou.
 </text>
 </g>
 
-<g id="advanced_config_fool">
+<g id="advanced_config_fool" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 Un idiot croit &#234;tre voyant, mais
 </text>
@@ -148,19 +142,19 @@ inexacts.
 </text>
 </g>
 
-<g id="advanced_config_warlock">
+<g id="advanced_config_warlock" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 Une sorci&#232;re r&#234;ve comme un voyant,
 </text>
 <text y="0.85" class="ConfigTextBig">
-mais une sorci&#232;re aident les loups-garous.
+mais une sorci&#232;re aident les loups-
 </text>
 <text y="1.30" class="ConfigTextBig">
-Elle veut qu'ils gagnent.
+garous. Elle veut qu'ils gagnent.
 </text>
 </g>
 
-<g id="advanced_config_granger">
+<g id="advanced_config_granger" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 Les francs-jardiniers se reconnaissent
 </text>
@@ -172,7 +166,7 @@ entre eux, ainsi ils se savent ne pas
 </text>
 </g>
 
-<g id="advanced_config_wolfsbane">
+<g id="advanced_config_wolfsbane" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 Un tue-loup r&#233;pugne les loups-garous :
 </text>
@@ -184,7 +178,7 @@ Mais il peut &#234;tre lynch&#233;.
 </text>
 </g>
 
-<g id="advanced_config_herbalist">
+<g id="advanced_config_herbalist" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 Au soir, une herboriste choisit
 </text>
@@ -196,7 +190,7 @@ tu&#233;e par des loups cette nuit-l&#224;.
 </text>
 </g>
 
-<g id="advanced_config_priest">
+<g id="advanced_config_priest" transform="scale(0.9)">
 <text y="0.4" class="ConfigTextBig">
 La nuit, une pr&#234;tresse offre l'asile &#224;
 </text>
@@ -208,46 +202,46 @@ quelqu'un. Cette personne ne peut
 </text>
 </g>
 
-<g id="advanced_config_slayer">
+<g id="advanced_config_slayer" transform="scale(0.85)">
 <text y="0.4" class="ConfigTextBig">
 La nuit, les tueuses conviennent en secret
 </text>
 <text y="0.85" class="ConfigTextBig">
-d'une victime &#224; transperser d'un pieu. Elles
+d'une victime &#224; transperser d'un pieu.
 </text>
 <text y="1.30" class="ConfigTextBig">
-veulent que les villageois gagnent.
+Elles veulent que les villageois gagnent.
 </text>
 </g>
 
-<g id="help_villager">
+<g id="help_villager" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux villageois : Essayez de d&#233;masquer les loups-garous ! Faites attention &#224; qui
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-accuse qui. Si quelqu'un accuse une personne qui se trouve &#234;tre vraiment un
+accuse qui. Si quelqu'un accuse une personne qui se trouve &#234;tre vraiment un loup-garou,
 </text>
 <text x="2.5" y="8" class="HelpBody">
-loup-garou, l'accusateur peut &#234;tre un voyant. Souvenez-vous que les loups-garous peuvent
+l'accusateur peut &#234;tre un voyant. Souvenez-vous que les loups-garous peuvent essayer
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-essayer de jeter la suspicion sur vous !
+de jeter la suspicion sur vous !
 </text>
 </g>
 
-<g id="help_werewolf">
+<g id="help_werewolf" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux loups-garous : Ne laissez personne savoir que vous &#234;tes loup-garou ! Jetez
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-la suspicion sur les autres. Si quelqu'un est s&#251;r que vous &#234;tes loup-garou, il est
+la suspicion sur les autres. Si quelqu'un est s&#251;r que vous &#234;tes loup-garou, il est peut-&#234;tre
 </text>
 <text x="2.5" y="8" class="HelpBody">
-peut-&#234;tre voyant : tuez-le le plus vite possible.
+voyant : tuez-le le plus vite possible.
 </text>
 </g>
 
-<g id="help_seer">
+<g id="help_seer" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux voyants : Vos r&#234;ves vous donne un avantage. Essayez de faire lyncher les
 </text>
@@ -262,22 +256,22 @@ tueront.
 </text>
 </g>
 
-<g id="help_fool">
+<g id="help_fool" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux idiots : S'il y a un idiot dans le village, et que vous pensez &#234;tre voyant,
+Conseils aux idiots : S'il y a un idiot dans le village, et que vous pensez &#234;tre voyant, alors
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-alors vous &#234;tes peut-&#234;tre un idiot. Les r&#234;ves des idiots sont souvent erron&#233;s. Si vous
+vous &#234;tes peut-&#234;tre un idiot. Les r&#234;ves des idiots sont souvent erron&#233;s. Si vous faites
 </text>
 <text x="2.5" y="8" class="HelpBody">
-faites deux r&#234;ves diff&#233;rents au sujet d'une m&#234;me personne sur deux nuits,
+deux r&#234;ves diff&#233;rents au sujet d'une m&#234;me personne sur deux nuits, indiscutablement
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-indiscutablement vous &#234;tes un idiot.
+vous &#234;tes un idiot.
 </text>
 </g>
 
-<g id="help_warlock">
+<g id="help_warlock" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux sorci&#232;res : Vous gagnez (avec les loups-garous) s'il y a autant de
 </text>
@@ -285,14 +279,14 @@ Conseils aux sorci&#232;res : Vous gagnez (avec les loups-garous) s'il y a autan
 loups-garous que d'autres villageois (sans vous compter). Vous ne savez pas au d&#233;part
 </text>
 <text x="2.5" y="8" class="HelpBody">
-qui sont les loups-garous. Utilisez vos r&#234;ves pour vous renseigner, et ensuite
+qui sont les loups-garous. Utilisez vos r&#234;ves pour vous renseigner, et ensuite travaillez
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-travaillez &#224; faire lyncher les villageois innocents.
+&#224; faire lyncher les villageois innocents.
 </text>
 </g>
 
-<g id="help_granger">
+<g id="help_granger" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux francs-jardiniers : Les francs-jardiniers forment une soci&#233;t&#233; secr&#232;te.
 </text>
@@ -307,7 +301,7 @@ les autres villageois pourraient croire que vous &#234;tes loups-garous !
 </text>
 </g>
 
-<g id="help_wolfsbane">
+<g id="help_wolfsbane" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux tue-loup : si les loups-garous vous choisissent comme leur victime, ils ne
 </text>
@@ -319,7 +313,7 @@ compris, ils chercheront probablement &#224; vous faire lyncher.
 </text>
 </g>
 
-<g id="help_herbalist">
+<g id="help_herbalist" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux herboristes : Chaque nuit vous pouvez entourer la maison d'un joueur avec
 </text>
@@ -334,7 +328,7 @@ inutiles !) La protection ne dure qu'une nuit.
 </text>
 </g>
 
-<g id="help_priest">
+<g id="help_priest" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux pr&#234;tresses : Vous pouvez secr&#232;tement choisir un joueur, et lui donner
 </text>
@@ -349,7 +343,7 @@ les loups-garous deviner qui vous &#234;tes !
 </text>
 </g>
 
-<g id="help_slayer">
+<g id="help_slayer" transform="scale(0.9) translate(2,-0.4)" >
 <text x="2.5" y="3" class="HelpBody">
 Conseils aux tueuses : Juste avant l'aube, vous pouvez vous faufiler et transpercer le
 </text>

@@ -12,10 +12,10 @@
 <metadata
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:volity="http://volity.org/protocol/metadata" >
-  <volity:version>1.0.3</volity:version>
+  <volity:version>1.0.4</volity:version>
   <volity:ruleset>http://volity.org/games/werewolf/</volity:ruleset>
   <dc:creator>Andrew Plotkin</dc:creator>
-  <dc:modified>2006-06-27</dc:modified>
+  <dc:modified>2007-05-18</dc:modified>
 </metadata>
 
 
@@ -23,6 +23,7 @@
 
 faces_path = "faces/werewolf.svg";
 help_path = "locale/&lang;/help.svg";
+language = "&lang;";
 
 <![CDATA[
 
@@ -80,6 +81,11 @@ function initialize() {
   set_text_by_token(obj, "ui.as_of_start");
 
   rebuild_config_panel();
+
+  if (language == "fr") {
+    obj = document.getElementById("message-text");
+    obj.setAttribute("transform", "translate(0, 5.6) scale(0.94)");
+  }
 
   set_message("ui.msg_config")
 }
