@@ -1,0 +1,1679 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2"
+      xmlns:xlink="http://www.w3.org/1999/xlink"
+      xmlns:hex="http://thenexusproject.org/non-canon/projects/volity/rulesets/hex"
+      viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid" >
+      
+   <title>Hex</title>
+
+   <metadata
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+      xmlns:volity="http://volity.org/protocol/metadata" >
+      <volity:version>0.306</volity:version>
+      <dc:creator>Phil Bordelon</dc:creator>
+      <dc:modified>2006-04-20</dc:modified>
+      <volity:seat-color>white #ffffff</volity:seat-color>
+      <volity:seat-color>black #000000</volity:seat-color>
+   </metadata>
+              
+   <script type="text/ecmascript">
+   <![CDATA[
+//////////////////////////////////////////////////////////////////////////////
+//
+// Hex UI
+// Copyright 2006 Phil Bordelon <phil@thenexusproject.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, version 2 (only) of the license.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//////////////////////////////////////////////////////////////////////////////
+
+// Constants.
+
+doc_svg = document.rootElement;
+
+WHITE_STR = "white";
+BLACK_STR = "black";
+COORD_STR = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+SVG_NS = "http://www.w3.org/2000/svg";
+XLINK_NS = "http://www.w3.org/1999/xlink";
+HEX_NS = "http://thenexusproject.org/non-canon/projects/phil/volity/rulesets/hex"
+
+hex = doc_svg.getElementById("hex");
+HEX_FACTOR = 0.86603; // Not to be confused with the X-Factor.
+MIN_SIZE = 4;
+MAX_SIZE = 26;
+
+// Functions.
+
+// General utility functions.
+
+function build2DArray (width, height)
+{
+   var x, y, return_value;
+
+   return_value = new Array (width);
+   for (x = 0; x < width; x ++)
+   {
+      return_value[x] = new Array (height);
+   }
+
+   return return_value;
+}
+
+function changeText (text_object, new_string)
+{
+   var new_node;
+
+   removeChildren(text_object);
+   new_node = document.createTextNode(new_string);
+   text_object.appendChild(new_node);
+}
+
+function removeChildren (parent)
+{
+   var object, list;
+   
+   list = parent.childNodes;
+   
+   while (list.length > 0)
+   {
+      object = list.item(0);
+      parent.removeChild(object);
+   }
+}
+
+function activateButton (button_name)
+{
+   var button, button_box;
+
+   button = doc_svg.getElementById(button_name);
+   button.setAttribute("opacity", "1");
+
+   button_box = doc_svg.getElementById(button_name + "-box");
+   button_box.setAttribute("pointer-events", "all");
+   button_box.setAttribute("class", "active-button-color");
+}
+
+function activateButtonGroup (button_group_name)
+{
+   var group_object, button_list, button;
+   var i;
+   var button_name;
+
+   group_object = doc_svg.getElementById(button_group_name);
+   button_list = group_object.childNodes;
+   for (i = 0; i < button_list.length; i ++)
+   {
+      button = button_list.item(i);
+
+      // We only want to deal with the groups, not the empty text nodes.
+      if (button.nodeName == "g")
+      {
+         button_name = button.getAttribute("id");
+         activateButton(button_name);
+      }
+   }
+}
+
+function buildBoard ()
+{
+
+   var loop_x, loop_y;
+   var x_offset, y_offset;
+   var curr_hex;
+   var needed_width;
+   var scale_string, translate_string, transform_string;
+   var scale_factor;
+
+   // First, let's make the board invisible while we tinker with it.
+   // This keeps the user from seeing it bounce around crazily.
+   hideBoard();
+
+   // We also need to kill any coordinates that are on the screen.
+   removeChildren(coord_group);
+
+   // Determine the sizes that we can set the hexes to.  Hexes are
+   // 1 unit tall and 1.7320 units wide.  Obviously, we want to
+   // cheat and use the 1, since that makes for easier math.  Too bad!
+   // A Hex doesn't stack that way, unfortunately.  So we need that magic
+   // factor; board is as tall as the number of units, but it's wider:
+   //
+   // . . . .
+   //  . . . .
+   //   . . . .
+   //    . . . . etc.
+
+   // For each row past the first, the board moves over a half-unit.
+   // So the width is num + 1/2 * (num - 1).  We can scale appropriately
+   // using that.  (Don't forget the evil factor.)
+   needed_width = size * HEX_FACTOR + 0.5 * (size - 1) * HEX_FACTOR;
+  
+   // Scale factor has to do with the fact that we're going to tilt the
+   // board now.  We want it to be small enough to fit in a reasonable
+   // amount of screenspace, while still large enough that a 26x26 game
+   // is at least /mostly/ playable.
+   scale_factor = 700 / needed_width;
+   scale_string = "scale(" + scale_factor + ")";
+
+   // Because of the way we do rotations, the offsets are constant for
+   // any size of board.  We just have to find the magic constants.  The
+   // Y one is simple, but X requires trial and error, as it depends on
+   // the scale_factor above.
+   x_offset = 95;
+
+   y_offset = 500;
+   translate_string = "translate(" + x_offset + "," + y_offset + ")";
+
+   // Now, actually set the offsets on the board group.  This puts it where we
+   // want it.  We also want to set these offsets on the piece group, so that
+   // when we go to place pieces they magically land where they're supposed to.
+   // The same goes for the coordinate group.
+   transform_string = translate_string + " " + scale_string + "rotate(-30)";
+   board_group.setAttribute("transform", transform_string);
+   piece_group.setAttribute("transform", transform_string);
+   coord_group.setAttribute("transform", transform_string);
+
+   // Put the coordinates on the screen.
+   drawCoordinates(coord_group);
+
+   // Lastly, make the hexes we care about visible and therefore clickable.
+   for (loop_y = 0; loop_y < size; loop_y ++)
+   {
+      for (loop_x = 0; loop_x < size; loop_x ++)
+      {
+         curr_hex = board_array[loop_x][loop_y];
+         curr_hex.setAttribute("visibility", "visible");
+      }
+   }
+}
+
+function clearLastMoveHex()
+{
+   // Clear the last-played hex of colour, if it's set.
+   if (last_move_hex != null)
+   {
+      last_move_hex.setAttribute("fill", "#9090c0");
+   }
+}
+
+function clearPieces()
+{
+   var loop_x, loop_y;
+   
+   // First, kill all of the pieces in the piece group.
+   removeChildren(piece_group);
+
+   // To be sure, set all of the pointers in the piece_array to null.
+   for (loop_x = 0; loop_x < MAX_SIZE; loop_x ++)
+   {
+      for (loop_y = 0; loop_y < MAX_SIZE; loop_y ++)
+      {
+         piece_array[loop_x][loop_y] = null;
+      }
+   }
+}
+
+function deactivateButton (button_name)
+{
+
+   var button, button_box;
+
+   button = doc_svg.getElementById(button_name);
+   button.setAttribute("opacity", "0.5");
+
+   button_box = doc_svg.getElementById(button_name + "-box");
+   button_box.setAttribute("pointer-events", "none");
+   button_box.setAttribute("class", "inactive-button-color");
+}
+
+function deactivateButtonGroup (button_group_name)
+{
+
+   var group_object, button_list, button;
+   var i;
+   var button_name;
+
+   group_object = doc_svg.getElementById(button_group_name);
+   button_list = group_object.childNodes;
+   for (i = 0; i < button_list.length; i ++)
+   {
+      button = button_list.item(i);
+
+      // We only want to deal with the groups, not the empty text nodes.
+      if (button.nodeName == "g")
+      {
+         button_name = button.getAttribute("id");
+         deactivateButton(button_name);
+      }
+   }
+}
+
+function displayCoordinate (hex)
+{
+   var text_object;
+   var x, y, x_string;
+
+   text_object = doc_svg.getElementById("coord-string");
+   if (hex == null)
+   {
+      changeText (text_object, "");
+   }
+   else
+   {
+      // Pull the coordinates from the hex.
+
+      x = parseInt(hex.getAttributeNS(HEX_NS, "x"));
+      y = parseInt(hex.getAttributeNS(HEX_NS, "y"));
+
+      // Traditionally, columns have been lettered.
+      x_string = COORD_STR.charAt(x);
+
+      // Start row at 1, not 0.
+      y ++;
+
+      changeText (text_object, x_string + y);
+   }
+}
+
+function drawCoordinates()
+{
+   var coord_source, curr_coord;
+   var loop;
+   var coord_string;
+   var curr_hex, hex_x, hex_y;
+   var coord_x, coord_y;
+   var translate_string, scale_string, transform_string;
+
+   // We don't want to bother unless the board is large enough to
+   // make the coordinates necessary (and not have them under our
+   // buttons).
+   if (size > 6)
+   {
+      // Pull the coordinate source object.
+      coord_source = doc_svg.getElementById("coordinate-text");
+      
+      // Let's do both sides at the same time.  They require different
+      // manipulations, however.
+      for (loop = 0; loop < size; loop ++)
+      {
+         // X COORDINATES (top):
+         // The top first.  We have to do the letter translation
+         // stuff, and if it's a dual-letter one, we want to scale
+         // the size down a bit.
+         curr_coord = coord_source.cloneNode(false);
+         curr_hex = board_array[loop][0];
+         hex_x = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_x"));
+         hex_y = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_y"));
+         
+         // Shift the coordinate the proper amount.
+         if (size > 10)
+         {
+            coord_x = hex_x - 0.1 * HEX_FACTOR;
+            coord_y = hex_y - 0.4;
+            translate_string = "translate(" + coord_x + "," + coord_y + ")";
+            // Scale only needs to be set if it's double letters or a small
+            // board.
+            scale_string = "";
+         }
+         else
+         {
+            coord_x = hex_x - 0.1 * HEX_FACTOR;
+            coord_y = hex_y - 0.275;
+            scale_string = "scale(0.66)";
+         }
+
+         translate_string = "translate(" + coord_x + "," + coord_y + ")";
+
+         // Get the string we're gonna use to put there.
+         coord_string = COORD_STR.charAt(loop);
+
+         // The text needs to be white to show up on the black background.
+         curr_coord.setAttribute("fill", "white");
+
+         // If loop is over 25, double the letter and scale down.
+         if (loop > 25)
+         {
+            coord_string = coord_string + coord_string;
+            scale_string = "scale(0.75)";
+         }
+
+         // Apply the transform and add the actual string!
+         transform_string = translate_string + " " + scale_string
+            + "rotate(30)"; // Have to rotate to counteract the board!
+         curr_coord.setAttribute("transform", transform_string);
+         changeText(curr_coord, coord_string);
+         
+         // Finally, add it to the group.
+         coord_group.appendChild(curr_coord);
+
+         // X COORDINATES (bottom):
+         curr_coord = coord_source.cloneNode(false);
+         curr_hex = board_array[loop][size - 1];
+         hex_x = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_x"));
+         hex_y = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_y"));
+         
+         // Shift the coordinate the proper amount.
+         if (size > 10)
+         {
+            coord_x = hex_x + 0.95 * HEX_FACTOR;
+            coord_y = hex_y + 1.1;
+         }
+         else
+         {
+            coord_x = hex_x + 0.95 * HEX_FACTOR;
+            coord_y = hex_y + 1;
+         }
+
+         translate_string = "translate(" + coord_x + "," + coord_y + ")";
+
+         // The text needs to be white to show up on the black background.
+         curr_coord.setAttribute("fill", "white");
+
+         // Apply the transform and add the actual string!
+         transform_string = translate_string + " " + scale_string
+            + "rotate(30)"; // Have to rotate to counteract the board!
+         curr_coord.setAttribute("transform", transform_string);
+         changeText(curr_coord, coord_string);
+         
+         // Finally, add it to the group.
+         coord_group.appendChild(curr_coord);
+
+         // Y COORDINATES (left):
+         curr_coord = coord_source.cloneNode(false);
+         curr_hex = board_array[0][loop]
+         hex_x = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_x"));
+         hex_y = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_y"));
+         
+         // Shift the coordinate the proper amount.
+         if (size > 10)
+         {
+            coord_x = hex_x - 0.60 * HEX_FACTOR;
+            coord_y = hex_y + 0.35;
+            scale_string = "";
+         }
+         else
+         {
+            coord_x = hex_x - 0.40 * HEX_FACTOR;
+            coord_y = hex_y + 0.35;
+            scale_string = "scale(0.66)";
+         }
+
+         // If loop is over 8 (coordinate over 9), we need to move more
+         // to the left.
+         if (loop > 8)
+         {
+            coord_x = coord_x - 0.15 * HEX_FACTOR;
+         }
+
+         translate_string = "translate(" + coord_x + "," + coord_y + ")";
+
+         // This string is easy; it's just loop + 1.
+         coord_string = "" + (loop + 1);
+
+         // Apply the transform and add the actual string!
+         transform_string = translate_string + " rotate(30) " + scale_string;
+         curr_coord.setAttribute("transform", transform_string);
+         changeText(curr_coord, coord_string);
+         
+         // Finally, add it to the group.
+         coord_group.appendChild(curr_coord);
+
+         // Y COORDINATES (right):
+         curr_coord = coord_source.cloneNode(false);
+         curr_hex = board_array[size - 1][loop]
+         hex_x = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_x"));
+         hex_y = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_y"));
+         
+         // Shift the coordinate the proper amount.
+         if (size > 10)
+         {
+            coord_x = hex_x + 1.35 * HEX_FACTOR;
+            coord_y = hex_y + 0.45;
+         }
+         else
+         {
+            coord_x = hex_x + 1.25 * HEX_FACTOR;
+            coord_y = hex_y + 0.45;
+         }
+
+         // If loop is over 8 (coordinate over 9), we need to move more
+         // to the right.
+         if (loop > 8)
+         {
+            coord_x = coord_x + 0.15 * HEX_FACTOR;
+         }
+
+         translate_string = "translate(" + coord_x + "," + coord_y + ")";
+
+         // Apply the transform and add the actual string!
+         transform_string = translate_string + " rotate(30) " + scale_string;
+         curr_coord.setAttribute("transform", transform_string);
+         changeText(curr_coord, coord_string);
+         
+         // Finally, add it to the group.
+         coord_group.appendChild(curr_coord);
+      }
+   }
+}
+
+function handleSafeMove (event)
+{
+   var x, y, turn_box_object;
+
+   // Make sure this is a legit call.
+   
+   if (safe_mode_hex)
+   {
+      // Clear the safe_mode_hex and send the move!
+      shadeEmptyHex (safe_mode_hex, "#9090c0");
+      x = parseInt(safe_mode_hex.getAttributeNS(HEX_NS, "x"));
+      y = parseInt(safe_mode_hex.getAttributeNS(HEX_NS, "y"));
+
+      if (piece_array[x][y] == null) // Just in case!
+      {
+         rpc("make_move", x, y);
+      }
+
+      // Lastly, deactivate the turn box.
+      turn_box_object = doc_svg.getElementById("turn-indicator-box");
+      turn_box_object.setAttribute("pointer-events", "none");
+      turn_box_object.setAttribute("class", "inactive-button-color");
+   }
+}
+
+function hexClick (event)
+{
+   var hex;
+   var x, y;
+   var turn_box, turn_text_object, turn_text;
+
+   // Okay.  If the game is afoot, AND it's our turn, AND the
+   // cell is empty, we want to send a make_move RPC.
+   if (afoot && our_turn)
+   {
+      hex = event.target;
+      x = parseInt(hex.getAttributeNS(HEX_NS, "x"));
+      y = parseInt(hex.getAttributeNS(HEX_NS, "y"));
+
+      if (piece_array[x][y] == null)
+      {
+         // Now, if we're in safe mode, we want to change the Turn
+         // button into a 'accept this move' button.  Otherwise,
+         // just make the move.
+         if (safe_mode)
+         {
+            turn_box = doc_svg.getElementById("turn-indicator-box");
+            turn_box.setAttribute("class", "active-button-color");
+            turn_box.setAttribute("pointer-events", "all");
+
+            turn_text_object = doc_svg.getElementById("turn-indicator-text");
+            turn_text = "Move to " + COORD_STR.charAt(x) + (y + 1);
+            changeText(turn_text_object, turn_text);
+
+            // Clear the prior safe mode hex.
+            if (safe_mode_hex)
+            {
+               shadeEmptyHex (safe_mode_hex, "#9090c0");
+            }
+
+            // Save the hex so that we can actually make the move if
+            // they want.
+            safe_mode_hex = hex;
+
+            // Lastly, mark the cell; this will go away if they mouse over
+            // it, but I don't care that much.
+            shadeEmptyHex (hex, "#f09090");
+
+         }
+         else
+         {
+            rpc("make_move", x, y);
+         }
+      }
+   }
+}
+
+function hexMouseDown (event)
+{
+   var hex;
+
+   // Shade it a brighter red  to indicate the click is going
+   // to have an effect ... if there isn't a piece!  Don't
+   // bother doing this if it isn't our turn.
+   
+   if (our_turn)
+   {
+      hex = event.target;
+      shadeEmptyHex (hex, "#f09090");
+   }
+}
+
+function hexMouseOut (event)
+{
+   var hex;
+
+   // Unshade this cell if it's not the last move hex or if it's
+   // not the current safe mode hex.
+   hex = event.target;
+   if ((hex != last_move_hex) && (hex != safe_mode_hex))
+   {
+      hex.setAttribute("fill", "#9090c0");
+   }
+
+   // Remove the coordinate display at the bottom.
+   displayCoordinate(null);
+}
+
+function hexMouseOver (event)
+{
+   var hex;
+
+   // Let's shade this cell a pretty shade of red ... iff there isn't
+   // a piece already there and it isn't the safe mode hex.
+   hex = event.target;
+   if (hex != safe_mode_hex)
+   {
+      shadeEmptyHex (hex, "#c09090");
+   }
+
+   // Display the coordinate at the bottom.
+   displayCoordinate(hex);
+}
+
+function hexMouseUp (event)
+{
+   // Return this to standard "over it" shading (a la hexMouseOver).
+   hexMouseOver (event);
+}
+
+function hideBoard ()
+{
+   var loop_x, loop_y;
+   var cell;
+
+   for (loop_x = 0; loop_x < MAX_SIZE; loop_x ++)
+   {
+      for (loop_y = 0; loop_y < MAX_SIZE; loop_y ++)
+      {
+         cell = board_array[loop_x][loop_y];
+         cell.setAttribute("visibility", "hidden");
+      }
+   }
+}
+
+// initializeBoard:
+// This function makes the initial full-size board, with all elements
+// hidden.  We will then tinker with these pieces later to show what
+// we /want/ to show, much faster than tearing down and rebuilding the
+// entire thing each time.
+function initializeBoard ()
+{
+   var loop_x, loop_y;
+   var row_x_offset;
+   var curr_x_offset, curr_y_offset;
+
+   // row_x_offset changes depending on the row (as the hexes move over);
+   // initialize it to 0.
+   row_x_offset = 0;
+
+   // Recall that our hexes are 1u vertical height, 1.7320u horizontal
+   // height.  We're not doing scaling here (that will be done at the
+   // group level) but we have to know the necessary factors so as to
+   // space the hexes properly.  This is why we have HEX_FACTOR as a
+   // constant.
+   for (loop_y = 0; loop_y < MAX_SIZE; loop_y ++)
+   {
+      // Hexes move down by 0.75u per row.  Look at a board to see that
+      // I'm right. :)
+      curr_y_offset = loop_y * 0.75;
+
+      for (loop_x = 0; loop_x < MAX_SIZE; loop_x ++)
+      {
+         // Horizontal values are shifted by the hex factor for each hex,
+         // plus the offset for the row.
+         curr_x_offset = row_x_offset + loop_x * HEX_FACTOR;
+
+         // Build a new hex.
+         curr_object = hex.cloneNode(false);
+
+         // Set its location via translate.
+         curr_object.setAttribute("transform", "translate(" +
+            curr_x_offset + "," + curr_y_offset + ")");
+
+         // Store these numbers in the hex namespace for use when
+         // placing pieces.
+         curr_object.setAttributeNS(HEX_NS, "literal_x", curr_x_offset);
+         curr_object.setAttributeNS(HEX_NS, "literal_y", curr_y_offset);
+
+         // Default all of the objects to invisible.  buildBoard() will
+         // set the proper visibilities.
+         curr_object.setAttribute("visibility", "hidden");
+         
+         // This belongs to the board array for later use.
+         board_array[loop_x][loop_y] = curr_object;
+
+         // Set the proper coordinate attributes.
+         curr_object.setAttributeNS(HEX_NS, "x", loop_x);
+         curr_object.setAttributeNS(HEX_NS, "y", loop_y);
+
+         // Finally, add handlers for clicks.  We don't want pointer events
+         // when we're invisible, so set pointer-events to "visible."  Whee!
+         curr_object.setAttribute("pointer-events", "visible");
+
+         curr_object.addEventListener("mousedown", hexMouseDown, false);
+         curr_object.addEventListener("mouseup", hexMouseUp, false);
+         curr_object.addEventListener("mouseout", hexMouseOut, false);
+         curr_object.addEventListener("mouseover", hexMouseOver, false);
+         curr_object.addEventListener("click", hexClick, false);
+
+         // Finally, add it to the board group.
+         board_group.appendChild(curr_object);
+      }
+
+      // Now that we're done with that row, Increment the row_x_offset.
+      row_x_offset = row_x_offset + 0.5 * HEX_FACTOR;
+   }
+}
+
+function resignClick (event)
+{
+   if (afoot)
+   {
+      rpc("resign");
+   }
+}
+
+// ShadeEmptyHex: Shade a hex iff it has no piece in it.
+function shadeEmptyHex (hex, style)
+{
+   var x, y;
+
+   x = parseInt(hex.getAttributeNS(HEX_NS, "x"));
+   y = parseInt(hex.getAttributeNS(HEX_NS, "y"));
+
+   if (piece_array[x][y] == null)
+   {
+      hex.setAttribute("fill", style);
+   }
+}
+
+function sizeClick (new_size)
+{
+   if (!afoot)
+   {
+      rpc("adjust_size", new_size);
+   }
+}
+
+function sizeDownClick (event)
+{
+   if ((!afoot) && size > MIN_SIZE)
+   {
+      rpc("adjust_size", size - 1);
+   }
+}
+
+function sizeUpClick (event)
+{
+   if ((!afoot) && size < MAX_SIZE)
+   {
+      rpc("adjust_size", size + 1);
+   }
+}
+
+function swapClick (event)
+{
+   if (afoot && our_turn)
+   {
+      rpc("swap");
+   }
+}
+
+function toggleHeadStart (event)
+{
+   if (!afoot)
+   {
+      rpc("toggle_head_start");
+   }
+}
+
+function toggleRules (event)
+{
+   var rules_group, rules_object;
+   
+   rules_visible = !rules_visible;
+
+   rules_group = doc_svg.getElementById("rules-group");
+   if (rules_visible)
+   {
+      rules_object = document.createElementNS(SVG_NS, "use");
+      rules_object.setAttributeNS(XLINK_NS, "href", "#rules");
+
+      rules_group.appendChild(rules_object);
+   }
+   else
+   {
+      removeChildren(rules_group);
+   }
+}
+
+function toggleSafeMode(event)
+{
+   var safe_mode_str, safe_obj;
+    
+   safe_mode = !safe_mode;
+
+   if (safe_mode)
+   {
+      safe_mode_str = "Disable Safe Mode";
+   }
+   else
+   {
+      safe_mode_str = "Enable Safe Mode";
+      safe_mode_hex = null;
+      updateTurnIndicator(); // Just in case.
+   }
+
+   safe_obj = doc_svg.getElementById("safe-mode-button-text");
+   changeText(safe_obj, safe_mode_str);
+}
+
+function updateTurnIndicator()
+{
+   var fill_class, turn_text;
+   var curr_object;
+
+   if (our_turn)
+   {
+      fill_class = "turn-color";
+      turn_text = "Your turn.";
+   }
+   else
+   {
+      fill_class = "inactive-button-color";
+      turn_text = "Not your turn."
+   }
+
+   // Either way, we want to update the turn button and turn text.
+   curr_object = doc_svg.getElementById("turn-indicator-box");
+   curr_object.setAttribute("class", fill_class);
+   curr_object = doc_svg.getElementById("turn-indicator-text");
+   changeText (curr_object, turn_text);
+}
+
+function updateTypeString()
+{
+   var hex_text_object;
+   var string;
+
+   hex_text_object = doc_svg.getElementById("type-string");
+
+   string = "";
+   if (head_start)
+   {
+      string = string + "HS";
+   }
+   string = string + "Hex";
+   
+   changeText(hex_text_object, string);
+}
+
+// RPC handlers.
+
+// Game RPCs.
+
+game.head_start = function(seat, x)
+{
+   var head_start_text_obj;
+   
+   head_start = x;
+   updateTypeString();
+
+   head_start_text_obj = doc_svg.getElementById("head-start-button-text");
+   if (head_start)
+   {
+      changeText(head_start_text_obj, "Disable Head Start");
+   }
+   else
+   {
+      changeText(head_start_text_obj, "Enable Head Start");
+   }
+}
+
+game.move = function(seat, x, y, num)
+{
+   var piece;
+   var transform_string;
+   var curr_hex, hex_x, hex_y, hex_cx, hex_cy;
+   var piece_cx, piece_cy;
+   var transform_string;
+   
+   piece = document.createElementNS(SVG_NS, "use");
+
+   // Grab the right piece type.
+   if (seat == WHITE_STR)
+   {
+      piece.setAttributeNS(XLINK_NS, "href", "#whitepiece");
+   }
+   else if (seat == BLACK_STR)
+   {
+      piece.setAttributeNS(XLINK_NS, "href", "#blackpiece");
+   }
+   else
+   {
+      // Danger, Will Robinson!
+      literalmessage("I got a seat that isn't white or black.  This is bad.");
+      return;
+   }
+
+   // Check this board location.  If something's already here, at least
+   // print something; this is Bad Bad Bad.
+   if (piece_array[x][y] != null)
+   {
+      literalmessage("Something is wrong here; a piece is already at ("
+         + x + ", " + y + ").");
+   }
+
+   // Note this piece in the piece_array.
+   piece_array[x][y] = piece;
+
+   // Lastly, actually put the piece where it goes.
+   curr_hex = board_array[x][y];
+
+   // The center of each hex is easy to calculate given the geometry.
+   hex_x = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_x"));
+   hex_y = parseFloat(curr_hex.getAttributeNS(HEX_NS, "literal_y"));
+
+   hex_cx = hex_x + 0.5 * HEX_FACTOR;
+
+   // hex_cy is only + 0.25 because of the way we have to build our
+   // hexes to have them pivot correctly.  Is that an absurd amount
+   // of work for something simple?  Yes it is.
+   hex_cy = hex_y + 0.25;
+   
+
+   transform_string = "translate(" + hex_cx + "," + hex_cy + ")";
+   piece.setAttribute("transform", transform_string);
+
+   // Finally, add it to the proper group.
+   piece_group.appendChild(piece);
+
+   // Clear the previous last move out.
+   clearLastMoveHex();
+
+   // Save this hex, and colour it.
+   last_move_hex = curr_hex;
+   curr_hex.setAttribute("fill", "#90c090");
+
+   // Lastly, if we're black and it's move #2, activate the swap button.
+   if (info.seat == BLACK_STR && num == 1)
+   {
+      activateButton("swap-button");
+   }
+   else
+   {
+      deactivateButton("swap-button");
+   }
+}
+
+game.over = function(seat)
+{
+   var curr_object, fill_class, turn_text;
+
+   winner = seat;
+
+   seat_notification_dict = [];
+
+   // Set some defaults; assume an observer.
+   fill_class = "turn-color";
+   if (winner == WHITE_STR)
+   {
+      seat_notification_dict[WHITE_STR] = "win";
+      turn_text = "White won."
+   }
+   else if (winner == BLACK_STR)
+   {
+      seat_notification_dict[BLACK_STR] = "win";
+      turn_text = "Black won."
+   }
+   
+   seatmark(seat_notification_dict);
+
+   // Now, use the turn marker to indicate the winner if this person was
+   // actually playing.
+   if (info.seat)
+   {
+      if (winner == info.seat)
+      {
+         fill_class = "turn-color";
+         turn_text = "You won!"
+      }
+      else
+      {
+         fill_class = "inactive-button-color";
+         turn_text = "You lost."
+      }
+   }
+
+   curr_object = doc_svg.getElementById("turn-indicator-box");
+   curr_object.setAttribute("class", fill_class);
+   curr_object = doc_svg.getElementById("turn-indicator-text");
+   changeText (curr_object, turn_text);
+   clearLastMoveHex();
+   last_move_hex = null;
+}
+
+game.remove = function(seat, x, y, num)
+{
+   var piece_to_remove;
+   
+   // Check to make sure the piece exists before we kill it.
+   if (piece_array[x][y] == null)
+   {
+      literalmessage("Got a remove request for nonexistent piece ("
+         + x + ", " + y + ").  This is bad.");
+      return;
+   }
+
+   piece_to_remove = piece_array[x][y];
+   piece_array[x][y] = null;
+   piece_group.removeChild(piece_to_remove);
+
+   // The only time this occurs is when Black swaps.  Send a literalmessage.
+   literalmessage("!!! Black has swapped White's first move. !!!");
+}
+
+game.set_size = function(player, new_size)
+{
+   var size_string_object;
+   size = new_size;
+   clearPieces();
+   buildBoard();
+   removeChildren(piece_group);
+
+   // Update the size-string.
+   size_string_object = doc_svg.getElementById("size-string");
+   changeText (size_string_object, size + "x" + size);
+}
+
+game.turn = function(seat)
+{
+   seatmark(seat);
+   if (seat == info.seat)
+   {
+      our_turn = true;
+   }
+   else
+   {
+      our_turn = false;
+   }
+
+   // Either way, we want to update the turn button and turn text.
+   updateTurnIndicator();
+}
+
+// Volity RPCs.
+volity.end_game = function()
+{  
+   afoot = false;
+   our_turn = false;
+   winner = null;
+   
+   activateButtonGroup("setup-buttons");
+   deactivateButton("resign-button");
+   deactivateButton("swap-button");
+
+   clearLastMoveHex();
+}
+
+// This is called when we're recovering state.
+volity.receive_state = function()
+{
+   removeChildren(piece_group);
+}
+
+volity.start_game = function()
+{
+   var piece_list, piece;
+  
+   // Clear out the pieces.
+   clearPieces();
+
+   afoot = true;
+   our_turn = false;
+   winner = null;
+   seatmark();
+   move_num = 0;
+   deactivateButtonGroup("setup-buttons");
+   if (info.seat)
+   {
+      activateButton("resign-button");
+   }
+   deactivateButton("swap-button"); // Just in case.
+
+   clearLastMoveHex();
+   last_move_hex = null;
+}
+
+// This happens after volity.receive_state has finished.
+volity.state_sent = function()
+{
+   if (info.state == "active")
+   {
+      afoot = true;
+      deactivateButtonGroup("setup-buttons");
+      if (info.seat)
+      {
+         activateButton("resign-button");
+      }
+      // Swap button should be automagically set via the .moves.
+   }
+   else
+   {
+      afoot = false;
+      activateButtonGroup("setup-buttons");
+      deactivateButton("resign-button");
+      deactivateButton("swap-button"); // Just in case.
+   }
+}
+
+volity.suspend_game = function ()
+{
+   seatmark();
+   our_turn = false;
+}
+
+// Main function.
+
+afoot = false;
+our_turn = false;
+head_start = false;
+rules_visible = false;
+safe_mode = false;
+safe_mode_hex = null;
+size = 13;
+
+board_group = doc_svg.getElementById("board");
+piece_group = doc_svg.getElementById("pieces");
+coord_group = doc_svg.getElementById("coordinates");
+white_piece = doc_svg.getElementById("whitepiece");
+black_piece = doc_svg.getElementById("blackpiece");
+board_array = build2DArray(MAX_SIZE, MAX_SIZE);
+piece_array = build2DArray(MAX_SIZE, MAX_SIZE);
+last_move_hex = null;
+move_num = 0;
+
+winner = null;
+
+initializeBoard();
+buildBoard();
+deactivateButton("resign-button");
+deactivateButton("swap-button");
+  // ]]>
+   </script>
+   <defs>
+      <style type="text/css">
+      <![CDATA[
+         .active-button-color
+         {
+            fill: #c09090;
+         }
+         
+         .background-color
+         {
+            fill: #303090;
+         }
+         
+         .inactive-button-color
+         {
+            fill: #909090;
+         }
+
+         .turn-color
+         {
+            fill: #90c090;
+         }
+
+         text 
+         {
+            text-anchor: middle;
+            font-family: Verdana;
+         }
+
+         .rules-header
+         {
+            fill: white;
+            font-size: 50;
+         }
+
+         .rules-line
+         {
+            fill: white;
+            text-anchor: start;
+            font-size: 32;
+         } 
+      ]]>
+      </style>
+      <circle
+         id="whitepiece"
+         cx="0"
+         cy="0"
+         r="0.30"
+         fill="white"
+      />
+      <circle
+         id="blackpiece"
+         cx="0"
+         cy="0"
+         r="0.30"
+         fill="black"
+      />
+      <!-- The following hex is /not/ the one used for the majority of the
+           board.  This is because hexes cloned via xrefs do not handle
+           mouse events correctly; mouseovers and mouseouts don't trigger
+           right when they're grouped together so that their coordinates
+           overlap.  This is amazingly broken, but I don't know if it's
+           the spec that's broken or Batik's implementation of it.  Either
+           way, this hex is just used for non-clickable elements. -->
+      <path
+         id="template-hex"
+         d="M 0 0 l 0.43301 0.25 v 0.50 l -0.43301 0.25 l -0.43301 -0.25 v -0.50 z"
+         fill="#c0f0c0"
+         stroke="black"
+         stroke-width="0.03"
+      />
+      <path
+         id="white-bg-triangle"
+         d="M 0 0 v -0.5 l 0.8660 0.5 z"
+         fill="white"
+      />
+      <path
+         id="black-bg-triangle"
+         d="M 0 0 v -0.5 l -0.8660 0.5 z"
+         fill="black"
+      />
+      <g id="rules" pointer-events="none">
+         <g id="rules-background">
+            <rect
+               x="100"
+               y="100"
+               rx="25"
+               ry="25"
+               width="800"
+               height="800"
+               fill="black"
+               stroke="white"
+               stroke-width="5"
+               pointer-events="all"
+               onclick="toggleRules()"
+            />
+            <text x="500" y="160" class="rules-header"
+            >Hex Rules (click to dismiss)</text>
+
+            <text x="120" y="210" class="rules-line"
+            >Hex is a game of connections.  Two players</text>
+            <text x="120" y="245" class="rules-line"
+            >vie to connect their two sides of the board by</text>
+            <text x="120" y="280" class="rules-line"
+            >placing stones in empty cells. Black strives to</text>
+            <text x="120" y="315" class="rules-line"
+            >connect the top-left and bottom-right sides;</text>
+            <text x="120" y="350" class="rules-line"
+            >White strives to connect the bottom-left and</text>
+            <text x="120" y="385" class="rules-line"
+            >top-right sides. The corners belong to both</text>
+            <text x="120" y="420" class="rules-line"
+            >adjacent sides. One player must always win.</text>
+            <text x="120" y="455" class="rules-line"
+            >Either player may Resign at any time.</text>
+
+            <text x="120" y="500" class="rules-line"
+            >To combat a strong first-move advantage for</text>
+            <text x="120" y="535" class="rules-line"
+            >White, Black may choose to Swap the first</text>
+            <text x="120" y="570" class="rules-line"
+            >move of the game, making it theirs.</text>
+            
+            <text x="120" y="615" class="rules-line"
+            >Head Start Hex puts four pieces on the board</text>
+            <text x="120" y="650" class="rules-line"
+            >to make play more interesting.</text>
+
+            <text x="120" y="695" class="rules-line"
+            >In Safe Mode, you must click the Turn indicator</text>
+            <text x="120" y="730" class="rules-line"
+            >to verify your moves.</text>
+
+            <text x="275" y="800" class="rules-line"
+            >Implemented by Phil Bordelon</text>
+            <text x="275" y="835" class="rules-line"
+            >&lt;phil@thenexusproject.org&gt;</text>
+            <text x="275" y="870" class="rules-line"
+            >Released under the GPL.</text>
+         </g>
+      </g>
+   </defs>
+   <g pointer-events="none">
+
+      <!-- This is the hex that gets cloned all over the place to generate the
+           board. -->
+      <path
+         id="hex"
+         d="M 0 0 l 0.43301 -0.25 l 0.43301 0.25 v 0.50 l -0.43301 0.25 l -0.43301 -0.25 z"
+         fill="#9090c0"
+         stroke="#6060c0"
+         stroke-width="0.05"
+         visibility="hidden"
+      />
+      <text
+         id="coordinate-text"
+         fill="black"
+         x="0"
+         y="0"
+         font-size="0.5"
+         font-weight="bold"
+      ></text> <!-- No need for hidden visibility, as the string is blank. -->
+      <g id="game-background">
+         <rect x="0" y="0" rx="50" ry="50" width="1000" height="1000" class="background-color"/>
+      </g>
+      <g id="bg-triangles">
+         <use
+            xlink:href="#white-bg-triangle"
+            transform="translate(500, 500) scale (575)"
+         />
+         <use
+            xlink:href="#white-bg-triangle"
+            transform="translate(500, 500) scale (575) rotate(180)"
+         />
+         <use
+            xlink:href="#black-bg-triangle"
+            transform="translate(500, 500) scale (575)"
+         />
+         <use
+            xlink:href="#black-bg-triangle"
+            transform="translate(500, 500) scale (575) rotate(180)"
+         />
+      </g>
+      <g id="board">
+         <!-- This group is built dynamically by the ECMAScript above.  See
+              buildBoard(). -->
+      </g>
+      <g id="pieces">
+         <!-- This group is built dynamically by various placement calls
+              in the ECMAScript above. -->
+      </g>
+      <g id="coordinates">
+         <!-- This group is built by drawCoordinates() in the ECMAScript. -->
+      </g>
+      <g id="title-hex">
+         <use
+            xlink:href="#template-hex"
+            transform="translate(500, 25) scale (175)"
+         />
+         <text
+            id="size-string"
+            fill="black"
+            x="500"
+            y="100"
+            font-size="40"
+         >13x13</text>
+
+         <text
+            id="type-string"
+            fill="black"
+            x="500"
+            y="145"
+            font-size="40"
+         >Hex</text>
+
+      </g>
+      <g id="coord-indicator">
+         <rect
+            x="425"
+            y="815"
+            rx="10"
+            ry="10"
+            width="150"
+            height="70"
+            fill="#c0f0f0"
+            stroke="black"
+            stroke-width="3"
+            pointer-events="none"
+         />
+         <text
+            id="coord-string"
+            fill="black"
+            x="500"
+            y="870"
+            font-size="60"
+         ></text>
+      </g>
+      <g id="buttons">
+         <g id="setup-buttons">
+            <g id="size-down-button">
+               <rect
+                  id="size-down-button-box"
+                  x="20"
+                  y="20"
+                  rx="10"
+                  ry="10"
+                  width="170"
+                  height="70"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeDownClick()"
+               />
+               <text
+                  fill="white"
+                  x="105"
+                  y="67.5"
+                  font-size="40"
+               >Smaller</text>
+            </g>
+            <g id="size-up-button">
+               <rect
+                  id="size-up-button-box"
+                  x="810"
+                  y="20"
+                  rx="10"
+                  ry="10"
+                  width="170"
+                  height="70"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeUpClick()"
+               />
+               <text
+                  fill="white"
+                  x="895"
+                  y="67.5"
+                  font-size="40"
+               >Larger</text>
+            </g>
+            <g id="size-9-button">
+               <rect
+                  id="size-9-button-box"
+                  x="20"
+                  y="100"
+                  rx="10"
+                  ry="10"
+                  width="50"
+                  height="40"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeClick(9)"
+               />
+               <text
+                  fill="white"
+                  x="45"
+                  y="131"
+                  font-size="30"
+               >9</text>
+            </g>
+            <g id="size-11-button">
+               <rect
+                  id="size-11-button-box"
+                  x="80"
+                  y="100"
+                  rx="10"
+                  ry="10"
+                  width="50"
+                  height="40"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeClick(11)"
+               />
+               <text
+                  fill="white"
+                  x="105"
+                  y="131"
+                  font-size="30"
+               >11</text>
+            </g>
+            <g id="size-13-button">
+               <rect
+                  id="size-13-button-box"
+                  x="140"
+                  y="100"
+                  rx="10"
+                  ry="10"
+                  width="50"
+                  height="40"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeClick(13)"
+               />
+               <text
+                  fill="white"
+                  x="165"
+                  y="131"
+                  font-size="30"
+               >13</text>
+            </g>
+            <g id="size-17-button">
+               <rect
+                  id="size-17-button-box"
+                  x="810"
+                  y="100"
+                  rx="10"
+                  ry="10"
+                  width="50"
+                  height="40"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeClick(17)"
+               />
+               <text
+                  fill="white"
+                  x="835"
+                  y="131"
+                  font-size="30"
+               >17</text>
+            </g>
+            <g id="size-19-button">
+               <rect
+                  id="size-19-button-box"
+                  x="870"
+                  y="100"
+                  rx="10"
+                  ry="10"
+                  width="50"
+                  height="40"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeClick(19)"
+               />
+               <text
+                  fill="white"
+                  x="895"
+                  y="131"
+                  font-size="30"
+               >19</text>
+            </g>
+            <g id="size-25-button">
+               <rect
+                  id="size-25-button-box"
+                  x="930"
+                  y="100"
+                  rx="10"
+                  ry="10"
+                  width="50"
+                  height="40"
+                  class="active-button-color" 
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="sizeClick(25)"
+               />
+               <text
+                  fill="white"
+                  x="955"
+                  y="131"
+                  font-size="30"
+               >25</text>
+            </g>
+            <g id="head-start-button">
+               <rect
+                  id="head-start-button-box"
+                  x="20"
+                  y="150"
+                  rx="10"
+                  ry="10"
+                  width="300"
+                  height="40"
+                  class="active-button-color"
+                  stroke="black"
+                  stroke-width="3"
+                  pointer-events="all"
+                  onclick="toggleHeadStart()"
+               />
+               <text
+                  id="head-start-button-text"
+                  fill="white"
+                  x="170"
+                  y="181"
+                  font-size="30"
+               >Enable Head Start</text>
+            </g>
+         </g>
+         <g id="safe-mode-button">
+            <rect
+               id="safe-mode-button-box"
+               x="20"
+               y="200"
+               rx="10"
+               ry="10"
+               width="300"
+               height="40"
+               class="active-button-color"
+               stroke="black"
+               stroke-width="3"
+               pointer-events="all"
+               onclick="toggleSafeMode()"
+            />
+            <text
+               id="safe-mode-button-text"
+               fill="white"
+               x="170"
+               y="231"
+               font-size="30"
+            >Enable Safe Mode</text>
+         </g>
+         <g id="resign-button">
+            <rect
+               id="resign-button-box"
+               x="20"
+               y="910"
+               rx="10"
+               ry="10"
+               width="170"
+               height="70"
+               class="active-button-color" 
+               stroke="black"
+               stroke-width="3"
+               pointer-events="all"
+               onclick="resignClick()"
+            />
+            <text
+               fill="white"
+               x="105"
+               y="957.5"
+               font-size="40"
+            >Resign</text>
+         </g>
+         <g id="swap-button">
+            <rect
+               id="swap-button-box"
+               x="810"
+               y="910"
+               rx="10"
+               ry="10"
+               width="170"
+               height="70"
+               class="active-button-color"
+               stroke="black"
+               stroke-width="3"
+               pointer-events="all"
+               onclick="swapClick()"
+            />
+            <text
+               fill="white"
+               x="895"
+               y="957.5"
+               font-size="40"
+            >Swap</text>
+         </g>
+         <g id="rules-button">
+            <rect
+               id="rules-button-box"
+               x="870"
+               y="150"
+               rx="10"
+               ry="10"
+               width="110"
+               height="40"
+               class="active-button-color"
+               stroke="black"
+               stroke-width="3"
+               pointer-events="all"
+               onclick="toggleRules()"
+            />
+            <text
+               fill="white"
+               x="925"
+               y="181"
+               font-size="30"
+            >Rules</text>
+         </g>
+      </g>
+      <g id="turn-indicator">
+         <rect
+            id="turn-indicator-box"
+            x="340"
+            y="910"
+            rx="10"
+            ry="10"
+            width="320"
+            height="70"
+            class="inactive-button-color"
+            stroke="black"
+            stroke-width="3"
+            pointer-events="none"
+            onclick="handleSafeMove()"
+         />
+         <text
+            id="turn-indicator-text"
+            fill="white"
+            x="500"
+            y="957.5"
+            font-size="40"
+         >Not your turn.</text>
+      </g>
+      <g id="rules-group">
+      </g>
+   </g>
+</svg>

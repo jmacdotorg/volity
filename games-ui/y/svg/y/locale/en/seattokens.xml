@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>white</key>
+  <value>White</value>
+</token>
+<token>
+  <key>black</key>
+  <value>Black</value>
+</token>
+</volitytokens>

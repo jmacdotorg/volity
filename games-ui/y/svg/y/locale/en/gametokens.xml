@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>out_of_bounds</key>
+  <value>That location is off the board.</value>
+</token>
+<token>
+  <key>invalid_board_size</key>
+  <value>That board size is invalid.</value>
+</token>
+<token>
+  <key>cell_occupied</key>
+  <value>That cell is already occupied.</value>
+</token>
+<token>
+  <key>cannot_swap</key>
+  <value>You cannot swap places at this time.</value>
+</token>
+</volitytokens>

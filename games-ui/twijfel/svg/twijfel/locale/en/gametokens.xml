@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<volitytokens>
+   <token>
+      <key>invalid_dice_count</key>
+      <value>That number of dice is invalid.</value>
+   </token>
+   <token>
+      <key>need_two_seats</key>
+      <value>You need at least two seats filled to play.</value>
+   </token>
+   <token>
+      <key>not_setup</key>
+      <value>This is not the setup phase.</value>
+   </token>
+   <token>
+      <key>not_your_turn</key>
+      <value>It is not your turn.</value>
+   </token>
+   <token>
+      <key>must_bid</key>
+      <value>You must bid.</value>
+   </token>
+   <token>
+      <key>invalid_bid_value</key>
+      <value>That bid value is invalid.</value>
+   </token>
+   <token>
+      <key>bid_too_low</key>
+      <value>That bid is too low.</value>
+   </token>
+   <token>
+      <key>bid_too_high</key>
+      <value>That bid is too high.</value>
+   </token>
+   <token>
+      <key>you_are_eliminated</key>
+      <value>You have been eliminated from play.</value>
+   </token>
+</volitytokens>

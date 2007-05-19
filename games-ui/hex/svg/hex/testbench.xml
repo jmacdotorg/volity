@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<testbench>
+
+<button name="Size">
+   game.set_size($player, $X);
+</button>
+
+<button name="Head Start">
+   game.head_start($player, $X);
+</button>
+
+<button name="New Turn">
+   game.turn($player);
+</button>
+
+<button name="Move">
+   game.move($player, $X, $Y, $num);
+</button>
+
+<button name="Remove">
+   game.remove($player, $X, $Y, $num);
+</button>
+
+<button name="Over">
+   game.over($player);
+</button>
+
+<field name="player" />
+<field name="X" type="int" />
+<field name="Y" type="int" />
+<field name="num" type="int" />
+</testbench>

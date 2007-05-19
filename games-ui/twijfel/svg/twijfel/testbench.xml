@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<!-- Twijfel Testbench XML -->
+<testbench>
+
+   <!-- 
+   Client to Referee RPCs
+
+   game.adjust_dice_count(num) - Request a change of the number of dice to num, which must be between 1 and 10 inclusive. (Config phase only.) 
+   game.make_bid(num, value) - Make a bid of num dice with value value. 
+   game.state_doubt() - Place a doubt challenge for the previous bid. 
+   game.state_belief() - Place a belief challenge for the previous bid. 
+   -->
+   <field name="player" />
+   <field name="Bid_Count" type="int"/>
+   <field name="Bid_Die" type="int"/>
+   <field name="Dice_Count" type="int"/>
+   <field name="Round_Num" type="int"/>
+   <field name="Die1" type="int"/>
+   <field name="Die2" type="int"/>
+   <field name="Die3" type="int"/>
+   <field name="Die4" type="int"/>
+   <field name="Die5" type="int"/>
+   <field name="Die6" type="int"/>
+   <field name="Die7" type="int"/>
+   <field name="Die8" type="int"/>
+   <field name="Die9" type="int"/>
+   <field name="Die10" type="int"/>
+   <field name="seat"/>
+
+   <button name="Set Dice">
+      game.set_dice_count($seat, $Dice_Count);
+   </button>
+
+   <button name="New Round">
+      game.new_round($Round_Num);
+   </button>
+   
+   <button name="Reveal Dice">
+      game.reveal_dice($seat, [$Die1, $Die2, $Die3, $Die4, $Die5, $Die6, $Die7, $Die8, $Die9, $Die10]);
+   </button>
+
+   <button name="HistoryEntry">
+      var bidder_names = new Array("red", "orange", "yellow", "green");
+      var challenger_names = new Array("cyan", "blue", "violet", "black");
+      var bidder = bidder_names[Math.floor(Math.random() * 4 + 1) - 1];
+      var challenger = challenger_names[Math.floor(Math.random() * 4 + 1) - 1];
+      game.reveal_dice("red",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("orange",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("yellow",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("green",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("cyan",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("blue",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("violet",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.reveal_dice("black",[Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),Math.floor(Math.random() * 6 + 1),0,0,0,0,0]);
+      game.bid(bidder, Math.floor(Math.random() * 40 + 1), Math.floor(Math.random() * 6 + 1));
+      if (Math.floor(Math.random() * 2 + 1) == 1)
+      {
+      game.believed(challenger, bidder);
+      }
+      else
+      {
+      game.doubted(challenger, bidder);
+      }
+   </button>
+
+   <button name="Remove Die">
+      game.remove_die($seat);
+   </button>
+
+   <button name="Add Die">
+      game.add_die($seat);
+   </button>
+   
+   <button name="Seat Turn">
+      game.turn($seat);
+   </button>
+   
+   <button name="Bid">
+      game.bid($seat, $Bid_Count, $Bid_Die);
+   </button>
+
+   <button name="Game Over">
+      game.over(["blue","red","violet","orange","cyan","black","green","yellow"]);
+   </button>
+   <!--
+   game.doubted(doubter, doubtee) - Those seated at seat doubter have placed a doubt challenge for those at doubtee. 
+   -->
+   <!--
+   game.believed(believer, believee) - Those seated at seat believer have placed a belief challenge for those at believee. 
+   -->
+   <button name="Eliminate">
+      game.eliminated($seat);
+   </button>
+   <!--
+   game.over(seatlist) - The game is over. seatlist is a list of the players by rank; the first in the list is the winner, the second is the person who came in second, and so on.    
+   -->
+
+   <button name="Speed On">
+      game.set_speed("red", 1);
+   </button>
+
+   <button name="Speed Off">
+      game.set_speed("red", 0);
+   </button>
+</testbench>

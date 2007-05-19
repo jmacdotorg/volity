@@ -1,0 +1,2211 @@
+<?xml version="1.0"?>
+<svg 
+   xmlns="http://www.w3.org/2000/svg" 
+   version="1.2" 
+   xmlns:xlink="http://www.w3.org/1999/xlink" 
+   xmlns:twijfel="http://thenexusproject.org/non-canon/projects/volity/rulesets/twijfel" 
+   viewBox="0 0 1000 685" 
+   preserveAspectRatio="xMidYMid" >
+
+   <title>Twijfel</title>
+   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:volity="http://volity.org/protocol/metadata" >
+      <volity:version>0.105</volity:version>
+      <dc:creator>Nicholas Muguira and Phil Bordelon</dc:creator>
+      <dc:modified>2006-04-26</dc:modified>
+      <volity:seat-color>red #FF0000</volity:seat-color>
+      <volity:seat-color>orange #FF8800</volity:seat-color>
+      <volity:seat-color>yellow #FFFF00</volity:seat-color>
+      <volity:seat-color>green #00FF00</volity:seat-color>
+      <volity:seat-color>blue #0000FF</volity:seat-color>
+      <volity:seat-color>violet #880088</volity:seat-color>
+      <volity:seat-color>black #000000</volity:seat-color>
+      <volity:seat-color>cyan #008888</volity:seat-color>
+   </metadata>
+   <!--
+      TODO List:
+         - Reload in the middle of the game...and fix up the number of dice, your seat, current player, challenge bug
+         - Handle history post-reload more gracefully (perhaps showing the missing history entries as missing instead of just having out-of-sync numbers).
+         - Handle 'volity.' class of RPCs.  (This is why History doesn't handle the starting of new games properly.)
+         - Browse history in between games
+         - Reset history board on new game
+         - Turn off last bet at the end of the game
+         
+         volity.receive_state = function()
+         volity.state_sent = function()
+   -->
+   <!--
+      Debug Message Functions
+      
+      DebugPrint(Message)
+      DebugPrintIf(Condition, Message)
+      
+      Auxillary Functions
+      
+      SetElementAttribute(ElementId, Name, Value)
+      SetElementAttributes(ElementId, Names, Values)
+      SetElementNSAttribute(ElementID, NS, Name, Value)
+      SetElementNSAttributes(ElementID, NS, Names, Values)
+   -->
+   <script type="text/ecmascript">
+      <![CDATA[
+//////////////////////////////////////////////////////////////////////////////
+//
+// Twijfel UI
+// Copyright 2006 Nicholas Muguira <nick.muguira@gmail.com> and Phil Bordelon
+// <phil@thenexusproject.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or 
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//////////////////////////////////////////////////////////////////////////////
+
+      var debug = 0;
+      
+      DebugPrint = function(message)
+      {
+         if (debug) 
+         {
+            literalmessage(message);
+         }
+      }
+      
+      DebugPrintIf = function(condition, message)
+      {
+         if (debug && condition)
+         {
+            literalmessage(message);
+         }
+      }
+
+      SetElementAttribute = function(ElementId, Name, Value)
+      {
+         var obj = document.rootElement.getElementById(ElementId);
+         
+         DebugPrintIf(null == obj, "SetElementAttribute: Failed to get element with id of " + ElementId);
+         if (null != obj)
+         {
+            obj.setAttribute(Name,Value);
+         }
+      }
+      
+      GetElementAttribute = function(ElementId, Name)
+      {
+         var obj = document.rootElement.getElementById(ElementId);
+         
+         DebugPrintIf(null == obj, "GetElementAttribute: Failed to get element with id of " + ElementId);
+         if ( null != obj)
+         {
+            return obj.getAttribute(Name);
+         }
+         return null;
+      }
+      
+      SetElementAttributes = function(ElementId, Names, Values)
+      {
+         var obj = document.rootElement.getElementById(ElementId);
+         
+         DebugPrintIf(null == obj, "SetElementAttributes: Failed to get element with id of " + ElementId);
+         if (null != obj)
+         {
+            for( var i = 0; i < Names.length; i++ )
+            {
+               obj.setAttribute(Names[i], Values[i]);
+            }
+         }
+      }
+      
+      SetElementNSAttribute = function(ElementId, NS, Name, Value)
+      {
+         var obj = document.rootElement.getElementById(ElementId);
+         
+         DebugPrintIf(null == obj, "SetElementNSAttribute: Failed to get element with id of " + ElementId);
+         if (null != obj)
+         {
+            obj.setAttributeNS(NS, Name,Value);
+         }
+      }
+      
+      SetElementNSAttributes = function(ElementId, NS, Names, Values)
+      {
+         var obj = document.rootElement.getElementById(ElementId);
+         
+         DebugPrintIf(null == obj, "SetElementNSAttributes: Failed to get element with id of " + ElementId);
+         if (null != obj)
+         {
+            for( var i = 0; i < Names.length; i++ )
+            {
+               obj.setAttributeNS(NS, Names[i], Values[i]);
+            }
+         }
+      }
+      
+      ChangeElementText = function(ElementId, Text)
+      {
+         var obj = document.rootElement.getElementById(ElementId);
+         
+         DebugPrintIf(null == obj, "ChangeElementText: Failed to get element with id of " + ElementId + " for text change to " + Text);
+         if ( null != obj )
+         {
+            changeText(obj, Text);
+         }
+      }
+      ]]>
+   </script>
+   <!-- 
+      Bid Object - an object that represents a Bid
+      
+      Bid(seat, count,die) - constructor, count is number of dies with value die bid
+      Bid.DieFaces(7) - strings "Empty", "1", "2", "3", "4", "5", "*"
+      Bid.toString() - returns * x 12 where * is the FaceName and 12 is the count
+   -->
+   <script type="text/ecmascript">
+      <![CDATA[
+            // Bid Object to store the current bid
+            function Bid(seat, count, die) 
+            {
+               this.seat = seat;
+               this.count = count;
+               this.die = die;
+            }
+            
+            // Cache the Die faces for string representations
+            Bid.prototype.DieFaces = new Array(7);
+            Bid.prototype.DieFaces[0] = "Empty";
+            Bid.prototype.DieFaces[1] = "1";
+            Bid.prototype.DieFaces[2] = "2";
+            Bid.prototype.DieFaces[3] = "3";
+            Bid.prototype.DieFaces[4] = "4";
+            Bid.prototype.DieFaces[5] = "5";
+            Bid.prototype.DieFaces[6] = "*";
+            
+            // Dump the bid to a string
+            Bid.prototype.toString = function() 
+            {
+               return this.DieFaces[this.die] + " x " + this.count;
+            }      
+      ]]>
+   </script>
+   
+   <!-- 
+      Challenge Object - an object that represents a challenge
+      
+      Challenge(type, bidder, challenger) - constructor
+      Challenge.DoubtChallenge
+      Challenge.BeliefChallenge
+   -->
+   <script type="text/ecmascript">
+      <![CDATA[
+         function Challenge(type, bidder, challenger) 
+         {
+            this.type = type;
+            this.bidder = bidder;
+            this.challenger = challenger;
+         }
+         
+         Challenge.DoubtChallenge = 0;
+         Challenge.BeliefChallenge = 1;
+      ]]>
+   </script>
+   
+   <!-- 
+      Challenge Result 
+   
+      Result(result);
+      Result.Failure;
+      Result.Success;
+   -->
+   <script type="text/ecmascript">
+      <![CDATA[
+         function Result(result) 
+         {
+            this.result = result;
+         }
+         
+         Result.prototype.Failure = 0;
+         Result.prototype.Success = 1;         
+      ]]>
+   </script>
+   
+   <!-- 
+      Hand Object 
+      
+      Hand(seat, die1, die2, ...);
+      Hand.dies[n] -> die values
+      Hand.seat -> player seat
+   -->
+   <script type="text/ecmascript">
+      <![CDATA[
+         // Call Hand(seat, dice[]);
+         function Hand(seat, dice) 
+         {
+            this.dies = new Array(dice.length);
+            for ( var i = 0; i < dice.length; i++ ) 
+            {
+               this.dies[i] = dice[i];
+            }
+            this.seat = seat;
+         }
+      ]]>
+   </script>
+   
+   <!-- 
+      HistoryEntry Object 
+   
+      HistoryEntry();
+      SetBid(bid) - bid -> bid object
+      Challenge(challenge) - challenge -> challenge object
+      AddHand(hand) - hand -> hand object
+      Result(result) - result -> Result.Success or Result.Failure
+   -->
+   <script type="text/ecmascript">
+      <![CDATA[
+         // History Object holds info.gameseats history objects, bid, challenge, result
+         function HistoryEntry() 
+         {
+            this.hands = new Array();
+            this.bid = new Bid(info.seat, 0,0);
+            this.dieseat = null;
+            this.diedelta = 0;
+         }
+         
+         HistoryEntry.prototype.SetBid = function(bid, count, die) 
+         {
+            if ( typeof(bid) == "object")
+            {
+               this.bid = new Bid(bid.seat, bid.count, bid.die);
+            }
+            else 
+            {
+               this.bid = new Bid(bid, count, die);
+            }
+         }        
+         
+         HistoryEntry.prototype.Challenge = function(challenge)
+         {
+            this.challenge = new Challenge(challenge.type, challenge.bidder, challenge.challenger);
+         }
+         
+         HistoryEntry.prototype.AddHand = function(hand) 
+         {
+            // Look and see if we already have a hand for this seat, and if so, we replace it
+            var bCopy = true;
+            
+            for ( var i = 0; i < this.hands.length; i++ ) 
+            {
+               if ( this.hands[i].seat == hand.seat )
+               {
+                  this.hands[i].dies = hand.dies;
+                  bCopy = false;
+                  break;
+               }
+            }
+            if ( bCopy == true )
+            {
+               this.hands[this.hands.length] = new Hand(hand.seat, hand.dies);         
+            }
+         }
+         
+         HistoryEntry.prototype.Result = function(result) 
+         {
+            this.result = new Result(result);
+         }                  
+      ]]>
+   </script>
+
+   <!-- Functions to communicate with the server -->
+   <script type="text/ecmascript">
+      <![CDATA[
+         var _Client = new Object();
+         
+         _Client.DieUseName = new Array(7);
+         _Client.DieUseName[0] = "";
+         _Client.DieUseName[1] = "#1Die";
+         _Client.DieUseName[2] = "#2Die";
+         _Client.DieUseName[3] = "#3Die";
+         _Client.DieUseName[4] = "#4Die";
+         _Client.DieUseName[5] = "#5Die";
+         _Client.DieUseName[6] = "#StarDie";
+         
+         _Client.GetDieUseName = function(value)
+         {
+            return ((value > 0 && value < 7) ? _Client.DieUseName[value] : "#MysteryDie");
+         }
+         
+         _Client.GetMinBid = function(die)
+         {
+            // Ok...figure out the minimum that they can bet for this die, and set it to that
+            if ( die > _Client.oCurrentRound.bid.die )
+            {
+                if ( die == 6 ) 
+                {
+                  nMinBid = Math.ceil(_Client.oCurrentRound.bid.count / 2);
+                } 
+                else
+                {
+                  nMinBid = _Client.oCurrentRound.bid.count;
+                }
+            }
+            else 
+            {
+               if ( _Client.oCurrentRound.bid.die == 6 && die != 6)
+               {
+                  nMinBid = (_Client.oCurrentRound.bid.count * 2) + 1;
+               }
+               else
+               {
+                  nMinBid = _Client.oCurrentRound.bid.count + 1;
+               }
+            }
+            
+            if ( nMinBid == 0 ) 
+            {
+               nMinBid = 1;
+            }
+            return nMinBid;
+         }
+
+         _Client.GetProperSeatName = function(seat)
+         {
+            var seatstring = "";
+            seatstring = seatstring + seat;
+            return seatstring.substr(0,1).toUpperCase() + seatstring.substring(1).toLowerCase();
+         }
+         
+         _Client.SetStatus = function(text)
+         {
+            ChangeElementText("Status.Text", text);
+         }
+         
+         _Client.Init = function() 
+         {
+            _Client.nCurrentHistoryView = -1;
+            _Client.bInConfiguration = true;
+            _Client.oCurrentRound = null;
+            _Client.nNumDice = 5;
+            _Client.bMyTurn = false;
+            _Client.oMyBid = new Bid(info.seat, 0, 0);
+            _Client.sTurn = "unset";
+            _Client.nTotalDice = 0;
+            _Client.nSpeedMode = 0;
+         }
+
+         _Client.DrawHistoryHand = function(hand)
+         {
+            // Are ids case specific...beleive so
+            var idString = "History.Board." + _Client.GetProperSeatName(hand.seat) + ".DiceContainer";
+            for ( var i = 0; i < hand.dies.length; i++ )
+            {
+               var idString2 = idString + ".Die" + (i+1);
+               var die_use_name = _Client.GetDieUseName(hand.dies[i]);;
+               
+               SetElementAttribute(idString2, "opacity", ((hand.dies[i] == 0) ? "0" : "1"));
+               SetElementNSAttribute(idString2, xlinkNS, "href", die_use_name);
+            }
+         }
+         
+         _Client.BlankHistoryDice = function() 
+         {
+            var hand = new Hand("red", [0,0,0,0,0,0,0,0,0,0]);
+
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "orange";
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "yellow";
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "green";
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "cyan";
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "blue";
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "violet";
+            _Client.DrawHistoryHand(hand);
+            hand.seat = "black";
+            _Client.DrawHistoryHand(hand);
+         }
+         
+         _Client.UpdateHistory = function(num)
+         {
+            var message = "Round " + (num + 1) + " of " + _Client.history.length;
+            DebugPrint("History Message: " + message);
+            ChangeElementText("History.Board.Position.Message", message);
+            var history = _Client.history[num];
+            _Client.nCurrentHistoryView = num;
+            
+            _Client.BlankHistoryDice();
+            
+            var Totals = new Array(7);
+            Totals[0] = 0;
+            Totals[1] = 0;
+            Totals[2] = 0;
+            Totals[3] = 0;
+            Totals[4] = 0;
+            Totals[5] = 0;
+            Totals[6] = 0;
+            for ( var i = 0; i < history.hands.length; i++ ) 
+            {
+               var hand = history.hands[i];
+               
+               _Client.DrawHistoryHand(hand);
+               DebugPrint("hand " + (i+1) + " of " + history.hands.length + " : " + hand.dies);
+               for ( var j = 0; j < hand.dies.length; j++ ) 
+               {
+                  Totals[hand.dies[j]]++;
+               }
+            }
+            
+            ChangeElementText("History.Board.Totals.1.Text", Totals[1]);
+            ChangeElementText("History.Board.Totals.2.Text", Totals[2]);
+            ChangeElementText("History.Board.Totals.3.Text", Totals[3]);
+            ChangeElementText("History.Board.Totals.4.Text", Totals[4]);
+            ChangeElementText("History.Board.Totals.5.Text", Totals[5]);
+            ChangeElementText("History.Board.Totals.6.Text", Totals[6]);
+            
+            // History.Board.Message.Bid.Die
+            SetElementNSAttribute("History.Board.Message.Bid.Die", xlinkNS, "href", _Client.GetDieUseName(history.bid.die));
+            ChangeElementText("History.Board.Message.Bid.Text", history.bid.count);
+
+            SetElementAttribute("History.Board.Message", "opacity", "1");
+            ChangeElementText("History.Board.Message.Challenger", history.challenge.challenger);            
+            SetElementAttribute("History.Board.Message.Challenger", "class", history.challenge.challenger);
+            ChangeElementText("History.Board.Message.Verb", ((history.challenge.type == Challenge.DoubtChallenge) ? "doubted" : "believed"));
+            ChangeElementText("History.Board.Message.Bidder", history.challenge.bidder + "'s");
+            SetElementAttribute("History.Board.Message.Bidder", "class", history.challenge.bidder);
+            
+            if ( history.diedelta != 0 && history.dieseat != null )
+            {
+            
+               DebugPrint("history.diedelta: " + history.diedelta + " " + "history.dieseat: " + history.dieseat);
+               // History.Board.Message.DieDeltaSeat
+               ChangeElementText("History.Board.Message.DieDeltaSeat", history.dieseat);
+               SetElementAttribute("History.Board.Message.DieDeltaSeat", "class", history.dieseat);
+               SetElementAttribute("History.Board.Message.DieDeltaSeat", "opacity", "1");
+               
+                               // History.Board.Message.DieDeltaMessage
+               DebugPrint("Trying to change the text");
+               ChangeElementText("History.Board.Message.DieDeltaMessage", 
+                  ((history.diedelta > 0)  ? "gained " : "lost ") + Math.abs(history.diedelta) + 
+                  ((Math.abs(history.diedelta) > 0) ? " dice." : " die."));
+               SetElementAttribute("History.Board.Message.DieDeltaMessage", "opacity", "1");
+            }
+            else
+            {
+               SetElementAttribute("History.Board.Message.DieDeltaMessage", "opacity", "0");
+               SetElementAttribute("History.Board.Message.DieDeltaSeat", "opacity", "0");
+            }
+         }
+         
+         _Client.PrintHistory = function()
+         {
+            DebugPrint("Printing History");
+            for ( var i = 0; i < _Client.history.length; i++ ) 
+            {
+               
+               for ( var j = 0; j < _Client.history[i].hands.length; j++ )
+               {
+                  for ( var s in _Client.history[i].hands[j] ) 
+                  {
+                     DebugPrint(s);
+                  }
+                  DebugPrint("[History:" + i + "] Hand(" + j + ") " + _Client.history[i].hands[j]);
+               }
+               DebugPrint("[History:" + i + "] Bid - " + _Client.history[i].bid);
+            }
+         }
+         
+         _Client.Config = function(num_dice)
+         {
+            // Verify that we are in the configuration state
+            if ( _Client.bInConfiguration) 
+            {
+               DebugPrint("rpc(\"adjust_dice_count\", " + num_dice + ");");
+               rpc("adjust_dice_count", num_dice);
+            }
+            else
+            {
+               // How are they calling this
+               alert("_Client.Config called at in appropriate time");
+            }
+         }
+
+         _Client.MakeBid = function(num, value)
+         {
+            DebugPrint("rpc(\"make_bid\", " + num + ", " + value + ");");
+            rpc("make_bid", num, value);
+         }
+         
+         _Client.DoubtChallenge = function()
+         {
+            rpc("state_doubt");
+         }
+         
+         _Client.BeliefChallenge = function()
+         {
+            rpc("state_belief");
+         }
+
+         _Client.CalcTotalDice = function() 
+         {
+            _Client.nTotalDice = 0;
+            for ( var i = 0; i < _Client.aPlayers.length; i++ ) 
+            {
+               _Client.nTotalDice += _Client.aDieCount[_Client.aPlayers[i]];
+            }
+            _Client.SetStatus("Total Dice: " + _Client.nTotalDice, "Total Dice: " + _Client.nTotalDice);
+//            DebugPrint("Total Dice: " + _Client.nTotalDice);
+         }
+         
+         _Client.BlankDice = function(seat, num)
+         {
+            // Are ids case specific...beleive so
+            var idStringPrefix = "Player.Board." + _Client.GetProperSeatName(seat);
+            var idStringHistory = "History.Board." + _Client.GetProperSeatName(seat);
+            for ( var i = 0; i < 10; i++ )
+            {
+               var idString2 = idStringPrefix + ".DiceContainer.Die" + (i+1);
+               SetElementNSAttribute(idString2, xlinkNS, "href", "#MysteryDie");
+               SetElementAttribute(idString2, "opacity", ((i < num) ? "1" : "0"));
+            }
+            
+            // Turn opacity for player board to full
+            SetElementAttribute(idStringPrefix, "opacity", ((_Client.aDieCount[seat] == 0) ? ".6" : "1"));            
+            
+            // Do the history too
+            SetElementAttribute(idStringHistory, "opacity", ((_Client.aDieCount[seat] == 0) ? ".6" : "1"));
+            
+            // Turn off the Last bet indicator
+            SetElementAttribute(idStringPrefix + ".LastBet", "opacity", "0");
+         }
+         
+         _Client.FixupDiceDisplay = function(seat)
+         {
+            var idString = "Player.Board." + _Client.GetProperSeatName(seat);            
+                          
+            for ( var i = 1; i <= 10; i++ )
+            {
+               SetElementAttribute(idString + ".DiceContainer.Die" + i, "opacity", ((i <= _Client.aDieCount[seat]) ? 1 : 0));
+            }         
+         }
+         
+         _Client.Init();
+         
+         FirstHistory = function() 
+         {
+            if ( _Client.nCurrentHistoryView > 0 ) 
+            {
+               _Client.nCurrentHistoryView = 0;
+               _Client.UpdateHistory(_Client.nCurrentHistoryView);
+            }
+         }
+         
+         PrevHistory = function()
+         {
+            if (_Client.nCurrentHistoryView > 0) 
+            {
+               _Client.nCurrentHistoryView--;
+               _Client.UpdateHistory(_Client.nCurrentHistoryView);
+            }
+         }
+         
+         NextHistory = function()
+         {
+            if (_Client.nCurrentHistoryView < (_Client.history.length - 1))
+            {
+               _Client.nCurrentHistoryView++;
+               _Client.UpdateHistory(_Client.nCurrentHistoryView);
+            }
+         }
+         
+         LastHistory = function() 
+         {
+            if (_Client.nCurrentHistoryView < (_Client.history.length - 1))
+            {
+               _Client.nCurrentHistoryView = (_Client.history.length - 1);
+               _Client.UpdateHistory(_Client.nCurrentHistoryView);
+            }     
+         }
+      ]]>
+   </script>
+      <script type="text/ecmascript">
+         <![CDATA[     
+            doc_svg = document.rootElement;
+            var svgNS = "http://www.w3.org/2000/svg";
+            var xlinkNS = "http://www.w3.org/1999/xlink";
+
+            
+            toggle_speed_mode = function() 
+            {
+               rpc("toggle_speed");
+            }
+            
+            speed_over = function() 
+            {
+               SetElementAttribute("Config.SpeedMode.Button.Rect", "class", "config-hot");
+            }
+            
+            speed_out = function() 
+            {
+               SetElementAttribute("Config.SpeedMode.Button.Rect", "class", ((_Client.nSpeedMode == 0) ? "config-unselected" : "config-selected") );
+            }
+            
+            volity.suspend_game = function ()
+            {
+               game.turn(null);
+            }
+            
+            game.set_speed = function(seat, speed)
+            {
+               _Client.nSpeedMode = speed;
+               
+               // Toggle the speed button here
+               SetElementAttribute("Config.SpeedMode.Button.Rect", "class", ((_Client.nSpeedMode == 0) ? "config-unselected" : "config-selected") );
+               if (!seat)
+               {
+                  seat = "The server";
+               }
+               ChangeElementText("Config.SpeedMode.Button.Text", (speed ? "ON" : "OFF"));
+               DebugPrint(seat + " has turned Speed mode " + (speed ? "on." : "off."));
+            }
+            
+            // Seat seat has changed the number of dice for the game to num dice. (Config Phase Only).
+            game.set_dice_count = function(seat, num) 
+            {
+               DebugPrint("Received game.set_dice_count(" + seat + "," + num + "); - Processing");
+               if ( num < 11 && num > 0 && _Client.bInConfiguration) 
+               {
+                  SetElementAttribute("Config.Rect." + _Client.nNumDice + "Dice", "class", "config-unselected");
+                  SetElementAttribute("Config.Rect." + num + "Dice", "class", "config-selected");
+                  _Client.nNumDice = num;
+
+                  // Handle the server doing this instead of a player.
+                  if (!seat)
+                  {
+                     seat = "The server";
+                  }
+                  DebugPrint(seat + " has requested " + num + ((num == 1) ? " die" : " dice") + " for this game.");
+               }
+            }
+            
+            // It is a new round of play. Bids are reset, etc. round_num starts at 1 and increments as the
+            // rounds continue.
+            game.new_round = function(round_num) 
+            {
+               DebugPrint("Received game.new_round(" + round_num + "); processing.");
+               DebugPrint("Round " + round_num + " has begun.");
+               if ( _Client.bInConfiguration ) 
+               {
+                  DebugPrint("Hiding config layer and showing game layer");
+                  
+                  // Hide the config layer
+                  SetElementAttribute("ConfigLayer", "visibility", "hidden");
+                  _Client.nCurrentHistoryView = -1;
+                  
+                  // Hide the place tokens
+                  SetElementAttribute("Player.Board.Red.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Orange.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Yellow.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Green.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Cyan.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Blue.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Violet.Place", "opacity", "0");
+                  SetElementAttribute("Player.Board.Black.Place", "opacity", "0");
+                                                    
+                  // Print out some of the information in the info collection
+                  DebugPrint("info.nickname: " + info.nickname);
+                  DebugPrint("info.seat: " + info.seat);
+                  
+                  _Client.bInConfiguration = false;
+                  _Client.history = new Array();   // Reset the History collection
+                  _Client.aDieCount = new Array(info.gameseats.length);
+                  _Client.aPlayers = new Array();
+                  for ( var i = 0; i < _Client.aDieCount.length; i++ ) 
+                  {
+                     _Client.aDieCount[info.gameseats[i]] = _Client.nNumDice;
+                     if (info.gameseats[i].players != "") 
+                     {
+                        _Client.aPlayers[_Client.aPlayers.length] = info.gameseats[i];
+                     }
+                  }
+
+                  // Show the star for the playe rthat we are
+                  if (info.seat)
+                  {
+                     var idString = "Player.Board." + _Client.GetProperSeatName(info.seat) + ".Circle";
+                  }
+                  SetElementAttribute(idString, "opacity", "1");
+                  
+                  // Blank All Dice
+                  _Client.BlankDice("red", 0);
+                  _Client.BlankDice("orange", 0);
+                  _Client.BlankDice("yellow", 0);
+                  _Client.BlankDice("blue", 0);
+                  _Client.BlankDice("cyan", 0);
+                  _Client.BlankDice("green", 0);
+                  _Client.BlankDice("violet", 0);
+                  _Client.BlankDice("black", 0);
+
+                  // Turn off all player boards
+                  SetElementAttribute("Player.Board.Red", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Orange", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Yellow", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Blue", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Cyan", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Green", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Violet", "opacity", ".25");
+                  SetElementAttribute("Player.Board.Black", "opacity", ".25");
+                  
+                  // Turn off all history boards
+                  SetElementAttribute("History.Board.Red", "opacity", ".25");
+                  SetElementAttribute("History.Board.Orange", "opacity", ".25");
+                  SetElementAttribute("History.Board.Yellow", "opacity", ".25");
+                  SetElementAttribute("History.Board.Blue", "opacity", ".25");
+                  SetElementAttribute("History.Board.Cyan", "opacity", ".25");
+                  SetElementAttribute("History.Board.Green", "opacity", ".25");
+                  SetElementAttribute("History.Board.Violet", "opacity", ".25");
+                  SetElementAttribute("History.Board.Black", "opacity", ".25");
+               }
+               else if ( _Client.oCurrentRound != null ) 
+               {
+                  _Client.history[_Client.history.length] = _Client.oCurrentRound;
+                  _Client.UpdateHistory(_Client.history.length - 1);
+               }
+               _Client.oCurrentRound = new HistoryEntry();
+                          
+               // Clear the turn indicator
+               SetElementAttribute("Player.Board.Red.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Orange.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Yellow.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Blue.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Cyan.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Green.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Violet.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Black.TurnIndicator", "opacity", "0");
+               
+               _Client.CalcTotalDice();
+               for ( var i = 0; i < _Client.aPlayers.length; i++ ) 
+               {
+                  _Client.BlankDice(_Client.aPlayers[i], _Client.aDieCount[_Client.aPlayers[i]]);
+               }
+
+               SetElementNSAttribute("Status.CurrentBet.Die", xlinkNS, "href", "#MysteryDie");
+               ChangeElementText("Status.CurrentBet.Text", 0);               
+               ChangeElementText("Status.CurrentRound.RoundNum.Text", round_num);
+
+               // reset bid information
+               _Client.oMyBid.die = 0;
+               _Client.oMyBid.count = 0;
+               
+               SetElementNSAttribute("Board.BettingPane.Bet.Die", xlinkNS, "href", "#MysteryDie");
+               ChangeElementText("Board.BettingPane.Bet.Text", 0);
+            }
+
+            // Seat seat has the list of dice given in the dicelist. 
+            game.reveal_dice = function(seat, dicelist)
+            {
+               DebugPrint("Received game.reveal_dice(" + seat + "," + dicelist + "); processing.");
+               var hand = new Hand(seat, dicelist);
+               
+               if ( null != _Client.oCurrentRound ) 
+               {
+                  _Client.oCurrentRound.AddHand(hand);
+               }
+               
+               // Only reveal dice directly on the board if they're mine.
+               if (seat == info.seat)
+               {
+                  var idString = "Player.Board." + _Client.GetProperSeatName(seat) + ".DiceContainer";
+                  for ( var i = 0; i < dicelist.length; i++ )
+                  {
+                     var idString2 = idString + ".Die" + (i+1);
+                     var die_use_name = _Client.GetDieUseName(dicelist[i]);;
+                   
+                     SetElementAttribute(idString2, "opacity", ((dicelist[i] == 0) ? "0" : "1"));
+                     SetElementNSAttribute(idString2, xlinkNS, "href", die_use_name);
+                  }
+               }
+            }
+            
+            // It is seat's turn.
+            game.turn = function(seat) 
+            {
+               DebugPrint("Received game.turn(" + seat + "); processing.");
+               if ( null != seat ) 
+               {
+                  seatmark(seat);
+               }
+               else 
+               {
+                  seatmark();
+               }
+               if ( null != seat && seat == info.seat )
+               {
+                  _Client.bMyTurn = true;
+                  
+                  var bHasBid = (_Client.oCurrentRound.bid.count != 0 && _Client.oCurrentRound.bid.die != 0);
+                  
+                  // Turn on bidding buttons
+                  SetElementAttribute("Board.BettingPane.BidButtons.Bet.Rect", "class", "buttonwhite");
+                  SetElementAttribute("Board.BettingPane.BidButtons.Bet.Text", "class", "buttontextenabled");
+
+                  SetElementAttribute("Board.BettingPane.BidButtons.Doubt.Rect", "class", ((bHasBid) ? "buttonwhite" : "buttongrey"));
+                  SetElementAttribute("Board.BettingPane.BidButtons.Doubt.Text", "class", ((bHasBid) ? "buttontextenabled" : "buttongrey"));
+                  
+                  SetElementAttribute("Board.BettingPane.BidButtons.Believe.Rect", "class", ((bHasBid) ? "buttonwhite" : "buttongrey"));
+                  SetElementAttribute("Board.BettingPane.BidButtons.Believe.Text", "class", ((bHasBid) ? "buttontextenabled" : "buttongrey"));
+                  
+                  SetElementAttribute("Board.BettingPane.Die1", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.Die2", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.Die3", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.Die4", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.Die5", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.Die6", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.AdjustCountUp.Event", "pointer-events", "all");
+                  SetElementAttribute("Board.BettingPane.AdjustCountDown.Event", "pointer-events", "all");
+               }     
+               else 
+               {
+                  // Turn on bidding buttons
+                  SetElementAttribute("Board.BettingPane.BidButtons.Bet.Rect", "class", "buttongrey");
+                  SetElementAttribute("Board.BettingPane.BidButtons.Bet.Text", "class", "buttontextdisabled");
+
+                  SetElementAttribute("Board.BettingPane.BidButtons.Doubt.Rect", "class", "buttongrey");
+                  SetElementAttribute("Board.BettingPane.BidButtons.Doubt.Text", "class", "buttontextdisabled");
+                  
+                  SetElementAttribute("Board.BettingPane.BidButtons.Believe.Rect", "class", "buttongrey");
+                  SetElementAttribute("Board.BettingPane.BidButtons.Believe.Text", "class", "buttontextdisabled");
+                  
+                  SetElementAttribute("Board.BettingPane.Die1", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.Die2", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.Die3", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.Die4", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.Die5", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.Die6", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.AdjustCountUp.Event", "pointer-events", "none");
+                  SetElementAttribute("Board.BettingPane.AdjustCountDown.Event", "pointer-events", "none");
+               }
+               
+               
+               // Turn off previous seat marker
+               if (_Client.sTurn != "unset")
+               {
+                  SetElementAttribute(
+                     "Player.Board." + _Client.GetProperSeatName(_Client.sTurn) + ".TurnIndicator",
+                     "opacity", "0");
+               }
+               
+               if ( null != seat ) 
+               {
+                  SetElementAttribute(
+                     "Player.Board." + _Client.GetProperSeatName(seat) + ".TurnIndicator",
+                     "opacity", "1");
+               }
+               
+               _Client.sTurn = seat;
+               
+               // Blank bid
+               _Client.oMyBid.die = 0;
+               _Client.oMyBid.count = 0;
+
+               SetElementNSAttribute("Board.BettingPane.Bet.Die", xlinkNS, "href", "#MysteryDie");
+               ChangeElementText("Board.BettingPane.Bet.Text", 0);
+            }
+            
+            // Seat seat has placed a bid of num dice with value value
+            game.bid = function(seat, num, value) 
+            {
+               DebugPrint("Received game.bid(" + seat + "," + num + "," + value + "); processing.");
+               _Client.oCurrentRound.SetBid(seat, num, value);
+               DebugPrint(seat + " has bid " + num + " x " + ((value == 6) ? ((num == 1) ? "Star" : "Stars") : ((num == 1) ? value : (value + "s"))) + ".");
+
+               // Update the bid dice
+               var die_use_name = _Client.GetDieUseName(_Client.oCurrentRound.bid.die);
+               SetElementNSAttribute("Status.CurrentBet.Die", xlinkNS, "href", die_use_name);
+               ChangeElementText("Status.CurrentBet.Text", _Client.oCurrentRound.bid.count);
+               
+               // Update the seats bid dice
+               var idStringPrefix = "Player.Board." + _Client.GetProperSeatName(seat) + ".LastBet";
+               SetElementAttribute(idStringPrefix, "opacity", "1");
+               SetElementNSAttribute(idStringPrefix + ".Die", xlinkNS, "href", die_use_name);
+               ChangeElementText(idStringPrefix + ".Text", _Client.oCurrentRound.bid.count);
+            }
+            
+            // Player seated at seat doubter has placed a doubt challenge for the bid player at seat doubtee placed
+            game.doubted = function(doubter, doubtee)
+            {
+               DebugPrint("Received game.doubted(" + doubter + "," + doubtee + "); processing.");
+               DebugPrint(doubter + " doubts " + doubtee + ".");
+               _Client.oCurrentRound.Challenge(new Challenge(Challenge.DoubtChallenge,doubtee, doubter));
+
+            }
+            
+            // Player seated at seat believer has placed a belief challenge for the bid player at sit believee placed
+            game.believed = function(believer, believee) 
+            {
+               DebugPrint("Received game.believed(" + believer + "," + believee + "); processing.");
+               DebugPrint(believer + " believes " + believee + ".");
+               _Client.oCurrentRound.Challenge(new Challenge(Challenge.BeliefChallenge,believee,believer));
+            }
+            
+            // Seat seat has lost a die
+            game.remove_die = function(seat) 
+            {
+               DebugPrint("Received game.remove_die(" + seat + "); processing.");
+               DebugPrintIf(_Client.aDieCount[seat] == 0, seat + " has no dice to lose");
+               if ( _Client.aDieCount[seat] > 0 )
+               {
+                  _Client.aDieCount[seat] = _Client.aDieCount[seat] - 1;               
+
+                  if ( _Client.oCurrentRound.dieseat == null || _Client.oCurrentRound.dieseat != seat ) 
+                  {
+                     DebugPrintIf(_Client.oCurrentRound.dieseat != null, "Removing die for " + seat + " when previous seat was " + _Client.oCurrentRound.dieseat);
+                     _Client.oCurrentRound.dieseat = seat;
+                     _Client.oCurrentRound.diedelta = -1;
+                  }
+                  else 
+                  {
+                     _Client.oCurrentRound.diedelta = _Client.oCurrentRound.diedelta - 1;
+                  }               
+               }
+               DebugPrint(seat + " has lost a die (" + _Client.aDieCount[seat] + " remaining).");
+               _Client.FixupDiceDisplay(seat);
+               _Client.CalcTotalDice();
+               
+            }
+            
+            // Seat seat has gained a die
+            game.add_die = function(seat) 
+            {
+               DebugPrint("Received game.add_die(" + seat + "); processing.");
+               DebugPrintIf(_Client.aDieCount[seat] == _Client.nNumDice, "Already has max die");
+               if ( _Client.aDieCount[seat] < _Client.nNumDice ) 
+               {
+                  _Client.aDieCount[seat] = _Client.aDieCount[seat] + 1;
+
+                  if ( _Client.oCurrentRound.dieseat == null || _Client.oCurrentRound.dieseat != seat ) 
+                  {
+                     DebugPrintIf(_Client.oCurrentRound.dieseat != null, "Adding die for " + seat + " when previous seat was " + _Client.oCurrentRound.dieseat);
+                     _Client.oCurrentRound.dieseat = seat;
+                     _Client.oCurrentRound.diedelta = 1;
+                  }
+                  else 
+                  {
+                     _Client.oCurrentRound.diedelta = _Client.oCurrentRound.diedelta + 1;
+                  }               
+               }
+               
+               DebugPrint(seat + " has gained a die (" + _Client.aDieCount[seat] + " remaining).");
+               _Client.FixupDiceDisplay(seat);
+               _Client.CalcTotalDice();
+            }
+            
+            // Seat seat has been eliminated
+            game.eliminated = function(seat) 
+            {
+               DebugPrint("Received game.eliminated(" + seat + "); processing.");
+               DebugPrint(seat + " has been eliminated.");
+               _Client.aDieCount[seat] = 0;
+            }
+            
+            // The game is over. Seatlist is a list of the players by rank, ascending order
+            game.over = function(seatlist)
+            {
+               DebugPrint("Received game.over(" + seatlist + "); processing.");
+               _Client.SetStatus(seatlist[0] + " has won!", seatlist[0] + " has won the game!");
+               _Client.bInConfiguration = true;
+               
+               // Add the last history item to the history
+               if ( _Client.oCurrentRound != null ) 
+               {
+                  _Client.history[_Client.history.length] = _Client.oCurrentRound;
+                  _Client.UpdateHistory(_Client.history.length - 1);
+               }
+               _Client.history = null;
+               
+               // Clear the turn indicator
+               SetElementAttribute("Player.Board.Red.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Orange.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Yellow.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Blue.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Cyan.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Green.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Violet.TurnIndicator", "opacity", "0");
+               SetElementAttribute("Player.Board.Black.TurnIndicator", "opacity", "0");
+               
+               // Clear the turn indicator
+               SetElementAttribute("Player.Board.Red.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Orange.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Yellow.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Blue.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Cyan.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Green.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Violet.Circle", "opacity", "0");
+               SetElementAttribute("Player.Board.Black.Circle", "opacity", "0");
+
+               // Show rank list
+               var rank_modifier = new Array(8);
+               rank_modifier[0] = "st";
+               rank_modifier[1] = "nd";
+               rank_modifier[2] = "rd";
+               rank_modifier[3] = "th";
+               rank_modifier[4] = "th";
+               rank_modifier[5] = "th";
+               rank_modifier[6] = "th";
+               rank_modifier[7] = "th";
+               
+               for ( var i = 0; i < seatlist.length; i++ ) 
+               {
+                  var idString = "Player.Board." + _Client.GetProperSeatName(seatlist[i]);
+                  
+                  SetElementAttribute(idString, "opacity", "1");
+                  ChangeElementText(idString + ".PlaceNumber", (i+1));
+                  ChangeElementText(idString + ".PlaceEnding", rank_modifier[i]);
+                  SetElementAttribute(idString + ".Place", "opacity", "1");
+                  
+                  // Turn off all but the 2 die
+                  SetElementAttribute(idString + ".DiceContainer.Die1", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die2", "opacity", "1");
+                  SetElementNSAttribute(idString + ".DiceContainer.Die2", xlinkNS, "href", "#" + (i+1) + "Die");
+                  SetElementAttribute(idString + ".DiceContainer.Die3", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die4", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die5", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die6", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die7", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die8", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die9", "opacity", "0");
+                  SetElementAttribute(idString + ".DiceContainer.Die10", "opacity", "0");
+                  
+                  
+               }
+               
+               
+               // Show the config layer
+               SetElementAttribute("ConfigLayer", "visibility", "visible");
+               
+               // Mark the wining seat
+               var seatstring = "";
+               seatstring += seatlist[0];
+               seat_notification_dict = [];
+               seat_notification_dict[seatstring] = "win";
+               seatmark(seat_notification_dict);
+               
+            }
+            ]]>
+      </script>
+   <script type="text/ecmascript">
+      <![CDATA[
+      function CONFIG_BoxOver(e)
+      {
+         var rect = e.target;
+         rect.setAttribute("class", "config-hot");
+      }
+      
+      function CONFIG_BoxOut(e,box_num)
+      {
+         var rect = e.target;
+         if ( box_num == _Client.nNumDice ) 
+         {
+            rect.setAttribute("class", "config-selected");
+         }
+         else
+         {
+            rect.setAttribute("class", "config-unselected");
+         }
+      }
+      
+      function CONFIG_BoxClick(num_dice)
+      {
+         _Client.Config(num_dice);
+      }
+      
+      function changeText (text_object, new_string)
+      {
+         var new_node;
+
+         removeChildren(text_object);
+         new_node = document.createTextNode(new_string);
+         text_object.appendChild(new_node);
+      }
+
+      function removeChildren (parent)
+      {
+         var object, list;
+         
+         list = parent.childNodes;
+         
+         while (list.length > 0)
+         {
+            object = list.item(0);
+            parent.removeChild(object);
+         }
+      }
+      
+      function place_bet()
+      {
+         _Client.MakeBid(_Client.oMyBid.count, _Client.oMyBid.die);
+      }
+      
+      function doubt()
+      {
+         _Client.DoubtChallenge();
+      }
+      
+      function believe()
+      {
+         _Client.BeliefChallenge();
+      }
+      
+      function close_help()
+      {
+         SetElementAttribute("HelpLayer", "visibility", "hidden");
+      }
+      
+      function open_help()
+      {
+         DebugPrint("open help");
+         
+         var Visibility = GetElementAttribute("HelpLayer", "visibility");
+         if ( null != Visibility && "visible" != Visibility )
+         {
+            SetElementAttribute("HelpLayer", "visibility", "visible");
+         }
+         else
+         {
+            SetElementAttribute("HelpLayer", "visibility", "hidden");
+         }
+      }
+      
+      function increase_bet()
+      {
+         if ( _Client.oMyBid.count < _Client.nTotalDice )
+         {
+            _Client.oMyBid.count = _Client.oMyBid.count + 1;
+            ChangeElementText("Board.BettingPane.Bet.Text", _Client.oMyBid.count);
+         }
+      }
+      
+      function decrease_bet()
+      {
+         // Figure out what is the lowest I can bid
+         var nMinBid = _Client.GetMinBid(_Client.oMyBid.die);
+                              
+         if ( _Client.oMyBid.count > nMinBid )
+         {
+            _Client.oMyBid.count = _Client.oMyBid.count - 1;
+            ChangeElementText("Board.BettingPane.Bet.Text", _Client.oMyBid.count);
+         }
+      }
+      
+      function bet(die)
+      {
+         // is it the same face?
+         if ( _Client.oMyBid.die == die ) 
+         {
+            _Client.oMyBid.count = _Client.oMyBid.count + 1;
+         }
+         else 
+         {
+            _Client.oMyBid.die = die;
+            _Client.oMyBid.count = _Client.GetMinBid(die);
+         }
+
+         var die_use_name = _Client.GetDieUseName(_Client.oMyBid.die);
+         SetElementNSAttribute("Board.BettingPane.Bet.Die", xlinkNS, "href", die_use_name);
+         ChangeElementText("Board.BettingPane.Bet.Text", _Client.oMyBid.count);
+      }
+      ]]>
+   </script>
+      <defs id="Defs">
+
+      <!-- Style Sheet -->
+      <style type="text/css">
+         <![CDATA[
+            
+            rect.red
+            {
+               fill: #FFCCCC;
+               stroke: #FF0000;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.orange
+            {
+               fill: #FFE7CC;
+               stroke: #FF8800;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.yellow
+            {
+               fill: #FFFFE7;
+               stroke: #FFFF00;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.blue
+            {
+               fill: #CCCCFF;
+               stroke: #0000FF;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.black
+            {
+               fill: #CCCCCC;
+               stroke: #000000;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.cyan
+            {
+               fill: #CCE7E7;
+               stroke: #008888;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.green
+            {
+               fill: #CCFFCC;
+               stroke: #00FF00;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+            
+            rect.violet
+            {
+               fill: #E7CCE7;
+               stroke: #880088;
+               stroke-width: 3;
+               pointer-events: none;
+            }
+
+            rect.empty
+            {
+               fill: none;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: all;
+            }
+            
+            rect.die 
+            {
+               fill: #FFFFFF;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: all;
+            }
+            
+            rect.history
+            {
+               fill: #E5CCb2;
+               stroke: #663300;
+               stroke-width: 3;
+            }
+            
+            rect.config-unselected 
+            {
+               fill: #FFFFFF;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: visible;
+            }
+            
+            rect.config-hot
+            {
+               fill: #ffff00;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: visible;
+            }
+
+            rect.config-selected
+            {
+               fill: #CCCCCC;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: visible;
+            }
+            
+            rect.invisible
+            {
+               opacity: 0;
+               file: #000000;
+               stroke: #000000;
+               stroke-width: 0;
+               pointer-events: all;
+            }
+            
+            rect.buttongrey
+            {
+               fill: #CCCCCC;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: none;
+            }
+
+            rect.buttonwhite 
+            {
+               fill: #FFFFFF;
+               stroke: #000000;
+               stroke-width: 1.5;
+               pointer-events: all;
+            }
+            
+            text.buttontextenabled
+            {
+               fill: #000000;
+            }
+            
+            text.buttontextdisabled
+            {
+               fill: #999999;
+            }
+            
+            text.red
+            {
+               fill: #FF0000;
+            }
+            
+            text.orange
+            {
+               fill: #ff8800;
+            }
+            
+            text.yellow
+            {
+               fill: #FFFF00;
+            }
+            
+            text.green
+            {
+               fill: #00FF00;
+            }
+            
+            text.blue
+            {
+               fill: #0000FF;
+            }
+            
+            text.violet
+            {
+               fill: #880088;
+            }
+            
+            text.black
+            {
+               fill: #000000;
+            }
+            
+            text.cyan
+            {
+               fill: #008888;
+            }
+
+            text
+            {
+               pointer-events: none;
+               text-anchor: middle;
+            }
+            
+            g
+            {
+               pointer-events: none;
+            }
+            
+            rect.board
+            {
+               pointer-events: none;
+               fill: #336633;
+            }
+            
+            rect.seperator
+            {
+               pointer-events: none;
+               fill: #DDDDDD;
+               stroke: #999999;
+               stroke-width: 1.5;
+            }
+            
+            circle.turn
+            {
+               pointer-events: none;
+               fill: none;
+               stroke: #000000;
+               stroke-width: 1;
+            }
+               
+         ]]>
+      </style>
+         <g id="8Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(37.5,19.5)"/>
+            <circle r="7" transform="translate(37.5,55.5)"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(19.5,37.5)"/>
+            <circle r="7" transform="translate(19.5,55.5)"/>
+            <circle r="7" transform="translate(55.5,19.5)"/>
+            <circle r="7" transform="translate(55.5,37.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <g id="7Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(37.5,37.5)"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(19.5,37.5)"/>
+            <circle r="7" transform="translate(19.5,55.5)"/>
+            <circle r="7" transform="translate(55.5,19.5)"/>
+            <circle r="7" transform="translate(55.5,37.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <g id="6Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(19.5,37.5)"/>
+            <circle r="7" transform="translate(19.5,55.5)"/>
+            <circle r="7" transform="translate(55.5,19.5)"/>
+            <circle r="7" transform="translate(55.5,37.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <!-- 5 Die -->
+         <g id="5Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(37.5,37.5)"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(55.5,19.5)"/>
+            <circle r="7" transform="translate(19.5,55.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <!-- 4 Die -->
+         <g id="4Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(55.5,19.5)"/>
+            <circle r="7" transform="translate(19.5,55.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <!-- 3 Die -->
+         <g id="3Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(37.5,37.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <!-- 2 Die -->
+         <g id="2Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(19.5,19.5)"/>
+            <circle r="7" transform="translate(55.5,55.5)"/>
+         </g>
+         <!-- 1 Die -->
+         <g id="1Die">
+            <rect height="75" width="75" rx="15" ry="15" class="die"/>
+            <circle r="7" transform="translate(37.5,37.5)"/>
+         </g>
+         <!-- star -->
+         <g id="StarDie">
+            <rect width="75" height="75" rx="15" ry="15" class="die"/>        
+            <polygon points="11.9,0  14.8,8.6 23.8,8.6  16.6,14 19.2,22.6  11.9,17.5 4.6,22.6  7.2,14 0,8.6  9,8.6" transform="translate(13.25,13.25) scale(2)"/>
+         </g>       
+         <g id="MysteryDie">
+            <rect width="75" height="75" rx="15" ry="15" class="die"/>
+         </g>
+         <g id="Star">
+            <polygon style="fill:#FFFF00; stroke-width: 1; stroke:#000000;" points="11.9,0  14.8,8.6 23.8,8.6  16.6,14 19.2,22.6  11.9,17.5 4.6,22.6  7.2,14 0,8.6  9,8.6" transform="translate(13.25,13.25) scale(2)"/>
+         </g>
+         <g id="TurnIndicator">
+            <polygon style="fill:#0000FF; stroke-width: 1; stroke:#000000;" points="15,27 27,15 15,3 15,10, 1,10, 1,20 15,20"/>
+         </g>
+         <g id="HelpButton">
+            <rect width="75" height="75" rx="15" ry="15" fill="#0000FF"/>
+            <text font-size="55" fill="white" stroke="black" stroke-width="1" font-weight="900" font-stretch="extra-expanded" transform="translate(35,57.5)">?</text>
+         </g>
+   </defs>
+   <!-- 1000x625 -->
+   <g id="BoardLayer">
+      <rect width="10000" height="10000" class="board" transform="translate(-5000,-5000)"/>
+      <g id="Status" transform="translate(10,10)">
+         <rect width="980" height="50" rx="10" ry="10" class="seperator"/>
+         <g id="Status.CurrentRound">
+            <text font-size="35" id="Status.CurrentRound.Round.Text" text-anchor="start" transform="translate(70,40)">Round:</text>
+            <text font-size="35" id="Status.CurrentRound.RoundNum.Text" text-anchor="end" transform="translate(170,40)">1</text>
+         </g>
+         <g>
+            <line x1="207.5" x2="207.5" y1="5" y2="45" stroke="#000000" stroke-width="1"/>
+            <line x1="743" x2="743" y1="5" y2="45" stroke="#000000" stroke-width="1"/>
+            <line x1="917" x2="917" y1="5" y2="45" stroke="#000000" stroke-width="1"/>
+         </g>
+         <g>
+            <text font-size="35" id="Status.Text" transform="translate(480,40)">Game hasn't started.</text>
+         </g>
+         <g id="Status.CurrentBet" transform="translate(770,7.5) scale(.5)">
+            <g>
+               <text font-size="70" transform="translate(20,65)">Bid:</text>
+            </g>
+            <use id="Status.CurrentBet.Die" xlink:href="#MysteryDie" transform="translate(100,0)"/>
+            <text font-size="30" transform="translate(192,47.5)">X</text>
+            <g transform="translate(187,0)">
+               <text id="Status.CurrentBet.Text" font-size="65" transform="translate(55,65)">0</text>
+            </g>
+         </g>
+         <g id="HelpButton">
+            <use id="HelpButton.Button" xlink:href="#HelpButton" transform="translate(930,7.5) scale(.5)"/>
+            <rect id="HelpButton.Button.Rect" height="37.5" width="37.5" class="invisible" onclick="open_help()"  transform="translate(930,7.5)"/>
+         </g>
+      </g>
+      <g id="Player.Boards" transform="translate(0,60)">
+         <g id="Player.Board.Red" transform="translate(10,10)">
+            <rect width="550" height="52.5" class="red"/>
+            <circle id="Player.Board.Red.Circle" r="19" opacity="0" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Red.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Red.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Red.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Red.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Red.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Red.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Red.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Red.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Red.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Red.LastBet.Die" xlink:href="#1Die" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Red.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Orange" transform="translate(10,70.5)">
+            <rect width="550" height="52.5" class="orange"/>
+            <circle id="Player.Board.Orange.Circle" r="19" opacity="0" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Orange.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Orange.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Orange.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Orange.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Orange.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Orange.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Orange.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Orange.LastBet" opacity="0"  transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Orange.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Orange.LastBet.Die" xlink:href="#2Die" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Orange.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Yellow" transform="translate(10,131)">
+            <rect width="550" height="52.5" class="yellow"/>
+            <circle id="Player.Board.Yellow.Circle" r="19" opacity="0" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Yellow.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Yellow.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Yellow.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Yellow.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Yellow.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Yellow.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Yellow.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Yellow.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Yellow.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Yellow.LastBet.Die" xlink:href="#3Die" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Yellow.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Green" transform="translate(10,191.5)">
+            <rect width="550" height="52.5" class="green"/>
+            <circle id="Player.Board.Green.Circle" r="19" opacity="0" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Green.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Green.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Green.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Green.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Green.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Green.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Green.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Green.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Green.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Green.LastBet.Die" xlink:href="#4Die" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Green.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Cyan" transform="translate(10,252)">
+            <rect width="550" height="52.5" class="cyan"/>
+            <circle id="Player.Board.Cyan.Circle" r="19" opacity="0" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Cyan.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Cyan.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Cyan.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Cyan.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Cyan.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Cyan.DiceContainer.Die1" xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die2" xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die3" xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die4" xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die5" xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die6" xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die7" xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die8" xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die9" xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Cyan.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0"  transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Cyan.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Cyan.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Cyan.LastBet.Die" xlink:href="#MysteryDie" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Cyan.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Blue" transform="translate(10,312.5)" >
+            <rect width="550" height="52.5" class="blue"/>
+            <circle id="Player.Board.Blue.Circle" r="19" opacity="0" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Blue.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Blue.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Blue.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Blue.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Blue.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Blue.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Blue.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Blue.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Blue.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Blue.LastBet.Die" xlink:href="#5Die" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Blue.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Violet" transform="translate(10,373)">
+            <rect width="550" height="52.5" class="violet"/>
+            <circle id="Player.Board.Violet.Circle" opacity="0" r="19" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Violet.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Violet.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Violet.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Violet.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Violet.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Violet.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Violet.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Violet.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Violet.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Violet.LastBet.Die" xlink:href="#6Die" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Violet.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+         <g id="Player.Board.Black" transform="translate(10,433.5)">
+            <rect width="550" height="52.5" class="black"/>
+            <circle id="Player.Board.Black.Circle" opacity="0" r="19" transform="translate(26.5,28)" class="turn"/>
+            <use id="Player.Board.Black.TurnIndicator" opacity="0" xlink:href="#TurnIndicator" transform="translate(9,9) scale(1.25)"/>
+            <g id="Player.Board.Black.Place" opacity="0" transform="translate(30,43.5)">
+               <text font-size="50" id="Player.Board.Black.PlaceNumber" text-anchor="start">1</text>
+               <text font-size="20" id="Player.Board.Black.PlaceEnding" text-anchor="start" transform="translate(27,-20)" font-weight="600">st</text>
+            </g>
+            <g id="Player.Board.Black.DiceContainer" transform="translate(45,0)">
+               <use id="Player.Board.Black.DiceContainer.Die1"  xlink:href="#MysteryDie" opacity="0" transform="translate(5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die2"  xlink:href="#MysteryDie" opacity="0" transform="translate(47.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die3"  xlink:href="#MysteryDie" opacity="0" transform="translate(90,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die4"  xlink:href="#MysteryDie" opacity="0" transform="translate(132.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die5"  xlink:href="#MysteryDie" opacity="0" transform="translate(175,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die6"  xlink:href="#MysteryDie" opacity="0" transform="translate(217.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die7"  xlink:href="#MysteryDie" opacity="0" transform="translate(260.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die8"  xlink:href="#MysteryDie" opacity="0" transform="translate(302.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die9"  xlink:href="#MysteryDie" opacity="0" transform="translate(345.5,7.5) scale(.5)"/>
+               <use id="Player.Board.Black.DiceContainer.Die10" xlink:href="#MysteryDie" opacity="0" transform="translate(387.5,7.5) scale(.5)"/>
+            </g>
+            <g transform="translate(475,0)">
+               <line x1="0" x2="0" y1="5" y2="45" stroke="black" stroke-width="1"/>
+            </g>
+            <g id="Player.Board.Black.LastBet" opacity="0" transform="translate(480,2.5)">
+               <text font-size="15" transform="translate(30,15)">Last Bet:</text>
+               <g id="Player.Board.Black.LastBet.Display" transform="translate(5,20) scale(.3)">
+                  <use id="Player.Board.Black.LastBet.Die" xlink:href="#StarDie" transform="translate(0,0)"/>
+                  <text font-size="30" transform="translate(92,47.5)">X</text>
+                  <g transform="translate(77,0)">
+                     <text id="Player.Board.Black.LastBet.Text" font-size="70" transform="translate(67,65)">0</text>
+                  </g>
+               </g>
+            </g>
+         </g>
+      </g>
+      <!-- 125 for betting? -->
+      <g id="Board.BettingPane" transform="translate(10,555)">
+         <rect width="980" height="120" rx="10" ry="10" class="seperator"/>
+         <g id="Board.BettingPane.TextDescription">
+            <!-- Show each dice, a click of a different dice changes the face, a click on the same type increments-->
+            <text font-size="25" text-anchor="start" transform="translate(380,22.5)">Click a die to bet (increase) it. Arrows increase/decrease bid.</text>
+         </g>
+         <g id="Board.BettingPane.BettingRow" transform="translate(0,35)">
+            <g id="Board.BettingPane.ClickToBet">
+               <use id="Board.BettingPane.Die1" xlink:href="#1Die" transform="translate(10,0)" pointer-events="none" onclick="bet(1)"/>
+               <use id="Board.BettingPane.Die2" xlink:href="#2Die" transform="translate(90,0)" pointer-events="none" onclick="bet(2)"/>
+               <use id="Board.BettingPane.Die3" xlink:href="#3Die" transform="translate(170,0)" pointer-events="none" onclick="bet(3)"/>
+               <use id="Board.BettingPane.Die4" xlink:href="#4Die" transform="translate(250,0)" pointer-events="none" onclick="bet(4)"/>
+               <use id="Board.BettingPane.Die5" xlink:href="#5Die" transform="translate(330,0)" pointer-events="none" onclick="bet(5)"/>
+               <use id="Board.BettingPane.Die6" xlink:href="#StarDie" transform="translate(410,0)" pointer-events="none" onclick="bet(6)"/>
+            </g>
+            <g id="Board.BettingPane.Colon" transform="translate(490,0)">
+               <circle r="7" transform="translate(15,19.5)"/>
+               <circle r="7" transform="translate(15,55.5)"/>
+            </g>
+            <g id="Board.BettingPane.Bet" transform="translate(525,0)">
+               <use id="Board.BettingPane.Bet.Die" xlink:href="#MysteryDie" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="Board.BettingPane.Bet.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+            <g id="Board.BettingPane.AdjustCount" transform="translate(720,0)">
+               <!--<rect width="25" height="75" class="empty"/>-->
+               <rect width="31" height="75" class="die" rx="10" ry="10"/>
+               <line x1="0" x2="31" y1="37.5" y2="37.5" stroke-width="1" stroke="black"/>
+               <polygon id="Board.BettingPane.AdjustCountUp" points="5,30  26,30 16.5,9"/>
+               <polygon id="Board.BettingPane.AdjustCountDown" points="5,45 26,45 16.5,66"/>
+
+               <!-- time to get stupid - completely transparent rectangle to receive events -->
+               <!-- put at bottom so it is on top of everything -->
+               <rect id="Board.BettingPane.AdjustCountUp.Event" width="31" pointer-events="none" height="37.5" class="invisible" onclick="increase_bet()"/>
+               <rect id="Board.BettingPane.AdjustCountDown.Event" width="31" pointer-events="none" height="37.5" class="invisible" onclick="decrease_bet()" transform="translate(0,37.5)"/>
+            </g>
+            <g id="Board.BettingPane.BidButtons" transform="translate(770,-25)">
+               <g id="Board.BettingPane.BidButtons.Bet" transform="translate(0,0)">
+                  <rect id="Board.BettingPane.BidButtons.Bet.Rect" class="buttongrey" onclick="place_bet()" height="30" rx="10" ry="10" width="200"/>
+                  <text id="Board.BettingPane.BidButtons.Bet.Text" font-size="20" class="buttontextdisabled" transform="translate(100,22.5)">Bid</text>
+               </g>
+               <g id="Board.BettingPane.BidButtons.Doubt" transform="translate(0,35)">
+                  <rect id="Board.BettingPane.BidButtons.Doubt.Rect" class="buttongrey" onclick="doubt()" height="30" width="200" rx="10" ry="10"/>
+                  <text id="Board.BettingPane.BidButtons.Doubt.Text" font-size="20" class="buttontextdisabled" transform="translate(100,22.5)">Doubt Challenge</text>
+               </g>
+               <g id="Board.BettingPane.BidButtons.Believe" transform="translate(0,70)">
+                  <rect id="Board.BettingPane.BidButtons.Believe.Rect" class="buttongrey" onclick="believe()" height="30" width="200" rx="10" ry="10"/>
+                  <text id="Board.BettingPane.BidButtons.Believe.Text" font-size="20" class="buttontextdisabled" transform="translate(100,22.5)">Belief Challenge</text>
+               </g>
+            </g>
+         </g>
+      </g>
+      <g id="History.Board" transform="translate(570,70)">
+         <rect height="477" width="420" class="history"/>
+         <g id="History.Board.Title">
+            <text font-size="40" transform="translate(75,37.5)">History</text>
+            <text font-size="40" transform="translate(275,37.5)">Bet:</text>
+            <g id="History.Board.Message.Bid" transform="translate(320,6) scale(.5)">
+               <use id="History.Board.Message.Bid.Die" xlink:href="#StarDie" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(90,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Message.Bid.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+         </g>
+         <g id="History.Board.Hands" transform="translate(0,40)">
+            <g id="History.Board.Red"     transform="translate(140,10) scale(.6)">
+               <rect width="440.5" height="52.5" class="red"/>
+               <g id="History.Board.Red.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Red.DiceContainer.Die1"  opacity="0" xlink:href="#1Die" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die2"  opacity="0" xlink:href="#2Die" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die3"  opacity="0" xlink:href="#3Die" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die4"  opacity="0" xlink:href="#4Die" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die5"  opacity="0" xlink:href="#5Die" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die6"  opacity="0" xlink:href="#6Die" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die7"  opacity="0" xlink:href="#StarDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die8"  opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die9"  opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Red.DiceContainer.Die10" opacity="0" xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Orange"  transform="translate(140,47.5) scale(.6)">
+               <rect width="440.5" height="52.5" class="orange"/>
+               <g id="History.Board.Orange.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Orange.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Orange.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Yellow"  transform="translate(140,85) scale(.6)">
+               <rect width="440.5" height="52.5" class="yellow"/>
+               <g id="History.Board.Yellow.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Yellow.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Yellow.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Green"   transform="translate(140,122.5) scale(.6)">
+               <rect width="440.5" height="52.5" class="green"/>
+               <g id="History.Board.Green.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Green.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Green.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Cyan"    transform="translate(140,160) scale(.6)">
+               <rect width="440.5" height="52.5" class="cyan"/>
+               <g id="History.Board.Cyan.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Cyan.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Cyan.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Blue"    transform="translate(140,197.5) scale(.6)">
+               <rect width="440.5" height="52.5" class="blue"/>
+               <g id="History.Board.Blue.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Blue.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Blue.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Violet"  transform="translate(140,235) scale(.6)">
+               <rect width="440.5" height="52.5" class="violet"/>
+               <g id="History.Board.Violet.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Violet.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Violet.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+            <g id="History.Board.Black"   transform="translate(140,272.5) scale(.6)">
+               <rect width="440.5" height="52.5" class="black"/>
+               <g id="History.Board.Black.DiceContainer" transform="translate(7.5,0)">
+                  <use id="History.Board.Black.DiceContainer.Die1" opacity="0" xlink:href="#MysteryDie" transform="translate(5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die2" opacity="0" xlink:href="#MysteryDie" transform="translate(47.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die3" opacity="0" xlink:href="#MysteryDie" transform="translate(90,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die4" opacity="0" xlink:href="#MysteryDie" transform="translate(132.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die5" opacity="0" xlink:href="#MysteryDie" transform="translate(175,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die6" opacity="0" xlink:href="#MysteryDie" transform="translate(217.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die7" opacity="0" xlink:href="#MysteryDie" transform="translate(260.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die8" opacity="0" xlink:href="#MysteryDie" transform="translate(302.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die9" opacity="0" xlink:href="#MysteryDie" transform="translate(345.5,7.5) scale(.5)"/>
+                  <use id="History.Board.Black.DiceContainer.Die10" opacity="0"  xlink:href="#MysteryDie" transform="translate(387.5,7.5) scale(.5)"/>
+               </g>
+            </g>
+         </g>
+         <g id="History.Board.Totals" transform="translate(0,40)">
+            <g id="History.Board.Totals.1" transform="translate(10,10) scale(.6)">
+               <use xlink:href="#1Die" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Totals.1.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+            <g id="History.Board.Totals.2" transform="translate(10,60) scale(.6)">
+               <use xlink:href="#2Die" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Totals.2.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+            <g id="History.Board.Totals.3" transform="translate(10,110) scale(.6)">
+               <use xlink:href="#3Die" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Totals.3.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+            <g id="History.Board.Totals.4" transform="translate(10,160) scale(.6)">
+               <use xlink:href="#4Die" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Totals.4.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+            <g id="History.Board.Totals.5" transform="translate(10,210) scale(.6)">
+               <use xlink:href="#5Die" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Totals.5.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+            <g id="History.Board.Totals.6" transform="translate(10,260) scale(.6)">
+               <use xlink:href="#StarDie" transform="translate(0,0)"/>
+               <text font-size="30" transform="translate(92,47.5)">X</text>
+               <g transform="translate(77,0)">
+                  <text id="History.Board.Totals.6.Text" font-size="70" transform="translate(67,65)">0</text>
+               </g>
+            </g>
+         </g>
+         <g id="History.Board.Message" opacity="0" transform="translate(20,370)">
+            <g transform="translate(40,15)">
+               <text font-size="25" id="History.Board.Message.Challenger" class="red" text-anchor="start"></text>
+            </g>
+            <g transform="translate(150,15)">
+               <text font-size="25" id="History.Board.Message.Verb" class="black" text-anchor="start"></text>
+            </g>
+            <g transform="translate(270,15)">
+               <text font-size="25" id="History.Board.Message.Bidder" class="blue" text-anchor="start"></text>
+            </g>
+            <g transform="translate(360,15)">
+               <text font-size="25" class="black" text-anchor="start">bid.</text>
+            </g>
+            <g transform="translate(100,55)">
+               <text font-size="25" id="History.Board.Message.DieDeltaSeat" class="red" text-anchor="start">red</text>
+            </g>
+            <g transform="translate(230,55)">
+               <text font-size="25" opacity="0" id="History.Board.Message.DieDeltaMessage" class="black" text-anchor="start">lost a die.</text>
+            </g>            
+         </g>
+         <g id="History.Board.Position" transform="translate(3,445)">
+            <rect height="30" width="414" class="seperator"/>
+            <g id="History.Board.Position.First" transform="translate(5,2.5)">
+               <rect height="25" width="25" rx="5" ry="5" onclick="FirstHistory()"  class="die"/>
+               <line x1="5" x2="5" y1="5" y2="20" stroke="black" stroke-width="3"/>
+               <polygon points="8,12.5 20,5 20,20"/>
+            </g>
+            <g id="History.Board.Position.Prev" transform="translate(32.5,2.5)">
+               <rect height="25" width="25" rx="5" ry="5" onclick="PrevHistory()" class="die"/>
+               <polygon points="6.5,12.5 18.5,5 18.5,20"/>
+            </g>
+            <g transform="translate(207,23.5)">
+               <text id="History.Board.Position.Message" font-size="25">Round 0 of 0</text>
+            </g>
+            <g id="History.Board.Position.Next" transform="translate(356.5,2.5)">
+               <rect height="25" width="25" rx="5" ry="5" onclick="NextHistory()" class="die"/>
+               <polygon points="18.5,12.5 6.5,5 6.5,20"/>
+            </g>
+            <g id="History.Board.Position.Last" transform="translate(384,2.5)">
+               
+               <rect height="25" width="25" rx="5" ry="5" onclick="LastHistory()" class="die"/>
+               <line x1="20" x2="20" y1="5" y2="20" stroke="black" stroke-width="3"/>
+               <polygon points="17,12.5 5,5 5,20"/>
+            </g>
+         </g>
+      </g>
+   </g>
+   <g id="ConfigLayer" transform="translate(10,555)">
+      <rect width="980" height="120" fill="#999999" stroke="black" stroke-width="3"/>
+      <g id="Config.SelectDieGroup" transform="translate(-180,20)">
+         <text font-size="40" fill="white" font-weight="900" transform="translate(490,20)">Please select number of dice.</text>
+         <g transform="translate(245,30)">
+            <g id="Config.Group.1Dice" transform="translate(10,10)">
+               <rect id="Config.Rect.1Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(1)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,1)" />
+               <text id="Config.Text.1Dice" font-size="20" transform="translate(20,30)">1</text>
+            </g>
+            <g id="Config.Group.2Dice" transform="translate(60,10)">
+               <rect id="Config.Rect.2Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(2)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,2)" />
+               <text id="Config.Text.2Dice" font-size="20" transform="translate(20,30)">2</text>
+            </g>
+            <g id="Config.Group.3Dice" transform="translate(110, 10)">
+               <rect id="Config.Rect.3Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(3)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,3)" />
+               <text id="Config.Text.3Dice" font-size="20" transform="translate(20,30)">3</text>
+            </g>
+            <g id="Config.Group.4Dice" transform="translate(160, 10)">
+               <rect id="Config.Rect.4Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(4)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,4)" />
+               <text id="Config.Text.4Dice" font-size="20" transform="translate(20,30)">4</text>
+            </g>
+            <g id="Config.Group.5Dice" transform="translate(210, 10)">
+               <rect id="Config.Rect.5Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(5)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,5)" />
+               <text id="Config.Text.5Dice" font-size="20" transform="translate(20,30)">5</text>
+            </g>
+            <g id="Config.Group.6Dice" transform="translate(260, 10)">
+               <rect id="Config.Rect.6Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(6)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,6)" />
+               <text id="Config.Text.6Dice" font-size="20" transform="translate(20,30)">6</text>
+            </g>
+            <g id="Config.Group.7Dice" transform="translate(310, 10)">
+               <rect id="Config.Rect.7Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(7)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,7)" />
+               <text id="Config.Text.7Dice" font-size="20" transform="translate(20,30)">7</text>
+            </g>
+            <g id="Config.Group.8Dice" transform="translate(360, 10)">
+               <rect id="Config.Rect.8Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(8)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,8)" />
+               <text id="Config.Text.8Dice" font-size="20" transform="translate(20,30)">8</text>
+            </g>
+            <g id="Config.Group.9Dice" transform="translate(410, 10)">
+               <rect id="Config.Rect.9Dice" width="40" height="40" class="config-unselected"  rx="10" ry="10" onclick="CONFIG_BoxClick(9)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,9)" />
+               <text id="Config.Text.9Dice" font-size="20" transform="translate(20,30)">9</text>
+            </g>
+            <g id="Config.Group.10Dice" transform="translate(460, 10)">
+               <rect id="Config.Rect.10Dice" width="40" height="40" class="config-unselected" rx="10" ry="10" onclick="CONFIG_BoxClick(10)" onmouseover="CONFIG_BoxOver(evt)" onmouseout="CONFIG_BoxOut(evt,10)" />
+               <text id="Config.Text.10Dice" font-size="20" transform="translate(20,30)">10</text>
+            </g>
+         </g>
+      </g>
+      <g id="Config.SpeedMode" transform="translate(0,20)">
+         <text font-size="38" fill="white" font-weight="900" transform="translate(800,20)">Speed Mode</text>
+         <g id="SpeedModeButton" transform="translate(700,45)">
+            <rect id="Config.SpeedMode.Button.Rect" class="config-unselected" onclick="toggle_speed_mode()" height="30" rx="10" ry="10" width="100" transform="translate(50, 0)" onmouseover="speed_over()" onmouseout="speed_out()"/>
+            <text id="Config.SpeedMode.Button.Text" font-size="20" class="buttontextenabled" transform="translate(100,22.5)">OFF</text>
+         </g>
+      </g>
+   </g>
+   <g id="HelpLayer" visibility="hidden" transform="translate(10,15)">
+      <rect width="725" height="650" fill="#EEEEEE" stroke="black" stroke-width="3" rx="20" ry="20"  opacity=".9" transform="translate(130,0)"/>
+      <rect id="HelpLayer.Close.Button" pointer-events="visible" fill="red" stroke="none" height="30" width="30" rx="5" ry="5" onclick="close_help()" transform="translate(800,10)"/>
+      <text id="HelpLayer.Close.Text" fill="white" font-size="30" font-weight="900" transform="translate(815,35)">X</text>
+      <text transform="translate(490,35)" font-size="30" font-weight="900">Twijfel Rules</text>
+      <text transform="translate(490,60)" font-size="20">Twijfel is a turn-based game of bluffing and luck.  Each player starts with</text>
+      <text transform="translate(490,80)" font-size="20">1 to 10 dice; the game ends when only one player has any dice left. Play</text>
+      <text transform="translate(490,100)" font-size="20">is made of rounds; each player left in the game is called in turn.  A</text>
+      <text transform="translate(490,120)" font-size="20">round ends when a challenge has been issued. Players must either bid or</text>
+      <text transform="translate(490,140)" font-size="20">challenge when it is their turn. Any bids placed must be higher, by rank</text>
+      <text transform="translate(490,160)" font-size="20">or count, than the prior bid. Players gain and lose dice based on the</text>
+      <text transform="translate(490,180)" font-size="20">outcome of each challenge.</text>
+      <text transform="translate(490,220)" font-size="30" font-weight="900">Bid Rules</text>
+      <text transform="translate(490,245)" font-size="20">Die Values in order are (low to high) 1, 2, 3, 4, 5, Star.</text>
+      <text transform="translate(490,265)" font-size="20">Stars are wild if a value exists naturally. A bid of 5 1s is met by</text>
+      <text transform="translate(490,285)" font-size="20">any combination of 1s and Stars (including no Stars) as long as at</text>
+      <text transform="translate(490,305)" font-size="20">least one real 1 is on the board.</text>
+      <text transform="translate(490,325)" font-size="20">A bid of Stars counts double; 2 Stars comes between 4 5s and 5 1s.</text>
+      <text transform="translate(490,360)" font-size="30" font-weight="900">Challenge Types</text>
+      <text transform="translate(490,390)" font-size="20">Belief Challenge: Challenger believes that EXACTLY the number of dice</text>
+      <text transform="translate(490,410)" font-size="20">bid are on the board. If correct, the challenger gains a die. If</text>
+      <text transform="translate(490,430)" font-size="20">incorrect, the challenger loses a die.</text>
+      <text transform="translate(490,450)" font-size="20">Doubt Challenge: Challenger doubts that the dice bid are on the board.</text>
+      <text transform="translate(490,470)" font-size="20">If the bid is not met, the bidder loses a die.  If the bid is met,</text>
+      <text transform="translate(490,490)" font-size="20">the challenger loses a die.</text>
+      <text transform="translate(490,525)" font-size="30" font-weight="900">Speed Mode</text>
+      <text transform="translate(490,555)" font-size="20">In Speed Mode, a losing bid or challenge loses as many dice as the</text>
+      <text transform="translate(490,575)" font-size="20">difference between the actual amount and the bid or challenge. (A</text>
+      <text transform="translate(490,595)" font-size="20">Doubt of 3 5s when there are 5 means that the challenger loses</text>
+      <text transform="translate(490,615)" font-size="20">two dice.) If a Doubt Bid is exact, the challenger loses one die.</text>
+   </g>
+</svg>
