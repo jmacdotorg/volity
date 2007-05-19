@@ -3,8 +3,16 @@ complete, for the Volity game system.  To use them, you will
 need the Python Volity server system, which resides in the
 server-python/ directory of this repository.
 
+frames/frames.py: An implementation of Frames, a
+   simultaneous-movement abstract strategy game by Marcos
+   Donnantuoni.  Written by Phil Bordelon, with some code from
+   Andrew Plotkin, licensed under the GPL v2.  This referee has
+   not undergone much testing, as no UI currently exists for it.
+
+
 hex/hex.py: An implementation of Hex, a connection game.  Written
-   by Phil Bordelon, licensed under the GPL v2.
+   by Phil Bordelon, with some code from Andrew Plotkin, licensed
+   under the GPL v2.
 
 
 games/: A number of sample and complete games written by Zarf
@@ -27,12 +35,13 @@ games/: A number of sample and complete games written by Zarf
 
 
 twijfel/twijfel.py: An implementation of Liar's Dice, a social
-   dice game.  Written by Phil Bordelon, licensed under the GPL
-   v2.
+   dice game.  Written by Phil Bordelon, with some code from
+   Andrew Plotkin, licensed under the GPL v2.
 
 
 y/y.py: An implementation of Y, a connection game.  Written by
-   Phil Bordelon, licensed under the GPL v2.
+   Phil Bordelon, with some code from Andrew Plotkin, licensed
+   under the GPL v2.
 
 For more information about Volity, see:
    <http://volity.org/>
