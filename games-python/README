@@ -1,8 +1,38 @@
-These modules implement sample games for the Volity game system.
-To use them, you will need the Python volity server system
-(module "server-python" in the Volity CVS repository).
+This directory contains implemention of games, both sample and
+complete, for the Volity game system.  To use them, you will
+need the Python Volity server system, which resides in the
+server-python/ directory of this repository.
 
-The source code of these games is in the public domain.
+hex/hex.py: An implementation of Hex, a connection game.  Written
+   by Phil Bordelon, licensed under the GPL v2.
 
-For more information about Volity: 
-    <http://volity.org/>
+
+games/: A number of sample and complete games written by Zarf
+   (Andrew Plotkin).  The source of these games is in the
+   public domain.
+
+
+   barsoom.py: An implementation of Barsoomian Go, also
+      known as Branches, Twigs, and Thorns.
+
+
+   rps.py: A simple Rock-Paper-Scissors server.
+
+
+   seattest.py: A test implementation for seating.
+
+
+   werewolf.py: An implementation of Werewolf, a social game
+      of paranoia.
+
+
+twijfel/twijfel.py: An implementation of Liar's Dice, a social
+   dice game.  Written by Phil Bordelon, licensed under the GPL
+   v2.
+
+
+y/y.py: An implementation of Y, a connection game.  Written by
+   Phil Bordelon, licensed under the GPL v2.
+
+For more information about Volity, see:
+   <http://volity.org/>
