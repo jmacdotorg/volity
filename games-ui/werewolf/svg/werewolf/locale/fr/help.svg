@@ -50,10 +50,10 @@ Les villageois vivent dans la crainte des loups-garous, mais
 les villageois sont nombreux et les loups-garous quelques-uns.
 </text>
 <text y="0.75" class="ConfigText">
-Chaque jour, les villageois se réunissent pour décider lequel
+Chaque jour, les villageois se r&#233;unissent pour d&#233;cider lequel
 </text>
 <text y="1.00" class="ConfigText">
-d'entre eux est peut-être un monstre. Mourir est ce que chacun
+d'entre eux est peut-&#234;tre un monstre. Mourir est ce que chacun
 </text>
 <text y="1.33" class="ConfigText">
 craint le plus.
@@ -71,13 +71,13 @@ Les loups-garous semblent innocents le jour, mais ils
 chassent les villageois la nuit. Chaque nuit, ils conviennent
 </text>
 <text y="0.75" class="ConfigText">
-d'une victime et la mettent en lambeaux. Le corps sera retrouvé
+d'une victime et la mettent en lambeaux. Le corps sera retrouv&#233;
 </text>
 <text y="1.0" class="ConfigText">
-par les villageois survivants à l'aube.
+par les villageois survivants &#224; l'aube.
 </text>
 <text y="1.33" class="ConfigTextGoal">
-Si la moitié au moins de la population sont des loups-garous,
+Si la moiti&#233; au moins de la population sont des loups-garous,
 </text>
 <text y="1.66" class="ConfigTextGoal">
 ils gagnent.
@@ -89,13 +89,13 @@ ils gagnent.
 Un voyant a des pouvoirs de vision. Chaque nuit, le voyant
 </text>
 <text y="0.50" class="ConfigText">
-peut choisir de rêver de quelqu'un. À l'aube, le voyant saura
+peut choisir de r&#234;ver de quelqu'un. &#192; l'aube, le voyant saura
 </text>
 <text y="0.75" class="ConfigText">
 si cette personne est un loup-garou. Mais il est dangereux pour
 </text>
 <text y="1.00" class="ConfigText">
-le voyant de dévoiler son talent : les monstres savent qu'il
+le voyant de d&#233;voiler son talent : les monstres savent qu'il
 </text>
 <text y="1.33" class="ConfigText">
 est une menace.
@@ -108,10 +108,10 @@ Le voyant gagne si les villageois gagnent.
 
 <g id="advanced_config_villager">
 <text y="0.4" class="ConfigTextBig">
-Pendant la journée, les villageois votent
+Pendant la journ&#233;e, les villageois votent
 </text>
 <text y="0.85" class="ConfigTextBig">
-pour celui à lyncher. La nuit, ils dorment.
+pour celui &#224; lyncher. La nuit, ils dorment.
 </text>
 </g>
 
@@ -120,7 +120,7 @@ pour celui à lyncher. La nuit, ils dorment.
 La nuit, les loups-garous conviennent
 </text>
 <text y="0.85" class="ConfigTextBig">
-en secret d'une victime à tuer.
+en secret d'une victime &#224; tuer.
 </text>
 </g>
 
@@ -129,7 +129,7 @@ en secret d'une victime à tuer.
 La nuit, un voyant choisit en secret
 </text>
 <text y="0.85" class="ConfigTextBig">
-quelqu'un. Un rêve lui révélera si
+quelqu'un. Un r&#234;ve lui r&#233;v&#233;lera si
 </text>
 <text y="1.30" class="ConfigTextBig">
 cette personne est un loup-garou.
@@ -138,10 +138,10 @@ cette personne est un loup-garou.
 
 <g id="advanced_config_fool">
 <text y="0.4" class="ConfigTextBig">
-Un idiot croit être voyant, mais
+Un idiot croit &#234;tre voyant, mais
 </text>
 <text y="0.85" class="ConfigTextBig">
-ses rêves sont confus et
+ses r&#234;ves sont confus et
 </text>
 <text y="1.30" class="ConfigTextBig">
 inexacts.
@@ -150,10 +150,10 @@ inexacts.
 
 <g id="advanced_config_warlock">
 <text y="0.4" class="ConfigTextBig">
-Une sorcière rêve comme un voyant,
+Une sorci&#232;re r&#234;ve comme un voyant,
 </text>
 <text y="0.85" class="ConfigTextBig">
-mais une sorcière aident les loups-garous.
+mais une sorci&#232;re aident les loups-garous.
 </text>
 <text y="1.30" class="ConfigTextBig">
 Elle veut qu'ils gagnent.
@@ -168,19 +168,19 @@ Les francs-jardiniers se reconnaissent
 entre eux, ainsi ils se savent ne pas
 </text>
 <text y="1.30" class="ConfigTextBig">
-être loups-garous.
+&#234;tre loups-garous.
 </text>
 </g>
 
 <g id="advanced_config_wolfsbane">
 <text y="0.4" class="ConfigTextBig">
-Un tue-loup répugne les loups-garous :
+Un tue-loup r&#233;pugne les loups-garous :
 </text>
 <text y="0.85" class="ConfigTextBig">
 les loups ne peuvent le tuer la nuit.
 </text>
 <text y="1.30" class="ConfigTextBig">
-Mais il peut être lynché.
+Mais il peut &#234;tre lynch&#233;.
 </text>
 </g>
 
@@ -189,22 +189,22 @@ Mais il peut être lynché.
 Au soir, une herboriste choisit
 </text>
 <text y="0.85" class="ConfigTextBig">
-quelqu'un. Cette personne ne peut être
+quelqu'un. Cette personne ne peut &#234;tre
 </text>
 <text y="1.30" class="ConfigTextBig">
-tuée par des loups cette nuit-là.
+tu&#233;e par des loups cette nuit-l&#224;.
 </text>
 </g>
 
 <g id="advanced_config_priest">
 <text y="0.4" class="ConfigTextBig">
-La nuit, une prêtresse offre l'asile à
+La nuit, une pr&#234;tresse offre l'asile &#224;
 </text>
 <text y="0.85" class="ConfigTextBig">
 quelqu'un. Cette personne ne peut
 </text>
 <text y="1.30" class="ConfigTextBig">
-être lynchée le jour suivant.
+&#234;tre lynch&#233;e le jour suivant.
 </text>
 </g>
 
@@ -213,7 +213,7 @@ quelqu'un. Cette personne ne peut
 La nuit, les tueuses conviennent en secret
 </text>
 <text y="0.85" class="ConfigTextBig">
-d'une victime à transperser d'un pieu. Elles
+d'une victime &#224; transperser d'un pieu. Elles
 </text>
 <text y="1.30" class="ConfigTextBig">
 veulent que les villageois gagnent.
@@ -222,13 +222,13 @@ veulent que les villageois gagnent.
 
 <g id="help_villager">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux villageois : Essayez de démasquer les loups-garous ! Faites attention à qui
+Conseils aux villageois : Essayez de d&#233;masquer les loups-garous ! Faites attention &#224; qui
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-accuse qui. Si quelqu'un accuse une personne qui se trouve être vraiment un
+accuse qui. Si quelqu'un accuse une personne qui se trouve &#234;tre vraiment un
 </text>
 <text x="2.5" y="8" class="HelpBody">
-loup-garou, l'accusateur peut être un voyant. Souvenez-vous que les loups-garous peuvent
+loup-garou, l'accusateur peut &#234;tre un voyant. Souvenez-vous que les loups-garous peuvent
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
 essayer de jeter la suspicion sur vous !
@@ -237,25 +237,25 @@ essayer de jeter la suspicion sur vous !
 
 <g id="help_werewolf">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux loups-garous : Ne laissez personne savoir que vous êtes loup-garou ! Jetez
+Conseils aux loups-garous : Ne laissez personne savoir que vous &#234;tes loup-garou ! Jetez
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-la suspicion sur les autres. Si quelqu'un est sûr que vous êtes loup-garou, il est
+la suspicion sur les autres. Si quelqu'un est s&#251;r que vous &#234;tes loup-garou, il est
 </text>
 <text x="2.5" y="8" class="HelpBody">
-peut-être voyant : tuez-le le plus vite possible.
+peut-&#234;tre voyant : tuez-le le plus vite possible.
 </text>
 </g>
 
 <g id="help_seer">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux voyants : Vos rêves vous donne un avantage. Essayez de faire lyncher les
+Conseils aux voyants : Vos r&#234;ves vous donne un avantage. Essayez de faire lyncher les
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-loups-garous avérés et d'empêcher les villageois avérés d'être accusés. Mais ne soyez
+loups-garous av&#233;r&#233;s et d'emp&#234;cher les villageois av&#233;r&#233;s d'&#234;tre accus&#233;s. Mais ne soyez
 </text>
 <text x="2.5" y="8" class="HelpBody">
-pas trop expensif : si les loups-garous comprennent que vous êtes un voyant, ils vous
+pas trop expensif : si les loups-garous comprennent que vous &#234;tes un voyant, ils vous
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
 tueront.
@@ -264,46 +264,46 @@ tueront.
 
 <g id="help_fool">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux idiots : S'il y a un idiot dans le village, et que vous pensez être voyant,
+Conseils aux idiots : S'il y a un idiot dans le village, et que vous pensez &#234;tre voyant,
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-alors vous êtes peut-être un idiot. Les rêves des idiots sont souvent erronés. Si vous
+alors vous &#234;tes peut-&#234;tre un idiot. Les r&#234;ves des idiots sont souvent erron&#233;s. Si vous
 </text>
 <text x="2.5" y="8" class="HelpBody">
-faites deux rêves différents au sujet d'une même personne sur deux nuits,
+faites deux r&#234;ves diff&#233;rents au sujet d'une m&#234;me personne sur deux nuits,
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-indiscutablement vous êtes un idiot.
+indiscutablement vous &#234;tes un idiot.
 </text>
 </g>
 
 <g id="help_warlock">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux sorcières : Vous gagnez (avec les loups-garous) s'il y a autant de
+Conseils aux sorci&#232;res : Vous gagnez (avec les loups-garous) s'il y a autant de
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-loups-garous que d'autres villageois (sans vous compter). Vous ne savez pas au départ
+loups-garous que d'autres villageois (sans vous compter). Vous ne savez pas au d&#233;part
 </text>
 <text x="2.5" y="8" class="HelpBody">
-qui sont les loups-garous. Utilisez vos rêves pour vous renseigner, et ensuite
+qui sont les loups-garous. Utilisez vos r&#234;ves pour vous renseigner, et ensuite
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-travaillez à faire lyncher les villageois innocents.
+travaillez &#224; faire lyncher les villageois innocents.
 </text>
 </g>
 
 <g id="help_granger">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux francs-jardiniers : Les francs-jardiniers forment une société secrète.
+Conseils aux francs-jardiniers : Les francs-jardiniers forment une soci&#233;t&#233; secr&#232;te.
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
 Vous connaissez vos semblables, et il est certain que ce ne sont pas des loups-garous.
 </text>
 <text x="2.5" y="8" class="HelpBody">
-Protégez vos semblables contre les lynchages. Mais si vous collaborez trop étroitement,
+Prot&#233;gez vos semblables contre les lynchages. Mais si vous collaborez trop &#233;troitement,
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-les autres villageois pourraient croire que vous êtes loups-garous !
+les autres villageois pourraient croire que vous &#234;tes loups-garous !
 </text>
 </g>
 
@@ -312,10 +312,10 @@ les autres villageois pourraient croire que vous êtes loups-garous !
 Conseils aux tue-loup : si les loups-garous vous choisissent comme leur victime, ils ne
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-réussieront pas à vous tuer : ils ne peuvent vous approcher la nuit. Dès qu'ils l'auront
+r&#233;ussieront pas &#224; vous tuer : ils ne peuvent vous approcher la nuit. D&#232;s qu'ils l'auront
 </text>
 <text x="2.5" y="8" class="HelpBody">
-compris, ils chercheront probablement à vous faire lyncher.
+compris, ils chercheront probablement &#224; vous faire lyncher.
 </text>
 </g>
 
@@ -327,7 +327,7 @@ Conseils aux herboristes : Chaque nuit vous pouvez entourer la maison d'un joueu
 du tue-loup. Si les loups-garous choisissent cette personne comme leur victime, ils ne
 </text>
 <text x="2.5" y="8" class="HelpBody">
-réussieront pas à la tuer. (Si vous choisissez la maison d'un loup-garou, vos efforts sont
+r&#233;ussieront pas &#224; la tuer. (Si vous choisissez la maison d'un loup-garou, vos efforts sont
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
 inutiles !) La protection ne dure qu'une nuit.
@@ -336,16 +336,16 @@ inutiles !) La protection ne dure qu'une nuit.
 
 <g id="help_priest">
 <text x="2.5" y="3" class="HelpBody">
-Conseils aux prêtresses : Vous pouvez secrètement choisir un joueur, et lui donner
+Conseils aux pr&#234;tresses : Vous pouvez secr&#232;tement choisir un joueur, et lui donner
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-l'asile. Le jour suivant, cette personne ne peut être lynchée. Essayez de protéger des
+l'asile. Le jour suivant, cette personne ne peut &#234;tre lynch&#233;e. Essayez de prot&#233;ger des
 </text>
 <text x="2.5" y="8" class="HelpBody">
-villageois, ou vous-même, ou une voyante (si vous en avez trouvé une). Ne laissez pas
+villageois, ou vous-m&#234;me, ou une voyante (si vous en avez trouv&#233; une). Ne laissez pas
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
-les loups-garous deviner qui vous êtes !
+les loups-garous deviner qui vous &#234;tes !
 </text>
 </g>
 
@@ -354,10 +354,10 @@ les loups-garous deviner qui vous êtes !
 Conseils aux tueuses : Juste avant l'aube, vous pouvez vous faufiler et transpercer le
 </text>
 <text x="2.5" y="5.5" class="HelpBody">
-cœur d'un joueur (à moins que les loups-garous ne vous aient tué avant !). Essayez
+c&#339;ur d'un joueur (&#224; moins que les loups-garous ne vous aient tu&#233; avant !). Essayez
 </text>
 <text x="2.5" y="8" class="HelpBody">
-d'éliminer les loups-garous. Ne laissez pas les loups-garous vous pousser à tuer vos
+d'&#233;liminer les loups-garous. Ne laissez pas les loups-garous vous pousser &#224; tuer vos
 </text>
 <text x="2.5" y="10.5" class="HelpBody">
 concitoyens villageois !
