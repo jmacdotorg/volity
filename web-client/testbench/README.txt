@@ -23,6 +23,11 @@ any files that work in Testbench now will continue to work in future
 releases. It's just the way you load those files into Testbench that's
 bound to change.
 
+Sadly, it doesn't work in MSIE yet. Compatibility with all major
+browsers is early on the to-do list. In the meantime, we recommend
+Firefox. (With the Firebug plug-in installed, it's among the best web
+development platforms you can find.)
+
 --- LICENSES ---
 
 Except where otherwise noted, this software is covered by the
