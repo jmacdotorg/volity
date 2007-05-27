@@ -200,8 +200,8 @@ This is a demonstration of a nearly-feature-complete, HTML-and-JavaScript Testbe
 <ul>
 <li>Sit in the 'x' seat and click 'Start Game'.</li>
 <li>Click on the squares to trigger their onClick handlers. In this case, you're just told that it isn't your turn yet.</li>
-<li>Type <code>fr</code> into the 'with language' field and cick 'Reload UI'. Click on the squares again and be told that it isn't your turn <em>en fran&ccedil;ais</em>.
-<li>Switch the language back to <code>en</code> (or not), then simulate incoming RPC handlers by typing commands into the JavaScript console:
+<li>Note that the 'with language' field contains the two-letter code for whatever your browser thinks your native language is. Type <code>fr</code> into this field and cick 'Reload UI'. Click on the squares again and be told that it isn't your turn <em>en fran&ccedil;ais</em>. (Alternately, if it was <code>fr</code> to begin with, try <code>en</code> instead.)</li>
+<li>Switch the language back to your native language code (or not), then simulate incoming RPC handlers by typing commands into the JavaScript console:
 <ul>
 <li><code>game.mark('x', 4)</code></li>
 <li><code>game.mark('o', 0)</code></li>
