@@ -1,0 +1,79 @@
+<h1>Welcome to Volity Testbench</h1>
+
+<p>
+This is a browser-based application for testing HTML-based (or
+HTML-embedded) <a target="_top" href="http://volity.net">Volity</a> UI
+files. It is written and maintained by Jason McIntosh, and is based on
+<a href="http://www.volity.org/wiki/index.cgi?Testbench"
+target="_top">the orginal Testbench (for SVG-based UIs)</a> by Andrew
+Plotkin.
+</p>
+
+<h2>Loading a UI file into Testbench</h2>
+<p>
+To load a UI bundle, place all of its files in the same directory as
+<code>testbench.html</code>. These files must include a
+<code>main.html</code> file as well as a <code>locale</code> directory
+containing language-labeled subdirectories defining various
+translations of the game's seats and tokens; you should have at least
+one language-based set defined. <a target="_top"
+href="http://www.volity.org/wiki/index.cgi?UI_File_Format">The Volity
+wiki has more information about this particular file arrangement.</a>
+</p>
+<p>
+Once the files are in place, open <code>testbench.html</code> in your
+favorite browser. And by "favorite browser" I probably mean Firefox
+with the Firebug plug-in installed.
+</p>
+<p>
+The author recognizes that this requirement is fairly annoying, and
+states that it is likely to change in future releases. That being
+said, it works for now.
+</p>
+
+<h2>Seeing an example</h2>
+<p>
+Copy the files <code>main.html</code> and <code>ttt.css</code> and the directory <code>locale</code> from the <code>examples/tic_tac_toe</code> directory into Testbench's root directory. Open <code>testbench.html</code> in your favorite browser. (If that doesn't seem to work, please let me know.)
+</p>
+
+<h2>Writing UI files</h2>
+<p>
+For now, my best advice is to read <a
+href="http://volity.org/docs/ui-guide/ui-guide-html/guide.html">Andrew
+Plotkin's guide to creating an SVG UI</a>. The graphics language is
+different but the core principles apply, including those involving the
+use of ECMAScript (read: JavaScript).
+</p>
+
+<p>
+As the Volity HTML client comes closer to fruition, making an
+HTML-oriented version of this guide will become a greater
+priority. (It will also cover creating UIs based around embedded Flash
+or Java applets.)
+</p>
+
+<p>
+Until then, looking at the Tic Tac Toe example might shine more light
+on the subject.
+</p>
+
+<h2>Running HTML UI files in a Volity client</h2>
+<p>
+And here were come to the part where I really do have nothing to say,
+since at the time of this writing (late May 2007) no real HTML client
+exists for Volity. The only real development target in the Volity world is Gamut, a desktop application that works with SVG-based UIs.
+</p>
+<p>
+However, the core Volity team is actively working on the web
+client. Testbench is actually an initial step towards its realization,
+with much of its JavaScript library work destined to become the core
+of the full game-playing client as well.
+</p>
+<p>
+To follow along with these developments, please visit
+<a href="http://volity.net">http://volity.net</a> and get familiar with our forums, RSS feeds, and
+wiki. Use them to stay abreast with new releases and other news
+pertaining to Testbench and the rest of the web client project, and
+watch as this documentation gradually grows less sparse and
+apologetic.
+</p>

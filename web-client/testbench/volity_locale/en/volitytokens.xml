@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>unknown_token</key>
+  <value>(Untranslatable message: \1)</value> 
+</token>
+<token>
+  <key>invalid_seat</key>
+  <value>(Invalid seat "\1")</value> 
+</token>
+<token>
+  <key>offline</key>
+  <value>The service has been disabled by the administrator.</value> 
+</token>
+<token>
+  <key>no_seat</key>
+  <value>No seats are available.</value> 
+</token>
+<token>
+  <key>seat_not_available</key>
+  <value>That seat is not available.</value> 
+</token>
+<token>
+  <key>bad_config</key>
+  <value>The game cannot begin, because the current table configuration is not allowed.</value> 
+</token>
+<token>
+  <key>empty_seats</key>
+  <value>The game cannot begin, because not all required seats have players.</value> 
+</token>
+<token>
+  <key>referee_not_ready</key>
+  <value>The referee is not yet ready to service requests.</value> 
+</token>
+<token>
+  <key>game_in_progress</key>
+  <value>The game is in progress.</value> 
+</token>
+<token>
+  <key>game_not_in_progress</key>
+  <value>The game has not yet started.</value> 
+</token>
+<token>
+  <key>authorizing_in_progress</key>
+  <value>The game is still authorizing.</value> 
+</token>
+<token>
+  <key>jid_present</key>
+  <value>The player \1 has already joined the table.</value> 
+</token>
+<token>
+  <key>jid_not_present</key>
+  <value>The player \1 has not joined the table.</value> 
+</token>
+<token>
+  <key>jid_not_ready</key>
+  <value>The player \1 is not yet ready to take part in the game.</value> 
+</token>
+<token>
+  <key>not_seated</key>
+  <value>You are not seated.</value> 
+</token>
+<token>
+  <key>are_seated</key>
+  <value>You are seated.</value> 
+</token>
+<token>
+  <key>not_your_turn</key>
+  <value>It's not your turn.</value> 
+</token>
+<token>
+  <key>relay_failed</key>
+  <value>Your message could not be delivered to \1.</value> 
+</token>
+<token>
+  <key>no_bots_provided</key>
+  <value>This game parlor does not provide bots.</value> 
+</token>
+<token>
+  <key>bot_not_available</key>
+  <value>That bot is not available.</value> 
+</token>
+<token>
+  <key>not_bot</key>
+  <value>The player \1 is not a bot.</value> 
+</token>
+<token>
+  <key>bot_seated</key>
+  <value>That bot is seated.</value> 
+</token>
+<token>
+  <key>players_not_responding</key>
+  <value>The following player(s) cannot be located by the bookkeeper: \1</value> 
+</token>
+<token>
+  <key>players_not_authorized</key>
+  <value>The following player(s) are not authorized to play: \1</value> 
+</token>
+<token>
+  <key>game_record_conflict</key>
+  <value>A game record already exists for this referee.</value> 
+</token>
+<token>
+  <key>game_record_missing</key>
+  <value>No game record exists for this referee.</value> 
+</token>
+<token>
+  <key>prepare_game_failure</key>
+  <value>The bookkeeper could not authorize this game: \1</value> 
+</token>
+<token>
+  <key>unknown_uri</key>
+  <value>The bookkeeper does not recognize the URI: \1</value> 
+</token>
+<token>
+  <key>unknown_url</key>
+  <value>The bookkeeper does not recognize the URL: \1</value> 
+</token>
+</volitytokens>

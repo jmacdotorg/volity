@@ -1,0 +1,144 @@
+<head>
+<link rel="stylesheet" type="text/css" href="testbench.css" />
+<script src="prototype.js" type="text/javascript">
+</script>
+<script src="importxml.js" type="text/javascript">
+</script>
+<script src="volity.js" type="text/javascript">
+</script>
+</head>
+
+<body onload="initialize()">
+<iframe src="main.html" height="70%" width="100%" id="ui-frame">
+</iframe>
+
+<script>
+
+var js_input_history = new Array;
+var current_js_input_history_index = 0;
+    
+function initialize () {
+
+    // Figure out the language.
+    var language_code = navigator.language.substr(0,2);
+    $("language-field").value = language_code;
+
+    load_localized_files( language_code );
+    
+}
+
+function disable_controls() {
+    report("In disable_controls");
+    var controls = document.getElementsByClassName('disablable');
+    controls.each( function(control) {
+        control.setAttribute('disabled', 'disabled');
+    });
+}
+
+function enable_controls() {
+    var controls = document.getElementsByClassName('disablable');
+    controls.each( function(control) {
+        control.removeAttribute('disabled');
+    });
+}
+
+function reload_ui() {
+    //    $('ui-frame').contentWindow.location.reload(true);
+    //    enable_controls();
+    load_localized_files( $('language-field').value );
+}
+
+
+function create_seat_option(seat_id) {
+    var seat_option = document.createElement('option');
+    seat_option.setAttribute('value', seat_id);
+    var seat_option_text = document.createTextNode(seat_id);
+    seat_option.appendChild(seat_option_text);
+    $('seat-select').appendChild(seat_option);
+}
+
+function submitenter(myfield,e) {
+    // Adapted from an example found on...
+    // http://www.htmlcodetutorial.com/forms/index_famsupp_157.html
+    var keycode;
+    if (window.event) keycode = window.event.keyCode;
+    else if (e) keycode = e.which;
+    else return true;
+    
+    if (keycode == 13) {
+        eval_js();
+    }
+    else
+    return true;
+}
+
+function eval_js () {
+    var js_to_eval = document.getElementById('js-input').value;
+    var frame = document.getElementById('ui-frame');
+    js_to_eval = 'frame.contentWindow.' + js_to_eval;
+    eval(js_to_eval);
+}
+
+function start_game() {
+    // Set the seat, based on the seat-select popup menu.
+    // Then call volity.start_game().
+    var selected_seat = $F('seat-select');
+    var info = $('ui-frame').contentWindow.info;
+    if (selected_seat) {
+        info.seat = selected_seat;
+    }
+    else {
+        info.seat = null;
+    }
+
+    var volity = $('ui-frame').contentWindow.volity;
+    volity.start_game();
+    report("Game started.");
+    if (info.seat) {
+        report("You are in seat " + info.seat);
+    }
+    else {
+        report("You are not seated.");
+    }
+}
+
+function end_game() {
+    var volity = $('ui-frame').contentWindow.volity;
+    volity.end_game();
+}
+
+
+</script>
+<table id="control-table">
+<tr>
+<td>
+<p class="label">JavaScript input console<br />
+<input class="disablable" type="text" size="40" id="js-input" onKeyPress="return submitenter(this,event)"/>
+<input class="disablable" type="submit" value="Run" onClick="eval_js()" />
+</p>
+<hr />
+<p>
+<input class="disablable" type="submit" value="Start Game" onClick="start_game()" />
+in seat: <select id="seat-select">
+<option value="">(none)</option>
+</select>
+</p>
+<p>
+<input class="disablable" type="submit" value="End Game" onClick="end_game()" />
+</p>
+<p>
+<input class="disablable" id="reload-button" type="submit" value="Reload UI" onClick="reload_ui()" />
+with language: <input type="text" size="2" id="language-field" />
+</p>
+</td>
+<td>
+<p class="label">Output console<br />
+<textarea class="disablable" id="console-textarea" rows="8" cols="40" readonly="readonly">
+</textarea>
+</p>
+</td>
+</tr>
+</table>
+<script>
+</script>
+</body>

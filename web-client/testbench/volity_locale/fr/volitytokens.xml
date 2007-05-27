@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<volitytokens>
+<token>
+  <key>unknown_token</key>
+  <value>(Message intraduisible : \1)</value> 
+</token>
+<token>
+  <key>invalid_seat</key>
+  <value>(Place non valide "\1")</value> 
+</token>
+<token>
+  <key>offline</key>
+  <value>Ce service a &#x00e9;t&#x00e9; dÃ©sactiv&#x00e9; par l'administrateur.</value> 
+</token>
+<token>
+  <key>no_seat</key>
+  <value>Aucune place n'est disponible.</value> 
+</token>
+<token>
+  <key>seat_not_available</key>
+  <value>Cette place n'est pas disponible.</value> 
+</token>
+<token>
+  <key>bad_config</key>
+  <value>La partie ne peut commencer, car la configuration actuelle n'est pas valide.</value> 
+</token>
+<token>
+  <key>empty_seats</key>
+  <value>La partie ne peut commencer, car il n'y a pas assez de participants.</value> 
+</token>
+<token>
+  <key>referee_not_ready</key>
+  <value>L'arbitre n'est pas encore pr&#x00ea;t Ã  honorer les demandes.</value> 
+</token>
+<token>
+  <key>game_in_progress</key>
+  <value>La partie est en cours.</value> 
+</token>
+<token>
+  <key>game_not_in_progress</key>
+  <value>La partie n'a pas encore d&#x00e9;marr&#x00e9;.</value> 
+</token>
+<token>
+  <key>authorizing_in_progress</key>
+  <value>La partie est en attente d'autorisation.</value> 
+</token>
+<token>
+  <key>jid_present</key>
+  <value>Le joueur \1 a d&#x00e9;j&#x00e0; rejoint la partie.</value> 
+</token>
+<token>
+  <key>jid_not_present</key>
+  <value>Le joueur \1 n'a pas rejoint la partie.</value> 
+</token>
+<token>
+  <key>jid_not_ready</key>
+  <value>Le joueur \1 n'est pas pr&#x00ea;t pour rejoindre la partie.</value> 
+</token>
+<token>
+  <key>not_seated</key>
+  <value>Vous n'avez pas pris place.</value> 
+</token>
+<token>
+  <key>are_seated</key>
+  <value>Vous avez pris place.</value> 
+</token>
+<token>
+  <key>not_your_turn</key>
+  <value>Ce n'est pas votre tour.</value> 
+</token>
+<token>
+  <key>relay_failed</key>
+  <value>Votre message n'a pu &#x00ea;tre port&#x00e9; &#x00e0; \1.</value> 
+</token>
+<token>
+  <key>no_bots_provided</key>
+  <value>Ce salon de jeu ne fournit pas de bots.</value> 
+</token>
+<token>
+  <key>bot_not_available</key>
+  <value>Ce bot n'est pas disponible.</value> 
+</token>
+<token>
+  <key>not_bot</key>
+  <value>Le joueur \1 n'est pas un bot.</value> 
+</token>
+<token>
+  <key>bot_seated</key>
+  <value>Ce bot a pris place.</value> 
+</token>
+<token>
+  <key>players_not_responding</key>
+  <value>Le greffier n'a pu localiser les joueur(s) suivant(s): \1</value> 
+</token>
+<token>
+  <key>players_not_authorized</key>
+  <value>Il n'y a pas d'autorisation pour le(s) joueur(s) suivant(s): \1</value> 
+</token>
+<token>
+  <key>game_record_conflict</key>
+  <value>Cet arbitre a d&#x00e9;j&#x00e0; un compte-rendu de la partie.</value> 
+</token>
+<token>
+  <key>game_record_missing</key>
+  <value>Cet arbitre n'a pas de compte-rendu de la partie.</value> 
+</token>
+<token>
+  <key>prepare_game_failure</key>
+  <value>Le greffier ne peut autoriser cette partie : \1</value> 
+</token>
+<token>
+  <key>unknown_uri</key>
+  <value>Le greffier n'identifie pas l'URI : \1</value> 
+</token>
+<token>
+  <key>unknown_url</key>
+  <value>Le greffier n'identifie pas l'URL: \1</value> 
+</token>
+</volitytokens>
