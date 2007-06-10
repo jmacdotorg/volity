@@ -23,10 +23,11 @@ any files that work in Testbench now will continue to work in future
 releases. It's just the way you load those files into Testbench that's
 bound to change.
 
-Sadly, it doesn't work in MSIE yet. Compatibility with all major
-browsers is early on the to-do list. In the meantime, we recommend
-Firefox. (With the Firebug plug-in installed, it's among the best web
-development platforms you can find.)
+This software should work in all popular browsers, and you should
+certainly feel free to perform cross-browser testing of any UI work
+you might do, but for a main development-environment browser we
+recommend Firefox. (With the Firebug plug-in installed, it's among the
+best web development platforms you can find.)
 
 --- LICENSES ---
 
@@ -36,11 +37,12 @@ LGPL. See the accompanying LICENSE.txt file, or
 
 And here's the otherwise-noted bit:
 
-* The importxml.js library is covered by its own terms of use
-  (http://www.howtocreate.co.uk/jslibs/termsOfUse.html).
+* The prototype.js library is covered by the MIT source code license.
+  <http://dev.rubyonrails.org/browser/spinoffs/prototype/trunk/LICENSE?format=raw>
 
-* The prototype.js library is covered by the MIT source code license
-  (http://dev.rubyonrails.org/browser/spinoffs/prototype/trunk/LICENSE?format=raw)
+* The Sarissa libraries (distributed here under the 'sarissa'
+  subdirectory) are covered by the GNU General Public License, Version 2. 
+  <http://www.gnu.org/copyleft/gpl.html>
 
 --- SEE ALSO ---
 
