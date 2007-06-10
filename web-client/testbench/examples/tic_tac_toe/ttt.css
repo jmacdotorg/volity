@@ -1,6 +1,6 @@
 #board-container {
 width: 310px;
-background: red;
+background: black;
 float:right;
 }
 
@@ -11,7 +11,7 @@ margin-top:auto;
 margin-bottom:auto;
 vertical-align:middle;
 border-width: 5px;
-border-collapse: collapse;
+
 }
 
 
@@ -27,10 +27,6 @@ font-family: sans-serif;
 color: blue;
 }
 
-
-
-
 .winning-square {
 background: yellow;
 }
-
