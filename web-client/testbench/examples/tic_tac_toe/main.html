@@ -41,7 +41,7 @@ square_clicked = function(location_number) {
 square_mousedown = function(location_number) {
     if (it_is_my_turn() && !marks[location_number]) {
         var square = document.getElementById("square-" + location_number);
-        square.style.setProperty("background", "gray", '');
+        square.style.background = 'gray';
     }
 }
 
@@ -51,7 +51,7 @@ square_mousedown = function(location_number) {
 square_mouseup = function(location_number) {
     if (it_is_my_turn()) {
         var square = document.getElementById("square-" + location_number);
-        square.style.setProperty("background", "white", "");
+        square.style.background = 'white';
     }
 }
 
@@ -76,7 +76,7 @@ volity.start_game = function() {
     for (var index = 0; index <= 8; index++) {
         var square = document.getElementById("square-" + index);
         remove_children(square);
-        square.style.setProperty("background", "white", "");
+        square.style.background = "white";
     }
     // Empty out the marks array.
     marks = [];
@@ -162,7 +162,7 @@ remove_children = function(parent) {
 }
 
 highlight_square = function(square_id) {
-    document.getElementById(square_id).style.setProperty('background', 'yellow', '');
+    document.getElementById(square_id).style.background = 'yellow';
 }
 
 it_is_my_turn = function() {
