@@ -92,6 +92,15 @@ audio = function() {
  * OTHER FUNCTIONS *
  *******************/
 
+import_xml = function(url, handler) {
+	var xml_request = new Ajax.Request(
+					   url,
+	    {
+		method: 'get',
+		onComplete: handler
+	    });
+}
+
 // load_localized_files: Given a two-letter language code, figure out the
 // (locally-based) URLs of local files, load them, and handle them.
 load_localized_files = function(language_code) {
@@ -99,8 +108,8 @@ load_localized_files = function(language_code) {
     // Get the seat definitions.
     var seat_file = 'locale/' + language_code + '/seattokens.xml';
         try {
-        importXML(seat_file,
-                  'process_seat_xml');
+        import_xml(seat_file,
+		   process_seat_xml);
         }
         catch (error) {
             alert("Failed to import the seat definition file " + seat_file + ": " + error);
@@ -109,8 +118,8 @@ load_localized_files = function(language_code) {
     // Get the token definitions.
     var tokens_file = 'locale/' + language_code + '/gametokens.xml';
     try {
-        importXML(tokens_file,
-                  'process_token_xml');
+        import_xml(tokens_file,
+		   process_gametoken_xml);
     }
     catch (error) {
         alert("Failed to import the token translation file " + tokens_file + ": " + error);
@@ -118,8 +127,8 @@ load_localized_files = function(language_code) {
 
     var volity_tokens_file = 'volity_locale/' + language_code + '/volitytokens.xml';
     try {
-        importXML(volity_tokens_file,
-                  'process_volity_token_xml');
+        import_xml(volity_tokens_file,
+		   process_volity_token_xml);
     }
     catch (error) {
         alert("Failed to import the token translation file " + volity_tokens_file + ": " + error);
@@ -132,40 +141,84 @@ load_localized_files = function(language_code) {
 //     merged and refactored.
 
 // process_seat_xml: Handle a seattokens.xml file.
-process_seat_xml = function(xml_doc) {
-    var root_element = xml_doc.firstChild;
-    var token_nodes = root_element.getElementsByTagName('token');
-    token_nodes = $A(token_nodes);
-    var seat_ids = new Array;
-    token_nodes.each(function (node) {
-        var key_list = node.getElementsByTagName('key');
-        var seat_id = key_list.item(0).firstChild.nodeValue;
-        seat_ids.push(seat_id);
-        var value_list = node.getElementsByTagName('value');
-        var translation = value_list.item(0).firstChild.nodeValue;
-        set_translation('seat.' + seat_id, translation);
+process_seat_xml = function(xml_request) {
+    process_token_xml(xml_request, 'seat');
+
+    // Go through the list of seats as they're now defined, building
+    // the seat_ids array and also the seat-selection menu.
+    // First, blow away existing contents of these things.
+    seat_ids = new Array;
+    var options = $A($('seat-select').getElementsByTagName('option'));
+    options.each( function(option) { 
+	if (option.value) {
+	    $('seat-select').removeChild(option);
+	}
     } );
 
-    // Build <option> elements under the seat selector, if it
-    // doesn't have any (beyond the one default seat).
-    if ($('seat-select').getElementsByTagName('option').length <= 1) {
-        seat_ids.each(function(seat_id) { create_seat_option(seat_id) });
-    }
+    // Now rebuild them using the freshly defined seat translation table.
+    var seat_translations = get_translation('seat', null);
+    seat_translations.keys().each( function(key) {
+	seat_ids.push(key);
+        create_seat_option(key);
+    } );
 }
 
-set_translation = function(token, translation) {
+set_translation = function(prefix, token, translation) {
+    var revelant_window;
+
     if ($('ui-frame')) {
         //        alert("Setting a translation in the child.");
-        $('ui-frame').contentWindow.translation_for[token] = translation;
+	relevant_window = $('ui-frame').contentWindow;
     }
     else {
-        translation_for[token] = translation;
+	relevant_window = window;
+    }
+
+    if (!relevant_window.translation_for[prefix]) {
+	relevant_window.translation_for[prefix] = {};
+    }
+    relevant_window.translation_for[prefix][token] = translation;
+    //    alert(translate(prefix + '.' + token));
+}
+
+get_translation = function (prefix, token) {
+    var revelant_window;
+
+    if ($('ui-frame')) {
+        //        alert("Setting a translation in the child.");
+	relevant_window = $('ui-frame').contentWindow;
+    }
+    else {
+	relevant_window = window;
+    }
+
+    if (token) {
+	var translation;
+	if (relevant_window.translation_for[prefix]) {
+	    translation = relevant_window.translation_for[prefix][token];
+	}
+	
+	return translation;
+    }
+    else {
+	// Only the prefix was provided, so return the whole hash under it.
+	return $H(relevant_window.translation_for[prefix]);
     }
 }
 
-// process_token_xml: Handle a gametokens.xml file.
-process_token_xml = function(xml_doc) {
-    var root_element = xml_doc.firstChild;
+// process_gametoken_xml: Handle a gametokens.xml file.
+process_gametoken_xml = function(xml_doc) {
+    process_token_xml(xml_doc, 'game');
+}
+
+process_token_xml = function(xml_request, prefix) {
+    // DOMParser() is defined by the sarissa.js library.
+    // We use it here for maximum cross-browser happiness.
+    var xml_doc = new DOMParser().parseFromString(xml_request.responseText,
+					      'text/xml'
+					      );
+    var root_element = xml_doc.documentElement;
+
     var token_nodes = root_element.getElementsByTagName('token');
     token_nodes = $A(token_nodes);
     token_nodes.each(function (node) {
@@ -173,44 +226,45 @@ process_token_xml = function(xml_doc) {
         var token = key_list.item(0).firstChild.nodeValue;
         var value_list = node.getElementsByTagName('value');
         var translation = value_list.item(0).firstChild.nodeValue;
-        set_translation('game.' + token, translation);
+	//        set_translation(prefix + '.' + token, translation);
+	set_translation(prefix, token, translation);
     } );
 }
 
 // process_volity_token_xml: Handle a volitytokens.xml file.
 process_volity_token_xml = function(xml_doc) {
-    var root_element = xml_doc.firstChild;
-    var token_nodes = root_element.getElementsByTagName('token');
-    token_nodes = $A(token_nodes);
-    token_nodes.each(function (node) {
-        var key_list = node.getElementsByTagName('key');
-        var token = key_list.item(0).firstChild.nodeValue;
-        var value_list = node.getElementsByTagName('value');
-        var translation = value_list.item(0).firstChild.nodeValue;
-        set_translation('volity.' + token, translation);
-    } );
+    process_token_xml(xml_doc, 'volity');
 }
 
 // translate: Return the translated version of a token.
-function translate (token) {
-    var literal_regex = /^literal\./;
-    if (token.match(literal_regex)) {
-        // It's a token in the 'literal' namespace.
-        // Do no translation other than snipping off the namespace.
-        token = token.substr(8, token.length);
-        return token;
+function translate (full_token) {
+    // Work out the prefix and tokeny parts of the full token.
+    var token_regex = /^(.*?)\.(.*)$/;
+    var match_info;
+    if (match_info = full_token.match(token_regex)) {
+	var prefix = match_info[1];
+	var token = match_info[2];
+	if (prefix == 'literal') {
+	    // It's a token in the 'literal' namespace.
+	    // Do no translation other than snipping off the namespace.
+	    token = token.substr(8, token.length);
+	    return token;
+	}
+	else {
+	    // It's a token in some other namespace.
+	    // Return its value in the translation hash.
+	    // Throw an exception if there is no such value.
+	    var translation = get_translation(prefix, token);
+	    if (translation) {
+		return translation;
+	    }
+	    else {
+		throw("No translation for token: " + full_token);
+	    }
+	}
     }
     else {
-        // It's a token in some other namespace.
-        // Return its value in the translation hash.
-        // Throw an exception if there is no such value.
-        var translation = translation_for[token];
-        if (translation) {
-            return translation;
-        }
-        else {
-            throw("No translation for token: " + token);
-        }
+	throw("Badly formatted token: " + full_token);
     }
 }
 
