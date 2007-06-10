@@ -6,6 +6,8 @@
 </script>
 <script src="volity.js" type="text/javascript">
 </script>
+<script src="sarissa/sarissa.js" type="text/javascript">
+</script>
 </head>
 
 <body onload="initialize()">
@@ -20,7 +22,10 @@ var current_js_input_history_index = 0;
 function initialize () {
 
     // Figure out the language.
-    var language_code = navigator.language.substr(0,2);
+    var language_string = navigator.language
+	|| navigator.browserLanguage;
+    var language_code = language_string.substr(0,2);
+
     $("language-field").value = language_code;
 
     load_localized_files( language_code );
@@ -114,20 +119,20 @@ function end_game() {
 <td>
 <p class="label">JavaScript input console<br />
 <input class="disablable" type="text" size="40" id="js-input" onKeyPress="return submitenter(this,event)"/>
-<input class="disablable" type="submit" value="Run" onClick="eval_js()" />
+<input class="disablable" type="button" value="Run" onClick="eval_js()" />
 </p>
 <hr />
 <p>
-<input class="disablable" type="submit" value="Start Game" onClick="start_game()" />
+<input class="disablable" type="button" value="Start Game" onClick="start_game()" />
 in seat: <select id="seat-select">
 <option value="">(none)</option>
 </select>
 </p>
 <p>
-<input class="disablable" type="submit" value="End Game" onClick="end_game()" />
+<input class="disablable" type="button" value="End Game" onClick="end_game()" />
 </p>
 <p>
-<input class="disablable" id="reload-button" type="submit" value="Reload UI" onClick="reload_ui()" />
+<input class="disablable" id="reload-button" type="button" value="Reload UI" onClick="reload_ui()" />
 with language: <input type="text" size="2" id="language-field" />
 </p>
 </td>
