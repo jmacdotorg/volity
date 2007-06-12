@@ -32,8 +32,47 @@ said, it works for now.
 </p>
 
 <h2>Seeing an example</h2>
+
 <p>
-Copy the files <code>main.html</code> and <code>ttt.css</code> and the directory <code>locale</code> from the <code>examples/tic_tac_toe</code> directory into Testbench's root directory. Open <code>testbench.html</code> in your favorite browser. (If that doesn't seem to work, please let me know.)
+The <code>examples</code> directory contains some Volity UI files you
+can test. Currently these are limited to Tic Tac Toe interfaces
+running in various formats, but this is enough to show off Testbench's
+(and the web client's) flexibility.
+</p>
+
+<p>
+To see an example of a pure HTML/CSS UI, copy the files
+<code>main.html</code> and <code>ttt.css</code> and the directory
+<code>locale</code> from the <code>examples/tic_tac_toe</code>
+directory into Testbench's root directory. Open
+<code>testbench.html</code> in your favorite browser. (If that doesn't
+seem to work, please let me know.)
+</p>
+
+<h2>Another example: a Flash UI</h2>
+
+<p>
+Unlike the pure HTML example, the Flash example will work
+<em>only</em> if you are running Testbench through a webserver. If you
+just open <code>testbench.html</code> locally, then the SWF will load
+but you won't get full interactivity with it.
+</p>
+
+<p>
+After uploading all of Testbench to a webserver somewhere, copy the
+files described in the previous section, but take them instead from
+the <code>examples/tic_tac_toe_flash</code> subdirectory. Also,
+include that directory's <code>ttt.swf</code> and <code>ttt.as</code>
+files. (The other files are ActionScript and MXML source code, to
+examine at your liesure.)
+</p>
+
+<p>
+Note that the Flash is limited to the Tic Tac Toe game board itself;
+the rest of the interface, including the Testbench controls, are the
+same HTML-based components from the pure HTML example. This
+demonstrates the modular way that UI files will work in the full web
+client.
 </p>
 
 <h2>Writing UI files</h2>

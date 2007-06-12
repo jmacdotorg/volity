@@ -1,3 +1,7 @@
+0.2.1
+
+        - Added a Flash-based tic tac toe example.
+
 0.2
 	
 	- Everything works in MSIE now. (Except for anything that doesn't.)
