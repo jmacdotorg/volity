@@ -37,8 +37,8 @@ volity.start_game = function() {
     var squares_group = document.getElementById("squares-group");
     for (var index = 0; index <= 8; index++) {
         var square_id = "square_" + index;
-        $('tic-tac-toe').unhighlight_square(square_id);
-        $('tic-tac-toe').clear_square(square_id);
+        $('tic_tac_toe').unhighlight_square(square_id);
+        $('tic_tac_toe').clear_square(square_id);
     }
     // Empty out the marks array.
     marks = [];
@@ -62,7 +62,7 @@ game.mark = function(seat_id, location) {
         marks[location] = "seat_id";
 
         // Tell the SWF to set the square's label to this mark.
-        $('tic-tac-toe').set_square_label(grid_square_id, mark_symbol);
+        $('tic_tac_toe').set_square_label(grid_square_id, mark_symbol);
 }
     else {
         literalmessage('The seat ' + seat_id + ' is neither x nor o.');
@@ -85,9 +85,9 @@ game.must_mark = function(seat_id) {
 
 game.win = function(seat_id, location_1, location_2, location_3) {
     // Highlight the squares involved in the win.
-    $('tic-tac-toe').highlight_square("square_" + location_1);
-    $('tic-tac-toe').highlight_square("square_" + location_2);
-    $('tic-tac-toe').highlight_square("square_" + location_3);
+    $('tic_tac_toe').highlight_square("square_" + location_1);
+    $('tic_tac_toe').highlight_square("square_" + location_2);
+    $('tic_tac_toe').highlight_square("square_" + location_3);
     // Mark the winning seat.
     // Here we will use the _other_ way you can call seatmark(), where
     // we'll instead pass a hash argument of the seats to mark, and which
