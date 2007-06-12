@@ -37,7 +37,8 @@ LGPL. See the accompanying LICENSE.txt file, or
 
 And here's the otherwise-noted bit:
 
-* The prototype.js library is covered by the MIT source code license.
+* The prototype.js library and SWFObject are covered by the MIT source
+  code license.
   <http://dev.rubyonrails.org/browser/spinoffs/prototype/trunk/LICENSE?format=raw>
 
 * The Sarissa libraries (distributed here under the 'sarissa'
