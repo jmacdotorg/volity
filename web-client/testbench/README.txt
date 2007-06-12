@@ -70,4 +70,4 @@ project's official Java-based client) to visit the Volity devchat, at
 Happy Hacking!
 
 Jason McIntosh
-May 27, 2007
+June 12, 2007
