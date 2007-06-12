@@ -1,0 +1,87 @@
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+                applicationComplete="set_up_callbacks();"
+                >
+  <mx:Script source="volity.as" />
+
+  <mx:Script>
+<![CDATA[
+         import flash.external.ExternalInterface;
+         import mx.controls.Alert;
+         
+         private function set_square_label(square_id:String, symbol:String):void {
+             this[square_id].label = symbol;
+             
+         }
+
+         private function highlight_square(square_id:String):void {
+             var red:uint = 0xff0000;
+             this[square_id].setStyle('color', red);
+         }
+
+         private function unhighlight_square(square_id:String):void {
+             this[square_id].setStyle('color', 0x000000);
+         }
+
+         private function clear_square(square_id:String):void {
+             this[square_id].label = '';
+         }
+
+
+         private function set_up_callbacks():void {
+             ExternalInterface.addCallback('set_square_label', set_square_label);
+             ExternalInterface.addCallback('highlight_square', highlight_square);
+             ExternalInterface.addCallback('unhighlight_square', unhighlight_square);
+             ExternalInterface.addCallback('clear_square', clear_square);
+             ExternalInterface.addCallback('swf_alert', Alert.show);
+           
+         }
+         
+         private function square_clicked(location_number:uint):void {
+             ExternalInterface.call("square_clicked", location_number);
+         }
+
+]]>
+  </mx:Script>
+  <!--
+      How repetitive the buttons' attributes are! Could we do them in CSS
+      instead? Consider it an exercise for the reader.
+  -->
+  <mx:Grid width="290" height="290">
+    <mx:GridRow>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_0" height="90" width="90" click="square_clicked(0)"/>
+      </mx:GridItem>
+      <mx:GridItem>
+        <mx:Button color="red" id="square_1"  height="90" width="90" click="square_clicked(1)"/>
+      </mx:GridItem>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_2"  height="90" width="90" click="square_clicked(2)"/>
+      </mx:GridItem>
+    </mx:GridRow>
+
+    <mx:GridRow>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_3"  height="90" width="90" click="square_clicked(3)"/>
+      </mx:GridItem>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_4"  height="90" width="90" click="square_clicked(4)"/>
+      </mx:GridItem>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_5"  height="90" width="90" click="square_clicked(5)"/>
+      </mx:GridItem>
+    </mx:GridRow>
+
+    <mx:GridRow>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_6"  height="90" width="90" click="square_clicked(6)"/>
+      </mx:GridItem>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_7"  height="90" width="90" click="square_clicked(7)"/>
+      </mx:GridItem>
+      <mx:GridItem>
+        <mx:Button fontSize="50" id="square_8"  height="90" width="90" click="square_clicked(8)"/>
+      </mx:GridItem>
+    </mx:GridRow>
+  </mx:Grid>
+
+</mx:Application>
