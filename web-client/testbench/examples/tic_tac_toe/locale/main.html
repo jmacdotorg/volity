@@ -12,7 +12,7 @@
 <script src="ttt.js" type="text/javascript">
 </script>
 
-<script src="swfobject1-5/swfobject.js" type="text/javascript">
+<script src="swfobject.js" type="text/javascript">
 </script>
 
 </head>
@@ -24,8 +24,14 @@
 
 
 <div id="board-container">
-<embed width="290" height="290" quality="high" name="tic-tac-toe" id="tic-tac-toe" style="" src="ttt.swf" type="application/x-shockwave-flash" />
+
 </div>
+
+<script type="text/javascript">
+var swf_object = new SWFObject('ttt.swf', 'tic_tac_toe', '290', '290', '9', '#FFFFFF');
+swf_object.write('board-container');
+</script>
+
 
 <p>
 This is a demonstration of a Flash Tic Tac Toe UI file embedded in an HTML page. It's a rather naive example, in that the buttons remain interactive when they shouldn't (such as when the UI knows that it isn't the user's turn), but this way it demonstrates the localized token-display feature.
