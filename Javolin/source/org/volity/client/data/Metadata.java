@@ -395,7 +395,7 @@ public class Metadata
     {
         final Metadata result = new Metadata(parent);
 
-        XMLReader xr = XMLReaderFactory.createXMLReader("org.apache.xerces.parsers.SAXParser");
+        XMLReader xr = XMLReaderFactory.createXMLReader();
         InputSource input = null;
         if (reader != null)
             input = new InputSource(reader);
