@@ -1,0 +1,6 @@
+---
+jabber_host: volity.net
+jabber_password: zipperz
+jabber_resource: volitywebclientperltest1
+jabber_username: jmac
+test_resource: volitywebclientperltest2
