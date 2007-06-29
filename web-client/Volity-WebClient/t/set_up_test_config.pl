@@ -10,6 +10,10 @@ use English;
 use Carp qw(carp croak);
 
 Readonly my $CONFIG_FILE => 't/test_config.yml';
+Readonly my $PID_FILE    => 't/volitywebd.pid';
+Readonly my $LOG_FILE    => 't/volitywebd.log';
+Readonly my $DAEMON_PORT => 5722;
+
 
 if (check_old_config()) {
 
@@ -52,7 +56,9 @@ sub check_old_config {
 }
 
 sub perform_setup {
-    my ($jid, $username, $password, $host, $resource);
+    my ($jid, $username, $password, $host, $resource,
+        $db_dsn, $db_username, $db_password,
+       );
     until (defined($jid)) {
         print 'Please give me a valid Jabber JID (i.e. foo@bar.com): ';
         chomp($jid = <STDIN>);
@@ -70,12 +76,32 @@ sub perform_setup {
         print 'Please give me the password for that JID: ';
         chomp($password = <STDIN>);
     }
+    until (defined($db_dsn)) {
+        print "Now I need some database information.\n";
+        print 'Please provide a valid DBI datasource string: ';
+        chomp($db_dsn = <STDIN>);
+    }
+    until (defined($db_username)) {
+        print 'Please give me the username for that DSN: ';
+        chomp($db_username = <STDIN>);
+    }
+    until (defined($db_password)) {
+        print 'Please give me the password for that DSN: ';
+        chomp($db_password = <STDIN>);
+    }
+
     my %config = (
                   jabber_username => $username,
                   jabber_password => $password,
                   jabber_host     => $host,
                   jabber_resource => 'volitywebclientperltest1',
                   test_resource   => 'volitywebclientperltest2',
+                  pid_file        => $PID_FILE,
+                  log_file        => $LOG_FILE,
+                  db_dsn          => $db_dsn,
+                  db_username     => $db_username,
+                  db_password     => $db_password,
+                  daemon_port     => $DAEMON_PORT,
               );
     write_config_file(\%config);
 }

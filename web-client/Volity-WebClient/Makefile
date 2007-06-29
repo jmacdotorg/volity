@@ -14,7 +14,7 @@
 #     AUTHOR => q[Jason McIntosh <jmac@jmac.org>]
 #     NAME => q[Volity::WebClient]
 #     PL_FILES => {  }
-#     PREREQ_PM => { Test::More=>q[0], YAML=>q[0], Volity=>q[0.7], Readonly=>q[0], POE=>q[0], Object::InsideOut=>q[0] }
+#     PREREQ_PM => { Perl6::Slurp=>q[0], YAML=>q[0], Volity=>q[0.7], Readonly=>q[0], Test::More=>q[0], Data::JavaScript::Anon=>q[0], DBI=>q[0], LWP=>q[0], Object::InsideOut=>q[0], POE=>q[0] }
 #     VERSION_FROM => q[lib/Volity/WebClient.pm]
 #     clean => { FILES=>q[Volity-WebClient-*] }
 #     dist => { COMPRESS=>q[gzip -9f], SUFFIX=>q[gz] }
@@ -154,7 +154,8 @@ O_FILES  =
 H_FILES  = 
 MAN1PODS = 
 MAN3PODS = lib/Volity/WebClient.pm \
-	lib/Volity/WebClient/User.pm
+	lib/Volity/WebClient/User.pm \
+	lib/Volity/WebClient/UserDispatcher.pm
 
 # Where is the Config information that we are using/depend on
 CONFIGDEP = $(PERL_ARCHLIB)$(DIRFILESEP)Config.pm $(PERL_INC)$(DIRFILESEP)config.h
@@ -177,11 +178,14 @@ PERL_ARCHIVE_AFTER =
 
 
 TO_INST_PM = lib/Volity/WebClient.pm \
+	lib/Volity/WebClient/Queue.pm \
 	lib/Volity/WebClient/User.pm \
 	lib/Volity/WebClient/UserDispatcher.pm
 
 PM_TO_BLIB = lib/Volity/WebClient/UserDispatcher.pm \
 	blib/lib/Volity/WebClient/UserDispatcher.pm \
+	lib/Volity/WebClient/Queue.pm \
+	blib/lib/Volity/WebClient/Queue.pm \
 	lib/Volity/WebClient.pm \
 	blib/lib/Volity/WebClient.pm \
 	lib/Volity/WebClient/User.pm \
@@ -389,11 +393,14 @@ POD2MAN = $(POD2MAN_EXE)
 
 
 manifypods : pure_all  \
+	lib/Volity/WebClient/UserDispatcher.pm \
 	lib/Volity/WebClient.pm \
 	lib/Volity/WebClient/User.pm \
+	lib/Volity/WebClient/UserDispatcher.pm \
 	lib/Volity/WebClient.pm \
 	lib/Volity/WebClient/User.pm
 	$(NOECHO) $(POD2MAN) --section=3 --perm_rw=$(PERM_RW)\
+	  lib/Volity/WebClient/UserDispatcher.pm $(INST_MAN3DIR)/Volity::WebClient::UserDispatcher.$(MAN3EXT) \
 	  lib/Volity/WebClient.pm $(INST_MAN3DIR)/Volity::WebClient.$(MAN3EXT) \
 	  lib/Volity/WebClient/User.pm $(INST_MAN3DIR)/Volity::WebClient::User.$(MAN3EXT) 
 
@@ -436,7 +443,7 @@ realclean_subdirs :
 realclean purge ::  clean realclean_subdirs
 	$(RM_RF) $(INST_AUTODIR) $(INST_ARCHAUTODIR)
 	$(RM_RF) $(DISTVNAME)
-	$(RM_F)  blib/lib/Volity/WebClient.pm blib/lib/Volity/WebClient/UserDispatcher.pm blib/lib/Volity/WebClient/User.pm $(MAKEFILE_OLD) $(FIRST_MAKEFILE)
+	$(RM_F)  blib/lib/Volity/WebClient/Queue.pm blib/lib/Volity/WebClient.pm blib/lib/Volity/WebClient/UserDispatcher.pm blib/lib/Volity/WebClient/User.pm $(MAKEFILE_OLD) $(FIRST_MAKEFILE)
 
 
 # --- MakeMaker metafile section:
@@ -448,7 +455,11 @@ metafile :
 	$(NOECHO) $(ECHO) 'version_from: lib/Volity/WebClient.pm' >> META.yml
 	$(NOECHO) $(ECHO) 'installdirs:  site' >> META.yml
 	$(NOECHO) $(ECHO) 'requires:' >> META.yml
+	$(NOECHO) $(ECHO) '    Data::JavaScript::Anon:        0' >> META.yml
+	$(NOECHO) $(ECHO) '    DBI:                           0' >> META.yml
+	$(NOECHO) $(ECHO) '    LWP:                           0' >> META.yml
 	$(NOECHO) $(ECHO) '    Object::InsideOut:             0' >> META.yml
+	$(NOECHO) $(ECHO) '    Perl6::Slurp:                  0' >> META.yml
 	$(NOECHO) $(ECHO) '    POE:                           0' >> META.yml
 	$(NOECHO) $(ECHO) '    Readonly:                      0' >> META.yml
 	$(NOECHO) $(ECHO) '    Test::More:                    0' >> META.yml
@@ -723,8 +734,12 @@ ppd:
 	$(NOECHO) $(ECHO) '    <ABSTRACT>Modules for the Volity web client'\''s server-side portion.</ABSTRACT>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>Jason McIntosh &lt;jmac@jmac.org&gt;</AUTHOR>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="DBI" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="Data-JavaScript-Anon" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="LWP" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="Object-InsideOut" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="POE" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="Perl6-Slurp" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="Readonly" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="Test-More" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="Volity" VERSION="0,7,0,0" />' >> $(DISTNAME).ppd
@@ -741,6 +756,7 @@ ppd:
 pm_to_blib: $(TO_INST_PM)
 	$(NOECHO) $(PERLRUN) -MExtUtils::Install -e 'pm_to_blib({@ARGV}, '\''$(INST_LIB)/auto'\'', '\''$(PM_FILTER)'\'')'\
 	  lib/Volity/WebClient/UserDispatcher.pm blib/lib/Volity/WebClient/UserDispatcher.pm \
+	  lib/Volity/WebClient/Queue.pm blib/lib/Volity/WebClient/Queue.pm \
 	  lib/Volity/WebClient.pm blib/lib/Volity/WebClient.pm \
 	  lib/Volity/WebClient/User.pm blib/lib/Volity/WebClient/User.pm 
 	$(NOECHO) $(TOUCH) $@
