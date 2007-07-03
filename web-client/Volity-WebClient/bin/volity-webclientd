@@ -1,0 +1,313 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+use POE::Component::Server::HTTP;
+use HTTP::Status;
+use DBI;
+use Getopt::Std;
+use YAML;
+use English;
+use Carp qw(carp croak);
+use Readonly;
+use URI::QueryParam;
+use Volity::WebClient::UserDispatcher;
+use Volity::WebClient::User;
+
+Readonly my $DEFAULT_PORT          => 5722;
+Readonly my $DEFAULT_SESSION_TABLE => 'websession';
+Readonly my $DEFAULT_KEY_TABLE     => 'webclient_session';
+Readonly my $DEFAULT_PASSWORD_TABLE => 'ejabberd.users';
+Readonly my $DEFAULT_JABBER_HOST   => 'volity.net';
+Readonly my $DEFAULT_PULSE_LENGTH  => 10;
+
+# Create the global user dispatcher object.
+my $user_dispatcher = Volity::WebClient::UserDispatcher->new;
+
+# This hash holds user objects keyed by session ID.
+my %user_with_session_id;
+# This hash holds booleans for each user, stating if they've sent a pulse
+#   (an HTTP request) recently.
+my %pulse_for_user;
+
+# Get opts.
+my %opts;
+getopt ('c', \%opts);
+unless (defined($opts{c})) {
+    die "Usage: $0 -c path/to/config.yml\n";
+}
+
+# Read the config file.
+my $config_ref;
+eval { $config_ref = YAML::LoadFile($opts{c}); };
+if ($EVAL_ERROR) {
+    croak ("Couldn't read the test config file at $opts{c}:\n$EVAL_ERROR");
+}
+
+# Set up global constants derived from the config file.
+Readonly my $JABBER_HOST  => $config_ref->{jabber_host}
+                             || $DEFAULT_JABBER_HOST;
+Readonly my $PULSE_LENGTH => $config_ref->{pulse_length}
+                             || $DEFAULT_PULSE_LENGTH;
+
+# Set up the database handle.
+my $dbh = DBI->connect($config_ref->{db_dsn},
+                       $config_ref->{db_username},
+                       $config_ref->{db_password},
+                   );
+unless ($dbh) {
+    croak ("Failed to connect to database.");
+}
+
+# Set up some POE states.
+POE::Kernel->state("check_user_pulse", \&check_user_pulse);
+
+# Set up the HTTP serever.
+my %content_handlers = (
+                        '/login' => \&handle_login,
+                        '/js'    => \&handle_js_request,
+                    );
+
+my $aliases = POE::Component::Server::HTTP->new(
+                                  Port => $config_ref->{default_port}
+                                          || $DEFAULT_PORT,
+                                  ContentHandler => \%content_handlers,
+                                            );
+
+# Now it just runs, until it doesn't, at which point the next lines are
+# called.
+
+# Clean up.
+POE::Kernel->call($aliases->{httpd}, 'shutdown');
+
+# #################
+# POE handlers
+# #################
+
+sub handle_login {
+    my ($request, $response) = @_;
+
+    # Try fetching the session associated with the one-time session key
+    # that should be in the request URI's query part.
+    my $key = $request->uri->query_param('key');
+    unless ($key) {
+        # Return an error.
+        $response->code(RC_BAD_REQUEST);
+        $response->content("Required parameter 'key' not found.");
+        return RC_BAD_REQUEST;
+    }
+    my $session_table = $config_ref->{session_table}
+                        || $DEFAULT_SESSION_TABLE;
+    my $key_table     = $config_ref->{key_table}
+                        || $DEFAULT_KEY_TABLE;
+    my $password_table = $config_ref->{password_table}
+                        || $DEFAULT_PASSWORD_TABLE;
+    my $query = << "END_QUERY";
+SELECT $session_table.username,
+       password
+FROM   $session_table,
+       $key_table,
+       $password_table
+WHERE  $key_table.key = ?
+       AND $key_table.${session_table}_id = $session_table.id
+       AND $session_table.username = $password_table.username
+END_QUERY
+;
+
+    my $sth = $dbh->prepare_cached($query);
+    my ($username, $password) = $sth->execute($key)->fetchrow_array;
+    unless ($username) {
+        # Return an error.
+        $response->code(RC_BAD_REQUEST);
+        $response->content("Invalid or expired 'key' parameter ($key).");
+        return RC_BAD_REQUEST;
+    }
+
+    # Use this login into to create a new Jabber user, and add it to the
+    # user dispatcher object.
+    my $resource = 'volityweb' . time . $username;
+    my $user = Volity::WebClient::User->new({
+                                        user     => $username,
+                                        password => $password,
+                                        jid_host => $JABBER_HOST,
+                                        host     => $JABBER_HOST,
+                                        resource => $resource,
+                                        alias    => $resource,
+                                      });
+    $user_dispatcher->add_user($user);
+    
+    # We've redeemed the one-time key, so delete it from the database.
+    my $delete_query = q{DELETE FROM $key_table
+                         WHERE       key = ?
+                     };
+    $dbh->prepare($query)->execute($key);
+
+    # Make up a session ID for this user, remember it, and put in a
+    # cookie as well.
+    my $session_id = generate_session_id();
+    my $cookie = "session_id=$session_id";
+    $response->header( 'set-cookie' => $cookie );
+    $user_with_session_id{$session_id} = $user;
+    $user->session_id($session_id);
+
+    # Set a POE kernel delay to begin this user's heartbeat check thingy
+    POE::Kernel->delay('check_user_pulse',
+                           $PULSE_LENGTH,
+                           $user,
+                       );
+
+
+    # Return HTTP success. No content necessary.
+    $response->code(RC_OK);
+    # Ah, let's thow some in anyway.
+    $response->content('Login successful.');
+    return RC_OK;
+}
+
+sub handle_js_request {
+    my ($request, $response) = @_;
+
+    # Get the session from this request, using the session ID on the cookie.
+    my $session_id;
+    eval { $session_id = get_session_id_from_response($response); };
+
+    unless ($session_id) {
+        return react_to_bad_cookie($response);
+    }
+
+    my $user = $user_with_session_id{$session_id};
+    unless ($user) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content("No user associated with your session ID ($session_id). Please get a new session ID by calling the login URI.");
+        return RC_BAD_REQUEST;
+    }
+
+    # Get the queued-up JS function calls for this user and send 'em back
+    # as HTTP content.
+    my @js_lines = $user_dispatcher->get_js_and_clear_queue_for_user($user);
+    $response->code(RC_OK);
+    $response->content(join "\n", @js_lines);
+    return RC_OK;
+}
+
+sub react_to_bad_cookie {
+    my ($response) = @_;
+    # If there's no session ID, then they haven't logged in.
+    # That counts as a bad request.
+    $response->code(RC_BAD_REQUEST);
+    $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first.");
+    return RC_BAD_REQUEST;
+}
+
+sub get_session_id_from_response {
+    my ($response) = @_;
+
+    my $cookie = $response->header('Cookie');
+    unless ($cookie) {
+        croak ('No cookie header found in the response.');
+    }
+
+    my ($session_id) = $cookie =~ /^session_id=(.*)$/;
+    unless ($session_id) {
+        croak ('No session_id found in the response.');
+    }
+
+    return $session_id;
+}
+    
+sub check_user_pulse {
+    my ($user) = @_;
+    if ($pulse_for_user{$user}) {
+        # Great, they're still alive.
+        # Set a kernel delay to check their pulse again later.
+        POE::Kernel->delay('check_user_pulse',
+                           $PULSE_LENGTH,
+                           $user,
+                       );
+    }
+    else {
+        # Assume that they've wandered off. Kill their connection,
+        # and forget about 'em. (If they come back, they shall do so to
+        # a blank slate. Note that this is orthoganal to how Volity
+        # may treat them on, say, rejoining a table the abandoned...)
+        $user->disconnect;
+        delete $pulse_for_user{$user};
+        delete $user_with_session_id{$user->session_id};
+        $user_dispatcher->remove($user);
+    }
+}
+
+__END__
+
+=head1 NAME
+
+volity-webclientd - Daemon that manages Volity web client user connections
+
+=head1 USAGE
+
+ /bin/volity-webclientd -c /path/to/config.yml
+
+=head1 DESCRIPTION
+
+This program runs a non-interactive daemon that manages all the Volity
+web client's current user connections to the underlying Jabber
+network. It communicates with the world via HTTP, with a very small
+URI-based protocol.
+
+Its output (beyond HTTP success/failure codes) is expressed as
+JavaScript function calls, possibly several at a time in a
+newline-separated list as the content of the HTTP response. Each of
+these function calls is one of the calls defined in the web client's
+JavaScript API.
+
+Under the hood, the daemon is just a
+C<Volity::WebClient::UserDispatcher> Perl object wrapped in an HTTP
+server. However, it's intended to be used entirely through that HTTP
+interface; no Perl hacking should be necessary.
+
+=head1 CONFIGURATION
+
+Recommended use involves setting up a YAML file containing the
+daemon's configuration information, and then referring to it with the
+B<c> switch on launch (see L<"USAGE">).
+
+Here are the keys you can speciy in that file:
+
+=over
+
+=item daemon_port
+
+<b>Default</b>: 5722
+
+=item db_dsn
+
+A valid DBI datasource string, pointing to the database that contains the
+tables this program needs to see.
+
+=item db_username
+
+=item db_password
+
+=item jabber_host
+
+=item jabber_password
+
+=item jabber_username
+
+=item log_file
+
+=item pid_file
+
+=item pulse_length
+
+=back
+
+=head2 Database Setup
+
+
+
+=head1 AUTHOR
+
+Jason McIntosh <jmac@jmac.org>
+

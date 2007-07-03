@@ -36,6 +36,11 @@ my @is_connected
     :Acc(is_connected)
     ;
 
+my @session_id
+    :Field
+    :Acc(session_id)
+    ;
+
 use Readonly;
 use Carp qw(carp croak);
 

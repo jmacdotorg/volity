@@ -11,6 +11,7 @@ use LWP;
 use Carp qw(carp croak);
 use YAML;
 use DBI;
+use DateTime::Format::MySQL;
 
 Readonly my $CONFIG_FILE => 't/test_config.yml';
 Readonly my $COMMAND     => q{bin/volity-webclientd -c $CONFIG_FILE};
@@ -36,6 +37,9 @@ Readonly my $DB_PASSWORD     => $config_ref->{db_password};
 Readonly my $DAEMON_HOST     => 'localhost';
 Readonly my $DAEMON_PORT     => $config_ref->{daemon_port};
 Readonly my $SERVER_URL      => "http://$DAEMON_HOST:$DAEMON_PORT";
+
+Readonly my $TEST_SESSION_ID => 'blahblahtestsession12345';
+Readonly my $TEST_SESSION_KEY => 'doodleydootestkey54321';
 
 my $dbh = DBI->connect($DB_DSN, $DB_USERNAME, $DB_PASSWORD);
 if ($dbh) {
@@ -64,23 +68,44 @@ else {
 }
 
 # Add a couple of test users to the daemon.
-my %user1 = (
+my %user = (
              username => $JABBER_USERNAME,
              host     => $JABBER_HOST,
              password => $JABBER_PASSWORD,
-             resource => 'webclienttestuser1',
+             resource => 'webclienttestuser',
          );
 
-my %user2 = %user1;
-$user2{resource} = 'webclienttestuser2';
-
-# XXX Magic here.
+set_up_session_tables();
 
 my $ua = LWP::UserAgent->new;
 $ua->agent('Web Client test script');
-my $user1_url = "$SERVER_URL/login?key=$user1{key}";
-my $request = HTTP::Request->new(GET => $user1_url);
+my $user_url = "$SERVER_URL/login?key=$user{key}";
+my $request = HTTP::Request->new(GET => $user_url);
 
 my $result = $ua->request($request);
-ok($result->is_success, 'User1 login');
+ok($result->is_success, 'User login');
 
+clean_up_session_tables();
+
+sub set_up_session_tables {
+    # How we set this up depends on whether there's already a row for the
+    # test user.
+    my $query = qq{SELECT id FROM $SESSION_TABLE WHERE username = ?};
+    my $sth = $dbh->prepare($query);
+    my ($session_id) = $sth->execute($query)->fetchrow_array;
+    unless ($session_id) {
+        $session_id = $TEST_SESSION_ID;
+        my $query = "INSERT INTO $SESSION_TABLE (id, username) VALUES (?, ?)";
+        my $sth = $dbh->prepare($query);
+        $sth->execute($session_id, $JABBER_USERNAME);
+    }
+
+    my $now_dt = DateTime->now->add(minutes => 1);
+    my $now_mysql = DateTime::Format::MySQL->format_datetime($now_dt);
+    $dbh->do(qq{INSERT INTO $WEBCLIENT_SESSION_TABLE (session_id, key, timeout) values ('session_id', '$TEST_SESSION_KEY', '$now_mysql')});
+}
+            
+sub clean_up_session_tables {
+    $dbh->do(qq{DELETE FROM $SESSION_TABLE WHERE id = '$TEST_SESSION_ID'});
+    $dbh->do(qq{DELETE FROM $WEBCLIENT_SESSION_TABLE WHERE session_id = '$TEST_SESSION_ID'});
+}
