@@ -156,6 +156,7 @@ use POE qw(
 	   Wheel::ReadWrite
 	   Filter::Line
 	   Driver::SysRW
+           Component::Jabber
            Component::Jabber::Error
            Component::Jabber::ProtocolFactory
            Component::Jabber::Status
