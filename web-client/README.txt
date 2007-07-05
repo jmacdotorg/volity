@@ -4,8 +4,13 @@ This is the source code to as as-yet unnamed web client for Volity.
 
 At this time, the most interesting bit is probably the stuff in the
 testbench/ subdirectory, which contains a web-based application for UI
-development, and a Tic Tac Toe example. See the README.txt and
-documentation.html files there.
+development, and Tic Tac Toe examples in multiple UI formats. See the
+README.txt and documentation.html files there.
+
+The Volity-WebClient directory contains a set of Perl modules
+implementing the web client's server-side component. At the time of
+this writing, it's just a skeleton, with a proposed interface existing
+in the form of its own test suite.
 
 --- STATUS ---
 
