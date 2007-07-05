@@ -236,7 +236,11 @@ sub initialize {
     my $self = shift;
     $self->{kernel} = $poe_kernel;
     $self->{port} ||= 5222;
-    $self->logger->debug("STARTING init. Password is " . $self->password);
+
+    $self->{jid_host} ||= $self->{host};
+    $self->{host} ||= $self->{jid_host};
+
+    $self->logger->debug("STARTING init.");
     POE::Session->create(
 			 object_states=>
 			 [$self=>
@@ -1038,7 +1042,7 @@ sub send_message {
       $form->fields(@fields);
       $message->insert_tag("volity", [xmlns=>"http://volity.org/protocol/form"])->insert_tag($form);
   }
-	  
+
   $self->post_node($message);
 }
 
@@ -1312,9 +1316,14 @@ sub receive_roster {
     $roster->add_item($item_hash);
   }
   $self->roster($roster);
-  # XXX EXPERIMENTAL
+
   # Send presence after receipt of roster.
   $self->send_presence;
+
+  # Call the roster-receipt handler, in case our subclass wants to do something
+  # special when this happens.
+  $self->handle_roster_receipt;
+  
 }
 
 sub update_roster {
@@ -1349,7 +1358,18 @@ sub update_roster {
     # In either case, we will add it this new data to the roster.
     $roster->add_item($item_hash);
   }
+
+  # Call the roster-change handler, in case our subclass wants to do something
+  # special with the roster updates.
+  $self->handle_roster_update($$item_hash{jid});
+
 }
+
+# A couple of stub methods for roster events.
+
+sub handle_roster_receipt { }
+
+sub handle_roster_update { }
 
 =head2 request_disco_info ($args_hashref)
 
