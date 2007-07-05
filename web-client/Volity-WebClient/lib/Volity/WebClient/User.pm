@@ -25,6 +25,12 @@ my @chat_queue
     :Acc(chat_queue)
     ;
 
+my @roster_queue
+    :Field
+    :Type('Volity::WebClient::Queue')
+    :Acc(roster_queue)
+    ;
+
 my @chat_queues_by_table_jid
     :Field
     :Type(HASH_ref)
@@ -55,6 +61,7 @@ sub initialize :Init {
     # Set up some empty queues.
     $self->rpc_queue(Volity::WebClient::Queue::RPC->new);
     $self->chat_queue(Volity::WebClient::Queue::Chat->new);
+    $self->roster_queue(Volity::WebClient::Queue::Roster->new);
     $self->chat_queues_by_table_jid({});
 
     $args->{webclient_user} = $self;
@@ -123,7 +130,34 @@ sub handle_groupchat_message {
 
     $queue->add($message_info);
 }
-             
+
+sub handle_roster_receipt {
+    my $self = shift;
+    my @roster_jids = $self->roster->jids;
+
+    my $queue = $self->webclient_user->roster_queue;
+        
+    # XXX This is BROKEN but good for the first go-through.
+    #     Just get the first presence, ignoring any others!!
+    for my $jid (@roster_jids) {
+        my ($presence_ref) = $self->roster->presence($jid);
+        my $status = $presence_ref->{type};
+        $queue->add([$jid, $status]);
+    }
+}
+
+sub handle_roster_update {
+    my $self = shift;
+    my ($jid) = @_;
+    my $queue = $self->webclient_user->roster_queue;
+        
+    # XXX This is BROKEN but good for the first go-through.
+    #     Just get the first presence, ignoring any others!!
+    my ($presence_ref) = $self->roster->presence($jid);
+    my $status = $presence_ref->{type};
+    $queue->add([$jid, $status]);
+}
+        
 
 1;
 

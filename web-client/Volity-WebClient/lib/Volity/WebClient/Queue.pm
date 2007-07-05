@@ -125,3 +125,24 @@ sub item_as_js {
 
 1;
 
+package Volity::WebClient::Queue::Roster;
+
+use warnings;
+use strict;
+
+use Object::InsideOut qw(Volity::WebClient::Queue);
+
+use Data::JavaScript::Anon;
+
+sub item_as_js {
+    my $self = shift;
+    my ($roster_info_ref) = @_;
+
+    my ($jid, $new_status) = @$roster_info_ref;
+
+    # Return a JS handle_rpc command.
+    return "update_roster ($jid, $new_status)";
+}
+
+1;
+
