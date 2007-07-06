@@ -3,7 +3,6 @@ use strict;
 
 use Test::More qw( no_plan );
 
-use POE;                        # Just for access to the event loop.
 use Readonly;
 use Perl6::Slurp;
 use English;
@@ -12,11 +11,16 @@ use Carp qw(carp croak);
 use YAML;
 use DBI;
 use DateTime::Format::MySQL;
+use Getopt::Std;
+
+my %opts;
+getopts('d', \%opts); 
 
 Readonly my $CONFIG_FILE => 't/test_config.yml';
-Readonly my $COMMAND     => q{bin/volity-webclientd -c $CONFIG_FILE};
+Readonly my $COMMAND     => qq{perl -Ilib bin/volity-webclientd -c $CONFIG_FILE};
 
-Readonly my $LOGIN_TIMEOUT => 10;
+Readonly my $LOGIN_TIMEOUT => 12;
+Readonly my $ROSTER_WAIT   => 5;
 
 my $config_ref;
 eval { $config_ref = YAML::LoadFile($CONFIG_FILE); };
@@ -51,15 +55,20 @@ else {
 }
 
 my $pid;
+my $child_pid;
 
+clean_up_session_tables();
 set_up_session_tables();
-launch_daemon();
+exit if $opts{d};
+
+eval { launch_daemon() };
 
 my %user = (
             username => $JABBER_USERNAME,
             host     => $JABBER_HOST,
             password => $JABBER_PASSWORD,
             resource => 'webclienttestuser',
+            key      => $TEST_SESSION_KEY,
         );
 
 eval { run_tests() };
@@ -71,24 +80,38 @@ sub run_tests {
     my $ua = LWP::UserAgent->new;
     $ua->agent('Web Client test script');
     my $user_url = "$SERVER_URL/login?key=$user{key}";
+    diag ("Sending request to $user_url");
     my $request = HTTP::Request->new(GET => $user_url);
     
     my $result = $ua->request($request);
     ok($result->is_success, 'User login');
+    unless ($result->is_success) {
+        diag ('Code was: ' . $result->code);
+        diag ('Message was: ' . $result->content);
+    }
 
-    sleep(1);                   # Give it a chance to get its roster
-    my $js_url = "$SERVER_URL/login/js";
+    my $cookie = $result->header('set-cookie');
+    like($cookie, qr/session_id/, 'session_id in cookie');
+
+    diag("Napping $ROSTER_WAIT seconds to let the roster load.");
+    sleep($ROSTER_WAIT);                   # Give it a chance to get its roster
+    my $js_url = "$SERVER_URL/js";
     my $js_request = HTTP::Request->new(GET => $js_url);
+    $js_request->header(cookie => $cookie);
     my $js_result = $ua->request($js_request);
 
     ok($js_result->is_success, 'JS request');
+    unless ($js_result->is_success) {
+        diag ('Code was: ' . $js_result->code);
+        diag ('Message was: ' . $js_result->content);
+    }
     my @js_commands = split("\n", $js_result->content);
     ok($js_commands[0] =~ /roster/, 'roster JS function call found');
 
     diag("Napping $LOGIN_TIMEOUT seconds to see if the user logs out...");
     sleep($LOGIN_TIMEOUT);
     my $delayed_result = $ua->request($js_request);
-    ok(not($js_result->is_success), 'User login timeout');
+    ok($delayed_result->code == 400, 'User login timeout');
 }
 
 sub set_up_session_tables {
@@ -96,45 +119,58 @@ sub set_up_session_tables {
     # test user.
     my $query = qq{SELECT id FROM $SESSION_TABLE WHERE username = ?};
     my $sth = $dbh->prepare($query);
-    my ($session_id) = $sth->execute($query)->fetchrow_array;
+    $sth->execute($query);
+    my ($session_id) = $sth->fetchrow_array;
     unless ($session_id) {
         $session_id = $TEST_SESSION_ID;
-        my $query = "INSERT INTO $SESSION_TABLE (id, username) VALUES (?, ?)";
-        my $sth = $dbh->prepare($query);
+        $query = "INSERT INTO $SESSION_TABLE (id, username) VALUES (?, ?)";
+        $sth = $dbh->prepare($query);
         $sth->execute($session_id, $JABBER_USERNAME);
     }
 
-    my $now_dt = DateTime->now->add(minutes => 1);
+    my $now_dt = DateTime->now->add(minutes => 5);
     my $now_mysql = DateTime::Format::MySQL->format_datetime($now_dt);
-    $dbh->do(qq{INSERT INTO $WEBCLIENT_SESSION_TABLE (session_id, key, timeout) values ('session_id', '$TEST_SESSION_KEY', '$now_mysql')});
+    my $insert_query = qq{INSERT INTO $WEBCLIENT_SESSION_TABLE (websession_id, webclient_key, timeout) values ('$session_id', '$TEST_SESSION_KEY', '$now_mysql')};
+    $dbh->do($insert_query);
 }
             
 sub clean_up_session_tables {
     $dbh->do(qq{DELETE FROM $SESSION_TABLE WHERE id = '$TEST_SESSION_ID'});
-    $dbh->do(qq{DELETE FROM $WEBCLIENT_SESSION_TABLE WHERE session_id = '$TEST_SESSION_ID'});
+    $dbh->do(qq{DELETE FROM $WEBCLIENT_SESSION_TABLE WHERE websession_id = '$TEST_SESSION_ID'});
 }
 
 sub launch_daemon {
-    if ($pid = slurp($PID_FILE)) {
+    eval { $pid = slurp($PID_FILE) };
+    unless ($EVAL_ERROR) {
         diag("Looks like there's already a PID file at $PID_FILE (PID: $pid)\n");
         diag("I'll kill that process if it exists.\n");
-        kill $pid;
+        kill 9, $pid;
         unlink $PID_FILE or die "Couldn't unlink $PID_FILE: $OS_ERROR";
     }
 
-    system $COMMAND;
-    sleep 1;
+    unless ($child_pid = fork) {
+        exec $COMMAND;
+    }
+    my $timeout = time + 5;
+    while (1) {
+        last if ( (time > $timeout) or (-e $PID_FILE) );
+    }
+    if (time >= $timeout) {
+        die "Whaa???";
+    }
     $pid = slurp($PID_FILE);
     if ($pid) {
         pass("Daemon launched (PID: $pid)");
     }
     else {
+        fail("Daemon launched (PID: $pid)");
         die "The daemon failed to launch (no PID file found at $PID_FILE.\nCommand was:\n$COMMAND";
     }
 
 }
 
 sub clean_up_daemon {
-    kill $pid or warn "Can't kill daemon at PID $pid: $OS_ERROR";
+    kill 9, $pid or warn "Can't kill daemon at PID $pid: $OS_ERROR";
+    kill 9, $child_pid or warn "Can't kill test process at PID $child_pid: $OS_ERROR";
     unlink $PID_FILE or warn "Can't unlink pidfile $PID_FILE: $OS_ERROR";
 }

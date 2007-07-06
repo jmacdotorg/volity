@@ -138,10 +138,13 @@ sub item_as_js {
     my $self = shift;
     my ($roster_info_ref) = @_;
 
-    my ($jid, $new_status) = @$roster_info_ref;
-
+    my $jid = $roster_info_ref->{jid};
+    my $status = $roster_info_ref->{type}
+                 || $roster_info_ref->{show}
+                 || '';
+    my $message = $roster_info_ref->{status} || '';
     # Return a JS handle_rpc command.
-    return "update_roster ($jid, $new_status)";
+    return "update_roster ($jid, $status, $message)";
 }
 
 1;

@@ -55,7 +55,10 @@ sub get_js_and_clear_queue_for_user {
     my $self = shift;
     my ($user) = @_;
     my @js_commands;
-    push @js_commands, $user->chat_queue->as_js;
+    foreach (qw(chat_queue roster_queue)) {
+        my $queue = $user->$_;
+        push @js_commands, $queue->as_js;
+    }
     $user->chat_queue->clear;
     return @js_commands;
 }

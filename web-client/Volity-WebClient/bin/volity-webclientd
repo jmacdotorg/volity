@@ -3,6 +3,7 @@
 use warnings;
 use strict;
 
+use POE;
 use POE::Component::Server::HTTP;
 use HTTP::Status;
 use DBI;
@@ -14,13 +15,17 @@ use Readonly;
 use URI::QueryParam;
 use Volity::WebClient::UserDispatcher;
 use Volity::WebClient::User;
+use Digest::SHA1 qw(sha1_hex);
+use Time::HiRes qw();
 
 Readonly my $DEFAULT_PORT          => 5722;
 Readonly my $DEFAULT_SESSION_TABLE => 'websession';
-Readonly my $DEFAULT_KEY_TABLE     => 'webclient_session';
+Readonly my $DEFAULT_KEY_TABLE     => 'webclient_session_key';
 Readonly my $DEFAULT_PASSWORD_TABLE => 'ejabberd.users';
 Readonly my $DEFAULT_JABBER_HOST   => 'volity.net';
 Readonly my $DEFAULT_PULSE_LENGTH  => 10;
+
+Readonly my $HASH_SALT             => 'volity roxors';
 
 # Create the global user dispatcher object.
 my $user_dispatcher = Volity::WebClient::UserDispatcher->new;
@@ -51,6 +56,12 @@ Readonly my $JABBER_HOST  => $config_ref->{jabber_host}
 Readonly my $PULSE_LENGTH => $config_ref->{pulse_length}
                              || $DEFAULT_PULSE_LENGTH;
 
+# Lay down a PID.
+open my $pid_handle, '>', $config_ref->{pid_file}
+    or die "Can't write my PID to $config_ref->{pid_file}: $OS_ERROR";
+print $pid_handle "$$\n";
+close $pid_handle;
+
 # Set up the database handle.
 my $dbh = DBI->connect($config_ref->{db_dsn},
                        $config_ref->{db_username},
@@ -59,9 +70,6 @@ my $dbh = DBI->connect($config_ref->{db_dsn},
 unless ($dbh) {
     croak ("Failed to connect to database.");
 }
-
-# Set up some POE states.
-POE::Kernel->state("check_user_pulse", \&check_user_pulse);
 
 # Set up the HTTP serever.
 my %content_handlers = (
@@ -75,11 +83,13 @@ my $aliases = POE::Component::Server::HTTP->new(
                                   ContentHandler => \%content_handlers,
                                             );
 
+$poe_kernel->run;
+
 # Now it just runs, until it doesn't, at which point the next lines are
 # called.
 
 # Clean up.
-POE::Kernel->call($aliases->{httpd}, 'shutdown');
+$poe_kernel->call($aliases->{httpd}, 'shutdown');
 
 # #################
 # POE handlers
@@ -109,14 +119,15 @@ SELECT $session_table.username,
 FROM   $session_table,
        $key_table,
        $password_table
-WHERE  $key_table.key = ?
+WHERE  $key_table.webclient_key = ?
        AND $key_table.${session_table}_id = $session_table.id
        AND $session_table.username = $password_table.username
 END_QUERY
 ;
 
-    my $sth = $dbh->prepare_cached($query);
-    my ($username, $password) = $sth->execute($key)->fetchrow_array;
+    my $sth = $dbh->prepare($query);
+    $sth->execute($key);
+    my ($username, $password) = $sth->fetchrow_array;
     unless ($username) {
         # Return an error.
         $response->code(RC_BAD_REQUEST);
@@ -152,7 +163,8 @@ END_QUERY
     $user->session_id($session_id);
 
     # Set a POE kernel delay to begin this user's heartbeat check thingy
-    POE::Kernel->delay('check_user_pulse',
+    $poe_kernel->state('check_user_pulse', \&check_user_pulse);
+    $poe_kernel->delay('check_user_pulse',
                            $PULSE_LENGTH,
                            $user,
                        );
@@ -161,7 +173,7 @@ END_QUERY
     # Return HTTP success. No content necessary.
     $response->code(RC_OK);
     # Ah, let's thow some in anyway.
-    $response->content('Login successful.');
+    $response->content("Login successful. $username\@$JABBER_HOST/$resource");
     return RC_OK;
 }
 
@@ -170,10 +182,12 @@ sub handle_js_request {
 
     # Get the session from this request, using the session ID on the cookie.
     my $session_id;
-    eval { $session_id = get_session_id_from_response($response); };
+    eval { $session_id = get_session_id_from_request($request); };
 
     unless ($session_id) {
-        return react_to_bad_cookie($response);
+        $response->code(RC_BAD_REQUEST);
+        $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first. Also, " . $request->as_string);
+        return RC_BAD_REQUEST;
     }
 
     my $user = $user_with_session_id{$session_id};
@@ -191,37 +205,28 @@ sub handle_js_request {
     return RC_OK;
 }
 
-sub react_to_bad_cookie {
-    my ($response) = @_;
-    # If there's no session ID, then they haven't logged in.
-    # That counts as a bad request.
-    $response->code(RC_BAD_REQUEST);
-    $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first.");
-    return RC_BAD_REQUEST;
-}
+sub get_session_id_from_request {
+    my ($request) = @_;
 
-sub get_session_id_from_response {
-    my ($response) = @_;
-
-    my $cookie = $response->header('Cookie');
+    my $cookie = $request->header('Cookie');
     unless ($cookie) {
-        croak ('No cookie header found in the response.');
+        croak ('No cookie header found in the request.');
     }
 
     my ($session_id) = $cookie =~ /^session_id=(.*)$/;
     unless ($session_id) {
-        croak ('No session_id found in the response.');
+        croak ('No session_id found in the request.');
     }
 
     return $session_id;
 }
     
 sub check_user_pulse {
-    my ($user) = @_;
+    my ($user) = $_[ARG0];
     if ($pulse_for_user{$user}) {
         # Great, they're still alive.
         # Set a kernel delay to check their pulse again later.
-        POE::Kernel->delay('check_user_pulse',
+        $poe_kernel->delay('check_user_pulse',
                            $PULSE_LENGTH,
                            $user,
                        );
@@ -234,8 +239,12 @@ sub check_user_pulse {
         $user->disconnect;
         delete $pulse_for_user{$user};
         delete $user_with_session_id{$user->session_id};
-        $user_dispatcher->remove($user);
+        $user_dispatcher->remove_user($user);
     }
+}
+
+sub generate_session_id {
+    return sha1_hex(Time::HiRes::time().'_'.$$.$HASH_SALT);
 }
 
 __END__
