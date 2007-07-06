@@ -2,15 +2,14 @@
 
 This is the source code to as as-yet unnamed web client for Volity. 
 
-At this time, the most interesting bit is probably the stuff in the
-testbench/ subdirectory, which contains a web-based application for UI
+Here bits receiving the most attention right now:
+
+* The testbench subdirectory contains a web-based application for UI
 development, and Tic Tac Toe examples in multiple UI formats. See the
 README.txt and documentation.html files there.
 
-The Volity-WebClient directory contains a set of Perl modules
-implementing the web client's server-side component. At the time of
-this writing, it's just a skeleton, with a proposed interface existing
-in the form of its own test suite.
+* The Volity-WebClient directory contains a set of Perl modules
+implementing the web client's server-side component.
 
 --- STATUS ---
 
