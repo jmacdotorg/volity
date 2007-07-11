@@ -18,12 +18,12 @@ use Volity::WebClient::User;
 use Digest::SHA1 qw(sha1_hex);
 use Time::HiRes qw();
 
-Readonly my $DEFAULT_PORT          => 5722;
-Readonly my $DEFAULT_SESSION_TABLE => 'websession';
-Readonly my $DEFAULT_KEY_TABLE     => 'webclient_session_key';
+Readonly my $DEFAULT_PORT           => 5722;
+Readonly my $DEFAULT_SESSION_TABLE  => 'websession';
+Readonly my $DEFAULT_KEY_TABLE      => 'webclient_session_key';
 Readonly my $DEFAULT_PASSWORD_TABLE => 'ejabberd.users';
-Readonly my $DEFAULT_JABBER_HOST   => 'volity.net';
-Readonly my $DEFAULT_PULSE_LENGTH  => 10;
+Readonly my $DEFAULT_JABBER_HOST    => 'volity.net';
+Readonly my $DEFAULT_PULSE_LENGTH   => 10;
 
 Readonly my $HASH_SALT             => 'volity roxors';
 
@@ -32,9 +32,8 @@ my $user_dispatcher = Volity::WebClient::UserDispatcher->new;
 
 # This hash holds user objects keyed by session ID.
 my %user_with_session_id;
-# This hash holds booleans for each user, stating if they've sent a pulse
-#   (an HTTP request) recently.
-my %pulse_for_user;
+# And here's the inverse. The values are array refs.
+my %session_ids_for_user;
 
 # Get opts.
 my %opts;
@@ -160,6 +159,12 @@ END_QUERY
     my $cookie = "session_id=$session_id";
     $response->header( 'set-cookie' => $cookie );
     $user_with_session_id{$session_id} = $user;
+    if ($session_ids_for_user{$user}) {
+        $session_ids_for_user{$user} = [$session_id];
+    }
+    else {
+        push @{$session_ids_for_user{$user}}, $session_id;
+    }
     $user->session_id($session_id);
 
     # Set a POE kernel delay to begin this user's heartbeat check thingy
@@ -197,9 +202,39 @@ sub handle_js_request {
         return RC_BAD_REQUEST;
     }
 
-    # Get the queued-up JS function calls for this user and send 'em back
-    # as HTTP content.
-    my @js_lines = $user_dispatcher->get_js_and_clear_queue_for_user($user);
+    my $window = get_or_create_window($request, $user);
+    unless ($window) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content('The required window_id parameter was not defined.');
+        return RC_BAD_REQUEST;
+    }
+
+    # Update the window's sense of when it was last polled (which will
+    # prevent the cleanup timer from killing it... for now)
+    $window->last_poll(time);
+    
+    # Figure out what types of events they are interested in
+    my @queue_types = $request->uri->query_param('type');
+    # Build the list of JS function calls, based on the types requested.
+    my @js_lines;
+    for my $queue_type (@queue_types) {
+        if ($queue_type eq 'roster') {
+            push @js_lines, $window->roster_queue->as_js;
+            $window->roster_queue->clear;
+        }
+        elsif ($queue_type eq 'chat') {
+            push @js_lines, $window->chat_queue->as_js;
+            $window->chat_queue->clear;
+        }
+        elsif ($queue_type eq 'rpc') {
+            # XXX Going to have to do some magic here
+            #     to determine which 'from's we care about.
+        }
+    }
+
+    # Empty out all the queues for this window.
+    $window->clear_all_queues;
+    
     $response->code(RC_OK);
     $response->content(join "\n", @js_lines);
     return RC_OK;
@@ -220,10 +255,37 @@ sub get_session_id_from_request {
 
     return $session_id;
 }
+
+sub get_or_create_window {
+    my ($request, $user) = @_;
+
+    my $window_id = $request->uri->query_param('window_id');
+    unless ($window_id) {
+        return;
+    }
+
+    my $window = $user->window_with_id($window_id);
+    unless ($window) {
+        $window = Volity::WebClient::Window->new( {id=>$window_id} );
+        $user->add_window($window);
+    }
+
+    return $window;
+}
     
+
+
 sub check_user_pulse {
     my ($user) = $_[ARG0];
-    if ($pulse_for_user{$user}) {
+
+    my $deadline = time - $PULSE_LENGTH;
+    for my $window ($user->windows) {
+        if ($window->last_poll < $deadline) {
+            $user->remove_window($window);
+        }
+    }
+    
+    if ($user->windows) {
         # Great, they're still alive.
         # Set a kernel delay to check their pulse again later.
         $poe_kernel->delay('check_user_pulse',

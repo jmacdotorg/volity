@@ -51,17 +51,6 @@ sub get_user_with_jid {
     return $self->users_by_jid->{$jid};
 }
 
-sub get_js_and_clear_queue_for_user {
-    my $self = shift;
-    my ($user) = @_;
-    my @js_commands;
-    foreach (qw(chat_queue roster_queue)) {
-        my $queue = $user->$_;
-        push @js_commands, $queue->as_js;
-    }
-    $user->chat_queue->clear;
-    return @js_commands;
-}
 
 1;
 

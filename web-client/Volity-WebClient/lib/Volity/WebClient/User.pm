@@ -13,30 +13,6 @@ my @jabber
     :Acc(jabber)
     ;
 
-my @rpc_queue
-    :Field
-    :Type('Volity::WebClient::Queue')
-    :Acc(rpc_queue)
-    ;
-
-my @chat_queue
-    :Field
-    :Type('Volity::WebClient::Queue')
-    :Acc(chat_queue)
-    ;
-
-my @roster_queue
-    :Field
-    :Type('Volity::WebClient::Queue')
-    :Acc(roster_queue)
-    ;
-
-my @chat_queues_by_table_jid
-    :Field
-    :Type(HASH_ref)
-    :Acc(chat_queues_by_table_jid)
-    ;
-
 my @is_connected
     :Field
     :Acc(is_connected)
@@ -47,6 +23,12 @@ my @session_id
     :Acc(session_id)
     ;
 
+my @window_hashref
+    :Field
+    :Type(HASH_ref)
+    :Acc(window_hashref)
+    ;
+
 use Readonly;
 use Carp qw(carp croak);
 
@@ -54,16 +36,12 @@ sub initialize :Init {
     my $self = shift;
     my ($args) = @_;
 
+    $self->window_hashref({});
+    
     unless ($args->{alias}) {
         $args->{alias} = $args->{resource};
     };
     
-    # Set up some empty queues.
-    $self->rpc_queue(Volity::WebClient::Queue::RPC->new);
-    $self->chat_queue(Volity::WebClient::Queue::Chat->new);
-    $self->roster_queue(Volity::WebClient::Queue::Roster->new);
-    $self->chat_queues_by_table_jid({});
-
     $args->{webclient_user} = $self;
     
     $self->jabber(Volity::WebClient::JabberUser->new($args));
@@ -75,7 +53,41 @@ sub disconnect {
     my $self = shift;
     return $self->jabber->disconnect;
 }
-    
+
+sub add_window {
+    my $self = shift;
+    my ($window) = @_;
+    unless ($window->isa('Volity::WebClient::Window')) {
+        croak ('Argument to add_window must be a window object.');
+    }
+    $self->window_hashref->{$window} = $window;
+}
+
+sub remove_window {
+    my $self = shift;
+    my ($window) = @_;
+    unless (ref($window)) {
+        $window = $self->window_hashref->{$window};
+    }
+    unless ($window->isa('Volity::WebClient::Window')) {
+        croak ('Argument to remove_window must be a window object or ID.');
+    }
+
+    $window->user(undef);
+    delete $self->window_hashref->{$window};
+}
+
+sub windows {
+    my $self = shift;
+    return values(%{$self->window_hashref});
+}
+
+sub window_with_id {
+    my $self = shift;
+    my ($id) = @_;
+    return $self->window_hashref->{$id};
+}
+
 package Volity::WebClient::JabberUser;
 
 use warnings;
@@ -96,12 +108,16 @@ sub init_finish {
 sub handle_rpc_request {
     my $self = shift;
     my ($rpc_info_ref) = @_;
-    $self->webclient_user->rpc_queue->add($rpc_info_ref);
+    foreach ($self->webclient_user->windows) {
+        $self->webclient_user->rpc_queue->add($rpc_info_ref);
+    }
 }
 
 sub handle_chat_message {
     my $self = shift;
-    $self->webclient_user->chat_queue->add(@_);
+    foreach ($self->webclient_user->windows) {
+        $_->chat_queue->add(@_);
+    }
 
 }
 
@@ -123,46 +139,20 @@ sub handle_groupchat_message {
         =~ /^(.*)\/(.*)$/;
     $message_info->{from} = $nickname;
     $message_info->{table_jid} = $table_jid;
-    
-    # Make sure there's a queue already filed under this table's JID.
-    my $queue;
-    unless ($queue = $self->webclient_user
-                     ->chat_queues_by_table_jid->{$table_jid}) {
-        $queue = $self->webclient_user
-                 ->chat_queues_by_table_jid->{$table_jid}
-                   = Volity::WebClient::Queue::TableChat->new;
+
+    for my $window ($self->webclient_user->windows) {
+        # Make sure there's a queue already filed under this table's JID.
+        my $queue;
+        unless ($queue = $self->webclient_user
+                ->chat_queues_by_table_jid->{$table_jid}) {
+            $queue = $self->webclient_user
+                ->chat_queues_by_table_jid->{$table_jid}
+                    = Volity::WebClient::Queue::TableChat->new;
+        }
+
+        $queue->add($message_info);
     }
-
-    $queue->add($message_info);
 }
-
-#sub handle_roster_receipt {
-#    my $self = shift;
-#    my @roster_jids = $self->roster->jids;
-#
-#    my $queue = $self->webclient_user->roster_queue;
-#        
-#    # XXX This is BROKEN but good for the first go-through.
-#    #     Just get the first presence, ignoring any others!!
-#    for my $jid (@roster_jids) {
-#        my ($presence_ref) = $self->roster->presence($jid);
-#        use Data::Dumper; die Dumper($self->roster);
-#        my $status = $presence_ref->{type};
-#        $queue->add([$jid, $status]);
-#    }
-#}
-
-#sub handle_roster_update {
-#    my $self = shift;
-#    my ($jid) = @_;
-#    my $queue = $self->webclient_user->roster_queue;
-#        
-#    # XXX This is BROKEN but good for the first go-through.
-#    #     Just get the first presence, ignoring any others!!
-#    my ($presence_ref) = $self->roster->presence($jid);
-#    my $status = $presence_ref->{type};
-#    $queue->add([$jid, $status]);
-#}
 
 sub update_roster {
     my $self = shift;
@@ -173,8 +163,10 @@ sub update_roster {
                                 {type => $args_ref->{type}});
 
         # ...then allow updating of the client's roster.
-        my $queue = $self->webclient_user->roster_queue;
-        $queue->add($args_ref);
+        for my $window ($self->webclient_user->windows) {
+            my $queue = $window->roster_queue;
+            $queue->add($args_ref);
+        }
     }
 }
 

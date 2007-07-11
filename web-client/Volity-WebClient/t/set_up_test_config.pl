@@ -18,7 +18,8 @@ Readonly my $DAEMON_PORT => 5722;
 if (check_old_config()) {
 
     print "In order to properly test this, I need some \n";
-    print "valid Jabber login credentials.\n";
+    print "valid Jabber login credentials,\n";
+    print "as well as some local DB access.\n";
     print "Do you want to just skip these network tests? [n] ";
     chomp(my $answer = <STDIN>);
     
@@ -60,7 +61,7 @@ sub perform_setup {
         $db_dsn, $db_username, $db_password,
        );
     until (defined($jid)) {
-        print 'Please give me a valid Jabber JID (i.e. foo@bar.com): ';
+        print 'Please give me a valid Jabber JID (i.e. foo@bar.com): which has at least one other JID on its roster: ';
         chomp($jid = <STDIN>);
         ($username, $host, $resource) = $jid
             =~ m{^(.*?)@(.*?)(?:/(.*))?$};
