@@ -97,7 +97,8 @@ sub run_tests {
 
     diag("Napping $ROSTER_WAIT seconds to let the roster load.");
     sleep($ROSTER_WAIT);                   # Give it a chance to get its roster
-    my $js_url = "$SERVER_URL/js?window_id=$TEST_WINDOW_ID";
+#    my $js_url = "$SERVER_URL/js?window_id=$TEST_WINDOW_ID";
+    my $js_url = "$SERVER_URL/roster?window_id=$TEST_WINDOW_ID";
     my $js_request = HTTP::Request->new(GET => $js_url);
     $js_request->header(cookie => $cookie);
     my $js_result = $ua->request($js_request);

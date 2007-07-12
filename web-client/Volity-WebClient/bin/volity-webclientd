@@ -73,8 +73,9 @@ unless ($dbh) {
 
 # Set up the HTTP serever.
 my %content_handlers = (
-                        '/login' => \&handle_login,
-                        '/js'    => \&handle_js_request,
+                        '/login'  => \&handle_login,
+                        '/js'     => \&handle_js_request,
+                        '/roster' => \&handle_roster_request,
                     );
 
 my $aliases = POE::Component::Server::HTTP->new(
@@ -236,6 +237,57 @@ sub handle_js_request {
     # Empty out all the queues for this window.
     $window->clear_all_queues;
     
+    $response->code(RC_OK);
+    $response->content(join "\n", @js_lines);
+    return RC_OK;
+}
+
+sub handle_roster_request {
+    my ($request, $response) = @_;
+
+    # XXX Begin redundancy
+    
+    # Get the session from this request, using the session ID on the cookie.
+    my $session_id;
+    eval { $session_id = get_session_id_from_request($request); };
+
+    unless ($session_id) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first. Also, " . $request->as_string);
+        return RC_BAD_REQUEST;
+    }
+
+    my $user = $user_with_session_id{$session_id};
+    unless ($user) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content("No user associated with your session ID ($session_id). Please get a new session ID by calling the login URI.");
+        return RC_BAD_REQUEST;
+    }
+
+    my $window = get_or_create_window($request, $user);
+    unless ($window) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content('The required window_id parameter was not defined.');
+        return RC_BAD_REQUEST;
+    }
+
+    # Update the window's sense of when it was last polled (which will
+    # prevent the cleanup timer from killing it... for now)
+    $window->last_polled(time);
+
+    # XXX END REDUNDANCY
+
+    my $roster = $user->jabber->roster;
+    my $queue = $window->roster_queue;
+    my @js_lines;
+    for my $jid ($roster->jids) {
+        for my $presence_info_ref ($roster->presence($jid)) {
+            $presence_info_ref->{jid} = $jid;
+            my $js_line = $queue->item_as_js($presence_info_ref);
+            push @js_lines, $js_line;
+        }
+    }
+
     $response->code(RC_OK);
     $response->content(join "\n", @js_lines);
     return RC_OK;
