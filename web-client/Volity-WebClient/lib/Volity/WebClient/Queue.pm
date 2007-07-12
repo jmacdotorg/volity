@@ -141,10 +141,15 @@ sub item_as_js {
     my $jid = $roster_info_ref->{jid};
     my $status = $roster_info_ref->{type}
                  || $roster_info_ref->{show}
-                 || '';
+                 || 'available';
     my $message = $roster_info_ref->{status} || '';
     # Return a JS handle_rpc command.
-    return "update_roster ($jid, $status, $message)";
+    my $args_string
+        = Data::JavaScript::Anon->anon_dump({jid     => $jid,
+                                             status  => $status,
+                                             message => $message,
+                                         });
+    return "update_roster ($args_string)";
 }
 
 1;
