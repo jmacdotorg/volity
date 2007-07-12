@@ -84,7 +84,9 @@ sub clear_all_queues {
     foreach ( qw(rpc_queue chat_queue roster_queue) ) {
         $self->$_->clear;
     }
-    foeach (values(%{$self->chat_queues_by_table_jid})) {
+    foreach (values(%{$self->chat_queues_by_table_jid})) {
         $_->clear;
     }
 }
+
+1;

@@ -73,7 +73,7 @@ sub remove_window {
         croak ('Argument to remove_window must be a window object or ID.');
     }
 
-    $window->user(undef);
+#    $window->user(undef);
     delete $self->window_hashref->{$window};
 }
 

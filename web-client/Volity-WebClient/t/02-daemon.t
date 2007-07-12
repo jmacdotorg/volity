@@ -19,7 +19,7 @@ getopts('d', \%opts);
 Readonly my $CONFIG_FILE => 't/test_config.yml';
 Readonly my $COMMAND     => qq{perl -Ilib bin/volity-webclientd -c $CONFIG_FILE};
 
-Readonly my $LOGIN_TIMEOUT => 12;
+Readonly my $LOGIN_TIMEOUT => 20;
 Readonly my $ROSTER_WAIT   => 5;
 
 my $config_ref;
@@ -43,8 +43,10 @@ Readonly my $DAEMON_HOST     => 'localhost';
 Readonly my $DAEMON_PORT     => $config_ref->{daemon_port};
 Readonly my $SERVER_URL      => "http://$DAEMON_HOST:$DAEMON_PORT";
 
-Readonly my $TEST_SESSION_ID => 'blahblahtestsession12345';
+Readonly my $TEST_SESSION_ID  => 'blahblahtestsession12345';
 Readonly my $TEST_SESSION_KEY => 'doodleydootestkey54321';
+Readonly my $TEST_WINDOW_ID   => '12345';
+
 
 my $dbh = DBI->connect($DB_DSN, $DB_USERNAME, $DB_PASSWORD);
 if ($dbh) {
@@ -95,7 +97,7 @@ sub run_tests {
 
     diag("Napping $ROSTER_WAIT seconds to let the roster load.");
     sleep($ROSTER_WAIT);                   # Give it a chance to get its roster
-    my $js_url = "$SERVER_URL/js";
+    my $js_url = "$SERVER_URL/js?window_id=$TEST_WINDOW_ID";
     my $js_request = HTTP::Request->new(GET => $js_url);
     $js_request->header(cookie => $cookie);
     my $js_result = $ua->request($js_request);

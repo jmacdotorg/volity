@@ -15,6 +15,7 @@ use Readonly;
 use URI::QueryParam;
 use Volity::WebClient::UserDispatcher;
 use Volity::WebClient::User;
+use Volity::WebClient::Window;
 use Digest::SHA1 qw(sha1_hex);
 use Time::HiRes qw();
 
@@ -25,7 +26,7 @@ Readonly my $DEFAULT_PASSWORD_TABLE => 'ejabberd.users';
 Readonly my $DEFAULT_JABBER_HOST    => 'volity.net';
 Readonly my $DEFAULT_PULSE_LENGTH   => 10;
 
-Readonly my $HASH_SALT             => 'volity roxors';
+Readonly my $HASH_SALT              => 'volity roxors';
 
 # Create the global user dispatcher object.
 my $user_dispatcher = Volity::WebClient::UserDispatcher->new;
@@ -211,7 +212,7 @@ sub handle_js_request {
 
     # Update the window's sense of when it was last polled (which will
     # prevent the cleanup timer from killing it... for now)
-    $window->last_poll(time);
+    $window->last_polled(time);
     
     # Figure out what types of events they are interested in
     my @queue_types = $request->uri->query_param('type');
@@ -280,7 +281,8 @@ sub check_user_pulse {
 
     my $deadline = time - $PULSE_LENGTH;
     for my $window ($user->windows) {
-        if ($window->last_poll < $deadline) {
+        
+        if ($window->last_polled < $deadline) {
             $user->remove_window($window);
         }
     }
@@ -299,7 +301,6 @@ sub check_user_pulse {
         # a blank slate. Note that this is orthoganal to how Volity
         # may treat them on, say, rejoining a table the abandoned...)
         $user->disconnect;
-        delete $pulse_for_user{$user};
         delete $user_with_session_id{$user->session_id};
         $user_dispatcher->remove_user($user);
     }
