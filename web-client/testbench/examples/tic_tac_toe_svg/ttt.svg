@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-S\VG-20010904/DTD/svg10.dtd">
-<svg id="doc" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
+    <!-- A square inside the grid -->
     <symbol id="grid-square">
-      <rect width="100" height="100" stroke="none" fill="white" />
+      <rect width="100" height="100" stroke="none" />
     </symbol>
-    <!--
-    I'm going to give the marks longer names, mostly because "x" would be
-    a potentially confusing name, especially in SVG-land.
-    -->
     <symbol id="x-mark">
       <line stroke="blue" stroke-width="10" x1="5" y1="5" x2="55" y2="55" stroke-linecap="round" />
       <line stroke="blue" stroke-width="10" x1="5" y1="55" x2="55" y2="5" stroke-linecap="round" />
@@ -20,106 +17,36 @@
 
   <!-- Set up the Tic-Tac-Toe grid. -->
   <!-- First, drop all the grid squares into place. -->
-  <use xlink:href="#grid-square" id="square-0" x="0" y="0" onclick="square_clicked(evt, 0)" />
-  <use xlink:href="#grid-square" id="square-1" x="100" y="0" onclick="square_clicked(evt, 1)" />
-  <use xlink:href="#grid-square" id="square-2" x="200" y="0" onclick="square_clicked(evt, 2)" />
-  <use xlink:href="#grid-square" id="square-3" x="0" y="100" onclick="square_clicked(evt, 3)" />
-  <use xlink:href="#grid-square" id="square-4" x="100" y="100" onclick="square_clicked(evt, 4)" />
-  <use xlink:href="#grid-square" id="square-5" x="200" y="100" onclick="square_clicked(evt, 5)" />
-  <use xlink:href="#grid-square" id="square-6" x="0" y="200" onclick="square_clicked(evt, 6)" />
-  <use xlink:href="#grid-square" id="square-7" x="100" y="200" onclick="square_clicked(evt, 7)" />
-  <use xlink:href="#grid-square" id="square-8" x="200" y="200" onclick="square_clicked(evt, 8)" />
+
+  <!-- We have to set the fill here, as we wouldn't be able to change it
+       if we set it up in the <symbol/> -->
+  <!-- These will all become clickable, but that happens in the script -->
+
+  <use xlink:href="#grid-square" id="square-0" x="0" y="0" fill="none" />
+  <use xlink:href="#grid-square" id="square-1" x="100" y="0" fill="none" />
+  <use xlink:href="#grid-square" id="square-2" x="200" y="0" fill="none" />
+  <use xlink:href="#grid-square" id="square-3" x="0" y="100" fill="none" />
+  <use xlink:href="#grid-square" id="square-4" x="100" y="100" fill="none" />
+  <use xlink:href="#grid-square" id="square-5" x="200" y="100" fill="none" />
+  <use xlink:href="#grid-square" id="square-6" x="0" y="200" fill="none" />
+  <use xlink:href="#grid-square" id="square-7" x="100" y="200" fill="none" />
+  <use xlink:href="#grid-square" id="square-8" x="200" y="200" fill="none" />
+
   <!-- Now for a few lines. -->
   <line stroke="black" x1="0" y1="100" x2="300" y2="100" stroke-width="5" stroke-linecap="round" />
   <line stroke="black" x1="0" y1="200" x2="300" y2="200" stroke-width="5" stroke-linecap="round" />
   <line stroke="black" x1="100" y1="5" x2="100" y2="300" stroke-width="5" stroke-linecap="round" />
   <line stroke="black" x1="200" y1="5" x2="200" y2="300" stroke-width="5" stroke-linecap="round" />
 
-<script type="text/ecmascript">
-    <![CDATA[
+  <!-- And finally drop in a box around the whole thing -->
+  <rect x="0" y="0" width="300" height="300" stroke="black" stroke-width="10" stroke-linecap="round" fill="none" />  
 
-var svg_ns = "http://www.w3.org/2000/svg";
-var xlink_ns = "http://www.w3.org/1999/xlink";
+  <!-- Right now the script blindly tries to play with the DOM tree.  Really
+       those should be tied to a DOM complete event/onload event kind of
+       thing.  If they were we'd be able to put this at the top of the file
+        -->
 
-var placed_marks = new Array;
+  <script type="text/ecmascript" xlink:href="ttt.js" />
 
-var game;
-
-if ( ! game ) {
-    game = {};
-}
-
-game.mark = function(seat_id, location) {
-  // Conveniently, we can fetch both the mark symbol ("X" or "O") and the
-  // grid square object we'll need based on the arguments we've been passed.
-  // This is why we gave our SVG objects the ID values that we did!
-  var mark_symbol_id = seat_id + "-mark";
-  var grid_square_id = "square-" + location;
-  var grid_square = document.getElementById(grid_square_id);
-  
-//  literalmessage(grid_square);
-  // Figure out where the mark goes, based on the grid square's location.
-  // The "- 0" is just to cast the attribute values into integers.
-  var square_x = grid_square.getAttribute("x") - 0;
-  var square_y = grid_square.getAttribute("y") - 0;
-//  literalmessage(square_x + ", " + square_y);
-
-  // Create the <use> element that makes the mark.
-  var mark = document.createElementNS(svg_ns, "use");
-  mark.setAttributeNS(xlink_ns, "xlink:href", "#" + mark_symbol_id );
-  mark.setAttribute("x", square_x + 20);
-  mark.setAttribute("y", square_y + 20);
-
-//  literalmessage('Mark created, appending to: '+document.rootElement);
-  document.rootElement.appendChild(mark);
-
-//  literalmessage('Adding to placed_marks');
-
-  // Add to the placed_marks array, so we can wipe it in volity.start_game().
-  placed_marks.push(mark);
-
-}
-
-game.tie = function () {
-  window.alert ("Tie game.");
-}
-
-game.win = function(seat_id, location_1, location_2, location_3) {
-  if (seat_id == 'x') {
-     window.alert ("X wins the game!");
-  } else {
-     window.alert ("O wins the game!");
-  }
-}
-// game.must_mark is called when someone's turn begins.
-// We respond to this by calling the seatmark() function. This function is
-// part of Volity's ECMAScript API, and causes the client to mark the given
-// seat in a way we specify. You'll see it used more in the next two functions.
-game.must_mark = function(seat_id) {
-    // By calling seatmark with a single seat ID argument, the client will
-    // take it to mean that it's that seat's turn.
-    seatmark(seat_id);
-}
-function square_clicked(evt, location_number) {
-  rpc("mark", location_number);
-}
-var volity;
-if ( ! volity ) {
-    volity = {};
-}
-
-volity.start_game = function() {
-  // Clear any marks made in the last game.
-  for (mark_index in placed_marks) {
-    var mark = placed_marks[mark_index];
-    document.rootElement.removeChild(mark);
-  }
-  placed_marks = new Array;
-}
-volity.resume_game = function() {};
-volity.end_game = function() {};
-
-// ]]>
-</script>
 </svg>
 
