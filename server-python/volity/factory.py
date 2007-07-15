@@ -362,7 +362,8 @@ class Factory(volent.VolEntity):
         act.start()
 
         act.addhandler('end', self.actordied, act)
-        self.addhandler('end', self.stopunlessgraceful, act)
+        ac = self.addhandler('end', self.stopunlessgraceful, act)
+        act.addcleanupaction(ac)
 
         # Now we wait until the Actor is finished starting up -- which
         # is defined as "successfully connected to the MUC". This requires

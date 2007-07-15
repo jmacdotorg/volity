@@ -444,7 +444,8 @@ class Parlor(volent.VolEntity):
         ref.start()
 
         ref.addhandler('end', self.refereedied, ref)
-        self.addhandler('end', self.stopunlessgraceful, ref)
+        ac = self.addhandler('end', self.stopunlessgraceful, ref)
+        ref.addcleanupaction(ac)
 
         # Now we wait until the Referee is finished starting up -- which
         # is defined as "successfully connected to the MUC". This requires

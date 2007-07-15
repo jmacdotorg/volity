@@ -1258,7 +1258,8 @@ class Referee(volent.VolEntity):
 
         act.addhandler('end', self.parlor.actordied, act)
         self.addhandler('end', act.stop)
-        self.parlor.addhandler('end', self.parlor.stopunlessgraceful, act)
+        ac = self.parlor.addhandler('end', self.parlor.stopunlessgraceful, act)
+        act.addcleanupaction(ac)
 
         # Now we wait until the Actor is finished starting up -- which
         # is defined as "successfully connected to the MUC". This requires
