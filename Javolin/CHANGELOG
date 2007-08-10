@@ -1,6 +1,10 @@
 This is a high-level list of Gamut changes. For a detailed view, see the
 SVN repository.
 
+* The present
+
+Added a --lang argument to Testbench, like the one Gamut has.
+
 * release 0.4.1
 
 Fixed a race condition that would sometimes erroneously tell players
