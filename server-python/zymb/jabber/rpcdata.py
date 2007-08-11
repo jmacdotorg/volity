@@ -25,9 +25,6 @@ def nameisvalid(st):
     """nameisvalid(st) -> bool
 
     Determine whether the given string is legal for an XML-RPC methodName.
-    (This module uses the same rule for struct member names, although the
-    spec doesn't explicitly say to.) (#### allow dashes in struct member
-    names!)
     
     A legal name is any number of letters, digits, underscores, periods,
     colons, and forward slashes.
@@ -269,8 +266,7 @@ class RPCStruct(RPCType):
         RPCStruct( [ ('fowl', 7), ('fish', 5) ] )
         RPCStruct(val)    # *val* is anything which can be cast to a dict
         
-    The key values must be accepted by nameisvalid(). (The XML-RPC spec 
-    doesn't state this requirement, but I'm assuming it.) The value values
+    The key values must be convertible to string. The value values
     must be either RPCType objects or Python data acceptable by makevalue().
     """
     
@@ -281,9 +277,9 @@ class RPCStruct(RPCType):
             arg_ = dict(arg_)
             dic.update(arg_)
         valls = [ (str(vv), makevalue(dic[vv])) for vv in dic ]
-        for (key, nod) in valls:
-            if (not nameisvalid(key)):
-                raise ValueError('\'' + key + '\' is not a valid struct member name')
+        #for (key, nod) in valls:
+        #    if (not nameisvalid(key)):
+        #        raise ValueError('\'' + key + '\' is not a valid struct member name')
         self.origarg = dic
         self.argstring = '<member>...</member>'
         self.ls = valls
@@ -308,8 +304,8 @@ class RPCStruct(RPCType):
             if (namenod == None):
                 raise ValueError('member without name')
             key = namenod.getdata()
-            if (not nameisvalid(key)):
-                raise ValueError('\'' + key + '\' is not a valid struct member name')
+            #if (not nameisvalid(key)):
+            #    raise ValueError('\'' + key + '\' is not a valid struct member name')
             valnod = mem.getchild('value')
             if (valnod == None):
                 raise ValueError('member without value')
@@ -751,8 +747,9 @@ class TestRpcData(unittest.TestCase):
         }
         sampledict = { 'one' : 'two', 'three' : 'four' }
 
-        self.assertRaises(ValueError, RPCStruct, {',' : 'comma'})
-        self.assertRaises(ValueError, RPCStruct, {'  ' : 'space'})
+        # These tests were never really valid.
+        #self.assertRaises(ValueError, RPCStruct, {',' : 'comma'})
+        #self.assertRaises(ValueError, RPCStruct, {'  ' : 'space'})
 
         nod = makevalue(testdict)
         self.assertEqual(testdict, parsevalue(nod))
