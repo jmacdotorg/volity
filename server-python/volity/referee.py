@@ -2720,6 +2720,7 @@ class RefVolityOpset(rpc.MethodOpset):
     rpc_send_state() -- handle a player request for the complete table state.
     rpc_invite_player() -- handle a player request to invite another player to
         the table.
+    rpc_get_info() -- get the same information as a disco#info query.
     """
     
     def __init__(self, ref):
@@ -2749,6 +2750,7 @@ class RefVolityOpset(rpc.MethodOpset):
             args=bool)
         self.validators['send_state'] = Validator(argcount=0)
         self.validators['invite_player'] = Validator(args=[str, (str, None)])
+        self.validators['get_info'] = Validator(argcount=0)
 
     def precondition(self, sender, namehead, nametail, *callargs):
         """precondition(sender, namehead, nametail, *callargs)
@@ -2761,7 +2763,9 @@ class RefVolityOpset(rpc.MethodOpset):
         if (self.referee.state != 'running'):
             raise game.FailureToken('volity.referee_not_ready')
 
-        if (not self.referee.players.has_key(unicode(sender))):
+        mustbeplayer = (not (namehead in ['get_info']))
+        if (mustbeplayer and
+            not self.referee.players.has_key(unicode(sender))):
             raise game.FailureToken('volity.jid_not_present',
                 game.Literal(sender))
 
@@ -2833,6 +2837,19 @@ class RefVolityOpset(rpc.MethodOpset):
     def rpc_invite_player(self, sender, *args):
         return self.referee.playerinvite(sender, *args)
 
+    def rpc_get_info(self, sender, *args):
+        """rpc_get_info() -> dict
+
+        Return the same information as the <x> part of a disco#info
+        query.
+        """
+
+        info = self.referee.updatediscoinfo()
+        form = info.getextendedinfo()
+        dic = {}
+        for tup in form.getfields():
+            dic[tup[0]] = tup[1]
+        return dic
         
 class RefAdminOpset(rpc.MethodOpset):
     """RefAdminOpset: The Opset which responds to admin.* namespace

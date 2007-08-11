@@ -193,6 +193,7 @@ class Factory(volent.VolEntity):
         info2.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
+        self.dataform = form
         val = config.get('entity-desc')
         if (not val):
             val = botclass.botdescription
@@ -534,6 +535,7 @@ class FactoryVolityOpset(rpc.MethodOpset):
     Handler methods:
 
     rpc_new_bot() -- create a new Actor and Bot.
+    rpc_get_info() -- get the same information as a disco#info query.
     """
     
     def __init__(self, par):
@@ -548,6 +550,24 @@ class FactoryVolityOpset(rpc.MethodOpset):
         """
         
         return self.factory.newbot(sender, *args)
+
+    def rpc_get_info(self, sender, *args):
+        """rpc_get_info() -> dict
+
+        Return the same information as the <x> part of a disco#info
+        query.
+        """
+
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'get_info takes no arguments')
+
+        if (self.factory.state != 'ready'):
+            raise rpc.RPCFault(609, 'factory is not yet ready')
+
+        dic = {}
+        for tup in self.factory.dataform.getfields():
+            dic[tup[0]] = tup[1]
+        return dic
 
 
 class FactoryAdminOpset(rpc.MethodOpset):

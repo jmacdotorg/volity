@@ -69,6 +69,10 @@ config -- parses configuration files
 
 * Version history:
 
+- 2.0.3:
+Added the volity.get_info() RPC.
+Fixed a slow memory leak.
+
 - 2.0.2:
 Fixed the disco responses to better conform to the Entity Capabilities
     (XEP-0115) specification.

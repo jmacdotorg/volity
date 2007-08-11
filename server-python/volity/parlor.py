@@ -228,6 +228,7 @@ class Parlor(volent.VolEntity):
         info2.addfeature(interface.NS_CAPS)
 
         form = jabber.dataform.DataForm()
+        self.dataform = form
         val = config.get('entity-desc')
         if (not val):
             val = gameclass.gamedescription
@@ -649,6 +650,7 @@ class ParlorVolityOpset(rpc.MethodOpset):
     Handler methods:
 
     rpc_new_table() -- create a new table and Referee.
+    rpc_get_info() -- get the same information as a disco#info query.
     """
     
     def __init__(self, par):
@@ -663,6 +665,24 @@ class ParlorVolityOpset(rpc.MethodOpset):
         """
         
         return self.parlor.newtable(sender, *args)
+
+    def rpc_get_info(self, sender, *args):
+        """rpc_get_info() -> dict
+
+        Return the same information as the <x> part of a disco#info
+        query.
+        """
+
+        if (len(args) != 0):
+            raise rpc.RPCFault(604, 'get_info takes no arguments')
+
+        if (self.parlor.state != 'ready'):
+            raise rpc.RPCFault(609, 'parlor is not yet ready')
+
+        dic = {}
+        for tup in self.parlor.dataform.getfields():
+            dic[tup[0]] = tup[1]
+        return dic
 
 
 class ParlorAdminOpset(rpc.MethodOpset):

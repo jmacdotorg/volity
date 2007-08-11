@@ -621,6 +621,7 @@ class BotVolityOpset(rpc.MethodOpset):
     rpc_end_game() -- notice that the game has ended.
     rpc_suspend_game() -- notice that the game has been suspended.
     rpc_resume_game() -- notice that the game has been resumed.
+    rpc_get_info() -- get the same information as a disco#info query.
     """
     
     def __init__(self, act):
@@ -636,8 +637,12 @@ class BotVolityOpset(rpc.MethodOpset):
         if (self.actor.state != 'running'):
             raise rpc.RPCFault(609, 'bot not ready for RPCs')
 
-        # The bookkeeper can send a few of these
-        if (sender != self.actor.refereejid and
+        # Anyone can send get_info().
+        mustberef = (not (namehead in ['get_info']))
+        
+        # Actually, the bookkeeper can send a few of these.
+        if (mustberef and
+            sender != self.actor.refereejid and
             sender != self.actor.bookkeeperjid):
             raise rpc.RPCFault(607, 'sender is not referee')
             
@@ -754,6 +759,9 @@ class BotVolityOpset(rpc.MethodOpset):
     def rpc_verify_game(self, sender, *args):
         # always accept
         return True
+        
+    def rpc_get_info(self, sender, *args):
+        return { 'volity-role':self.actor.volityrole }
             
 class BotAdminOpset(rpc.MethodOpset):
     """BotAdminOpset: The Opset which responds to admin.* namespace
