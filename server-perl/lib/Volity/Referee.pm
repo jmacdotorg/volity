@@ -555,14 +555,27 @@ sub jabber_presence {
   my $self = shift;
   $self->logger->debug("Got some presence.\n");
   my ($node) = @_;
-  if (my $x = $node->get_tag('x', [xmlns=>"http://jabber.org/protocol/muc#user"])) {
+
+  # Go through all of the possible <x> nodes, and pick out the first one with
+  # an <item> node.  In the case that we don't get any <x><item/></x> type
+  # things, the $x will be left undefined, and the if will fall through below,
+  # resulting in no action on this presence packet.  This matches the old
+  # behaviour.
+  my $x;
+  my @x_nodes = $node->get_tag('x', [xmlns=>"http://jabber.org/protocol/muc#user"]);
+  foreach my $n (@x_nodes) {
+        next unless $n->get_tag('item');
+        $x = $n;
+        last;
+  }
+
+  if (defined $x) {
       # Aha, someone has entered the game MUC.
       # Figure out who it's talking about.
       my $new_person_jid;
       # JID is always in an item tag, since the MUC is either non-anonymous
       # or semi-anonymous, so the moderator (that's me) will have access to
       # their full JIDs.
-      return unless $x->get_tag('item');
       $new_person_jid = $x->get_tag('item')->attr('jid');
       my $kernel = $self->kernel;
       if (not(defined($new_person_jid)) or $new_person_jid eq $self->jid) {
