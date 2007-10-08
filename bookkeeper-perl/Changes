@@ -1,3 +1,10 @@
+0.7.1
+        - Minor bugfixes.
+
+        - Added a 'url' key and value to the struct returned from a
+          ui_info RPC call. (Yes, it will be identical to the URL
+          argument that the RPC takes.)
+
 0.7
 
 	- Added support for payment system.

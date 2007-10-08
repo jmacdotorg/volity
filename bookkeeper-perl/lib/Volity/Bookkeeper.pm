@@ -36,7 +36,7 @@ use fields qw(scheduled_game_info_by_rpc_id
 	      refusing_players_by_referee
 	      );
 
-our $VERSION = '0.7';
+our $VERSION = '0.7.1';
 use Carp qw(carp croak);
 
 use Volity::GameRecord;
@@ -976,15 +976,16 @@ sub _rpc_get_ruleset_info {
 sub _rpc_get_uis {
     my $self = shift;
     my ($from_jid, $rpc_id, $uri, $constraints) = @_;
-    $constraints ||= {};
-    unless (ref($constraints eq 'HASH')) {
+    if ( $constraints &&
+         not(ref($constraints eq 'HASH')) ) {
 	return (606, "The second argument to get_uis(), if present, must be a struct.");
     }
+    $constraints ||= {};
     my $uri_object = URI->new($uri);
     my ($ruleset) = Volity::Info::Ruleset->search(uri => $uri);
     if ($ruleset) {
 	my $version;
-	if ($uri_object->frag) {
+	if ($uri_object->fragment) {
 	    if ($constraints->{"ruleset-version"}) {
 		return (606, "You cannot supply both a version-spec fragment in the URI and a separate ruleset-version constraint to a get_resources() call.");
 	    }
@@ -1075,6 +1076,7 @@ sub _rpc_get_ui_info {
 	my $ruleset_uri = $file->ruleset_id->uri;
 	my @features = $file->features;
 	my @language_codes = $file->language_codes;
+        $info_hash{url} = $url;
 	$info_hash{"client-type"} = map($_->uri, @features);
 	$info_hash{languages} = \@language_codes;
 	$info_hash{ruleset} = $ruleset_uri;
