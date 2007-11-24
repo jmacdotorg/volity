@@ -1787,6 +1787,11 @@ sub waiting_for_invitees_timed_out {
 sub apologize_to_players {
     my $self = shift;
     my ($scheduled_game) = @_;
+    # XXX Sometimes this is undef. Fix this!
+    unless ($scheduled_game) {
+	$self->logger->error("Arrgh, apologize_to_players called without a scheduled_game object.");
+	return;
+    }
     my $time = $scheduled_game->time;
     for my $player ($scheduled_game->players) {
 	$self->send_message({
@@ -1804,7 +1809,13 @@ sub apologize_to_players {
 sub grumble_at_players {
     my $self = shift;
     my ($scheduled_game) = @_;
-    my $time = $scheduled_game->time;
+    my $time;
+    eval { $time = $scheduled_game->time; };
+    if ($@) {
+	$self->logger->error("Uh oh, grumble_at_players called without a valid arg: $@\n");
+	return;
+    }
+
     for my $player ($scheduled_game->players) {
 	$self->send_message({
 	    to => $player->jid,
