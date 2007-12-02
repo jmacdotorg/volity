@@ -27,6 +27,9 @@ games/: A number of sample and complete games written by Zarf
    rps.py: A simple Rock-Paper-Scissors server.
 
 
+   ttt.py: Equally simple Tic Tac Toe server.
+
+
    seattest.py: A test implementation for seating.
 
 
