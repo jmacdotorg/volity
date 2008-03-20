@@ -126,9 +126,9 @@ sub set_up_session_tables {
     my ($session_id) = $sth->fetchrow_array;
     unless ($session_id) {
         $session_id = $TEST_SESSION_ID;
-        $query = "INSERT INTO $SESSION_TABLE (id, username) VALUES (?, ?)";
+        $query = "INSERT INTO $SESSION_TABLE (id, username, jid_node) VALUES (?, ?, ?)";
         $sth = $dbh->prepare($query);
-        $sth->execute($session_id, $JABBER_USERNAME);
+        $sth->execute($session_id, $JABBER_USERNAME, $JABBER_USERNAME);
     }
 
     my $now_dt = DateTime->now->add(minutes => 5);

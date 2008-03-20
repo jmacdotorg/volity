@@ -18,15 +18,25 @@ use Volity::WebClient::User;
 use Volity::WebClient::Window;
 use Digest::SHA1 qw(sha1_hex);
 use Time::HiRes qw();
+use JSON::XS qw(from_json);
+use URI::Escape;
+use HTTP::Request::Params;
+use Log::Log4perl;
 
 Readonly my $DEFAULT_PORT           => 5722;
 Readonly my $DEFAULT_SESSION_TABLE  => 'websession';
 Readonly my $DEFAULT_KEY_TABLE      => 'webclient_session_key';
 Readonly my $DEFAULT_PASSWORD_TABLE => 'ejabberd.users';
 Readonly my $DEFAULT_JABBER_HOST    => 'volity.net';
-Readonly my $DEFAULT_PULSE_LENGTH   => 10;
+Readonly my $DEFAULT_PULSE_LENGTH   => 15;
+
+Readonly my $HTTP_TIMEOUT           => 5;
 
 Readonly my $HASH_SALT              => 'volity roxors';
+Readonly my $PRE_WINDOW_ID          => '_PRE_WINDOW_';
+
+# Global hash of outstanding POE delays.
+my %poe_delays;
 
 # Create the global user dispatcher object.
 my $user_dispatcher = Volity::WebClient::UserDispatcher->new;
@@ -48,6 +58,13 @@ my $config_ref;
 eval { $config_ref = YAML::LoadFile($opts{c}); };
 if ($EVAL_ERROR) {
     croak ("Couldn't read the test config file at $opts{c}:\n$EVAL_ERROR");
+}
+
+# Set up logging.
+my $logger;
+if ($config_ref->{log_config_info}) {
+    Log::Log4perl::init(\$config_ref->{log_config_info});
+    $logger = Log::Log4perl->get_logger('volitywebclientd');
 }
 
 # Set up global constants derived from the config file.
@@ -76,14 +93,31 @@ my %content_handlers = (
                         '/login'  => \&handle_login,
                         '/js'     => \&handle_js_request,
                         '/roster' => \&handle_roster_request,
+                        '/roster/' => \&handle_roster_request,
+                        '/join/' => \&handle_join_request,
+                        '/rpc'    => \&handle_rpc_request,
+                        '/prepare_ui'   => \&handle_ui_prep_request,
+                        '/whoami' => \&handle_whoami_request,
+                        '/bots/' => \&handle_bots_request,
+                        '/volity_locale/' => \&load_locale_file,
+                        '/chat' => \&handle_chat_request,
+                        '/chat/' => \&handle_chat_request,
                     );
 
+my %pre_handlers = (
+                    '/' => sub {
+                        $_[0]->header(Connection => 'close')
+                    }
+                );
+
 my $aliases = POE::Component::Server::HTTP->new(
+                                  Address => 'localhost',
+                                  MapOrder => 'bottom-first',
                                   Port => $config_ref->{default_port}
                                           || $DEFAULT_PORT,
                                   ContentHandler => \%content_handlers,
+                                  PreHandler      => \%pre_handlers,
                                             );
-
 $poe_kernel->run;
 
 # Now it just runs, until it doesn't, at which point the next lines are
@@ -115,14 +149,14 @@ sub handle_login {
     my $password_table = $config_ref->{password_table}
                         || $DEFAULT_PASSWORD_TABLE;
     my $query = << "END_QUERY";
-SELECT $session_table.username,
+SELECT $session_table.jid_node,
        password
 FROM   $session_table,
        $key_table,
        $password_table
 WHERE  $key_table.webclient_key = ?
        AND $key_table.${session_table}_id = $session_table.id
-       AND $session_table.username = $password_table.username
+       AND $session_table.jid_node = $password_table.username
 END_QUERY
 ;
 
@@ -132,7 +166,7 @@ END_QUERY
     unless ($username) {
         # Return an error.
         $response->code(RC_BAD_REQUEST);
-        $response->content("Invalid or expired 'key' parameter ($key).");
+        $response->content("Invalid or expired 'key' parameter ($key). Query: $query");
         return RC_BAD_REQUEST;
     }
 
@@ -148,6 +182,9 @@ END_QUERY
                                         alias    => $resource,
                                       });
     $user_dispatcher->add_user($user);
+
+    # Set the UI download directory.
+    $user->ui_download_directory($config_ref->{ui_download_directory});
     
     # We've redeemed the one-time key, so delete it from the database.
     my $delete_query = q{DELETE FROM $key_table
@@ -171,12 +208,12 @@ END_QUERY
 
     # Set a POE kernel delay to begin this user's heartbeat check thingy
     $poe_kernel->state('check_user_pulse', \&check_user_pulse);
-    $poe_kernel->delay('check_user_pulse',
+    $poe_kernel->delay_set('check_user_pulse',
                            $PULSE_LENGTH,
                            $user,
                        );
 
-
+    
     # Return HTTP success. No content necessary.
     $response->code(RC_OK);
     # Ah, let's thow some in anyway.
@@ -187,110 +224,357 @@ END_QUERY
 sub handle_js_request {
     my ($request, $response) = @_;
 
-    # Get the session from this request, using the session ID on the cookie.
-    my $session_id;
-    eval { $session_id = get_session_id_from_request($request); };
-
-    unless ($session_id) {
-        $response->code(RC_BAD_REQUEST);
-        $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first. Also, " . $request->as_string);
-        return RC_BAD_REQUEST;
+#    _log(debug => "I see a JS request!");
+    
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
     }
 
-    my $user = $user_with_session_id{$session_id};
-    unless ($user) {
-        $response->code(RC_BAD_REQUEST);
-        $response->content("No user associated with your session ID ($session_id). Please get a new session ID by calling the login URI.");
-        return RC_BAD_REQUEST;
-    }
-
-    my $window = get_or_create_window($request, $user);
-    unless ($window) {
-        $response->code(RC_BAD_REQUEST);
-        $response->content('The required window_id parameter was not defined.');
-        return RC_BAD_REQUEST;
-    }
-
-    # Update the window's sense of when it was last polled (which will
-    # prevent the cleanup timer from killing it... for now)
-    $window->last_polled(time);
     
     # Figure out what types of events they are interested in
     my @queue_types = $request->uri->query_param('type');
     # Build the list of JS function calls, based on the types requested.
     my @js_lines;
-    for my $queue_type (@queue_types) {
-        if ($queue_type eq 'roster') {
-            push @js_lines, $window->roster_queue->as_js;
-            $window->roster_queue->clear;
-        }
-        elsif ($queue_type eq 'chat') {
-            push @js_lines, $window->chat_queue->as_js;
-            $window->chat_queue->clear;
-        }
-        elsif ($queue_type eq 'rpc') {
-            # XXX Going to have to do some magic here
-            #     to determine which 'from's we care about.
+    my $ok_to_clear = 0;
+    if (@queue_types) {
+        for my $queue_type (@queue_types) {
+            if ($queue_type eq 'roster') {
+                my @queues;
+                my @roster_ids = $request->uri->query_param('roster_id');
+                if (@roster_ids) {
+                    # Each roster ID is either a table JID the 'main' keyword.
+                    # The latter's a request for the main roster, equivalent
+                    # to requesting roster updates with no roster_id arg
+                    # at all.
+                    for my $roster_id (@roster_ids) {
+                        $roster_id = uri_unescape($roster_id);
+                        if ($roster_id eq 'main') {
+                            push @queues, $window->roster_queue;
+                        }
+                        else {
+                            my $queue = $window->roster_queues_by_table_jid
+                                ->{$roster_id};
+                            if ($queue) {
+                                push @queues, $queue;
+                            }
+                            else {
+                                $response->code(RC_BAD_REQUEST);
+                                $response
+                                    ->content('Unknown table JID: ' .
+                                              $roster_id);
+                                return RC_BAD_REQUEST;
+                            }
+                        }
+                    }
+                }
+                else {
+                    push @queues, $window->roster_queue;
+                }
+                
+                foreach (@queues) {
+                    push @js_lines, $_->as_js;
+                }
+                $ok_to_clear = 1;
+            }
+            elsif ($queue_type eq 'chat') {
+                push @js_lines, $window->chat_queue->as_js;
+                $ok_to_clear = 1;
+            }
+            elsif ($queue_type eq 'rpc_response') {
+                push @js_lines, $window->rpc_response_queue->as_js;
+                $ok_to_clear = 1;
+            }
+            elsif ($queue_type eq 'rpc_request') {
+                push @js_lines, $window->rpc_request_queue->as_js;
+                $ok_to_clear = 1;
+                
+            }
         }
     }
-
+    else {
+        # They didn't specify any queues, so hit them with everything.
+        push @js_lines, ($window->rpc_request_queue->as_js,
+                         $window->rpc_response_queue->as_js,
+                         $window->chat_queue->as_js,
+                         $window->roster_queue->as_js,
+                     );
+        foreach (values(%{$window->chat_queues_by_table_jid}),
+                 values(%{$window->roster_queues_by_table_jid})) {
+            push @js_lines, $_->as_js;
+        }
+        $ok_to_clear = 1;
+    }
+    
     # Empty out all the queues for this window.
-    $window->clear_all_queues;
+    $window->clear_all_queues if $ok_to_clear;
     
     $response->code(RC_OK);
+    $response->header('Content-type' => 'text/javascript');
     $response->content(join "\n", @js_lines);
     return RC_OK;
 }
 
-sub handle_roster_request {
+# preprocess_request: Sanity-check an HTTP request and pluck out the user
+# and window objects. The return value is a list of these things:
+# The HTTP code that should go onto the response, as far as this 
+#     preprocessor knows. It's fine to change it later.
+# The user object. (Possibly undef.)
+# The window object. (Possibly undef.)
+sub preprocess_request {
     my ($request, $response) = @_;
-
-    # XXX Begin redundancy
-    
     # Get the session from this request, using the session ID on the cookie.
     my $session_id;
     eval { $session_id = get_session_id_from_request($request); };
 
     unless ($session_id) {
         $response->code(RC_BAD_REQUEST);
-        $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first. Also, " . $request->as_string);
-        return RC_BAD_REQUEST;
+        $response->content("No session ID found in your cookie. Please get a session ID by calling the login URI first.\n\nPerl error: $EVAL_ERROR\n\nRequest:\n" . $request->as_string);
+        return (RC_BAD_REQUEST);
     }
 
     my $user = $user_with_session_id{$session_id};
     unless ($user) {
         $response->code(RC_BAD_REQUEST);
         $response->content("No user associated with your session ID ($session_id). Please get a new session ID by calling the login URI.");
-        return RC_BAD_REQUEST;
+        return (RC_BAD_REQUEST);
     }
 
     my $window = get_or_create_window($request, $user);
     unless ($window) {
         $response->code(RC_BAD_REQUEST);
         $response->content('The required window_id parameter was not defined.');
-        return RC_BAD_REQUEST;
+        return (RC_BAD_REQUEST);
     }
 
     # Update the window's sense of when it was last polled (which will
     # prevent the cleanup timer from killing it... for now)
     $window->last_polled(time);
+    return (RC_OK, $user, $window);
+}
 
-    # XXX END REDUNDANCY
+sub handle_join_request {
+    my ($request, $response) = @_;
 
-    my $roster = $user->jabber->roster;
-    my $queue = $window->roster_queue;
-    my @js_lines;
-    for my $jid ($roster->jids) {
-        for my $presence_info_ref ($roster->presence($jid)) {
-            $presence_info_ref->{jid} = $jid;
-            my $js_line = $queue->item_as_js($presence_info_ref);
-            push @js_lines, $js_line;
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+    # Figure out what table we want to join, by looking at the path.
+    if (my ($table_jid) = $request->uri->path =~ m{^/join/(.+)/?$}) {
+        # XXX Won't handle 409 (nickname already in use) errors.
+        #     Copy stuff from Volity::Bot.
+
+        # Before joining, leave!
+        # This is a somewhat hacky way to guarantee that we'll always get
+        # a full list of table presence. Useful if the user refreshes
+        # their browser window.
+        $user->jabber->leave_muc($table_jid);
+        $user->jabber->join_muc({
+                                 jid => $table_jid,
+                             });
+                                 
+        $response->code(RC_OK);
+        $response->content("Table '$table_jid' joined.");
+        return RC_OK;
+    }
+    else {
+        $response->code(RC_BAD_REQUEST);
+        $response->content('You must provide a table JID as the last part of the path.');
+        return RC_BAD_REQUEST;
+    }
+
+}
+
+sub handle_bots_request {
+    my ($request, $response) = @_;
+
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+    # Figure out what table we want to join, by looking at the path.
+    if (my ($parlor_jid) = $request->uri->path =~ m{^/bots/(.+)/?$}) {
+        # This part of the URI's been mutated to sneak %2f's past Apache.
+        # So we gotta do a little substituion first.
+        $parlor_jid =~ s/\-/%/g;
+        $parlor_jid = uri_unescape($parlor_jid);
+        $user->jabber->request_bot_info($parlor_jid, $response);
+        return RC_WAIT;
+    }
+    else {
+        $response->code(RC_BAD_REQUEST);
+        $response->content('You must provide a parlor JID as the last part of the path.');
+        return RC_BAD_REQUEST;
+    }
+
+}
+
+sub handle_roster_request {
+    my ($request, $response) = @_;
+
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+#    my $roster = $user->jabber->roster;
+
+    # Fetch the right queue, by looking at the path. If it's just 'roster'
+    # then the user wants the full roster; if its roster/$jid, then the
+    # user wants the roster associated with the table with JID $jid.
+    my $queue;
+    if (my ($table_jid) = $request->uri->path =~ m{^/roster/(.+)/?$}) {
+        $table_jid = uri_unescape($table_jid);
+        # Do a disco items query on the table to get its user list.
+        $user->jabber->request_users_for_table($table_jid, $response);
+        return RC_WAIT;
+        
+        $queue = $window->roster_queues_by_table_jid->{$table_jid};
+        unless ($queue) {
+            $response->code(RC_BAD_REQUEST);
+            $response->content("Unknown table JID: '$table_jid'");
+            return RC_BAD_REQUEST;
+        }
+    }
+    else {
+        $queue = $window->roster_queue;
+    }
+       
+    my @js_lines = $queue->as_js;
+#    for my $jid ($roster->jids) {
+#        for my $presence_info_ref ($roster->presence($jid)) {
+#            $presence_info_ref->{jid} = $jid;
+#            my $js_line = $queue->item_as_js($presence_info_ref);
+#            push @js_lines, $js_line;
+#        }
+#    }
+
+    $response->code(RC_OK);
+    $response->header('Content-type' => 'text/javascript');
+    $response->content(join "\n", @js_lines);
+    return RC_OK;
+}
+
+sub handle_rpc_request {
+    my ($request, $response) = @_;
+
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+    my %rpc_info;
+    foreach (qw(to rpc_id methodname args)) {
+        if (my $value = $request->uri->query_param($_)) {
+            $rpc_info{$_} = $value;
+        }
+        else {
+            $response->code(RC_BAD_REQUEST);
+            $response->content("The required $_ parameter was not defined.");
+            return RC_BAD_REQUEST;
         }
     }
 
+    # Set up the hash for sending to the send_rpc_request method.
+    $rpc_info{id} = $rpc_info{rpc_id};
+
+    # Try replacing the given args - a JSON string - with its Perl
+    # equivalent.
+    my $args_ref;
+    eval { $args_ref = from_json($rpc_info{args}); };
+    if ($EVAL_ERROR) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content("The args argument didn't appear to be valid JSON. It was: $rpc_info{args}");
+        return RC_BAD_REQUEST;
+    }
+    else {
+        $rpc_info{args} = $args_ref;
+    }
+    
+    $user->jabber->send_rpc_request(\%rpc_info);
+    
+#    $response->code(RC_OK);
+#    $response->content('RPC sent.');
+#    return RC_OK;
+
+#    $poe_kernel->state('blargh', sub {die "Got the BAD blargh event."});
+
+#    my $session = $poe_kernel->alias_resolve($user->jabber->resource);
+#    my $result = $poe_kernel->post($session, 'blargh');
+#    return;
+#    die "$session and " . $user->jabber->resource . " and $result";
+    
+    # Stick the HTTP response object into the Jabber user object. It will
+    # take care of returning it after packing it with the RPC response and
+    # maybe other goodies too.
     $response->code(RC_OK);
-    $response->content(join "\n", @js_lines);
+    $response->header('Content-type' => 'text/javascript');
+    $user->jabber->prepare_http_response($rpc_info{id}, $response);
+
+#    die "bla bla blaaa.";
+    return RC_WAIT;
+}
+
+sub handle_whoami_request {
+    my ($request, $response) = @_;
+
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+    $response->code(RC_OK);
+    $response->content($user->jabber->jid);
     return RC_OK;
+}
+
+sub handle_ui_prep_request {
+    my ($request, $response) = @_;
+
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+    my $ruleset_uri = $request->uri->query_param('ruleset_uri');
+    unless ($ruleset_uri) {
+        $response->code(RC_BAD_REQUEST);
+        $response->content('The required ruleset_uri parameter was not defined.');
+        return RC_BAD_REQUEST;
+    }
+    
+    $user->jabber->request_uis_for_ruleset($ruleset_uri, $response);
+
+    # Return RC_WAIT, so that the response isn't sent back to the user yet.
+    # The $user object will set headers and content and will call
+    # $response->continue when it's ready.
+    return RC_WAIT;
+}
+
+sub handle_chat_request {
+    my ($request, $response) = @_;
+
+    my ($preproc_result, $user, $window)
+        = preprocess_request($request, $response);
+    unless ($preproc_result == RC_OK) {
+        return $preproc_result;
+    }
+
+    my $params_parser = HTTP::Request::Params->new({
+                                                    req => $request,
+                                                });
+    my $params_ref = $params_parser->params;
+    $user->jabber->send_message($params_ref);
 }
 
 sub get_session_id_from_request {
@@ -301,7 +585,10 @@ sub get_session_id_from_request {
         croak ('No cookie header found in the request.');
     }
 
-    my ($session_id) = $cookie =~ /^session_id=(.*)$/;
+    # XXX Not sure if this is the best way to parse out cookies.
+#    my ($session_id) = $cookie =~ /(?:; )?session_id=(.*?);?/;
+    my ($session_id) = $cookie =~ /(?:; )?session_id=(.*?)(?:\z|;)/;
+#    die "Whee $session_id from $cookie";
     unless ($session_id) {
         croak ('No session_id found in the request.');
     }
@@ -313,6 +600,7 @@ sub get_or_create_window {
     my ($request, $user) = @_;
 
     my $window_id = $request->uri->query_param('window_id');
+
     unless ($window_id) {
         return;
     }
@@ -333,16 +621,16 @@ sub check_user_pulse {
 
     my $deadline = time - $PULSE_LENGTH;
     for my $window ($user->windows) {
-        
-        if ($window->last_polled < $deadline) {
+        if ($window->last_polled > $deadline) {
             $user->remove_window($window);
         }
     }
     
-    if ($user->windows) {
+#    if ($user->windows) {
+    if ( not( $user->window_with_id($PRE_WINDOW_ID) ) ) {
         # Great, they're still alive.
         # Set a kernel delay to check their pulse again later.
-        $poe_kernel->delay('check_user_pulse',
+        $poe_kernel->delay_set('check_user_pulse',
                            $PULSE_LENGTH,
                            $user,
                        );
@@ -360,6 +648,19 @@ sub check_user_pulse {
 
 sub generate_session_id {
     return sha1_hex(Time::HiRes::time().'_'.$$.$HASH_SALT);
+}
+
+# _log: Enter a message at the desired log level into the log,
+#       if a logger object's been defined.
+sub _log {
+    my ($level, $message) = @_;
+    if ($logger) {
+        $level = lc($level);
+        eval { $logger->$level($message) };
+        if ($EVAL_ERROR) {
+            $logger->error("Error trying to log!\nLevel: $level\nMessage: $message\nLog4Perl error: $EVAL_ERROR");
+        }
+    }
 }
 
 __END__
@@ -424,6 +725,8 @@ tables this program needs to see.
 =item pid_file
 
 =item pulse_length
+
+=item ui_download_directory
 
 =back
 

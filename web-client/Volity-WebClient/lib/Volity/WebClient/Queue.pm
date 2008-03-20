@@ -62,44 +62,13 @@ sub item_as_js {
     my $self = shift;
     my ($message_info_ref) = @_;
 
-    # Return a display_chat_message command.
-    my $jid = $message_info_ref->{from};
-    my $text = $message_info_ref->{body};
+    my $args_string
+        = Data::JavaScript::Anon->anon_dump($message_info_ref);
 
-    my $escaped_jid 
-        = Data::JavaScript::Anon->anon_dump( $jid );
-
-    my $escaped_text
-        = Data::JavaScript::Anon->anon_dump( $text );
-
-    return "display_chat_message($escaped_jid, $escaped_text)";
-    
+    return "display_chat_message($args_string);";
 }
 
-package Volity::WebClient::Queue::TableChat;
-
-use warnings;
-use strict;
-
-use Carp qw(carp croak);
-use Data::Dumper;
-
-use Object::InsideOut qw(Volity::WebClient::Queue);
-
-sub item_as_js {
-    my $self = shift;
-    my ($message_info_ref) = @_;
-
-    # Return a display_table_message command.
-    my $nick = $message_info_ref->{from};
-    my $table = $message_info_ref->{table_jid};
-    my $text = $message_info_ref->{body};
-
-    return "display_table_message($table, $nick, $text)";
-    
-}
-
-package Volity::WebClient::Queue::RPC;
+package Volity::WebClient::Queue::RPCRequest;
 
 use warnings;
 use strict;
@@ -112,15 +81,11 @@ sub item_as_js {
     my $self = shift;
     my ($message_info_ref) = @_;
 
-    my $method = $message_info_ref->{method};
-
-    # Turn the Perl args array into a string of JavaScript code describing
-    # the same array in JS.
     my $args_string
-        = Data::JavaScript::Anon->anon_dump(@{$message_info_ref->{args}});
+        = Data::JavaScript::Anon->anon_dump($message_info_ref);
 
     # Return a JS handle_rpc command.
-    return "handle_rpc($method, $args_string)";
+    return "handle_rpc_request($args_string);";
 }
 
 1;
@@ -136,21 +101,69 @@ use Data::JavaScript::Anon;
 
 sub item_as_js {
     my $self = shift;
-    my ($roster_info_ref) = @_;
+    my ($presence_info_ref) = @_;
 
-    my $jid = $roster_info_ref->{jid};
-    my $status = $roster_info_ref->{type}
-                 || $roster_info_ref->{show}
+    my $jid = $presence_info_ref->{jid};
+    my $status = $presence_info_ref->{type}
+                 || $presence_info_ref->{show}
                  || 'available';
-    my $message = $roster_info_ref->{status} || '';
+    my $message  = $presence_info_ref->{status} || '';
+    my $role     = $presence_info_ref->{role}   || 'player';
+    my $muc      = $presence_info_ref->{muc}    || '';
+    my $nickname = $presence_info_ref->{nickname};
     # Return a JS handle_rpc command.
     my $args_string
-        = Data::JavaScript::Anon->anon_dump({jid     => $jid,
-                                             status  => $status,
-                                             message => $message,
+        = Data::JavaScript::Anon->anon_dump({jid      => $jid,
+                                             status   => $status,
+                                             message  => $message,
+                                             role     => $role,
+                                             muc      => $muc,
+                                             nickname => $nickname,
                                          });
-    return "update_roster ($args_string)";
+    return "update_roster ($args_string);";
 }
 
 1;
 
+package Volity::WebClient::Queue::RPCResponse;
+
+use warnings;
+use strict;
+
+use Object::InsideOut qw(Volity::WebClient::Queue);
+
+use Data::JavaScript::Anon;
+
+sub item_as_js {
+    my $self = shift;
+    my ($response_info_ref) = @_;
+
+    # Snip out the RPC object, convert the rest of the info hash into JS,
+    # and send it along.
+    delete $response_info_ref->{rpc_object};
+    my $response_info_js
+        = Data::JavaScript::Anon->anon_dump($response_info_ref);
+    return "handle_rpc_response($response_info_js);";
+}
+
+1;
+
+package Volity::WebClient::Queue::Error;
+
+use warnings;
+use strict;
+
+use Object::InsideOut qw(Volity::WebClient::Queue);
+
+use Data::JavaScript::Anon;
+
+sub item_as_js {
+    my $self = shift;
+    my ($error_message) = @_;
+
+    my $error_message_js
+        = Data::JavaScript::Anon->anon_dump($error_message);
+    return "handle_error_message($error_message_js);";
+}
+
+1;
