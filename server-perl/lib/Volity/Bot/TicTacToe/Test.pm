@@ -85,9 +85,8 @@ sub mark_at_positon {
 # Choose the first unoccupied square.
 sub take_turn {
     my $self = shift;
-    my @empty_squares = grep($self->squares->{$_} eq '', keys(%{$self->{squares}}));
-    my $index = $empty_squares[0];
-    my $chosen_square = $empty_squares[$index];
+    my @empty_squares = grep($self->squares->{$_} eq '', sort(keys(%{$self->{squares}})));
+    my $chosen_square = $empty_squares[0];
     $self->send_game_rpc_to_referee("mark", $chosen_square);
 }
 	
