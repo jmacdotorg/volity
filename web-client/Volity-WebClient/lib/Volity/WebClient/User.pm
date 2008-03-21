@@ -6,6 +6,7 @@ use strict;
 use Object::InsideOut;
 
 use Volity::WebClient::Queue;
+use Volity::WebClient::Window;
 
 my @jabber
     :Field
