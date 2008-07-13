@@ -18,7 +18,7 @@ use Volity::WebClient::User;
 use Volity::WebClient::Window;
 use Digest::SHA1 qw(sha1_hex);
 use Time::HiRes qw();
-use JSON::XS qw(from_json);
+use JSON::XS qw(decode_json);
 use URI::Escape;
 use HTTP::Request::Params;
 use Log::Log4perl;
@@ -99,6 +99,7 @@ my %content_handlers = (
                         '/prepare_ui'   => \&handle_ui_prep_request,
                         '/whoami' => \&handle_whoami_request,
                         '/bots/' => \&handle_bots_request,
+                        '/uis/' => \&handle_uis_request,
                         '/volity_locale/' => \&load_locale_file,
                         '/chat' => \&handle_chat_request,
                         '/chat/' => \&handle_chat_request,
@@ -465,6 +466,8 @@ sub handle_roster_request {
 sub handle_rpc_request {
     my ($request, $response) = @_;
 
+    warn "handle_rpc_request has been called.";
+    
     my ($preproc_result, $user, $window)
         = preprocess_request($request, $response);
     unless ($preproc_result == RC_OK) {
@@ -489,10 +492,10 @@ sub handle_rpc_request {
     # Try replacing the given args - a JSON string - with its Perl
     # equivalent.
     my $args_ref;
-    eval { $args_ref = from_json($rpc_info{args}); };
+    eval { $args_ref = decode_json($rpc_info{args}); };
     if ($EVAL_ERROR) {
         $response->code(RC_BAD_REQUEST);
-        $response->content("The args argument didn't appear to be valid JSON. It was: $rpc_info{args}");
+        $response->content("The args argument didn't appear to be valid JSON. It was: $rpc_info{args}\nLiteral eval error: $EVAL_ERROR");
         return RC_BAD_REQUEST;
     }
     else {
@@ -500,17 +503,6 @@ sub handle_rpc_request {
     }
     
     $user->jabber->send_rpc_request(\%rpc_info);
-    
-#    $response->code(RC_OK);
-#    $response->content('RPC sent.');
-#    return RC_OK;
-
-#    $poe_kernel->state('blargh', sub {die "Got the BAD blargh event."});
-
-#    my $session = $poe_kernel->alias_resolve($user->jabber->resource);
-#    my $result = $poe_kernel->post($session, 'blargh');
-#    return;
-#    die "$session and " . $user->jabber->resource . " and $result";
     
     # Stick the HTTP response object into the Jabber user object. It will
     # take care of returning it after packing it with the RPC response and
@@ -558,6 +550,7 @@ sub handle_ui_prep_request {
     # Return RC_WAIT, so that the response isn't sent back to the user yet.
     # The $user object will set headers and content and will call
     # $response->continue when it's ready.
+    warn "Exiting handle_ui_prep_request (returning an RC_WAIT)";
     return RC_WAIT;
 }
 
@@ -586,8 +579,7 @@ sub get_session_id_from_request {
     }
 
     # XXX Not sure if this is the best way to parse out cookies.
-#    my ($session_id) = $cookie =~ /(?:; )?session_id=(.*?);?/;
-    my ($session_id) = $cookie =~ /(?:; )?session_id=(.*?)(?:\z|;)/;
+    my ($session_id) = $cookie =~ /(?:; )?session_id.*?=(.*?)(?:\z|;)/;
 #    die "Whee $session_id from $cookie";
     unless ($session_id) {
         croak ('No session_id found in the request.');

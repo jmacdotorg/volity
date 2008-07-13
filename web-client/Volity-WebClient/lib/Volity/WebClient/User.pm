@@ -158,7 +158,8 @@ use File::Copy;
 
 Readonly my $CLIENT_URI         => 'http://volity.org/protocol/ui/html';
 Readonly my $UI_TIMESTAMP_FILE  => 'timestamp';
-Readonly my $BOOKKEEPER_JID     => 'bookkeeper@volity.net/stilton';
+#Readonly my $BOOKKEEPER_JID     => 'bookkeeper@volity.net/stilton';
+Readonly my $BOOKKEEPER_JID     => 'bookkeeper@volity.net/volity';
 
 Readonly my $RPC_MAX_TIME       => 2;
 Readonly my $RPC_GLUE_TIME      => .1;
@@ -278,7 +279,9 @@ sub handle_rpc_response {
     my $request_id = $rpc_info_ref->{id};
     my $http_response;
 
+    warn "Processing RPC response.";
     if ($http_response = delete($self->ui_list_requests->{$request_id})) {
+        warn "Yay, it is a UI list request response.";
         if ($rpc_info_ref->{response}->[0] eq 'volity.ok') {
             shift @{$rpc_info_ref->{response}};
             $self->handle_ui_item_response($rpc_info_ref->{id},
@@ -328,8 +331,6 @@ sub handle_disco_items {
     my $http_response;
     if ($http_response
         = delete($self->table_user_requests->{$request_id})) {
-#        use Data::Dumper;
-#        die Dumper($items_ref);
     }
     elsif ($http_response
         = delete($self->parlor_items_requests->{$request_id})) {
@@ -532,7 +533,7 @@ sub request_uis_for_ruleset {
                              methodname => 'volity.get_uis',
                              args       => [$ruleset_uri],
                          });
-
+    warn "Made a UI request to $BOOKKEEPER_JID.";
 }
 
 sub request_users_for_table {
@@ -587,7 +588,7 @@ sub handle_ui_item_response {
                              methodname => 'volity.get_ui_info',
                              args => $urls_ref,
                          });
-    
+    warn "Got a UI item response. Requesting UI info.";
 
 #    # Grep out the URLs that this client can use.
 #    my @compatible_ui_urls = map {
@@ -604,9 +605,10 @@ sub handle_ui_info_response {
     my $self = shift;
     my ($rpc_id, $urls_ref, $http_response) = @_;
     foreach (@$urls_ref) {
-#        use Data::Dumper; die Dumper($_);
-        $self->download_ui($_->{url});
+        $self->download_ui($_->{url}, $_->{ruleset});
     }
+
+    warn "Got a UI info response. Completing open HTTP request.";
 
     # Finally, complete the HTTP response.
     $http_response->code(RC_OK);
@@ -617,7 +619,7 @@ sub handle_ui_info_response {
 
 sub download_ui {
     my $self = shift;
-    my ($url) = @_;
+    my ($url, $ruleset) = @_;
 
     # First, get the URL's last-modified.
     my $head_request = HTTP::Request->new( HEAD => $url );
@@ -626,7 +628,6 @@ sub download_ui {
         # XXX Error here.
         return;
     }
-#    die $head_result->as_string;
     my $remote_last_modified = $head_result->header('Last-Modified');
     my $remote_last_modified_dt
         = DateTime::Format::HTTP->parse_datetime($remote_last_modified);
@@ -642,11 +643,21 @@ sub download_ui {
     # refusing to touch URLS wth %2f's in them.
     my $unsafe_uri_chars = q{^A-Za-z0-9_.!~*'()};
     my $escaped_url = uri_escape($url, $unsafe_uri_chars);
+    my $escaped_ruleset = uri_escape($ruleset, $unsafe_uri_chars);
     $escaped_url =~ s/%/-/g;
+    $escaped_ruleset =~ s/%/-/g;
+
+    # The directory we download into is the configured UI download
+    # directory, followed by a directory named after the ruleset URI.
     my $base_ui_directory = $self->webclient_user->ui_download_directory;
+
+    my $ruleset_directory
+        = File::Spec->catdir ($base_ui_directory, $escaped_ruleset);
     my $ui_directory
-        = File::Spec->catdir ($base_ui_directory, $escaped_url);
-    foreach ($base_ui_directory, $ui_directory) {
+        = File::Spec->catdir ($ruleset_directory, $escaped_url);
+
+    # mkdir all the dirs that need mk-ing.
+    foreach ($base_ui_directory, $ruleset_directory, $ui_directory) {
         unless (-e $_) {
             mkdir $_ or die "Failed to mkdir $_: $OS_ERROR";
         }
