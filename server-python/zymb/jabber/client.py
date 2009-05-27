@@ -1370,13 +1370,15 @@ class JabberAuth(JabberConnect):
         #   mailing list about this; Peter St Andre said he'd look into it.
         #   For the moment, we will use UTF-8, because that's what works.
         (jidpassstr, dummylen) = self.encodeunicode(jidpass) 
-        
+
+        digesturi = 'xmpp/' + qdstrencode(self.jid.getdomain())
+
         ls = [ encoderawdigest(jidpassstr), nonce, cnonce ]
         A1 = ':'.join(ls)
 
-        A2 = 'AUTHENTICATE:xmpp/'
+        A2 = 'AUTHENTICATE:' + digesturi
 
-        A2R = ':xmpp/'
+        A2R = ':' + digesturi
         ls = [ nonce, noncecount, cnonce, 'auth', encodehexdigest(A2R) ]
         responserhs = (':'.join(ls))
 
@@ -1395,7 +1397,7 @@ class JabberAuth(JabberConnect):
         resp.append('cnonce="%s"' % cnonce)
         resp.append('nc=%s' % noncecount)
         resp.append('qop=auth')
-        resp.append('digest-uri="xmpp/"')
+        resp.append('digest-uri="%s"' % digesturi)
         resp.append('response=%s' % responsevalue)
         resp.append('charset=utf-8')
 

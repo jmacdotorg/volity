@@ -30,6 +30,9 @@ simple tasks.
 
 * Version history:
 
+- ####
+Fixed handling of uri-digest in SASL authentication.
+
 - 1.3.6:
 The rpcdata module was overly paranoid about struct types. (It applied
     the same limitations to struct keys as to method names.) This
