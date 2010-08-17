@@ -961,6 +961,7 @@ class JabberConnect(JabberStream):
             msg.getname(), id, jidstr, ex.errorname, desc)
 
         errmsg = msg.copy()
+        errmsg.clearattr('from')
         if (jidstr):
             errmsg.setattr('to', jidstr)
         errmsg.setattr('type', 'error')
