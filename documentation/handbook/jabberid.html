@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: JabberID</TITLE>
+<META NAME='KEYWORDS' CONTENT='Jabber, ID'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=JabberID">JabberID</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Every entity on a Jabber network -- and therefore, on Volity -- is uniquely identifiable by a <strong><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a></strong>, or JID. A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a> takes the form
+<p>
+<PRE >
+ NODE@HOST/RESOURCE
+</PRE>
+<p>
+<UL >
+<li> <strong>NODE</strong> is the name that distinguishes this entity from other Jabber users on the same host. You can think of it as a user name or screen name.
+<li> <strong>HOST</strong> is the network name of the machine running the Jabber server that the entity is connecting from, such as <code>volity.net</code>.
+<li> <strong>RESOURCE</strong> is a little tricky. When a user or other entity establishes a connection to a Jabber server, it also specifies a "resource" string that distinguishes this particular <em>connection</em> from any others that the same entity might be carrying on. So two JIDs that differ only in <em>resource</em> refer to the same entity.
+</UL>
+<p>
+Note that the <em>node</em> and <em>resource</em> parts are optional (but Jabber entities use all three parts). 
+<p>
+It's important to note that all automated Volity entities that expect unsolicited communication from other users -- namely, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s and the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> -- always have a resource string of <code>volity</code>. This allows users to contact them without having to figure out what resource to use.
+<p>
+<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>Referee</a>s and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s generally have ugly, random-looking resource strings like <code>ref_3221_1136823991</code> or <code>JavolinBJKVWS</code>. (This allows the mechanisms behind these entities to reuse the same JID under different resource strings for separate tasks, such as parlors do when spawning off new <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s.)
+<p>
+The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ELO_Score" class=wikipagelink>ELO score</a> information stored by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> do not include resource strings. Players are referred to only by their bare JID (NODE@HOST). This ensure that even if you play Volity games from several clients, all your games redound to your credit.
+</div>

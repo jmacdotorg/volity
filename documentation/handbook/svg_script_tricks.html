@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: SVG Script Tricks</TITLE>
+<META NAME='KEYWORDS' CONTENT='SVG_Script_Tricks'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=SVG+Script+Tricks">SVG Script Tricks</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Here are some bits of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript" class=wikipagelink>ECMAScript</a> which you can use in your <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_UI_File_Strategy" class=wikipagelink>SVG UI</a> files.
+<p>
+<H3>Delete all children of a group:</H3>
+
+<p>
+ECMAScript:
+<p>
+<PRE >
+  function remove_children(parent) {
+    var obj, ls;
+    ls = parent.childNodes;
+    while (ls.length &gt; 0) {
+      obj = ls.item(0);
+      parent.removeChild(obj);
+    }
+  }
+</PRE>
+<p>
+<H3>Change the text of a &lt;text&gt; element</H3>
+
+<p>
+ECMAScript:
+<p>
+<PRE >
+  function change_text(textobj, newstring) {
+    var newnode;
+    remove_children(textobj);
+    newnode = document.createTextNode(newstring);
+    textobj.appendChild(newnode);
+  }
+</PRE>
+<p>
+<H3>Change what a &lt;use&gt; element refers to</H3>
+
+<p>
+SVG:
+<p>
+<PRE >
+  &lt;use id="id1" xlink:href="#old_reference" /&gt;
+</PRE>
+<p>
+ECMAScript:
+<p>
+<PRE >
+  useobj = document.getElementById("id1");
+  useobj.setAttributeNS("http://www.w3.org/1999/xlink", "href", "#new_reference");
+</PRE>
+<p>
+<H3>Create an object which uses a template</H3>
+
+<p>
+The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Tricks" class=wikipagelink>SVG Tricks</a> page describes how to use a <code>&lt;use&gt;</code> element to display many copies of a predefined shape. Sometimes you want to create more copies with script code.
+<p>
+SVG:
+<p>
+<PRE >
+  &lt;defs&gt;
+  &lt;g id="template"&gt;
+    &lt;rect x="-20" y="-20" width="40" height="40"
+      fill="red" /&gt;
+    &lt;circle cx="0" cy="0" r="23"
+      fill="green" /&gt;
+  &lt;/g&gt;
+  &lt;/defs&gt;
+</PRE>
+<p>
+ECMAScript:
+<p>
+<PRE >
+  svg_ns = "http://www.w3.org/2000/svg";
+  xlink_ns = "http://www.w3.org/1999/xlink";
+   
+  useobj = document.createElementNS(svg_ns, "use");
+  useobj.setAttributeNS(xlink_ns, "href", "#template");
+  useobj.setAttribute("x", "50");
+  useobj.setAttribute("y", "50");
+  document.rootElement.appendChild(useobj);
+</PRE>
+<p>
+We create a new <code>&lt;use&gt;</code> object, and then apply the previous trick to set what it refers to. Then we set a position (by setting the x and y attributes), and finally append it to the document.
+<p>
+<H2>See also</H2>
+
+<p>
+<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Tricks" class=wikipagelink>SVG Tricks</a>
+</div>

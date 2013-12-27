@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: NotesOnJabberRpcInJava</TITLE>
+<META NAME='KEYWORDS' CONTENT='Notes, On, Jabber, Rpc, In, Java'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=NotesOnJabberRpcInJava">NotesOnJabberRpcInJava</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Communication between the different pieces of a Volity system is done
+with <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0009.html">[Jabber-RPC]</a>.  I've done
+some research about using this in the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JavaClient" class=wikipagelink>JavaClient</a>, and I figured I
+should post some of my findings.  I apologize if someone's already
+gone down these paths; I'm not intending to step on anyone's toes,
+just following my own curiosity.  Please feel free to correct or
+augment any of this information for the record.
+<p>
+First of all, some background: <a href="/web/20070802131051/http://www.xmlrpc.com/">[XML-RPC]</a> is a
+protocol for doing RPC (remote procedure calls) using XML to serialize
+the requests and responses.  It uses HTTP POST to transport the XML
+documents.  I believe it's meant to be a simpler alternative to
+<a href="/web/20070802131051/http://www.soapware.org/">[SOAP]</a>, which is another RPC protocol using
+XML, and from what I can tell, it is indeed much simpler (despite the
+"S" in "SOAP").  It's also a bit harder to find implementations, so I
+guess it's not as popular.
+<p>
+WARNING: Sun uses the term "XML-based RPC" for one of its
+<a href="/web/20070802131051/http://java.sun.com/webservices/">[Web Services]</a> packages, but this is
+NOT the same thing as XML-RPC.  From what I could tell, it's some
+monstrosity combining SOAP and Java RMI and some other crap.  Don't go
+there.
+<p>
+Jabber-RPC is one of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JEPsThatVolityUses" class=wikipagelink>JEPsThatVolityUses</a>, that works exactly like
+XML-RPC except for using
+<a href="/web/20070802131051/http://www.jabber.org/ietf/draft-ietf-xmpp-core-22.html">[XMPP]</a>
+(Extensible Messaging and Presence Protocol, the Jabber transport
+protocol) in place of HTTP.  There's apparently some controversy about
+the fact that XML-RPC is inextricably intertwined with HTTP, and the
+XML-RPC people don't like anyone calling something XML-RPC if it
+doesn't use HTTP.  Personally I find this ridiculous, because there's
+really no reason that the XML-RPC protocol should care about what
+transport layer is used.  But I'll be careful to use "Jabber-RPC"
+instead of "XML-RPC over XMPP".
+<p>
+As far as I can tell, there's exactly one
+<a href="/web/20070802131051/http://diwww.epfl.ch/~sypasche/jabberrpc/">[implementation of
+Jabber-RPC in Java]</a>.  Unfortunately it was discontinued as of July
+2003.  It's possible that we could revive the code, but from what I
+can tell from looking at it, the project didn't get very far, and uses
+a couple outdated libraries.  The code might be good for gleaning some
+ideas from, but that's about it.
+<p>
+So we're going to have to build our own Jabber-RPC library in Java.
+Probably the easiest way to do this is (like the abovementioned
+implementation) to combine existing Jabber and XML-RPC libraries.
+Unfortunately our choices there are somewhat limited also.
+<p>
+There are a handful of Jabber libraries in Java, but none of them seem
+particularly great.  Many of them appear to have been abandoned about
+6 months to a year ago; I guess that was the tail end of some wave of
+Jabber hype.  <a href="/web/20070802131051/http://jabberbeans.jabberstudio.org/">[JabberBeans]</a> is
+one that looks like it was fairly mature; it's the one used by the
+abovementioned Jabber-RPC library.  Unfortunately it was officially
+deprecated in May 2003 and replaced by something called
+<a href="/web/20070802131051/http://www.jabberstudio.org/projects/b9j2/project/view.php">[b9j2]</a>
+which seems to have been abandoned after a 0.1 release in June 2003.
+Anyway, Karl decided to go with the
+<a href="/web/20070802131051/http://www.jivesoftware.com/xmpp/smack/">[Smack]</a> library, which seems
+like the best option.  Their latest release was September 2003, but
+the code does look fairly mature, with a nice high-level API.
+<p>
+As for XML-RPC libraries: I started out looking at
+<a href="/web/20070802131051/http://ws.apache.org/xmlrpc/">[Apache XML-RPC]</a>, which is part of the
+<a href="/web/20070802131051/http://ws.apache.org/">[Apache Web Services]</a> project.  The latest
+downloadable release is v1.2-b1 from September 2003, but the
+<a href="/web/20070802131051/http://ws.apache.org/xmlrpc/apidocs/">[Javadocs]</a> are for v2.0-a1-dev,
+from November 2003.  So I downloaded the source
+<a href="/web/20070802131051/http://ws.apache.org/xmlrpc/cvs.html">[via CVS]</a>, and after some
+struggles I eventually got it to compile.  I even managed to run a
+simple client program, connecting to a "sum and difference server"
+mentioned in the
+<a href="/web/20070802131051/http://xmlrpc-c.sourceforge.net/xmlrpc-howto/xmlrpc-howto.html">[XML-RPC HOWTO]</a>.  Neato.
+<p>
+Still, there are some uglinesses about the Apache XML-RPC library.
+Eventually I ran across the <a href="/web/20070802131051/http://xmlrpc.sourceforge.net/">[Marque
+XML-RPC Library]</a>; its latest downloadable release is from August 2002,
+but there are some posts on their Sourceforge forums dated September
+2003 saying that they're working on a new release.  Maybe it's not a
+good sign that there's been nothing since then, but, in many ways it's
+nicer than the Apache library.  (In fact they both derive from the
+same library, but seem to have gone in somewhat different directions.)
+<p>
+<UL >
+<li>For one thing, the Marque library uses the <a href="/web/20070802131051/http://java.sun.com/j2se/1.4.2/docs/guide/collections/">[Collections Framework]</a> everywhere.  The Apache library still uses Vector and Hashtable everywhere.  I have a strong personal bias towards Collections; it's maybe not a particularly rational bias, but it gives me a warm feeling to use them.
+</UL>
+<p>
+<UL >
+<li>The Marque library uses the <a href="/web/20070802131051/http://java.sun.com/j2se/1.4.2/docs/guide/reflection/proxy.html">[Dynamic Proxy API]</a> to map RPC calls onto Java interfaces.  This is particularly smooth: you basically get to write plain old Java code that is doing RPC under the covers.
+</UL>
+<p>
+<UL >
+<li>The Apache library, not surprisingly, uses a bunch of libraries from the <a href="/web/20070802131051/http://jakarta.apache.org/commons/">[Jakarta Commons]</a> project.  This is not inherently bad, but the Marque library seems to have fewer moving parts and external dependencies.  In general I'd feel better not becoming entangled with too much Apache stuff, but again this is more of an irrational bias.
+</UL>
+<p>
+<UL >
+<li>Aside from the things I had to do to make the Apache library compile, I had to fix one bug in order to get my simple client program to work asynchronously.  The Marque library has so far worked "out of the box".
+</UL>
+<p>
+Okay, fine, so let's use the Marque library.  Unfortunately there's
+one big downside: it won't work in its current form with anything but
+HTTP.  There are some hooks for plugging in an alternate "connection
+factory" that could use XMPP, but at least one of the hooks is a
+private variable instead of protected.  More annoyingly, the XML
+header tag is hardcoded into the client-side method, which is required
+in XML-RPC but is required NOT to be there by Jabber-RPC.  The Apache
+library does actually seem to be a bit better factored, but I haven't
+figured out yet if it's adaptable enough to plug in XMPP.
+<p>
+So, this is where things stand right now: we can either start
+modifying the Marque library code so that it's better factored so
+that we can define our own Jabber-RPC subclasses, or we can make our
+own code that uses the Marque library code as-is, which would
+probably involve duplicating a lot of their code that's insufficiently
+factored.  Both of these options are kind of ugly, especially because
+of the code skew that will develop when they finally get around to
+releasing their new version; however, I'm thinking that if we take the
+first option, and send our patches to them, we'd have a better chance
+of avoiding code skew. (Not to mention that we'd be contributing to the
+common good of future developers who want to adapt XML-RPC to other
+transport layers.  I'm only being a little facetious here.)
+<p>
+Another thing to consider is that we're not going to want to make
+users download a bunch of external libraries in order to run the
+Volity client; this means we'll be redistributing the libraries
+ourselves, so we don't have to worry about being compatible with the
+official releases of other projects.  This is another reason to modify
+their code, rather than convolute our code to use their libraries as
+black boxes.  This means we might have a higher chance of falling
+behind their new releases, but this is probably a non-issue unless
+there's some critical bug fix that we'd miss.
+<p>
+UPDATE: I sent mail to the
+<a href="/web/20070802131051/http://sourceforge.net/mailarchive/forum.php?forum=xmlrpc-developers">[Marque library developers list]</a> and got a quick response.  They're
+amenable to patches, and in fact even offered me developer access to
+their CVS tree.  So I guess we have free rein to hack on their code,
+which is nice.
+<p>
+UPDATE (March 22, 2004): Turns out Jabber-RPC is really pretty simple.
+I hacked up a new implementation from scratch (as a Smack extension)
+in a few hours last night.  So there's really no need to adapt a
+third-party XML-RPC library after all.  I'll chalk it up to a learning
+experience...
+</div>

@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Parlor</TITLE>
+<META NAME='KEYWORDS' CONTENT='Parlor'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Parlor">Parlor</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A <strong>parlor</strong> (formerly "game server") is just a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber_Entity" class=wikipagelink>Jabber entity</a> with a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> that listens for requests over the network. These can be <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>service discovery</a> requests from players wishing to know more about the parlor, or (more interestingly) <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> from players who want to create a new game <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a> there.
+<p>
+A parlor "knows" about exactly one game <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a>. This might be Chess, Backgammon, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>Rock, Paper, Scissors</a>, or anything else that someone has turned into a Volity game. It doesn't play the game itself, but instead manages several <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>s, each with its own, autonomous <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>.
+<p>
+<H2>Running a parlor</H2>
+
+<p>
+Anyone can run a parlor! That's part of what makes the Volity idea so cool, after all; it's an entirely open game network.
+<p>
+Running a parlor entails obtaining and then running a parlor program, such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Frivolity" class=wikipagelink>Frivolity</a>. Generally, a parlor often ships as more of a framework than a single, self-running game, and you have to plug a separate game module into it before it will run.
+<p>
+Every parlor needs its own <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber_ID" class=wikipagelink>Jabber ID</a>, just like every other entity on the global Jabber network. It should also be registered with the Volity network's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>, if you want <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a>s to work. Unfortunately, until the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?VolityNet" class=wikipagelink>VolityNet</a> website is up and running, there's no real way to do this yourself. If you do happen to have a functional parlor you'd like to add to the network, for now, contact <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jmac" class=wikipagelink>Jmac</a>.
+<p>
+<H2>Examples</H2>
+
+<p>
+The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Test_Parlors" class=wikipagelink>test parlors</a> offer live examples that you can try with any working <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> program.
+<p>
+<H2>Current Implementations</H2>
+
+<p>
+Frameworks that implement a referee (in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Frivolity" class=wikipagelink>Perl</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volityd.Py" class=wikipagelink>Python</a>) are available from the <a href="/web/20070802131051/http://volity.org/downloads.html">[developer download page.]</a>
+<p>
+If you want to create a Volity game, you do not have to implement the entire referee from scratch. Download one of these frameworks, and then extend the base Game class to implement your game logic.
+<p>
+<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC Requests</a></H2>
+
+<p>
+<H3>volity.new_table ()</H3>
+
+<p>
+A client calls this on a parlor when the player wishes to start a new, empty conference for that game. If the server can start a new table, it should respond to this call by creating a referee, which will start, join, and configure a new <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?MUC" class=wikipagelink>MUC</a>.
+<p>
+<UL >
+<li> Returns: the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> of the new table's MUC. The client is expected to immediately join the MUC as a result.
+<li> Fault: 608: Referee failed to start, or failed to start in a reasonable length of time. Client should stay in whatever mode it was in when the player asked for a new table. (We recommend 120 seconds as "reasonable".)
+</UL>
+<p>
+<strong>Implementation note:</strong> Remember that the parlor that created the referee needs to send back the response with the table's JID, <em>not</em> the referee that created the table.
+<p>
+The parlor may also respond to various <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Admin_RPC_Requests" class=wikipagelink>admin RPC requests</a>.
+<p>
+<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>Service Discovery</a> responses</H2>
+
+<p>
+parlors should respond to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>disco</a> info and items requests as follows.
+<p>
+<H3>Info</H3>
+
+<p>
+The parlor's identity should have <strong>category</strong> "volity" and <strong>type</strong> "parlor". The <strong>name</strong> field will hold a brief title of the game parlor, suitable for display as a window title or icon label.
+<p>
+More machine-readable information (useful to systems like the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>) is available through the attached <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JEPs_That_Volity_Uses" class=wikipagelink>JEP-0128</a> form:
+<p>
+<DL >
+<dt>volity-role<dd>The string <code>parlor</code>.
+<dt>ruleset<dd>The URI of the ruleset that this parlor provides.
+<dt>ruleset-version<dd>The version number of that ruleset which this parlor supports.
+<dt>description<dd>A headline describing the game.
+<dt>website<dd>Human-browsable URL for the game's website
+<dt>contact-email<dd> Parlor administrator contact.
+<dt>contact-jid<dd> Parlor administrator contact.
+<dt>volity-version<dd> Version of the Volity spec which the parlor adheres to. (Currently 1.0.)
+<dt>visible<dd> 1 if the table is visible to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Finder" class=wikipagelink>game finder</a>; 0 otherwise.
+</DL>
+<p>
+<em>Should we define a FORM_TYPE for this?</em>
+<p>
+Note that some elements (<code>ruleset</code>, <code>ruleset-version</code>, <code>description</code>, <code>website</code>) are representative of the game or its ruleset. Others (<code>contact-jid</code> and <code>contact-email</code>) represent the entity which hosts the parlor.
+<p>
+<H3>Items</H3>
+
+<p>
+The parlor responds to disco#items queries under the following nodes:
+<p>
+<DL >
+<dt><em>no node</em><dd> Returns the following node list (open_tables, ruleset, bots).
+</DL>
+<p>
+<DL >
+<dt>open_tables<dd> Returns a list of JID pointers to all the parlor's active <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s whose tables have not been <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>configured</a> to remain hidden from public discovery.
+</DL>
+<p>
+<DL >
+<dt>ruleset<dd> Returns a pointer to a node on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> that describes the parlor's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>. (Consequently, the URI itself is visible as the node part of the returned item.)
+</DL>
+<p>
+<DL >
+<dt>bots<dd> Returns a list of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a>s and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot_Factory" class=wikipagelink>bot factories</a> recommended by the parlor. Internal bots (those that the parlors can create itself) will have the same <em>jid</em> as the parlor, and a <em>node</em> which gives the bot algorithm URI. External bots will have the <em>jid</em> of a bot factory, and a <em>node</em> which gives the bot algorithm URI. The list may also contain the <em>jid</em> of a bot factory with no <em>node</em> (in which case the client must query the factory itself). Any entry in the bots list may also have a human-readable <em>name</em>.
+</DL>
+</div>

@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Game Suspension</TITLE>
+<META NAME='KEYWORDS' CONTENT='Game_Suspension'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Game+Suspension">Game Suspension</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext><strong>Game suspension</strong> occurs either when a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a> makes a successful <code>volity.suspend_game</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC request</a>, or as a result of an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>abandoned game</a> (if all the seated players leave a game).
+<p>
+The ref signals the start of suspension by sending a <code>volity.suspend_game(JID)</code> call to call players at the table. (The JID is the player who requested the suspension, or the referee if it was an automated suspension.) When the game resumes, the ref sends <code>volity.resume_game()</code> to everyone.
+<p>
+A suspended game retains the state it held at the moment of suspension, but is temporarily unplayable. While its game is suspended, the referee will neither send any <code>game</code>-namespaced (that is, ruleset-defined) RPC requests, nor accept any (kicking them all back with a fault). 
+<p>
+Limited <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> may take place. Basically, players can change settings marked by <code>volity</code>-namespaced RPC requests, such as the table's preferred language. However, no <code>game</code>-namespaced configuration calls can occur, as these generally have the effect of changing the game's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>URI</a>, and that simply can't happen after a game starts.
+<p>
+While a game is suspending, players can freely move among the table's seats -- obervers can sit, players can swap seats or stand, and bots can be summoned and invited to sit. However, the <em>number</em> of occupied seats cannot change. If, during suspension, one of the seats that was occupied at game start becomes empty, then the referee will refuse to resume the game (and will send back faults to any other seat's occupant that tries to declare readiness). Furthermore, the referee will deny requests to sit in empty seats that were available during the game's initial configuration but not used by the time the game started.
+</div>

@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Winners List</TITLE>
+<META NAME='KEYWORDS' CONTENT='Winners_List'/>
+<LINK REL="stylesheet" HREF="/web/20070301123612cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Winners+List">Winners List</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>When a <a href="game.html" class=wikipagelink>game</a> ends, the presiding <a href="referee.html" class=wikipagelink>referee</a> usually needs to arrange the <a href="player.html" class=wikipagelink>player</a>s' <a href="seat.html" class=wikipagelink>seat</a>s into an ordered array called a <strong>winners list</strong>, for insertion into the completed game's <a href="game_record.html" class=wikipagelink>record</a>. Basically, the closer a seat's ID is to the front of the list, the better it did in the game, <em>relative to the other seats</em>. The way order is determined varies among <a href="ruleset.html" class=wikipagelink>ruleset</a>s.
+<p>
+<H2>Examples</H2>
+
+<p>
+Imagine a four-seat game with the seat IDs <code>red</code>, <code>blue</code>, <code>green</code> and <code>yellow</code>. The players try to achieve points in order to win. The game ends with the following results:
+<p>
+<PRE >
+ red: 50
+ blue: 40
+ green: 35
+ yellow: 45
+</PRE>
+<p>
+The winners list would then take this shape (assuming that all the players are using their "example.com" Jabber IDs):
+<p>
+<PRE >
+ ( ( red ), ( yellow ), ( blue ), ( green ) )
+</PRE>
+<p>
+Note how each seat ID is is in its own sub-array. Each top-level member of the winners list is a "slot" or "place" list that reflects how its members finished relative to those in other slots. Players in slots earlier in the list finished the game in a better position than those who finished later. In the above example, <code>red</code> won the game outright. However, as later examples will show, these slots can contain multiple members to reflect ties.
+<p>
+The next game, everyone scores the same, except for <code>yellow</code>, who scores 5 more points, bringing that seat into a tie with <code>red</code>. As these two seats are tied for their position -- which happens to be first -- the first member of the array will contain both of their IDs. Note that the order of the IDs within this sub-array doesn't matter, and that the number of members of the overall winners list is reduced from four to three. Even though four seats played in the game, they had only three distinct finishing spots among themselves at the end.
+<p>
+<PRE >
+ ( ( red, yellow ), ( blue ), ( green ) )
+</PRE>
+<p>
+Let's imagine a completely different game that uses the same seat IDs but a new win-order mechanism. Scores don't matter; there is simply one clear winner, and everyone else loses. Should <code>blue</code> gets the prize this time, the winners list will look something like this:
+<p>
+<PRE >
+ ( (blue), (red, yellow, green) )
+</PRE>
+<p>
+This raises an important point. Without any context, one doesn't know whether everyone tied for second place behind <code>blue</code>, or wether they all just lost. <em>It's the ruleset that provides this context.</em> While the winners list is general enough to show how all the players of a single game performed relative to one another (and is therefore enough information to generate <a href="elo_score.html" class=wikipagelink>ELO score</a>s for them, the objective meaning of the list depends wholly on the ruleset; winners lists cannot be meaningfully compared among games from different rulesets.
+</div>

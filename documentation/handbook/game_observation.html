@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Game Observation</TITLE>
+<META NAME='KEYWORDS' CONTENT='Game_Observation'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Game+Observation">Game Observation</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A player not occupying any of a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>'s <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seats" class=wikipagelink>seats</a> is <em>standing</em>, which functionally equates to a mere observer of the game at hand. They can watch a game (though they cannot see any private information, as described below), and they can chat with other players (unless the table's moderators have taken away their ability to kibitz by adjusting their <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?MUC" class=wikipagelink>MUC</a> role). The referee, however, will respond to any of their attempts to affect the game state with a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Faults" class=wikipagelink>607 fault</a>, or a failure <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>token</a> such as "volity.not_seated".
+<p>
+Observers are still considered "players" in Volity parlance, even if they're not actively playing. They're still hanging out at tables, which is close enough for us.
+<p>
+<H2>Observers and game UIs</H2>
+
+<p>
+If a game involves hidden information, then that game's observers get a different view of the game than anything the players see. Since observers are not playing, then they won't receive any information that's privy only to certain players; in a Poker game, observers would be able to see player actions (drawing, betting, and so on), and any face-up cards visible to the whole table, but <em>not</em> the cards in any player's hand.
+<p>
+To "look over the shoulder" of an active player, one just join that player's seat... and therefore, no longer be an observer.
+</div>

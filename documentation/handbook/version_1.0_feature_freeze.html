@@ -1,0 +1,68 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Version 1.0 Feature Freeze</TITLE>
+<META NAME='KEYWORDS' CONTENT='Version_1.0_Feature_Freeze'/>
+<LINK REL="stylesheet" HREF="/web/20070306051433cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Version+1.0+Feature+Freeze">Version 1.0 Feature Freeze</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext><H2>The big question</H2>
+
+<p>
+How close are we to declaring a feature freeze on Volity 1.0? Doing so is a prerequisite for <a href="jmac.html" class=wikipagelink>jmac</a> undertaking the authorship of the <a href="platform_spec.html" class=wikipagelink>platform spec</a>.
+<p>
+Note that the "features" referred to here don't need to have been <em>implemented</em> by anyone yet; they merely have to be described well enough to allow someone to implement them.
+<p>
+<H2>Supported features</H2>
+
+<p>
+<H3>Low-level</H3>
+
+Transport and basic communication.
+<UL >
+<li> User account creation and management (<a href="xmpp.html" class=wikipagelink>XMPP</a>)
+<li> User connection and authentication (<a href="xmpp.html" class=wikipagelink>XMPP</a>)
+<li> Communication between users (<a href="xmpp.html" class=wikipagelink>XMPP</a>)
+</UL>
+<p>
+<H3>Mid-level</H3>
+
+Gameplay.
+<UL >
+<li> <a href="table.html" class=wikipagelink>Table</a> creation
+<li> <a href="table_configuration.html" class=wikipagelink>Table configuration</a>
+<li> <a href="invitations.html" class=wikipagelink>Invitations</a>
+<li> Game play API (<a href="referee.html" class=wikipagelink>Referee</a>)
+<li> Standard <a href="game_record.html" class=wikipagelink>game record</a> format
+</UL>
+<p>
+<H3>High-level</H3>
+
+Meta-gameplay.
+<UL >
+<li> <a href="game_finder.html" class=wikipagelink>Game Finder</a>
+<li> <a href="ui_finder.html" class=wikipagelink>UI Finder</a>
+<li> <a href="lobby.html" class=wikipagelink>Lobbies</a>
+<li> <a href="reputation_system.html" class=wikipagelink>Reputation System</a>
+</UL>
+<p>
+<H2>Todo</H2>
+
+<p>
+Anything? (Or, is anything in the "supported features" list not actually as complete as I think it is?)
+<p>
+<H2>Not-todo</H2>
+
+Perhaps-useful features that can wait for extensions or future versions of the platform.
+<p>
+<UL >
+<li> A <a href="game_record.html" class=wikipagelink>game record</a> browsing API. For now, we'll just write a web application that has direct access to the bookkeeper's underlying database. If there's demand for it, we can specify a public API later.
+</UL>
+</div>

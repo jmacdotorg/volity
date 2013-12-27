@@ -1,0 +1,65 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: UI File Format</TITLE>
+<META NAME='KEYWORDS' CONTENT='UI_File_Format'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=UI+File+Format">UI File Format</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>This page describes what a typical SVG UI file might look like, as a client application such as <a href="gamut.html" class=wikipagelink>Gamut</a> might see it.
+<p>
+The <a href="testbench.html" class=wikipagelink>Testbench</a> application lets you load an SVG UI file, display it, and debug it, without contacting an actual Volity <a href="referee.html" class=wikipagelink>referee</a> or requiring any network activity.
+<p>
+While you are developing your UI, consider these <a href="ui_file_gotchas.html" class=wikipagelink>UI File Gotchas</a>.
+<p>
+<H2>Archive contents</H2>
+
+<p>
+The typical SVG-based UI file will be downloaded as a ZIP archive containing the following files:
+<p>
+<UL >
+<li> The game's main SVG document file, with the filename <code>main.svg</code>.
+<li> <a href="localization_files.html" class=wikipagelink>Localization files</a>.
+<li> Support files (such as images, sounds, or subsidiary SVG files) which are used by the main UI file.
+</UL>
+<p>
+A UI URL which does not map to a ZIP archive will be treated as if it were a ZIP archive containing just one file. (E.g., a UI URL may point to single SVG file.) For the sake of making this discrimination easier on the client, a UI URL which contains ZIP data must end with ".zip" or ".ZIP". Yes, we know about MIME types, but sometimes they go wrong.
+<p>
+The ZIP archive may have its files at the top level, or wrapped in a directory. (Or wrapped in several levels of directory, actually.) The client will search down from the top; if it sees a directory which is empty except for a single subdirectory, it will enter the subdirectory and continue searching. When it finds a dir with more than one entry (or a file entry), it will stop and look there for <code>main.svg</code>, <code>config.svg</code>, <code>locale</code>, etc, as described above.
+<p>
+<em>(This allows the client to handle any ZIP archive, whether it has been packaged as <code>main.svg</code>, or <code>chess/main.svg</code>, or <code>user/zarf/chess/main.svg</code>.)</em>
+<p>
+On capitalization: since ZIP archives are sometimes created on strange, non-case-preserving filesystems, <code>MAIN.SVG</code> is an acceptable substitute for <code>main.svg</code>. Do not used mixed case.
+<p>
+On intermediate directories: it is not necessary to include directory entries in the ZIP archive. The unzip process will create directories as necessary.
+<p>
+<H3>main.svg</H3>
+
+<p>
+The SVG document that implements the user interface for the active game. There may be other SVG documents in the archive, but if so, they exist at the service of this one.
+<p>
+The top-level &lt;svg&gt; element should be set up to <a href="svg_scaling.html" class=wikipagelink>scale properly</a>. You should not assume that the player's client window will be any particular size.
+<p>
+The top-level &lt;svg&gt; element should contain a &lt;metadata&gt; element, which should in turn contain <a href="metadata.html" class=wikipagelink>metadata</a> describing your UI.
+<p>
+The file must define <a href="ecmascript.html" class=wikipagelink>ECMAScript</a> handlers for various events (such as the start and end of the game), as well as for incoming <a href="rpc_requests.html" class=wikipagelink>RPC requests</a> in the <code>game</code> namespace. See <a href="ecmascript_api.html" class=wikipagelink>ECMAScript API</a> for the functions you may define and call.
+<p>
+<H3>Support documents</H3>
+
+<p>
+Any other files that top-level SVG/XHTML files refer to, including things like referenced images or XML document or fragment files.
+<p>
+See <a href="pluggable_resources.html" class=wikipagelink>pluggable resources</a> for a mechanism that can load SVG resources based on a player's preference.
+<p>
+<H3>testbench.xml</H3>
+
+<p>
+This is not used by the Volity <a href="client.html" class=wikipagelink>client</a>; it may be left out of the final version of the UI package. The <a href="testbench.html" class=wikipagelink>Testbench</a> program reads it to create helpful controls during debugging and testing.
+</div>

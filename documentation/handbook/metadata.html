@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Metadata</TITLE>
+<META NAME='KEYWORDS' CONTENT='Metadata'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Metadata">Metadata</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>We want volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>s to contain lots of metadata. They should be self-describing, as much as possible. This enables the client to get hold of useful information just by loading the UI file. It also enables the bookkeeper to extract this information when a UI file is registered, thus simplifying the task of filling in the bookkeeper's database.
+<p>
+(This also applies to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Pluggable_Resource" class=wikipagelink>pluggable resource</a> files, such as card deck art.)
+<p>
+Metadata which we want:
+<p>
+<UL >
+<li> Creator
+<li> Title (possibly in multiple languages)
+<li> Description (ditto)
+<li> Language or languages (which the UI supports)
+<li> Date created/modified
+<li> Web site
+<li> Ruleset URI and version (which the UI supports)
+</UL>
+<p>
+The generic elements (title, author, etc) are covered by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Dublin_Core" class=wikipagelink>Dublin Core</a> vocabulary. I think it's reasonable to say "Use Dublin Core where possible." The client and bookkeeper will only pay attention to a few of the DC terms, but if a developer wants to stick in more of them, that's great.
+<p>
+We do, however, need <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Metadata_Terms" class=wikipagelink>our own vocabulary</a> for a few items. The "web site" would have specific semantics ("fire this URL to the user's browser when he clicks the More Information button") so we shouldn't try to wedge it into DC. And <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>ruleset versioning</a> is its own bundle of joy.
+<p>
+The big question is: how do we wedge this data into an SVG file? The SVG spec supports a &lt;metadata&gt; tag <a href="/web/20070802131051/http://www.w3.org/TR/SVG/metadata.html">[1]</a>, but doesn't specify what you should put into it. It gives an example of an RDF document fragment containing DC data.
+<p>
+My current proposal is simply to stick XML-ified DC elements (and our own) directly into the &lt;metadata&gt; element. We can use xml:lang attributes to distinguish localizations of human-readable elements.
+<p>
+(Footnote: SVG has a &lt;title&gt; element. We scan for that as a special case alternative to &lt;dc:title&gt; in &lt;metadata&gt;.)
+<p>
+<H3>Further Details</H3>
+
+<p>
+The metadata can contain anything, but Volity software will mostly pay attention to three vocabularies:
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Dublin_Core" class=wikipagelink>Dublin Core</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Metadata_Terms" class=wikipagelink>Volity metadata terms</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Metadata_Terms" class=wikipagelink>Game metadata terms</a> (used by UI code, not by the Volity client)
+</UL>
+<p>
+In general, XML tags and extra whitespace inside an element's character data will be ignored.
+<p>
+Human-readable elements (&lt;dc:title&gt;, &lt;dc:description&gt;, etc) can have an <code>xml:lang</code> attribute which specifies what language they are in. It is reasonable to supply multiple elements with the same name and different languages.
+<p>
+<H3>SVG Metadata Example</H3>
+
+<p>
+<PRE >
+  &lt;metadata
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:volity="http://volity.org/protocol/metadata"&gt;
+    &lt;dc:title&gt;Fluxx Standard Interface&lt;/dc:title&gt;
+    &lt;dc:title xml:lang="pla"&gt;Uxxflay Andardstay Interfaceay&lt;/dc:title&gt;
+    &lt;dc:language&gt;en&lt;/dc:language&gt;
+    &lt;dc:language&gt;pla&lt;/dc:language&gt;
+    &lt;volity:ruleset&gt;http://volity.org/games/fluxx#2.0&lt;/volity:ruleset&gt;
+  &lt;/metadata&gt;
+</PRE>
+<p>
+(Note that <code>pla</code> is an imaginary language code for Pig Latin.)
+<p>
+<H3>What about RDF?</H3>
+
+<p>
+RDF looks great until you read the spec, at which point your eyeballs start to twitch uncontrollably. Well, mine did. 
+<p>
+Furthermore, it's a pain to support. The primary open-source Java library for parsing RDF is Jena <a href="/web/20070802131051/http://jena.sourceforge.net/">[2]</a>, which is a two-megabyte JAR file plus five or so megs of supporting JARs. Mind you, that comes with database support and a logical-inference engine for queries into the RDF model. The fact that these features are a good idea seems like evidence that RDF is too much work for our needs.
+<p>
+What do we lose by <em>not</em> using RDF?
+<p>
+<UL >
+<li> Flexibility of syntax (RDF allows data to appear as either XML attributes or character data)
+<li> Containers (RDF has rdf:Bag, rdf:Seq, rdf:Alt -- different ways of bundling multiple values into one position)
+<li> Ability to define metadata about several resources (URIs), and to have metadata relating one resource to another
+</UL>
+<p>
+I see no need for any of these. Flexibility is confusing. We can handle multiple values by accepting multiple elements (see &lt;dc:language&gt; in my example). And the third "feature" is actually a slight headache, which we are better off avoiding. (An RDF description wants to be about a specific URI. It is possible to specify "the URI of this file, you idiot" but it takes a bit of futzing. In my proposal, all metadata is about the SVG file that the &lt;metadata&gt; element is in.)
+<p>
+Another possibility is to embed code (javascript code for a UI file) which returns metadata information in response to queries. I mention this only so that we may all admire the pure badness of the idea. (The bookkeeper powering up a Javascript interpreter in order to extract info from a UI? Bleah.)
+</div>

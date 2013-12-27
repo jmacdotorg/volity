@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: RPC Requests</TITLE>
+<META NAME='KEYWORDS' CONTENT='RPC_Requests'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=RPC+Requests">RPC Requests</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Volity entities (<a href="client.html" class=wikipagelink>client</a>s, <a href="bot.html" class=wikipagelink>bot</a>s, <a href="referee.html" class=wikipagelink>referee</a>s, <a href="parlor.html" class=wikipagelink>parlor</a>s, <a href="bot_factories.html" class=wikipagelink>bot factories</a>, and the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>) interact primarily through <a href="jabber.html-RPC" class=wikipagelink>Jabber-RPC</a> requests. See each entity page for a list of the RPCs that it responds to.
+<p>
+All these functions should return an RPC response, either the specified value (on success) or <a href="rpc_faults.html" class=wikipagelink>one of Volity's fixed list of RPC faults</a> (on failure). Where a return value isn't specified, then the function should return truth (a boolean).
+<p>
+<a href="rpc_timeouts.html" class=wikipagelink>RPC timeouts</a> can generally be handled the same as RPC faults or Jabber stanza errors.
+<p>
+The server and referee may have additional <a href="admin_rpc_requests.html" class=wikipagelink>admin RPC requests</a> in the "admin.*" namespace. These would be defined by the server implementation, not by the Volity spec.
+<p>
+<H3>Arguments</H3>
+
+<p>
+Arguments of <code>true</code> or <code>false</code> refer to literal values of "1" and "0" marked as <code>&lt;boolean&gt;</code> datatypes, as defined by the <a href="xml.html-RPC" class=wikipagelink>XML-RPC</a> spec.
+<p>
+Note that numeric values sent by <a href="ecmascript.html" class=wikipagelink>ECMAScript</a> in the <a href="client.html" class=wikipagelink>client</a> may arrive as <a href="jabber.html-RPC" class=wikipagelink>Jabber-RPC</a> <code>&lt;double&gt;</code> tags, even if the values are whole numbers. See the discussion on <a href="jabber.html-RPC" class=wikipagelink>Jabber-RPC</a>.
+<p>
+<H2>Entities Which Handle RPC Requests</H2>
+
+<p>
+<UL >
+<li> <a href="bookkeeper.html" class=wikipagelink>Bookkeeper</a>
+<li> <a href="parlor.html" class=wikipagelink>Parlor</a>
+<li> <a href="referee.html" class=wikipagelink>Referee</a>
+<li> <a href="bot_factory.html" class=wikipagelink>Bot Factory</a>
+<li> <a href="client.html" class=wikipagelink>Client</a>
+<li> <a href="bot.html" class=wikipagelink>Bot</a>
+</UL>
+<p>
+<H2>See Also</H2>
+
+<p>
+<UL >
+<li> <a href="rpc_replies.html" class=wikipagelink>RPC replies</a>
+<li> <a href="rpc_faults.html" class=wikipagelink>RPC faults</a>
+<li> Failure <a href="tokens.html" class=wikipagelink>tokens</a>
+<li> <a href="admin_rpc_requests.html" class=wikipagelink>Admin RPC requests</a>
+</UL>
+<p>
+<p>
+</div>

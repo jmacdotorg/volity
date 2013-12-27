@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Testbench</TITLE>
+<META NAME='KEYWORDS' CONTENT='Testbench'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Testbench">Testbench</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Testbench is a Java application which allows you to display and test an SVG <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>. It does not communicate with a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> or with other players. Instead, Testbench creates a simulated environment, within which your UI file runs. You have direct control over the simulated referee which the UI "communicates" with; you can start and end games at will, with any number of simulated other players.
+<p>
+You can think of Testbench as an SVG viewer, with extra debugging features which are useful for Volity UI scripting. Alternatively, you can think of Testbench as Gamut with all the network code stripped out.
+<p>
+Download Testbench from the <a href="/web/20070802131051/http://www.volity.org/projects/gamut/releases/">[Volity release page]</a>.
+<p>
+<H2>Running Testbench</H2>
+
+<p>
+Launch the Testbench.jar file in the standard manner for your operating system (probably double-clicking it). Or type
+<p>
+<PRE >
+  java -jar Testbench.jar
+</PRE>
+<p>
+A dialog box will appear which prompts you to choose an SVG file or a Zip file containing UI data.
+<p>
+You can also specify a UI file on the command line. Type
+<p>
+<PRE >
+  java -jar Testbench.jar <em>UIFILE</em>
+</PRE>
+<p>
+...where <em>UIFILE</em> can be an SVG file, a directory containing UI data, or a Zip file containing such a directory. (See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_UI_File_Strategy" class=wikipagelink>SVG UI file strategy</a>.)
+<p>
+When you have selected a UI, you will see what looks like a Gamut window:
+<p>
+<img src="/web/20070802131051im_/http://eblong.com/zarf/volity/pic/testbench-image.png">
+<p>
+The main pane shows your UI. Below that is a "chat" log; in Testbench, this shows status messages. Below that is a message-input line. Javascript commands typed here are executed directly inside your UI.
+<p>
+The "Reload" menu command reloads the UI file, redisplays it, and starts the scripting context over from scratch. If you're editing the UI, use "Reload" after you make any change.
+<p>
+<H2>Starting and Ending Games</H2>
+
+<p>
+Above the UI are "Start Game" / "End Game" buttons, and a pop-up menu. This is your control over the simulated referee.
+<p>
+(The contents of the pop-up menu are inferred from any <code>seattokens.xml</code> you have in your UI's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Localization_Files" class=wikipagelink>locale</a> directory. If you have no localization files, the menu will contain only "Unseated" -- you will have to type a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seat" class=wikipagelink>seat</a> ID into the pop-up field.)
+<p>
+When you start Testbench, the UI is displayed as if you had joined a new <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>, in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>setup phase</a>. You are not seated.
+<p>
+If you select a seat in the pop-up menu and then press "Start Game", the UI will be sent messages as if its player had sat in that seat, and then witnessed the start of the game. If you leave the pop-up as "Unseated" and press "Start Game", the UI will witness the start of the game as an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Observation" class=wikipagelink>observer</a>.
+<p>
+<em>Future expansion: Add buttons for suspension/unsuspension. Prevent the "Start Game" button from being pressed twice in a row, as is currently possible. React to the pop-up seating menu immediately -- a player normally sits down well before the game starts.</em>
+<p>
+<H2>Debugging Features</H2>
+
+<p>
+As noted above, you can type any Javascript command in the message line. It will be executed immediately. This allows you to adjust variables and simulate RPCs from the referee.
+<p>
+A shortcut: typing
+<p>
+<PRE >
+  ? <em>EXPRESSION</em>
+</PRE>
+<p>
+...will evaluate <em>EXPRESSION</em> and print its value in the message pane.
+<p>
+To simulate an incoming RPC, type
+<p>
+<PRE >
+  game.methodname(<em>arg1, arg2, ...</em>);
+</PRE>
+<p>
+Do <em>not</em> do this:
+<p>
+<PRE >
+  rpc(<em>methodname, arg1, arg2, ...</em>);
+</PRE>
+<p>
+That invokes the function which your UI uses to <em>send</em> RPCs. In the Testbench environment, the <code>rpc()</code> function prints its arguments to the message pane, and has no other effect.
+<p>
+<H2>testbench.xml</H2>
+
+<p>
+You can add additional buttons to the Testbench toolbar by including a <code>testbench.xml</code> file in your UI directory. This file is ignored by regular Volity clients; but Testbench parses it for debugging commands.
+<p>
+The format of the file:
+<p>
+<pre>
+&lt;?xml version="1.0"?&gt;
+&lt;testbench&gt;
+
+&lt;button name="Print"&gt;
+  literalmessage($X);
+&lt;/button&gt;
+
+&lt;field name="X" /&gt;
+&lt;field name="Y" type="int" /&gt;
+
+&lt;/testbench&gt;
+</pre>
+<p>
+A &lt;button&gt; tag creates a button. (The <code>name</code> attribute will be the button's name.) The text of the &lt;button&gt; tag should be one or more Javascript statements. 
+<p>
+The button is effectively a macro for a debugging command; pushing it executes the button's text. (But note that the "?" shortcut is not available in button macros. Call the <code>literalmessage()</code> function to print messages.)
+<p>
+A &lt;field&gt; tag creates a text-entry field. (Again, <code>name</code> is the field's name. <code>type="int"</code> restricts the field to be an integer.) Any occurrence of <em>$name</em> in a debugging command is substituted with the current value of the named field. The value is expressed as a string literal (or, for an <code>int</code> field, an integer literal). So, in the example above, the contents of the <code>X</code> field are printed directly to the message pane.
+<p>
+Yes, <em>$name</em> substitutions apply to Javascript commands you type in the message pane, as well as button macros. Use "$$" if you want a literal "$". Also, remember that a (string) field produces a double-quoted string literal, not the exact text from the field. A debugging command like
+<p>
+<PRE >
+  literalmessage("Hello $X");   // wrong!
+</PRE>
+<p>
+...will come out looking like
+<p>
+<PRE >
+  literalmessage("Hello "xfield"");   // wrong!
+</PRE>
+<p>
+...which is not valid Javascript. Instead, use this:
+<p>
+<PRE >
+  literalmessage("Hello " + $X);
+</PRE>
+<p>
+<H2>Bugs</H2>
+
+<p>
+No doubt many, but here are the worst:
+<p>
+<UL >
+<li> When the UI sends an RPC to the simulated referee, there is no way for it to receive a reply. Then again, there's no way for that to happen in Gamut either. Stay tuned.
+</UL>
+</div>

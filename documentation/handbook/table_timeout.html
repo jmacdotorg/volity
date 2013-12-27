@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Table Timeout</TITLE>
+<META NAME='KEYWORDS' CONTENT='Table_Timeout'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Table+Timeout">Table Timeout</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Every <a href="referee.html" class=wikipagelink>referee</a> keeps track of a <em>table timeout</em> value, a positive integer defining the number of seconds the ref is willing to wait before it gives up waiting. It is set via <a href="table_configuration.html" class=wikipagelink>table configuration</a>, though referee implementations can define their own default timeouts.
+<p>
+This should be a few seconds, at minimum. One reason: A MUC client changing room nicknames appears as the old nickname going "unavailable" followed immediately by the new nickname arriving. 
+<p>
+<em>(I am slightly worried about abusive players configuring games with a huge timeout value. Thus loading the server down with long-term resource loads. But the referee can sanity-check the timeout value, and you are responsible for what referees you choose to run on your server hardware... it's something to keep in mind, though. --<a href="zarf.html" class=wikipagelink>zarf</a>)</em>
+<p>
+<H2>Things a referee waits for</H2>
+
+...and what it does when it gives up:
+<p>
+<H3><a href="user_departure.html" class=wikipagelink>User departure</a></H3>
+
+<p>
+If a user leaves suddenly, and in such as way that its continued absence would interrupt the flow of the game, the referee will wait for the length of the table timeout before formally reacting to the departure. (Which could be one of several possible actions; see <a href="user_departure.html" class=wikipagelink>user departure</a>.)
+<p>
+<H3>Table cleanup</H3>
+
+<p>
+If all <a href="user.html" class=wikipagelink>users</a> leave the <a href="table.html" class=wikipagelink>table</a>, the referee refers to the table timeout to know how long it should stick around before cleaning itself up.
+<p>
+This also applies to cases where a user requests a new table, and then never bothers to show up there.
+<p>
+<H2>See Also</H2>
+
+<p>
+<a href="rpc_timeouts.html" class=wikipagelink>RPC timeouts</a>, a similar but tangential issue
+</div>

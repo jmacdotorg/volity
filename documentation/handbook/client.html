@@ -1,0 +1,259 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Client</TITLE>
+<META NAME='KEYWORDS' CONTENT='Client'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Client">Client</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A Volity <strong>client</strong> is a program that lets people connect to the network and play games.
+<p>
+<H2>Existing Clients</H2>
+
+<p>
+<UL >
+<li> <a href="gamut.html" class=wikipagelink>Gamut</a>, a graphical, cross-platform client written in Java. This is the Volity project's current official client.
+<li> <a href="friv.html" class=wikipagelink>Friv</a>, a command-line client written in Perl. The very first Volity client, but now hopelssly out of date and defunct.
+<li> The <a href="web_client.html" class=wikipagelink>web client</a>, a browser-based client currently under development by the core Volity team.
+</UL>
+<p>
+<H2>Compliant Client Features</H2>
+
+<p>
+<H3>Basic Jabber handling</H3>
+
+<p>
+<UL >
+<li>Prompt the user for a username, password, and resource. Then have it connect to a Jabber server and authenticate with this info.
+<li>Show a window with this user's roster.
+<li>Commands
+<UL >
+<li>Initiate chat with some user. (Have appropriate display window for this.)
+<li>Join a <a href="multi.html-User_Chat" class=wikipagelink>multi-user chat</a>. (Have appropriate display for this, with MUC-specific userlist.)
+</UL>
+</UL>
+<p>
+<H3>Command: request a new <a href="table.html" class=wikipagelink>table</a></H3>
+
+<p>
+<UL >
+<li>This will do a whole bunch of things, in sequence, under the hood.
+<li>Use the <a href="ui_finder.html" class=wikipagelink>UI Finder</a> to determine the <a href="parlor.html" class=wikipagelink>parlor</a>'s <a href="ruleset.html" class=wikipagelink>ruleset</a> URI, determine the location of compatible UI files, and download one.
+<li>The UI-file stuff taken care of, the client sends a new_table RPC call to the parlor.
+<UL >
+<li>Receive and recognize this call's RPC response.
+<UL >
+<li>On success: a string representing a MUC's JID.
+<li>On failure: an RPC fault or failure <a href="token.html" class=wikipagelink>token</a>.
+</UL>
+<li>React to the response. 
+<UL >
+<li>Join the specified MUC, and open a window unto it, as with any other MUC.
+</UL>
+</UL>
+<li>Make new commands available to the user.
+<UL >
+<li>Request that the server provide a <a href="bot.html" class=wikipagelink>bot</a> opponent, and add it to the table.
+<UL >
+<li>Send an add_bot RPC request to the server.
+</UL>
+<li><a href="invitations.html" class=wikipagelink>invite</a> other others to the table.
+<li>Sit down.
+<li>Start the game.
+<UL >
+<li>Sends a <code>volity.ready</code> RPC request to the server.
+<li>Listens for <code>volity.start_game</code> RPC request <em>from</em> the server.
+</UL>
+</UL>
+</UL>
+<p>
+<H2>Volity Role</H2>
+
+<p>
+A client should have a <a href="volity_role.html" class=wikipagelink>Volity role</a> of <code>player</code>.
+<p>
+<H2><a href="rpc_requests.html" class=wikipagelink>RPC Requests</a></H2>
+
+<p>
+Clients <strong>must</strong> implement the following predefined requests, which always come from a <a href="referee.html" class=wikipagelink>referee</a>.
+<p>
+The various requests having to do with table configuration specifically deal with the case of a player <em>modifying</em> those settings on a table, which is why the first argument to all of them is some player's JID. A client can use <a href="service_discovery.html" class=wikipagelink>disco</a> at any time to learn a table's current configuration settings.
+<p>
+<em>Note:</em> Most of these <code>volity.*</code> requests (as marked) imply that all players become unready. The referee will not send actual <code>volity.player_unready</code> RPCs; the client must consider the players unready when the <code>volity.*</code> request is received.
+<p>
+<H3>volity.start_game ()</H3>
+
+<p>
+A notification that a game has begun at a <a href="table.html" class=wikipagelink>table</a> at which the receiver is seater.
+<p>
+(All players become unready.)
+<p>
+<H3>volity.end_game ()</H3>
+
+<p>
+A notification that a game that the receiver was playing in just ended.
+<p>
+(All players become unready.)
+<p>
+<H3>volity.suspend_game ()</H3>
+
+<p>
+The referee has suspended the game. (See the next method for the player-thrown version.)
+<p>
+(All players become unready.)
+<p>
+<H3>volity.suspend_game ( <em>JID</em> )</H3>
+
+<p>
+The player with the given JID has suspended the game. (JID may also be the referee, in the case of an <a href="referee_states.html" class=wikipagelink>abandoned</a> game.)
+<p>
+(All players become unready.)
+<p>
+<H3>volity.resume_game ()</H3>
+
+<p>
+The game has been resumed (after <a href="game_suspension.html" class=wikipagelink>suspension</a>).
+<p>
+(All players become unready.)
+<p>
+<p>
+<p>
+<H3>volity.receive_state ( <em>struct</em> )</H3>
+
+<p>
+The referee is about to begin sending a lot of configuration RPCs (mostly game-specific ones, but also seating information and so on). The blast of configuration will be closed with a volity.state_sent() RPC. This generally occurs when the player joins a table, but may also be the result of a volity.send_state request. See <a href="state_recovery.html" class=wikipagelink>state recovery</a>.
+<p>
+The <em>struct</em> argument provides yet more information. At the moment, this is just one field:
+<p>
+<DL >
+<dt>state<dd> The current <a href="referee_states.html" class=wikipagelink>referee state</a>.
+</DL>
+<p>
+<H3>volity.game_has_started ()</H3>
+
+<p>
+The referee has finished sending configuration information, and is about to begin sending game state. This only occurs during <a href="state_recovery.html" class=wikipagelink>state recovery</a>, and only if a game is in progress.
+<p>
+<H3>volity.game_activity ( <em>state</em> )</H3>
+
+<p>
+The referee has moved to the given <a href="referee_states.html" class=wikipagelink>state</a>, which will be one of the strings <code>active</code>, <code>disrupted</code>, <code>abandoned</code>. (The other states, <code>setup</code> and <code>suspended</code>, are signalled by other RPCs.)
+<p>
+This call is only used when moving <em>from</em> one of those three states. (When leaving <code>setup</code> or <code>suspended</code>, the referee always goes to <code>active</code>, so no volity.game_activity() call is necessary.)
+<p>
+<H3>volity.state_sent ()</H3>
+
+<p>
+The referee has finished sending configuration information and game state. This concludes a <a href="state_recovery.html" class=wikipagelink>state recovery</a> burst, which started with volity.receive_state().
+<p>
+<p>
+<H3>volity.kill_game ( <em>JID</em>, true | false )</H3>
+
+<p>
+The player with the given JID has either proposed that the game be <a href="killing_games.html" class=wikipagelink>killed</a> upon resumption of play (if the second argument is true), or that the game resume normally (if it's false). This is only legal when the game is <a href="game_suspension.html" class=wikipagelink>suspended</a>.
+<p>
+(All players become unready.)
+<p>
+<H3>volity.show_table ( <em>JID</em>, true | false )</H3>
+
+<p>
+The player with the given <a href="jid.html" class=wikipagelink>JID</a> has changed the table's visibility in the the <a href="game_browser.html" class=wikipagelink>game browser</a>. (See also <a href="table_configuration.html" class=wikipagelink>table configuration</a>.)
+<p>
+(All players become unready.)
+<p>
+<H3>volity.record_games ( <em>JID</em>, true | false )</H3>
+
+<p>
+The player with the given <a href="jid.html" class=wikipagelink>JID</a> has  that the table will send <a href="game_record.html" class=wikipagelink>game record</a>s to the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> at the end of each game (if the argument is <code>true</code>) or not (if the argument is <code>false</code>). (See also <a href="table_configuration.html" class=wikipagelink>table configuration</a>.)
+<p>
+(All players become unready.)
+<p>
+<H3>volity.language ( <em>JID</em>, <em>language</em> )</H3>
+
+<p>
+The player with the given <a href="jid.html" class=wikipagelink>JID</a> changed the table's preferred <a href="language.html" class=wikipagelink>language</a>. The argument is a two-letter language code.
+<p>
+(All players become unready.)
+<p>
+<H3>volity.player_ready ( <em>JID</em> )</H3>
+
+<p>
+The player with the given <a href="jid.html" class=wikipagelink>JID</a> has indicated that it is ready to play, agreeing with the present <a href="table_configuration.html" class=wikipagelink>table configuration</a>.
+<p>
+<H3>volity.player_unready ( <em>JID</em> )</H3>
+
+<p>
+The player with the given JID has indicated that it is not ready to play. It's likely that the <a href="table_configuration.html" class=wikipagelink>table configuration</a> changed somehow, and the referee called this not just on this player but every <a href="readiness.html" class=wikipagelink>ready</a> player at the table, but it could be that this player is individially changing its mind about its own readiness.
+<p>
+<H3>volity.player_stood ( <em>JID</em> )</H3>
+
+<p>
+The player with the given JID has indicated that it no longer wishes to play, and instead simply <a href="game_observation.html" class=wikipagelink>observe</a>. This is also sent when a seated player disconnects from the table.
+<p>
+(All players become unready.)
+<p>
+<H3>volity.player_sat ( <em>JID</em>, <em>seat-id</em> )</H3>
+
+<p>
+The player with the given JID wishes the play the game, and has sat in the <a href="seats.html" class=wikipagelink>seat</a> with the given ID. This is also sent when an absent player reconnects to a game in progress, and therefore returns to the seat which belongs to him.
+<p>
+(All players, including this one, become unready.)
+<p>
+<H3>volity.seat_list ( <em>seat-ids</em> )</H3>
+
+<p>
+The given array represents the IDs of all the seats that the referee might ever refer to over the lifetime of the table.
+<p>
+Usually called on a player only as it joins the table.
+<p>
+<p>
+<H3>volity.required_seat_list ( <em>seat-ids</em> )</H3>
+
+<p>
+The given array represents the IDs of all the seats that <em>must</em> be occupied before the game can start. This is useful for games where seats have roles pertinent to the ruleset, such as (black, white) in chess, or (north, south, east, west) in Bridge. Referees of rulesets with no such role-driven seats may elect to not bother with this request.
+<p>
+The array <em>must</em> be a subset of the array provided with a <em>preceding</em> <code>volity.seat_list</code> request.
+<p>
+Usually called on a player only as it joins the table.
+<p>
+<H3>volity.receive_invitation ( <em>struct</em> )</H3>
+
+<p>
+A player at some table is inviting you to join it. The contents of the <em>struct</em> are described on the <a href="invitation.html" class=wikipagelink>invitation</a> page.
+<p>
+Note that this RPC is sent by the table's referee, not by a player. It is the only RPC which the client will receive from a referee of a table you have not joined.
+<p>
+<H3>volity.message ( <em>list</em> )</H3>
+
+<p>
+The referee is sending a symbolic message, which should be localized and displayed in the client's message stream. The <em>list</em> is a nonempty array of <a href="tokens.html" class=wikipagelink>tokens</a>, as described in <a href="rpc_replies.html" class=wikipagelink>RPC replies</a>. It may not begin with <code>volity.ok</code>; any other <a href="token.html" class=wikipagelink>token</a> in any namespace is legitimate.
+<p>
+<H3>volity.get_info ()</H3>
+
+<p>
+<em>Note: Not yet implemented.</em>
+<p>
+Request information about the client. The result is a struct with fields and values identical to the result of a disco info query.
+<p>
+<H3>Game RPCs</H3>
+
+<p>
+Note that all the above RPC requests lie in the <code>volity</code> namespace, marking them as systemwide methods. Another Volity RPC namespace, <code>game</code>, serves as the container for game-specific requests; that is, requests defined by a certain <a href="ruleset.html" class=wikipagelink>ruleset</a>.
+<p>
+<code>game.*</code> RPCs never implicitly cause players to become unready. If the game configuration changes, the referee will send out a burst of <code>volity.player_unready</code> RPCs.
+<p>
+<H2>See also</H2>
+
+<p>
+<UL >
+<li> <a href="client_test_cases.html" class=wikipagelink>Client test cases</a>
+<li> <a href="seating_ui.html" class=wikipagelink>Seating UI</a> requirements
+</UL>
+</div>

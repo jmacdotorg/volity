@@ -1,0 +1,45 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: SVG</TITLE>
+<META NAME='KEYWORDS' CONTENT='SVG'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=SVG">SVG</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext><strong>Scalable Vector Graphics</strong> (<strong>SVG</strong>) is a W3 standard for representing vector image data through <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML" class=wikipagelink>XML</a>. When paired with <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript" class=wikipagelink>ECMAScript</a>, it becomes a very powerful and versatile language for interactive graphics and animation. One can crudely think of it as "open Flash".
+<p>
+While Volity is not explicitly tied to any one UI format at core, the project has been enamored with SVG since its inception. The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a> client uses SVG + ECMAScript <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>s.
+<p>
+<H2>Using SVG on the Volity Wiki</H2>
+
+<p>
+You can drop inline SVG documents into any Volity Wiki page. Any raw URL ending in <code>.svg</code> or <code>.svgz</code> will be automatically rendered into an appropriate HTML <code>&lt;object&gt;</code> tag.
+<p>
+To set dimensions on the SVG viewport that the tag creates, append <code>|w=[pixels]&amp;h=[pixels]</code> after the URL. If you don't set dimensions, the viewport will take on a small default size, with the document initially scaling or cropping itself to fit. (The difference depends on the SVG object's top-level width, height, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Scaling" class=wikipagelink>viewBox</a>, and  <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Scaling" class=wikipagelink>preserveAspectRatio</a> attributes.)
+<p>
+Examples:
+<p>
+<code>http://www.croczilla.com/svg/samples/butterfly/butterfly.svg</code>
+<p>
+<object  data="http://www.croczilla.com/svg/samples/butterfly/butterfly.svg" type="image/svg+xml"></object>
+<p>
+<code>http://www.croczilla.com/svg/samples/butterfly/butterfly.svg|w=410&amp;h=300</code>
+<p>
+<object width='410' height='300' data="http://www.croczilla.com/svg/samples/butterfly/butterfly.svg" type="image/svg+xml"></object>
+<p>
+<H2>External Links</H2>
+
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://www.w3.org/Graphics/SVG/">[The W3's SVG site]</a>
+<li> <a href="/web/20070802131051/http://www.adobe.com/svg/">[Adobe's SVG site]</a>, including their SVG plugin for Web browsers (which you'll need to see the examples on this page)
+<li> <a href="/web/20070802131051/http://xml.apache.org/batik/">[Batik]</a>, the Apache project to implement SVG in Java -- an important component of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>
+</UL>
+</div>

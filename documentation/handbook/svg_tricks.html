@@ -1,0 +1,299 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: SVG Tricks</TITLE>
+<META NAME='KEYWORDS' CONTENT='SVG_Tricks'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=SVG+Tricks">SVG Tricks</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Here are some clever or useful things you can do in SVG.
+<p>
+<H3>A basic SVG file</H3>
+
+<p>
+This is a complete SVG file. You can copy it and use it as a starting point for your UI.
+<p>
+<strong>SVG 1.1</strong>
+<p>
+<PRE >
+  &lt;?xml version="1.0"?&gt;
+  &lt;!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+        "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"&gt;
+   &lt;svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" &gt;
+    &lt;script type="text/ecmascript"&gt;
+    &lt;![CDATA[
+      // ...here is some ECMAScript, or at least an ECMAScript comment.
+    // ]]&gt;
+    &lt;/script&gt;
+    &lt;defs&gt;
+      &lt;style type="text/css"&gt;
+      &lt;![CDATA[
+        text {
+          text-anchor: middle;
+        }
+      ]]&gt;
+      &lt;/style&gt;
+    &lt;/defs&gt;
+    &lt;circle cx="50" cy="50" r="40" /&gt;
+  &lt;/svg&gt;
+</PRE>
+<p>
+<strong>SVG 1.2</strong>
+<p>
+<PRE >
+  &lt;?xml version="1.0"?&gt;
+  &lt;svg xmlns="http://www.w3.org/2000/svg" version="1.2"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" &gt;
+    &lt;script type="text/ecmascript"&gt;
+    &lt;![CDATA[
+      // ...here is some ECMAScript, or at least an ECMAScript comment.
+    // ]]&gt;
+    &lt;/script&gt;
+    &lt;defs&gt;
+      &lt;style type="text/css"&gt;
+      &lt;![CDATA[
+        text {
+          text-anchor: middle;
+        }
+      ]]&gt;
+      &lt;/style&gt;
+    &lt;/defs&gt;
+    &lt;circle cx="50" cy="50" r="40" /&gt;
+  &lt;/svg&gt;
+</PRE>
+<p>
+This contains a &lt;script&gt; segment (which contains only a comment); a &lt;defs&gt; segment (which contains only a simple CSS stylesheet); and then one element to display, a &lt;circle&gt;.
+<p>
+Note that the SVG 1.1 file has a <code>DOCTYPE</code> header, but the SVG 1.2 file does not.
+<p>
+Another note: In SVG 1.2, the type for <code>&lt;script&gt;</code> elements is supposed to be <code>"application/ecmascript"</code>. However, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Batik" class=wikipagelink>Batik</a> does not yet support this. (See <a href="/web/20070802131051/http://issues.apache.org/bugzilla/show_bug.cgi?id=35549">[Batik bug 35549]</a>.)
+<p>
+<H3>Deciding what is displayed on top</H3>
+
+<p>
+An SVG document is drawn "back to front". Shapes defined later are drawn on top of shapes defined earlier.
+<p>
+If you want to define a bunch of shapes as a "layer" (in the Photoshop sense), place them all into a group (a <code>&lt;g&gt;</code> tag). An SVG group acts as a layer; again, it is drawn back to front.
+<p>
+<H3>Make multiple copies of a template object</H3>
+
+<p>
+SVG has a standard idiom for defining some shape and then "stamping" it multiple times into your document. You create the object inside your <code>&lt;defs&gt;</code> block; shapes defined here are not displayed, only stored for later use.
+<p>
+<PRE >
+  &lt;defs&gt;
+  &lt;g id="template"&gt;
+    &lt;rect x="-20" y="-20" width="40" height="40"
+      fill="red" /&gt;
+    &lt;circle cx="0" cy="0" r="23"
+      fill="green" /&gt;
+  &lt;/g&gt;
+  &lt;/defs&gt;
+</PRE>
+<p>
+It doesn't have to be a group; it can be any SVG element. Be sure to give it a unique <code>id</code> attribute. It is also a good idea to draw this object at the origin (position 0,0). The example above is centered at the origin.
+<p>
+Then you can use it from the main part of your document:
+<p>
+<PRE >
+  &lt;use xlink:href="#template" x="50" y="50" /&gt;
+</PRE>
+<p>
+The <code>href</code> attribute refers to the <code>id</code> of the template object.
+<p>
+<H3>Don't use x/y attributes on a group</H3>
+
+<p>
+For some SVG elements, setting "x" and "y" attributes has exactly the same effect as setting a "transform" attribute with a translation. For example, these two elements produce the same results:
+<p>
+<PRE >
+  &lt;use xlink:href="#template"
+    x="50" y="50" /&gt;
+  &lt;use xlink:href="#template"
+    transform="translate(50,50)" /&gt;
+</PRE>
+<p>
+However, this is <em>not</em> true of <code>&lt;g&gt;</code> (group) elements. This:
+<p>
+<PRE >
+  &lt;g transform="translate(50,50)"&gt;
+    &lt;circle cx="0" cy="0" r="23" fill="green" /&gt;
+  &lt;/g&gt;
+</PRE>
+<p>
+...is <em>not</em> the same as this:
+<p>
+<PRE >
+  &lt;!-- wrong --&gt;
+  &lt;g x="50" y="50"&gt;
+    &lt;circle cx="0" cy="0" r="23" fill="green" /&gt;
+  &lt;/g&gt;
+</PRE>
+<p>
+The latter does not produce an error, but the x/y attributes are ignored. If you want to change the position of a group, you must use a "transform" attribute.
+<p>
+<H3>Don't use x/y attributes and transform on the same object</H3>
+
+<p>
+This is legal, but the results will usually not be what you wanted. Imagine: you have defined some object, and you want it at a particular location.
+<p>
+<PRE >
+  &lt;use xlink:href="#template" x="50" y="50" /&gt;
+</PRE>
+<p>
+Then you decide it's too big, so you scale it down by half:
+<p>
+<PRE >
+  &lt;!-- wrong --&gt;
+  &lt;use xlink:href="#template" x="50" y="50"
+    transform="scale(0.5)" /&gt;
+</PRE>
+<p>
+That half-size all right, but it's in the wrong place -- it's at (25, 25) instead of (50, 50). The transform is scaling the position as well as the size.
+<p>
+There are a couple of ways to get around this. One, of course, would be:
+<p>
+<PRE >
+  &lt;use xlink:href="#template" x="100" y="100"
+    transform="scale(0.5)" /&gt;
+</PRE>
+<p>
+...but that's confusing, and it will break again if you change your mind about the scale.
+<p>
+A clearer form is this:
+<p>
+<PRE >
+  &lt;use xlink:href="#template"
+    transform="translate(50,50) scale(0.5)" /&gt;
+</PRE>
+<p>
+Instead of "x" and "y" attributes, you add a translation (slide motion) to the "transform" attribute. Since the translate is given before the scale, the translate values are understood to be in pre-scaling units.
+<p>
+You could also put the translation on a separate group, encapsulating the original object:
+<p>
+<PRE >
+  &lt;g transform="translate(50,50)"&gt;
+    &lt;use xlink:href="#template"
+      transform="scale(0.5)" /&gt;
+  &lt;/g&gt;
+</PRE>
+<p>
+<H3>Add tooltips to SVG elements</H3>
+
+<p>
+It is possible to add text labels to any SVG element. These labels will appear if the player hovers his mouse pointer over the element.
+<p>
+The primary label is given by a <code>&lt;title&gt;</code> child element:
+<p>
+<PRE >
+  &lt;circle cx="30" cy="30" r="10"&gt;
+    &lt;title&gt;Round button&lt;/title&gt;
+  &lt;/circle&gt;
+</PRE>
+<p>
+<a href="/web/20070802131051/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-1.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-1.png" alt="upload:svg-tricks-tooltip-1.png"></a>
+<p>
+A more descriptive label should be put in a <code>&lt;desc&gt;</code> child element:
+<p>
+<PRE >
+  &lt;circle cx="30" cy="30" r="10"&gt;
+    &lt;desc&gt;This makes the game go.&lt;/desc&gt;
+  &lt;/circle&gt;
+</PRE>
+<p>
+<a href="/web/20070802131051/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-2.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-2.png" alt="upload:svg-tricks-tooltip-2.png"></a>
+<p>
+It is legal to have both:
+<p>
+<PRE >
+  &lt;circle cx="30" cy="30" r="10"&gt;
+    &lt;title&gt;Round button&lt;/title&gt;
+    &lt;desc&gt;This makes the game go.&lt;/desc&gt;
+  &lt;/circle&gt;
+</PRE>
+<p>
+<a href="/web/20070802131051/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-3.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-3.png" alt="upload:svg-tricks-tooltip-3.png"></a>
+<p>
+Note that mouse hovering is considered to be a pointer event. If you have set <code>pointer-events="none"</code> on an element (see below), tooltips will not appear.
+<p>
+<p>
+<H3>Make text unselectable</H3>
+
+<p>
+By default, <code>&lt;text&gt;</code> elements in an SVG file are selectable. The player's cursor will turn into a text bar over these elements; he can click-and-drag to select a range of the text, or double-click to select the whole thing.
+<p>
+There's nothing wrong with selectable text, but for most game UI elements, it's distracting. (Particularly labelled buttons -- you want an "Okay" button to be <em>pushable</em>, not selectable.) So you will generally want to turn this off. Conveniently (or not), there are several ways to do this.
+<p>
+The easiest method is to put a <code>pointer-events="none"</code> attribute onto each <code>&lt;text&gt;</code> element. This makes your text impervious to mouse action.
+<p>
+<PRE >
+  &lt;text
+    pointer-events="none"
+    x="10" y="10"&gt;
+      Hello
+  &lt;/text&gt;
+</PRE>
+<p>
+It's a nuisance to apply such an attribute to every single <code>&lt;text&gt;</code> element, so you may instead want to use a stylesheet:
+<p>
+<PRE >
+  &lt;defs&gt;
+    &lt;style type="text/css"&gt;
+      &lt;![CDATA[
+        text {
+          pointer-events: none;
+        }
+      ]]&gt;
+    &lt;/style&gt;
+  &lt;/defs&gt;
+</PRE>
+<p>
+This applies to all <code>&lt;text&gt;</code> in your document.
+<p>
+A third option is to set the attribute on a top-level group, and let all of your elements inherit it:
+<p>
+<PRE >
+  &lt;g pointer-events="none"&gt;
+    &lt;text x="10" y="10"&gt;
+      Hello
+    &lt;/text&gt;
+  &lt;/g&gt;
+</PRE>
+<p>
+(It's even legal to set the same attribute on your top-level <code>&lt;svg&gt;</code> element, which <em>everything</em> inherits from.)
+<p>
+However, if you do this, you'll be turning off pointer events for all your elements, not just text. All your buttons and so on will stop working. To counter this, you'll have to turn pointer events back on for those elements which should have them.
+<p>
+<PRE >
+  &lt;g pointer-events="none"&gt;
+    &lt;text x="10" y="10"&gt;
+      Hello
+</PRE>
+<p>
+<PRE >
+    &lt;/text&gt;
+    &lt;circle cx="30" cy="30" r="10"
+      pointer-events="all"
+      onclick="handle_click()" /&gt;
+  &lt;/g&gt;
+</PRE>
+<p>
+(This is not necessarily a bad strategy. You'll often have a lot of fiddly SVG objects, even in your buttons and clickable pieces. It saves time and complexity if just one element in each button -- the border shape -- is sensitive to pointer events. By turning them off in a top-level group, and then back on for specific elements, you can achieve this level of control.)
+<p>
+The valid <code>pointer-events</code> values are described in the <a href="/web/20070802131051/http://www.w3.org/TR/SVG/interact.html#PointerEventsProperty">[SVG spec]</a>. Most often you'll want to use <code>none</code> (no clicks), <code>all</code> (accept clicks inside the shape or on the border stroke), or <code>visible</code> (same as <code>all</code> when the object is <code>visibility="visible"</code>, but <code>none</code> when it's <code>visibility="hidden"</code>).
+<p>
+<H2>See also</H2>
+
+<p>
+<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Script_Tricks" class=wikipagelink>SVG Script Tricks</a>
+</div>

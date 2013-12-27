@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Volity Role</TITLE>
+<META NAME='KEYWORDS' CONTENT='Volity_Role'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Volity+Role">Volity Role</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Any <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber" class=wikipagelink>Jabber</a> entity which takes part in Volity has a <em>role</em>. Its role determines which Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> the entity is able to handle. The current roles are:
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>player</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Factory" class=wikipagelink>factory</a>
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a>
+</UL>
+<p>
+To make the system work smoothly, it should be possible to identify an entity's role. Volity entities identify their Volity role in two ways.
+<p>
+First, with a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>service discovery</a> extension form (JEP-0128), containing a field named <code>volity-role</code>. The field contains one of the strings listed above.
+<p>
+Second, with an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Entity_Capabilities" class=wikipagelink>entity capabilities</a> presence tag (JEP-0115), with the role in the <code>ext</code> attribute.
+<p>
+</div>

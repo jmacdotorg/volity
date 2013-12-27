@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Invitation</TITLE>
+<META NAME='KEYWORDS' CONTENT='Invitation'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Invitation">Invitation</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Volity requires a standard mechanism that allows a <a href="player.html" class=wikipagelink>player</a> seated at a <a href="table.html" class=wikipagelink>table</a> to invite other players (besides <a href="retainer.html" class=wikipagelink>retainer</a>s) to join the same table. JEP-0045 defines <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0045.html#invite">[the Jabber protocol's method for inviting people into MUCs]</a>, but for Volity's purposes, this is both insufficient (as it doesn't carry any information about the table, other than its JID) and dangerous (as it could be received and interpreted by a standard Jabber client, making you end up with the confusing situation of "normal" Jabber users sitting at the table, interpreting it as an ordinary MUC).
+<p>
+Therefore Volity instead uses the mechanism described here to allow players to invite other players to their tables.
+<p>
+<H2>Usage summary</H2>
+
+<p>
+The inviting player makes an <code>volity.invite_player</code> request to the referee (not the player it wishes to invite; the recipient's <a href="jid.html" class=wikipagelink>JID</a> goes into the arguments).
+<p>
+The inviting player's client should try to discover a resource string for the recipient -- preferably a resource of a Volity client. (It may use <a href="entity_capabilities.html" class=wikipagelink>Entity Capabilities</a> in roster presence, or observe presence in a Volity game or lobby.) If it succeeds, it should include this resource in the <code>volity.invite_player</code> JID. If not, it should send a bare JID.
+<p>
+<UL >
+<li> If the referee sees a resource string in the argument of <code>volity.invite_player</code>, it will send a <code>volity.receive_invitation</code> RPC to that JID. (Recall that Jabber-RPC calls must be made to full JIDs.) Any RPC or stanza errors will be reported back to the inviting player as a <a href="failure_token.html" class=wikipagelink>failure token</a> array: <code>("volity.relay_failed", "literal.JID")</code>, where JID is the full JID that the invitation could not be delivered to.
+<li> If there is no resource, the referee will send a <code>&lt;message&gt;</code> with a Volity extension. There is no response to a <code>&lt;message&gt;</code> stanza, so the referee should report success back to the inviting player.
+</UL>
+<p>
+(A note on error handling: A client that sends <code>volity.invite_player</code> with a full JID, and receives a failure token, may well want to retry with a bare JID. Since messages do not produce errors, there will be no second retry.)
+<p>
+In either case, the referee also makes any <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0045.html#roomconfig">[configuration changes to the MUC]</a> that are necessary to allow the invited player to join.
+<p>
+The client must be prepared to receive an invitation in either RPC or message format. If it's a client application (and not a <a href="ronin.html" class=wikipagelink>ronin</a>), it will at this point present its user with an interface to accept or reject the invitation. If accepted, the player uses the <a href="ui_finder.html" class=wikipagelink>UI finder</a> to get the appropriate UI file (for the <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a> of the table was included among the invitation's argments) and then joins the existing MUC.
+<p>
+<H2>RPC Requests</H2>
+
+<p>
+<H3>volity.invite_player (player_JID)</H3>
+
+<H3>volity.invite_player (player_JID, message)</H3>
+
+<p>
+Received by a referee, from a player seated at the same table. If a referee receives this request from any other entity, it must return a fault.
+<p>
+<p>
+Indicates that the sending player wishes to invite the player with the given JID to the table. The optional second argument is a text message to be included with the invitation.
+<p>
+The player named in the first argument should be someone <em>not</em> already at the table; otherwise, the ref should return a fault.
+<p>
+Returns a true value when the invitation has been successfully sent (with no implication as to whether it was accepted or not).
+<p>
+<H3>volity.receive_invitation (invitation_struct)</H3>
+
+<p>
+Received by a player, from a (presumably heretofore unknown) referee.
+<p>
+The one argument is an RPC struct, which <em>must</em> contain the following fields:
+<p>
+<DL >
+<dt>player<dd>The JID of the player extending the invitation.
+<dt>table<dd>The JID of the table the receiver has been invited to join.
+<dt>referee<dd>The JID of that table's referee.
+</DL>
+<p>
+It <em>should</em> also contain these fields (as this information should be available by <a href="service_discovery.html" class=wikipagelink>discoing</a> the referee, but there's probably no reason to make the receiver do more work if the sender has the info handy):
+<p>
+<DL >
+<dt>parlor<dd>The JID of that table's <a href="parlor.html" class=wikipagelink>parlor</a>.
+<dt>ruleset<dd>The URI of that server's ruleset.
+<dt>name<dd>The (non-internationalized) name of the game.
+</DL>
+<p>
+Finally, the struct <em>may</em> also contain any or all of these fields:
+<p>
+<DL >
+<dt>message<dd> A text message that accompanies the invitation.
+</DL>
+<p>
+<H2>Message Invitations</H2>
+
+<p>
+A <code>&lt;message&gt;</code> invitation is directed to a user (a bare JID) and not to a specific connection. It may be received by any Jabber client. Therefore, it should contain plain text describing the invitation, followed by a Jabber data form containing the invitation fields (as described above).
+<p>
+The data form is wrapped in an <code>&lt;volity xmlns="http://volity.org/protocol/form"&gt;</code> element. The form itself should have a FORM_TYPE of <code>http://volity.org/protocol/form/invite</code>.
+<p>
+Sample message:
+<p>
+<PRE >
+  &lt;message id="jc2s12"
+      to="zarf@volity.net" 
+      from="zarf-treehouse@volity.net/ref_24994_1142910091" &gt;
+    &lt;body&gt;[zarf-volity-test4@volity.net has invited you to join a game of Treehouse
+      at table ref_24994_1142910091@conference.volity.net.]&lt;/body&gt;
+    &lt;volity xmlns="http://volity.org/protocol/form"&gt;
+      &lt;x xmlns="jabber:x:data" type="result"&gt;
+        &lt;field var="FORM_TYPE" type="hidden"&gt;
+          &lt;value&gt;http://volity.org/protocol/form/invite&lt;/value&gt;
+        &lt;/field&gt;
+        &lt;field var="referee"&gt;
+          &lt;value&gt;zarf-treehouse@volity.net/ref_24994_1142910091&lt;/value&gt;
+        &lt;/field&gt;
+        &lt;field var="name"&gt;
+          &lt;value&gt;Treehouse&lt;/value&gt;
+        &lt;/field&gt;
+        &lt;field var="player"&gt;
+          &lt;value&gt;belford@volity.net/javolinQFUDFG&lt;/value&gt;
+        &lt;/field&gt;
+        &lt;field var="parlor"&gt;
+          &lt;value&gt;zarf-treehouse@volity.net/volity&lt;/value&gt;
+        &lt;/field&gt;
+        &lt;field var="ruleset"&gt;
+          &lt;value&gt;http://volity.org/games/treehouse/&lt;/value&gt;
+        &lt;/field&gt;
+        &lt;field var="table"&gt;
+          &lt;value&gt;ref_24994_1142910091@conference.volity.net&lt;/value&gt;
+        &lt;/field&gt;
+      &lt;/x&gt;
+    &lt;/volity&gt;
+  &lt;/message&gt;
+</PRE>
+<p>
+</div>

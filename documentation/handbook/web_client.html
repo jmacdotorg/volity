@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Web Client</TITLE>
+<META NAME='KEYWORDS' CONTENT='Web_Client'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Web+Client">Web Client</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>The <strong>web client</strong> (more interesting name pending) is the Volity team's project to create a full-featured <a href="client.html" class=wikipagelink>client</a> that will run in any modern browser. The <a href="ui_file.html" class=wikipagelink>UI file</a>s that it will support include <a href="javascript.html" class=wikipagelink>JavaScript</a>-driven HTML/CSS applications as well as Flash or Java applets - really, anything capable of using <a href="ecmascript.html" class=wikipagelink>ECMAScript</a> to pass messages to and from its container page.
+<p>
+The web project is led by <a href="jason_mcintosh.html" class=wikipagelink>Jason McIntosh</a>, and its development is one of the chief current concerns of the whole Volity project, with the goal of having a stable beta release across the <a href="volity.html.Net" class=wikipagelink>volity.net</a> website by the end of 2007.
+<p>
+<H2>Status and Availability</H2>
+
+<p>
+The web client's public code is in Volity's <a href="subversion.html" class=wikipagelink>Subversion</a> repository, under <code>/trunk/web-client</code>. You can also find release snapshots in <code>/tags/web-client</code>.
+<p>
+Currently, <a href="testbench.html" class=wikipagelink>Testbench</a> has been ported to HTML, and includes demonstrations of both pure-HTML and Flash-based UI files.
+<UL >
+<li> <a href="/web/20070802131051/http://volity.org/projects/webclient/testbench_demo/testbench.html">[Pure HTML demonstration]</a>
+<li> <a href="/web/20070802131051/http://volity.org/projects/webclient/testbench_flash_demo/testbench.html">[Flash demonstration]</a>
+</UL>
+<p>
+The existence of a web-targeting Testbench effectively means that particularly forward-thinking Volity hackers can start creating UI files for the web client right away; even though the Testbench software itself is alpha, the Volity protocol it implements has been in stable beta for a long time.
+<p>
+The Testbench application (as well as source for the above examples) is available within the web client's Subversion directory.
+<p>
+Work on the actual client application is well underway - much of the code written for Testbench will actually end up being shared by it.
+<p>
+<H2>Security Concerns</H2>
+
+<p>
+We are very concerned with security, and want to make sure that, like all good web applications, the Volity web client is locked down tight against malware. Since Volity includes a <a href="payment_protocol.html" class=wikipagelink>payment protocol</a>, we must also guard against any way an attacker could spend or redeem another user's gameplay tokens, or obtain tokens in any shady way.
+<p>
+As the client's own design develops, we will update this section with a summary of how we're keeping it safe.
+<p>
+Angles of concern:
+<p>
+<UL >
+<li> Malicious UI code. A Volity UI is user-contributed web content, served by a Volity project web server. That gives people an opportunity to hang dirty laundry on our line. (This problem exists already, with Gamut loading SVG UIs. But Gamut is much more sandboxed and less flexible than everybody's web browser.)
+</UL>
+<p>
+<UL >
+<li> Cross-site scripting. Same problem as above, except in a fancy way that I don't really understand. (Mitigation: the web client will not see these UIs at volity.net, or even volity.org. They'll be browsing a domain dedicated to that purpose. The dedicated game domain will not have any route for user login or preferences editing.)
+</UL>
+<p>
+<UL >
+<li> Eavesdropping and man-in-middle attacks. We're used to all Volity traffic running over XMPP, which uses socket-level encryption by default (TLS). The web client adds another communication link before the XMPP connection. For alpha development, this runs over unencrypted HTTP. Before we go beta, we plan to get HTTPS working. The final system may use HTTPS by default.
+</UL>
+</div>

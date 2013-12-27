@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Table Configuration</TITLE>
+<META NAME='KEYWORDS' CONTENT='Table_Configuration'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Table+Configuration">Table Configuration</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext><strong>Configuration</strong> allows players seated at a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a> to specify certain attributes and behaviors for it. These come in two basic types: <strong>table configuration</strong>, which defines some attributes common to all tables and defined by the core Volity protocol, and <strong>game configuration</strong>, which sets up rules and other features specific to the table's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a>.
+<p>
+In either case, players perform configuration by sending certain <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> requests to the table's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>. Conversely, players are informed about changes to a table's configuration through RPC requests sent from the same referee.
+<p>
+<H2>Table configuration</H2>
+
+<p>
+All volity tables have several attributes that are always configurable, regardless of their loaded ruleset. Players can configure these attributes using certain <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> in the core <code>volity</code> namespace. At present, the protocol defines the following configuration requests:
+<p>
+<DL >
+<dt>volity.show_table( true | false )<dd>Defines whether or not the table is visible through the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Browser" class=wikipagelink>game browser</a>.
+<dt>volity.record_games( true | false )<dd>Defines whether or not <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a>s are sent to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>.
+<dt>volity.set_language(<em>language code</em>)<dd>Defines the preferred <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Language" class=wikipagelink>language</a> to be used at the table. The argument is a two-letter language code.
+<dt>volity.set_timeout(<em>seconds</em>)<dd>Defines the length of this table's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Timeout" class=wikipagelink>timeout</a>. The argument is a positive integer.
+<dt>volity.set_timeout_reaction(<em>reaction-type</em>)<dd>Defines what the referee will do upon a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?User_Departure" class=wikipagelink>user departure</a> timeout. The argument is a string, one of "throw", "suspend" or "bot".
+</DL>
+<p>
+<H2>Game configuration</H2>
+
+<p>
+<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>Ruleset</a>s are free to define any sort of configuration functions in their <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_API" class=wikipagelink>ruleset API</a>s as they see fit. However, a ruleset <em>should</em> be carefully specific about which functions are meant for configuration, and which are intended to be called once a game is underway. 
+<p>
+These functions operate like any other game-specific RPC request, existing within the <code>game</code> namespace.
+<p>
+As an example, see the <code>best_of</code> and <code>no_ties</code> functions in the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>rock, paper, scissors</a> API.
+<p>
+A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> can implement as many or as few of a ruleset's configuration methods as it wishes. <em>(Should we define some sort of disco-based query pattern for asking a server what sorts of config it supports?) (Would be easier to just allow server config variables, which the game module reads. This puts more work on the game designer -- he has to write code to constrain his own config system -- but it avoids issues with possibly inconsistent configurations.)</em>
+<p>
+<H2>The effect of reconfiguation</H2>
+
+<p>
+When a player succeeds in changing any part of a table's configuration, several things happen.
+<p>
+<UL >
+<li> All players who have declared <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Readiness" class=wikipagelink>readiness</a> get knocked back to an unready state. After all, the nature of the game has changed away from the format they had agreed upon. 
+</UL>
+<p>
+<UL >
+<li> The referee sends a RPC request to every player, informing it of the configuration change. Generally, the call contains two arguments: the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> of the player who made the request, and the new value. The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> page defines several of these (such as <code>volity.language( JID, language)</code>, and rulesets can define as many more as they need.
+</UL>
+<p>
+<UL >
+<li> If the reconfiguration affected the game's rules, then the table's full <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a> changes appropriately. Its base part remains the same, but its query string adjusts itself to reflect the new rule change.
+</UL>
+<p>
+<UL >
+<li> If the reconfiguration used one of the <code>volity.*</code> calls, then the referee adjusts how it responds to disco<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=edit&id=Disco" class=wikipageedit>?</a> queries, as defined by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Finder" class=wikipagelink>game finder</a> page.
+</UL>
+</div>

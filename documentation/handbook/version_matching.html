@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Version Matching</TITLE>
+<META NAME='KEYWORDS' CONTENT='Version_Matching'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Version+Matching">Version Matching</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>We have several places in Volity where we'd like to ensure that two subsystems are following "the same protocol", in some sense:
+<p>
+<UL >
+<li> a UI file and a referee (matching the ruleset)
+<li> a bot and a referee (matching the ruleset)
+<li> a UI file and Gamut (matching the ECMAScript API version)
+<li> a pluggable resource file (card art) and a UI file (matching the resource definition)
+</UL>
+<p>
+In theory this matching relation is symmetrical: the UI file and the referee have to agree on what RPCs they are flinging back and forth. In practice, we find asymmetries, and I'm okay with exploiting them. So we will say that one party <em>provides</em> a protocol, and the other party <em>requires</em> it.
+<p>
+Guidelines of thumb:
+<p>
+The bit that PROVIDES a protocol:
+<UL >
+<li> is designed first
+<li> changes rarely
+<li> is responsible for catching protocol errors wherever possible
+<li> is written by the person who invented the protocol
+</UL>
+<p>
+The bit that REQUIRES a protocol:
+<UL >
+<li> is designed last
+<li> changes frequently
+<li> is responsible for catching protocol errors only where necessary
+<li> is written by someone who has no influence over the protocol
+</UL>
+<p>
+This leaves us with the determination that a referee PROVIDES a ruleset version and a UI file REQUIRES it. We have long had the notion that a referee announces a single ruleset version (see the parlor disco information), so we add one more rule:
+<p>
+<UL >
+<li> The bit that PROVIDES must announce the exact protocol it provides. This takes the the form of a VERSION NUMBER.
+<li> The bit that REQUIRES may announce one or several protocol versions that it supports. This takes the form of a VERSION SPECIFICATION. (No version specification, or an empty one, means "this is compatible with all versions.")
+</UL>
+<p>
+On purely syntactic matters: we'd like both version <em>numbers</em> and version <em>specs</em> to be representable as simple strings. In fact, we'd like to be able to slap either one onto a URI as a fragment string, so that we can say that a Fluxx referee provides "<a href="/web/20070802131051/http://volity.org/games/fluxx#2.0">http://volity.org/games/fluxx#2.0</a>". (Not all version numbers will be versions <em>of a URI,</em> but many will be.)
+<p>
+Therefore, I am proposing the following (very pedantic) formats. Pardon my not-exactly-BNF definitions.
+<p>
+<H2>Spec</H2>
+
+<p>
+(Note: not all version numbers in the Volity universe have to follow this format. This is the Volity standard for version numbers that one software component wishes to use to validate its compatibility with another software component. Version numbers intended for human eyes, like <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>'s version number, may use or ignore this format.)
+<p>
+<PRE >
+  VERSION-NUMBER: 
+      MAJOR
+    | MAJOR "." MINOR
+    | MAJOR "." MINOR "." RELEASE
+</PRE>
+<p>
+<PRE >
+  MAJOR: [1-9] [0-9]*    (that is, a plain positive integer)
+  MINOR: MAJOR | "0"     (that is, a plain non-negative integer. If not given, "0" is assumed)
+  RELEASE: [a-zA-Z0-9_.+-]+  (that is, any nonempty string you like with those characters)
+</PRE>
+<p>
+The intent (and the convention that version specs rely on) is that the major version number describes changes that break forwards and backwards compatibility. The minor version number describes changes that break forwards compatibility, but are backwards-compatible. The release number (which can include periods, so it can cover multiple dot-separated "numbers") is provided for the protocol designer's whim; it is ignored by the version-matching rules.
+<p>
+The example: A referee is written which PROVIDES version "2.3" of its ruleset. A UI is then written which REQUIRES that one version number.
+<p>
+If the referee is updated to PROVIDE version "2.4", the UI should continue to work with it. Or rather, the converse is true: a referee change that allows the old UI to continue working should be given a minor version number change. 
+<p>
+On the other hand, you would not expect the UI to work with the previous referee "2.2". (The reason that the UI is labelled as REQUIRING version "2.3" is that it needs referee features that did not exist in "2.2".) Similarly, the UI would be presumed not to work with referee version "2", because that version number is equivalent to "2.0", which is an earlier minor version.
+<p>
+The UI would certainly not work with referee "1.0", nor with referee "3.0", because those represent complete protocol breaks.
+<p>
+Despite all the above, a UI could be be compatible with multiple version numbers. Thus we define:
+<p>
+<PRE >
+  VERSION-SPECIFICATION:
+      ""
+    | PATTERN-LIST
+</PRE>
+<p>
+<PRE >
+  PATTERN-LIST:
+      PATTERN
+    | PATTERN "," PATTERN-LIST
+</PRE>
+<p>
+<PRE >
+  PATTERN:
+      PATTERN-NUMBER
+    | PATTERN-NUMBER "-"
+    | "-" PATTERN-NUMBER
+    | PATTERN-NUMBER "-" PATTERN-NUMBER
+    | MAJOR "." MINOR "."
+</PRE>
+<p>
+<PRE >
+  PATTERN-NUMBER:
+      MAJOR
+    | MAJOR "." MINOR
+</PRE>
+<p>
+To restate in English: a specification is a comma-separated list of zero or more patterns. If the list is empty, the specification matches all versions. Otherwise, the specification matches any version that matches any pattern in the list.
+<p>
+In accordance with the semantics described above, a pattern like "2" will match any version whose major number is 2. A pattern like "2.3" will match any version whose major number is 2 and whose minor number is 3 or more. (Note that "2" and "2.0" are equivalent.)
+<p>
+The other pattern formats let you bypass the usual semantics, if you really need to. A pattern "1.5-3.2" matches major number 1 (minor number 5 or higher); all versions with major number 2; and major number 3 (minor number 0, 1, or 2). This is equivalent to "1.5,2,3-3.2".
+<p>
+A pattern "2.3-" will match major number 2 (minor number 3 or higher), and <em>all</em> versions with major numbers 3 or higher. (This is an ambitious claim to make!)
+<p>
+The special form "2.3." (with trailing period) matches major number 2 and minor number 3, and no other values. This is equivalent to "2.3-2.3".
+<p>
+A version number's release value is ignored by the matching rules. A version specification never contains a release value.
+<p>
+<H2>Sorting</H2>
+
+<p>
+Version numbers have an ordering. (Version specs do not!)
+<p>
+The major and minor values provide the first and second-level sort. (Recalling that "2" implicitly has minor value 0, so is equivalent to "2.0".)
+<p>
+That's all you need to use version specs. However, it may be desirable to sort on the release value also. To do this:
+<p>
+<UL >
+<li> Break the release value down into a list of "."-separated values.
+<UL >
+<li> If there is no release value, use the empty list.
+<li> The list may contain empty values. "2.3..4" would map to the list ("","4"). "2.3.." would map to ("","").
+<li> Recall that "2.3." is not a legal version number, so the release value cannot be the empty string. Therefore, the list ("") will not occur.
+</UL>
+<li> When comparing release values, compare the lists.
+<UL >
+<li> End-of-list comes before anything, so "2.3.4" is before "2.3.4.0". (Note that this differs from how the minor value works!)
+<li> List values consisting only of digits (at least one digit) are ordered numerically. "2.3.9" is before "2.3.10".
+<UL >
+<li> If they are equal numerically but different, sort alphabetically. "2.3.005" is before "2.3.5".
+</UL>
+<li> List values which do not consist only of digits are ordered alphabetically. "2.3.X" is before "2.3.Y" is before "2.3.a".
+<li> List values containing only digits come before those that don't. "2.3.9" comes before "2.3.1a".
+<UL >
+<li> Empty values fall into the alphabetical class.
+</UL>
+<li> Big example: "2.3" "2.3.0" "2.3.0." "2.3.a" "2.3.a1"
+</UL>
+</UL>
+<p>
+<p>
+</div>

@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Retainer</TITLE>
+<META NAME='KEYWORDS' CONTENT='Retainer'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Retainer">Retainer</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A "retainer" bot is a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>game bot</a> that is attached to a particular <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>, so that players may summon it (or, more correctly, instances of it) to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>tables</a> on that server. Compare to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ronin" class=wikipagelink>ronin</a>.
+<p>
+These bots are summoned by the add_bot() <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>Jabber-RPC request</a>, made from a player to a referee.
+<p>
+It's up to the referee to know what bots it offers, and when it's legal to add them to its table -- it could be limited by table space, computing resources, and so on. If a ref that offers more than one bot-type receives an add_bot request when table-space is available, then it initiates the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot_Choosing" class=wikipagelink>bot choosing</a> procedure, sending a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber_Data_Form" class=wikipagelink>Jabber data form</a> to the client, and creating a new bot based on the client's response.
+<p>
+<hr class=wikiline>
+<p>
+Throughout Volity documentation, references to "bots" usually mean retainers. Ronin programming is an interesting exercise, and is an exercise left to programmers. :)
+</div>

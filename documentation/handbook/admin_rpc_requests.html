@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Admin RPC Requests</TITLE>
+<META NAME='KEYWORDS' CONTENT='Admin_RPC_Requests'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Admin+RPC+Requests">Admin RPC Requests</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>These are additional <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> which an administrator might want to use. The idea is that a server (and its referees) would only accept these RPCs from a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> which (bare-)matched an "administrator JID", set at server startup time.
+<p>
+These are not part of the Volity spec. However, they will be required for an administrator to manage parlors hosted on <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity.Net" class=wikipagelink>volity.net</a>. So the Perl and Python game libraries both support all of these RPCs.
+<p>
+<em>Possible additions: admin.log_level, to change the logging level? Would have to have a rough correspondence between Perl and Python logging levels. Also a way for the web control panel to view logs.</em>
+<p>
+<H2>Parlor RPCs</H2>
+
+<p>
+<DL >
+<dt>admin.status()<dd> Return a struct of summary information.
+<DL >
+<dt>online <em>boolean</em> <dd> is the server online?
+<dt>startup_time <em>string</em> <dd> when was this parlor started?
+<dt>startup_at <em>string</em> <dd> how long ago was this parlor started?
+<dt>last_new_table <em>string</em> <dd> how long ago was a table started?
+<dt>tables_running <em>int</em> <dd> how many tables are currently open?
+<dt>tables_started <em>int</em> <dd> how many tables have been opened since the parlor began running?
+</DL>
+<dt>admin.list_tables()<dd> Return a list of referee JIDs.
+<dt>admin.list_bots()<dd> Return a list of bot JIDs from all the tables of this parlor.
+<dt>admin.online(<em>bool</em>)<dd> Set the server online or offline. When offline, the server rejects new_table requests (but allows existing games to continue).
+<dt>admin.announce(<em>string</em>)<dd> Have all referees send this message (as a groupchat) to their tables.
+<dt>admin.shutdown()<dd> Immediately shut down the parlor and all referees; end the parlor process.
+<dt>admin.restart()<dd> Immediately shut down the parlor and all referees, then relaunch the parlor process.
+<dt>admin.graceful_shutdown()<dd> Log out the parlor, but keep its active referees alive. Shut down the parlor process after all of its referees have met their natural ends.
+<dt>admin.graceful_restart()<dd> Log out the parlor, but keep its active referees alive. Launch a new server process, which will log in as the new active parlor. Shut down the original parlor process after all of its referees have met their natural ends. (This is a "graceful" restart, in the Apache sense.)
+</DL>
+<p>
+<p>
+<H2>Referee RPCs</H2>
+
+<p>
+<DL >
+<dt>admin.status()<dd> Return a struct of summary information.
+<DL >
+<dt>agentstate <em>string</em><dd> process activity state ("running" is normal operation)
+<dt>state <em>string</em><dd> the Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_State" class=wikipagelink>referee state</a>
+<dt>players <em>int</em><dd> the number of players (including bots)
+<dt>bots <em>int</em><dd> the number of bots
+<dt>startup_time <em>string</em><dd> when this table was started
+<dt>startup_at <em>string</em><dd> how long ago this table was started
+<dt>last_activity_at <em>string</em><dd> how long ago there was any game activity
+<dt>games_completed <em>int</em><dd> how many games have been completed at this table
+</DL>
+<dt>admin.players()<dd> Return a list of player JIDs at the table.
+<dt>admin.bots()<dd> Return a list of bot JIDs at this table.
+<dt>admin.seats()<dd> Return a struct of lists.
+<DL >
+<dt>allseats<dd> the IDs of all seats in the game configuration.
+<dt>reqseats<dd> the IDs of all required seats.
+<dt>occupiedseats<dd> the IDs of all occupied seats.
+<dt>gameseats<dd> the IDs of all seats involved in the current game. (Only present if a game is in progress.)
+</DL>
+<dt>admin.seat(<em>seatid</em>)<dd> Return a struct of details about a seat and who is sitting there.
+<DL >
+<dt>id <em>string</em><dd> the seat ID.
+<dt>required <em>bool</em><dd> whether this is a required seat.
+<dt>ingame <em>bool</em><dd> whether this seat is involved in the current game.
+<dt>players <em>list</em><dd> a list of the players currently in this seat.
+<dt>history <em>list</em><dd> a list of the players who have sat in this seat at any time in the current game.
+</DL>
+<dt>admin.announce(<em>string</em>)<dd> Send this message (as a groupchat) to the table.
+<dt>admin.shutdown()<dd> Shut down the referee immediately.
+</DL>
+<p>
+</div>

@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: UI File Gotchas</TITLE>
+<META NAME='KEYWORDS' CONTENT='UI_File_Gotchas'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=UI+File+Gotchas">UI File Gotchas</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext><H2>The Four Sadnesses</H2>
+
+<p>
+<em>The above term was coined by <a href="zarf.html" class=wikipagelink>Zarf</a>.</em>
+<p>
+There are easily-overlooked pitfalls in creating Volity rulesets, UIs and referees that their programmers must remain ever-wary of. These are <strong>the Four Sadnesses</strong>, conditions that have the feel of edge cases but are actually common within everyday use of the Volity platform. If you don't code with them in mind, you will make your users sad in four different ways.
+<p>
+<UL >
+<li> <strong>Observation.</strong> Non-seated players should be able to see all the game's public information, even though they're not playing.
+<UL >
+<li> Referees should address all players at the table, not just seated players.
+<li> UIs have to account for the possibility that the user is not an active participant of the game.
+</UL>
+<li> <strong>Joining a game in progress.</strong> If a player joins a game in progress -- whether to play or merely observe -- the game should bring them up to speed.
+<UL >
+<li> Referees and UIs should both make use of Volity's <a href="state_recovery.html" class=wikipagelink>state recovery</a> protocol.
+</UL>
+<li> <strong>Suspension and Resumption.</strong> When a a game <a href="game_suspension.html" class=wikipagelink>suspends</a>, the seat populations might change before it resumes.
+<UL >
+<li> Referees must update players, upon resumption, about any private information pertaining to their seat. The seat might be new to them, after all.
+<li> UIs cannot assume that a player who was in a seat when a game suspended remained in that seat when the game resumed.
+</UL>
+<li> <strong>Shared seats.</strong> Any seat might contain multiple players, each running their own client, and their own copy of the UI.
+<UL >
+<li> UIs should always tie visual game state updates to incoming RPCs, rather than UI events such as button presses. For example, a Tic Tac Toe UI should not draw an X in a square as soon as the user clicks in it. Instead, it should draw an X only as a result of the referee's "draw an X in this square" RPC.
+<li> Referees should <em>always</em> communicate to players at the seat level, and not at the individual player level.
+</UL>
+</UL>
+<p>
+<H2>Tempting UI Ideas Which Are Bad</H2>
+
+<p>
+<strong>Putting in delays to allow the players to see what happened</strong>
+<p>
+In many games, there will be a move (or some change of state), and then the board is cleared or readied for the next move. This leaves you with the problem of letting the players see what happened, before the next thing happens.
+<p>
+The bad idea is to have the referee (or, worse, the UI) pause for a few seconds. Networked games have enough pauses already! And there is no possible way to get the pause time right. Some players will always be caught saying "what happened? what happened?" and others will be shouting "bored now!" and trying to rip your skin off.
+<p>
+The best solution, if you can possibly manage it, is to leave the previous move displayed as the next player chooses his next move. In other words, outline or highlight the most recent move.
+<p>
+If it's completely absurd to keep the previous move highlighted -- say, if the whole board has to be wiped and refilled -- then it's best to wait for all the players. Give everybody a "Continue" button, and wait until each (seated) player has pressed it.
+<p>
+<strong>Writing game status messages into the chat pane</strong>
+<p>
+In every game, the players will want a history of what's happened recently. (Particularly players who occasionally go to the bathroom or pop up a mail window while the game is in progress. That is, all of them.)
+<p>
+It is tempting to say "Look, we have a chat window! And a message() function in the <a href="ecmascript_api.html" class=wikipagelink>ECMAScript API</a>! We'll just print out moves as we go."
+<p>
+I won't say this is absolutely wrong; but it is a bad idea. Players want to see the last N player remarks <em>and</em> the last M moves. That is, chat should not scroll game moves off the screen, and game moves should not scroll chat off the screen.
+<p>
+Currently, the only way to create a separate area for game history is to create an SVG pane containing text, and scroll it upwards as you add new moves. This doesn't have to be difficult (particularly if you know each move is one line of text). But it's not super-easy either.
+<p>
+In the future, we would like to have some kind of channel API. The game would create a <em>separate</em> scrolling text area, and then print text to it. (The player could mix both text streams into one pane, or not.) We don't have that yet. Try the SVG idea, in the meantime.
+<p>
+<H2>Batik ECMAScript Annoyances</H2>
+
+<p>
+Setting things like 'style' and 'class' attributes on SVG elements via script, using setAttribute() or the (non-existent in Batik) other JS conventions for these attributes, doesn't work. This makes it necessary to hard-code a great many of your element's variations in SVG.
+<p>
+<em>I dunno. I've never had any trouble setting 'class'. I'd like to see an example of a file where setAttribute("class", value) doesn't work. --Z</em>
+<p>
+Fancy-schmancy methods of setting element attributes, specifically the <em>object[property]=</em> syntax used in libraries like [<a href="/web/20070802131051/http://prototype.conio.net/">[Prototype]</a>], seem not to be supported well in Batik. Relatedly, [<a href="/web/20070802131051/http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Guide:Creating_New_Objects:Using_Object_Initializers">[literal object notation]</a>] as a whole seems to be a lot more trouble than it's worth (it'll give you problems with using reserved words like 'class', for example - use 'class' as a string and you're fine, but the bare words used in object initializers will make Batik choke).
+<p>
+When you're &lt;use&gt;ing elements from another document, be aware that the stylesheets specified in your base document will not apply initially.  They will take effect when you start to manipulate the bits of the DOM that involve those &lt;use&gt;d elements.  This can cause odd effects, like text in an included object suddenly changing size, or colours altering for no apparent reason.
+</div>

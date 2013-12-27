@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Jabber-RPC</TITLE>
+<META NAME='KEYWORDS' CONTENT='Jabber-RPC'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Jabber-RPC">Jabber-RPC</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>As much as possible, Volity uses the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber" class=wikipagelink>Jabber</a> protocol -- both its core <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XMPP" class=wikipagelink>XMPP</a> and several <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JEPSThatVolityUses" class=wikipagelink>standard extensions</a>. Many key activities are so specific to game-playing, though, that Volity components need their own command set, defining game-related functions they can call on one another. These commands are made possible through <strong>Jabber-RPC</strong>, a JEP-defined protocol that allows some entity on a Jabber network to call a function on another, and receive a return value (or an error message) back from it.
+<p>
+Jabber-RPC is defined in <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0009.html">[JEP-0009]</a> of the full Jabber protocol. Since it's the only kind of remote procedure calling that happens in the context of Volity, we often refer to it as simply "RPC".
+<p>
+<H2>Numeric Data Types</H2>
+
+<p>
+Jabber-RPC specifies two numeric types which can be used (in RPC method arguments or in replies): <code>&lt;int&gt;</code> (aka <code>&lt;i4&gt;</code>), and <code>&lt;double&gt;</code>.
+<p>
+However, for the foreseeable future, Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>clients</a> all use <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript" class=wikipagelink>ECMAScript</a> as their internal scripting language. That is, RPCs are received and sent out by ECMAScript functions embedded in the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>.
+<p>
+The funny angle here is that ECMAScript does not distinguish integer from floating-point numeric types. It is therefore possible that a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> will send a <code>&lt;double&gt;</code> Jabber-RPC value even when the numeric value is a whole number. (In fact, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a> <em>always</em> does this, for RPCs in the <code>game</code> namespace.)
+<p>
+Therefore, any Volity entity (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> or <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>) which communicates with a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> must be prepared to accept <code>&lt;double&gt;</code> values in this way.
+<p>
+<H2>How Jabber-RPC is used within Volity</H2>
+
+<p>
+Jabber-RPC activity within Volity happens in two distinct varieties. 
+<p>
+<H3>Game-specific</H3>
+
+<p>
+All <em>official</em> game-level communication between a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a> and a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> happens over RPC. Each <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a> defines the functions that a referee playing its game might expect to receive from a player, as well as the functions that a player might get from a referee. For example, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>rock, paper, scissors</a> ruleset defines a player-to-referee "select" method, used to specify which hand to throw.
+<p>
+(I put <em>official</em> in scare-quotes because it's quite possible for unofficial communication to happen between a ref and a player, such as over standard Jabber messaging. However, the Volity protocol defines that any information relevant to  the game must occur over RPC.)
+<p>
+These game-specific RPC functions happen in the <code>game</code> namespace, which is prepended to the function name. So, if a client wishes to call the ruleset's "draw_card" function on the referee, it will actually send a <code>game.draw_card</code> function.
+<p>
+<H3>System-level</H3>
+
+<p>
+Volity defines a small set of commands necessary to set up and start games. Unlike the game-specific RPC requests, which differ by ruleset, these system-level requests are rigidly defined, and work the same no matter what game they might apply to. 
+<p>
+These function all occur in the <code>volity</code> namespace. Examples include <code>volity.new_table</code>, sent from a player to a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> in order to request that it create a new game <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>, and <code>volity.add_bot</code>, which requests that the receiving referee create a new <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a> player and seat it at the tabe. See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> for a list of these requests.
+</div>

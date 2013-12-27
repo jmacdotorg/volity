@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Entity Capabilities</TITLE>
+<META NAME='KEYWORDS' CONTENT='Entity_Capabilities'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Entity+Capabilities">Entity Capabilities</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>All Volity entities (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>) should identify their Volity role using the JEP-0115 extension to the &lt;presence&gt; stanza.
+<p>
+The &lt;c&gt; tag should have a <code>node</code> of <code>http://volity.org/protocol/caps</code>. The <code>ver</code> should be the Volity protocol version -- <code>1.0</code> at present. The <code>ext</code> should contain the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Role" class=wikipagelink>Volity role</a>, which will be one of:
+<p>
+<UL >
+<li> parlor
+<li> referee
+<li> bookkeeper
+<li> player
+<li> factory
+<li> bot
+</UL>
+<p>
+<em>This is not exactly the way that JEP-0115 is supposed to be used. The <code>node</code> is supposed to describe the specific client software, and the <code>ext</code> should not have any semantic meaning. We're forcing all Volity clients to use the same "software" version, and relying on a common meaning for <code>ext</code> codes. It's not illegal, but it's hinky, and we may want to change it someday.</em>
+<p>
+<H3>Example</H3>
+
+<p>
+<pre>
+&lt;presence xmlns="jabber:client" to="zarf@volity.net/Gamut1234" from="belford@volity.net/volity"&gt;
+  &lt;c xmlns="http://jabber.org/protocol/caps"
+    node="http://volity.org/protocol/caps"
+    ext="parlor"
+    ver="1.0" /&gt;
+&lt;/presence&gt;
+
+</pre>
+<p>
+<H3>Disco Requirements</H3>
+
+<p>
+JEP-0115 requires that the entity also respond to two disco#info nodes.
+<p>
+<code>http://volity.org/protocol/caps#1.0</code> -- must return the same reply as a disco#info query with no node. (The identity, features, and extended result must match.)
+<p>
+<code>http://volity.org/protocol/caps#ROLE</code> -- must return a &lt;feature&gt; with <code>var="http://volity.org/protocol/caps#ROLE"</code>. ROLE represents one of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Role" class=wikipagelink>Volity role</a> strings above. For example, the query
+<p>
+<pre>
+&lt;iq xmlns="jabber:client"
+    to="zarf-werewolf@volity.net/volity" 
+    type="get" id="jc1s4" 
+    from="zarf-volity-test0@volity.net/zymb"&gt;
+  &lt;query xmlns="http://jabber.org/protocol/disco#info" 
+    node="http://volity.org/protocol/caps#parlor" /&gt;
+&lt;/iq&gt;
+
+</pre>
+<p>
+...gets the reply:
+<p>
+<pre>
+&lt;iq xmlns="jabber:client" 
+    to="zarf-volity-test0@volity.net/zymb" 
+    from="zarf-werewolf@volity.net/volity" 
+    id="jc1s4" type="result"&gt;
+  &lt;query xmlns="http://jabber.org/protocol/disco#info"&gt;
+    &lt;feature var="http://volity.org/protocol/caps#parlor" /&gt;
+  &lt;/query&gt;
+&lt;/iq&gt;
+
+</pre>
+<p>
+<p>
+<H2>External Link</H2>
+
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0115.html">http://www.jabber.org/jeps/jep-0115.html</a>
+</UL>
+</div>

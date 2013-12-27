@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Ruleset</TITLE>
+<META NAME='KEYWORDS' CONTENT='Ruleset'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Ruleset">Ruleset</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A Volity <strong>ruleset</strong> is the abstract definition of how a particular game is played, including both its rules and its specialized slice of communication protocol. Every <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> must support exactly one ruleset. This defines (for human players) the game that it lets people play, and (for <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s) the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> requests that it will send and receive during play. A client prepares itself for a given ruleset by obtaining a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> through the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>.
+<p>
+In Volity parlance, a <strong><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game" class=wikipagelink>game</a></strong> specifically refers to a single <em>instantiation</em> of a particular ruleset. To put it in object-oriented programming terms, a ruleset is to a game as a class is to an object.
+<p>
+Rulesets are sometimes called <strong>base rulesets</strong> to distinguish them from ruleset variants (see below).
+<p>
+<H1>Ruleset Attributes</H1>
+
+<p>
+Rulesets contain the following attributes:
+<p>
+<UL >
+<li> A globally unique <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>, which allows other Volity entities to refer to this ruleset. Ideally, this URI also serves as a URL pointing to a Web page that defines the whole ruleset in human-readable terms; see <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>rock, paper, scissors</a> for an example.
+</UL>
+<p>
+<UL >
+<li> A standard set of rules, written in good old human-readable prose, describing how the game is played. A parlor claiming to support this ruleset <em>must</em> support all the rules, exactly as they are written.
+</UL>
+<p>
+<UL >
+<li> A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_API" class=wikipagelink>ruleset API</a> with two lists of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> requests that this ruleset defines.
+<UL >
+<li> <em>Player-to-server</em> requests, which can be requests to move pieces, play cards, or otherwise affect the game state, or requests for game-specific information. <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>Table configuration</a> requests go here as well.
+<li> <em>Server-to-player</em> requests, largely the server informing the players of changes in the game state or table configuration. They can be directed at a single player, some of them, or all of them, whichever is most appropriate.
+</UL>
+</UL>
+<p>
+<UL >
+<li> A list of game error codes that might result from illegal plays or malformed RPC requests to the referee, and what they mean. A game implementation must be able to handle all of these errors, displaying some appropriate message or other visual to the user for each one. <em>Or possibly we want a fixed list of error codes -- see <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Replies" class=wikipagelink>RPC replies</a>.</em>
+</UL>
+<p>
+<UL >
+<li> A list of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> options specific to the game, each of which in turn sports a couple of features:
+<UL >
+<li> A human-readable description of the option, 
+<li> The key and allowed range of values used to represent this option in the query string part of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>.
+</UL>
+</UL>
+<p>
+<H2>Example Rulesets</H2>
+
+<p>
+The following examples happen to have URIs pointing at webservers run by the Volity development team; this shouldn't imply that all rulesets must exist within the <code>volity.org</code> domain. Indeed, we expect to see URIs pointing at domains all over the world, once people start inventing their own. For now, though, the first rulesets will all look physically rather similar.
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>Rock, paper, scissors</a>: <a href="/web/20070802131051/http://volity.org/games/rps">http://volity.org/games/rps</a>
+</UL>
+<p>
+<UL >
+<li> Crazy Eights: <a href="/web/20070802131051/http://volity.org/games/eights">http://volity.org/games/eights</a>
+</UL>
+<p>
+<H1>Where rulesets are used</H1>
+
+<p>
+Rulesets are used by other other components throughout the volity system. In every case, the other entity refers to the ruleset by its URI.
+<p>
+<UL >
+<li> Each <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> proclaims loyalty to exactly one base ruleset. The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> knows which servers correspond with which rulesets, visible through the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Browser" class=wikipagelink>game browser</a>. Servers themselves may be queried about the rulesets they support through the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>.
+</UL>
+<p>
+<UL >
+<li> Every <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> supports exactly one ruleset.
+</UL>
+<p>
+<UL >
+<li> Every <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a> notes the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>URI</a> of the ruleset that was used to play the game it describes.
+</UL>
+<p>
+<UL >
+<li> Each <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a> on the Volity system has a <em>separate</em> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ELO_Score" class=wikipagelink>ELO score</a> for <em>each</em> ruleset that it has every played. This includes variants; playing regular Hearts affects one ELO score, while playing Hearts with the 10J and QS rule variant affects a different one, resulting in two distinct ELO scores attached to that player. Put another way, every ELO score has both a player and a ruleset attached to it.
+</UL>
+</div>

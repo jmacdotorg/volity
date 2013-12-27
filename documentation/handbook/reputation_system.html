@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Reputation System</TITLE>
+<META NAME='KEYWORDS' CONTENT='Reputation_System'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Reputation+System">Reputation System</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Volity's <strong>reputation system</strong> gives all the <a href="player.html" class=wikipagelink>player</a>s, <a href="parlor.html" class=wikipagelink>parlor</a>s and <a href="ui_file.html" class=wikipagelink>UI file</a>s on the network a rating based on other players' experiences with them. A very basic system patterned after already well-known systems like eBay's, it lets players express a positive, negative, or neutral stance towards one of these things, <em>provided they have just played a game with them</em>. In other words, after playing a game of Bridge with three other people, each player can assign a new stance to each of the three opponents, the server, and the UI file that player used. A player can hold only one attutitude at a time towards a single thing, however; assigning a new stance towards something replaces the stance that might have been there already.
+<p>
+An entity's <strong>reputation score</strong> is the sum of all the player-stances it has received: +1 for positive, -1 for negative, 0 for neutral. This score -- as well as the positive/negative/netural totals that comprise it -- is public knowledge for each thing, meant to help a player select opponents, servers, and UIs.
+<p>
+We have yet to work out the exact protocol for how and when this information will be collected, but we definitely want it ready for [Volity 1.0]<a href="action.html=edit&id=Volity_1.0" class=wikipageedit>?</a>.
+<p>
+<H2>Proposed Protocol</H2>
+
+<p>
+These are all <a href="client.html" class=wikipagelink>client</a>-to-<a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> <a href="rpc_requests.html" class=wikipagelink>RPC requests</a>.
+<p>
+Within the arguments, <em>identifier</em> stands for any player or parlor <a href="jid.html" class=wikipagelink>JID</a>, or any UI file's URL. In every case, the bookkeeper returns a fault if it knows of no object with the supplied identifier.
+<p>
+<DL >
+<dt>get_reputation(<em>identifier</em>)<dd> Requests the total reputation score of the object with the given identifier. The return value is an integer representing this score.
+<dt>get_stance(<em>idenitifier</em>, <em>player-JID</em>)<dd> Requests the stance that the player with the given JID holds towards the identified object. Returns a fault if no such stance exists. Otherwise, returns an array of the format [<em>stance</em>, <em>reason</em>], where <em>stance</em> is one of (-1, 0, 1) and <em>reason</em> is a (possibly empty) text string.
+<dt>get_stances(<em>idenitifer</em>)<dd> Requests <em>all</em> the stances recorded for the identified object. Returns an array, each member of which is an array of the format [<em>player-JID</em>, <em>stance</em>, <em>reason</em>] (see previous definition).
+<dt>set_stance(<em>identifier</em>, <em>stance</em>, <em>reason</em>)<dd> A request to set the sending player's stance towards the identified object. Returns a fault if the provided stance is any value other than one of (-1, 0, 1), or if the sender hasn't played a game with the identified object (or, indeed, if the object appears to be the sending player). Otherwise, the bookkeeper updates its reputation database and returns truth.
+</DL>
+</div>

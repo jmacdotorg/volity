@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Bot Factory</TITLE>
+<META NAME='KEYWORDS' CONTENT='Bot_Factory'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Bot+Factory">Bot Factory</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A bot factory is a Volity entity which creates and operates retainer <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a>s upon request.
+<p>
+<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC Requests</a></H2>
+
+<p>
+<H3>volity.new_bot (<em>URI</em>, <em>table</em>)</H3>
+
+<p>
+Request a bot from this factory. The URI refers to a bot algorithm; the table is a MUC for the bot to join. (The bot can presume that the RPC's sender is the table's referee.) This returns the full JID of the bot, once the bot has successfully connected. If the URI is not one that the factory supports, this returns an error.
+<p>
+<UL >
+<li> Returns: the full <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> of the bot.
+<li> Denial: volity.bot_not_available: The factory does not support the given URI.
+</UL>
+<p>
+The parlor may also respond to various <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Admin_RPC_Requests" class=wikipagelink>admin RPC requests</a>.
+<p>
+<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>Service Discovery</a> responses</H2>
+
+<p>
+The disco#info of a bot factory looks like this:
+<p>
+The identity should have <strong>category</strong> "volity" and <strong>type</strong> "factory". The <strong>name</strong> field will hold a brief title of the factory, suitable for display as a window title or icon label.
+<p>
+<DL >
+<dt>volity-role<dd> "factory"
+<dt>ruleset<dd> The URI of the ruleset of the game this factory's bots can play.
+<dt>ruleset-version<dd> Version number of the ruleset.
+<dt>description<dd> A headline describing the factory.
+<dt>website<dd> Human-browsable URL for the factory's website.
+<dt>visible<dd> 1 if the table is visible via the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>; 0 otherwise.
+<dt>contact-email<dd> Factory administrator contact.
+<dt>contact-jid<dd> Factory administrator contact.
+</DL>
+<p>
+Note that some elements (<code>ruleset</code>, <code>ruleset-version</code>, <code>description</code>, <code>website</code>) are representative of the game or its ruleset. Others (<code>contact-jid</code> and <code>contact-email</code>) represent the entity which hosts the parlor.
+<p>
+To determine the algorithms offered by a factory, do a disco#items query to node "bots". This will return a list of items whose <em>jid</em> is the factory, whose <em>node</em> is an algorithm URI, and whose <em>name</em> is a human-readable bot program name.
+</div>

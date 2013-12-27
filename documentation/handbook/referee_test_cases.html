@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Referee Test Cases</TITLE>
+<META NAME='KEYWORDS' CONTENT='Referee_Test_Cases'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Referee+Test+Cases">Referee Test Cases</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Things that a <a href="referee.html" class=wikipagelink>referee</a> should be able to do without choking.
+<p>
+<UL >
+<li> Be started up by a <a href="parlor.html" class=wikipagelink>parlor</a>.
+<UL >
+<li> start and configure a MUC.
+</UL>
+<li> Detect players joining and leaving the MUC.
+<li> Accept a user joining the MUC twice, with different JIDs (different resource strings)
+<UL >
+<li> and treat them as two different "players".
+</UL>
+<li> Accept all the referee <a href="rpc_requests.html" class=wikipagelink>RPC requests</a>.
+<li> Reject RPCs coming from players who have not joined the MUC.
+<li> Reject game-move RPCs coming from players who are observers at the MUC.
+<li> Notice if a sitting player has left the MUC, and consider him to have stood first.
+<UL >
+<li> broadcast player_stood messages.
+<li> unready all remaining players.
+</UL>
+<li> Notice if all non-bot players have left during configuration phase
+<UL >
+<li> kill bots, leave the MUC, destroy the MUC, shut down.
+</UL>
+<li> Notice if all non-bot players have left during the game
+<UL >
+<li> In "throw" or "suspend":
+<UL >
+<li> stop the game after the appropriate timeout
+<li> then kill the MUC and shut down
+</UL>
+<li> In "bot":
+<UL >
+<li> add bots after the appropriate timeout
+<li> once the bots have concluded the game, kill the MUC and shut down
+<li> ? cancel the game if the bots get stuck for too long?
+</UL>
+</UL>
+<li> Notice if no players ever join the MUC in the first place, not even the one who called new_table
+<UL >
+<li> after a reasonable time: leave the MUC, destroy the MUC, shut down.
+</UL>
+<li> Cope with players whose JIDs contain Unicode characters.
+<li> See a player change his MUC nick.
+<li> Handle a sitting player who changes to a different seat without standing first.
+<li> Handle a sitting player who sits in the seat he's already in, or a standing player who stands
+<UL >
+<li> in these cases, do not broadcast player_sat/stood or unready anybody
+</UL>
+</UL>
+<p>
+<H2>See Also</H2>
+
+<p>
+<UL >
+<li> <a href="client_test_cases.html" class=wikipagelink>Client test cases</a>
+</UL>
+</div>

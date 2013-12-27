@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Referee States</TITLE>
+<META NAME='KEYWORDS' CONTENT='Referee_States'/>
+<LINK REL="stylesheet" HREF="/web/20070303144340cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Referee+States">Referee States</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>There are six states that a game <a href="referee.html" class=wikipagelink>referee</a> can be in. Seven, if you count "destroyed". (A destroyed referee no longer exists, so it does not answer requests.)
+<p>
+<DL >
+<dt> <strong>setup</strong><dd> The initial state (after volity.new_table creates the referee). Also the state we return to after the game ends. Players can change the game configuration; players can sit and stand. During this state, the seat list may change. (Once the game leaves <em>setup</em>, the seat list is fixed.)
+<dt> <strong>authorizing</strong><dd> The referee is waiting for permission to begin the game. (See <a href="payment_protocol.html" class=wikipagelink>payment protocol</a>.)
+<dt> <strong>active</strong><dd> Game in progress.
+<dt> <strong>disrupted</strong><dd> Some people have disconnected from the game (but it is still in progress). To be more specific: at least one non-<a href="eliminated.html" class=wikipagelink>eliminated</a> seat is entirely empty (neither humans nor robots left).
+<dt> <strong>abandoned</strong><dd> All seated human players have disconnected from the game. It is still "in progress", but nothing can happen until the referee suspends it.
+<dt> <strong>suspended</strong><dd> Someone has called for a pause in the game. The game configuration is locked, but players can sit and stand.
+<dt> <strong>(destroyed)</strong><dd> The table and the referee have shut down, permanently.
+</DL>
+<p>
+Note that a <a href="bot.html" class=wikipagelink>bot</a> in a seat prevents <em>disrupted</em>, but not <em>abandoned</em>. (A game can continue normally with a human playing a robot; but if only robots are left seated, the game is abandoned.) Also pedants may note that if the conditions for <em>disrupted</em> and <em>abandoned</em> both occur, the table counts as <em>abandoned</em>.
+<p>
+<H2>RPCs that indicate state transitions</H2>
+
+<p>
+A client can track the referee state by watching for the following <a href="rpc_requests.html" class=wikipagelink>RPC requests</a>:
+<p>
+<DL >
+<dt> start_game()<dd> now in <strong>active</strong>.
+<dt> suspend_game()<dd> now in <strong>suspended</strong>.
+<dt> resume_game()<dd> now in <strong>active</strong>.
+<dt> end_game()<dd> now in <strong>setup</strong>.
+<dt> game_activity(<em>state</em>)<dd> now in the given state, which will be <strong>active</strong>, <strong>disrupted</strong>, or <strong>abandoned</strong>.
+<dt> game_validation(<em>state</em>)<dd> now in the given state, which will be <strong>authorizing</strong>, <strong>setup</strong>, or <strong>suspended</strong>.
+<dt> receive_state(<em>struct</em>)<dd> now in the state given by the struct's <em>state</em> field. May be any of the six states. (Only occurs during state recovery.)
+</DL>
+<p>
+Note that it is technically possible for players to leave or rejoin the table during the <strong>authorizing</strong> state. A successful validation is still marked by start_game() or resume_game(), but that call may immediately be followed by game_activity() to indicate a <strong>disrupted</strong> or <strong>abandoned</strong> state.
+<p>
+<H2>State transition table</H2>
+
+<p>
+In my previous job, I wrote a lot of state transition tables. This one is actually kind of useful.
+<p>
+Timer intervals are suggested values, not required. Implementations may vary.
+<p>
+<DL >
+<dt> From <strong>setup</strong>...<dd>
+<DL >
+<dt> to <strong>authorizing</strong><dd> all seated players are ready
+<dt> to <strong>active</strong><dd> (not possible)
+<dt> to <strong>suspended</strong><dd> (not possible)
+<dt> to <strong>disrupted</strong><dd> (not possible)
+<dt> to <strong>abandoned</strong><dd> (not possible)
+<dt> to <strong>(destroyed)</strong><dd> all human players (including observers) disconnect; then interval elapses (90 seconds)
+</DL>
+<dt> From <strong>authorizing</strong>...<dd>
+<DL >
+<dt> to <strong>setup</strong><dd> not all players permitted to play (previous state was <strong>setup</strong>)
+<dt> to <strong>active</strong><dd> all players permitted
+<dt> to <strong>suspended</strong><dd> not all players permitted to play (previous state was <strong>suspended</strong>)
+<dt> to <strong>disrupted</strong><dd> (not possible)
+<dt> to <strong>abandoned</strong><dd> (not possible)
+<dt> to <strong>(destroyed)</strong><dd> (not possible)
+</DL>
+<dt> From <strong>active</strong>...<dd>
+<DL >
+<dt> to <strong>setup</strong><dd> game reaches end
+<dt> to <strong>authorizing</strong><dd> (not possible)
+<dt> to <strong>suspended</strong><dd> a seated player sends volity.suspend_game()
+<dt> to <strong>disrupted</strong><dd> a seated player (in a non-eliminated seat) leaves, leaving the seat becomes entirely empty
+<dt> to <strong>abandoned</strong><dd> a seated player leaves, leaving no seated human players in the game
+<dt> to <strong>(destroyed)</strong><dd> (not possible)
+</DL>
+<dt> From <strong>suspended</strong>...<dd>
+<DL >
+<dt> to <strong>setup</strong><dd> all seated players are ready, with kill_game flag set
+<dt> to <strong>authorizing</strong><dd> all seated players are ready, with kill_game flag unset and no empty seats
+<dt> to <strong>active</strong><dd> (not possible)
+<dt> to <strong>disrupted</strong><dd> (not possible)
+<dt> to <strong>abandoned</strong><dd> (not possible)
+<dt> to <strong>(destroyed)</strong><dd> all human players (including observers) disconnect; then interval elapses (90 seconds)
+</DL>
+<dt> From <strong>disrupted</strong>...<dd>
+<DL >
+<dt> to <strong>setup</strong><dd> game reaches end (could happen if the empty seat had no moves left)
+<dt> to <strong>authorizing</strong><dd> (not possible)
+<dt> to <strong>active</strong><dd> a player returns to his seat (and now there are no empty seats)
+<dt> to <strong>suspended</strong><dd> a seated player sends volity.suspend_game()
+<dt> to <strong>abandoned</strong><dd> a seated player leaves, leaving no seated human players in the game
+<dt> to <strong>(destroyed)</strong><dd> (not possible)
+</DL>
+<dt> From <strong>abandoned</strong>...<dd>
+<DL >
+<dt> to <strong>setup</strong><dd> (not possible)
+<dt> to <strong>authorizing</strong><dd> (not possible)
+<dt> to <strong>active</strong><dd> a player returns to his seat (and now there are no empty seats)
+<dt> to <strong>suspended</strong><dd> table abandonment timer elapses (3 minutes)
+<dt> to <strong>disrupted</strong><dd> a player returns to his seat (but there are still empty seats)
+<dt> to <strong>(destroyed)</strong><dd> (not possible)
+</DL>
+</DL>
+</div>

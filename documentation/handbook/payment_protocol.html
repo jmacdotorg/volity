@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Payment Protocol</TITLE>
+<META NAME='KEYWORDS' CONTENT='Payment_Protocol'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Payment+Protocol">Payment Protocol</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>This is an extension of the "game record verification" idea (which I posted in January), because the requirements are similar. The point of game record verification was to prove to the bookkeeper that everyone who the referee says is in the game, is really in the game. Now we also want to prove to the bookkeeper that everyone who the referee says is in the game, has agreed to pay the fee for the game.
+<p>
+We also need to prove to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> that everyone in the game has paid the fee. (Or otherwise has permission -- subscription, free demo, free game, etc.)
+<p>
+Note that we can't fully trust either the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> or the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>. The client wants to duck out of paying. The referee wants to overcharge players, or charge non-players (because the parlor operator is the recipient of the money). So the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> (as Arbiter of Money) has to guard against both of these interests.
+<p>
+And a note on the open/closed source line: Obviously I'm setting this protocol up to serve [the Volity Network]<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=edit&id=The_Volity_Network" class=wikipageedit>?</a>. I'd like to make it flexible enough to work with any Volity bookkeeper -- even though other Volity bookkeepers are hypothetical, and money-charging ones even more so.
+<p>
+I imagine that we'll set up our (open-source) Perl bookkeeper package to use some kind of plugin for payment. What we ship will be a stub: no payment mechanism, all games are free. Then we'll write something for internal use, which attaches to our (non-open) micropayment and player database.
+<p>
+<H2>Currency</H2>
+
+<p>
+The client/referee/bookkeeper protocol does not concern itself with currency. The bookkeeper is assumed to be keeping track of "credits" for each user. All game fees are debited against the user's credit account. The user may have gotten these credits by paying real money, or by other means (such as free promotions) -- this protocol does not concern itself with where they come from.
+<p>
+<H2>Referee States</H2>
+
+<p>
+When the game begins (or resumes), the referee will briefly move through a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States_New" class=wikipagelink>new referee state</a>, called <code>authorizing</code>. This is because the referee has to query the bookkeeper to see whether all the players are really present (and, for paid games, if they all agree to pay).
+<p>
+The new state is signalled by a new RPC sent to clients: volity.game_validation("authorizing"). In the <code>authorizing</code> state, clients are generally not allowed to do anything: sitting down, standing up, making game configuration requests.
+<p>
+<H2>RPCs</H2>
+
+<p>
+<H3>volity.message(list <em>tokens</em>)</H3>
+
+<p>
+A new referee-to-client RPC. This is handled exactly the same as <em>tokens</em> in an RPC response: the client translates the token array and displays it in the table chat window.
+<p>
+<em>This is now implemented and documented on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> page.</em>
+<p>
+<H3>volity.game_validation(str <em>state</em>)</H3>
+
+<p>
+The referee has moved to the given <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States_New" class=wikipagelink>state</a>, which will be one of the strings <code>authorizing</code>, <code>setup</code>, <code>suspended</code>.
+<p>
+This call is only used when moving <em>from</em> one of those three states. (When a game ends or suspends, volity.end_game() or volity.suspend_game() is used.) The game_validation("authorizing") indicates that a game is beginning or resuming, but that the referee has to check for player validation. If all the validation succeeds, this will be followed by start_game() or resume_game(). If it fails, this will be followed by another game_validation() call, returning to the previous state.
+<p>
+<H3>volity.prepare_game(str <em>referee</em>, bool <em>newgame</em>, list <em>players</em>)</H3>
+ 
+<p>
+When the game begins (after all players have signalled ready), the parlor should send volity.prepare_game() to the bookkeeper. The parlor also does this when a game unsuspends (again, after all players have signalled ready). The referee moves to state <code>authorizing</code> at this time.
+<p>
+The first argument is the referee's (full) JID. The second argument is true for game-start, false for game-unsuspend. The third argument is a list of full player JIDs. The bookkeeper will send volity.verify_game() to each JID (see below). If all these RPCs come back successful, the bookkeeper will reply with success (True) to the parlor. The referee will then start the game.
+<p>
+If the bookkeeper does not reply with success, the referee should unready all the players. (If the failure listed particular players, only those players are unreadied. See below.) It should also notify the table that something is wrong, by broadcasting volity.message() to the players.
+<p>
+This call is where the bookkeeper actually ticks money off of players' accounts. (A player may be listed more than once, if he's playing against himself! Only charge him once, please.) The bookkeeper also creates an "in-progress" game record, which contains the referee JID and all the player JIDs. (This will be read later, when the game ends.) 
+<p>
+A prepare_game() at game-unsuspend time works exactly the same as at game-start time, except that players are being added to an existing in-progress game record. The bookkeeper must ping all listed players with verify_game() calls, but should only suck money from the players who were not already in the game record.
+<p>
+The RPC returns failure by returning a list (as opposed to boolean True). The first element of the list is a reason, possibly followed by more information. (This is similar to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Replies" class=wikipagelink>failure token</a> system, but not identical. Failure tokens only apply to RPCs that a client or bot sends.)
+<p>
+<DL >
+<dt>"players_not_responding"<dd> One or more players could not be reached by the volity.verify_game() RPC. Second element is list of offending players.
+<dt>"players_not_authorized"<dd> One or more players is not authorized to play this game (not subscribed or refused to pay). Second element is list of offending players.
+<dt>"game_record_conflict"<dd> A game record already exists for this referee (if newgame is true)
+<dt>"game_record_missing"<dd> No game record already exists (if newgame is false).
+</DL>
+<p>
+Technically the prepare_game() RPC is optional. But if the referee doesn't send it, no payment checking will be done and no game record will be stored for this game.
+<p>
+If the RPC returns an RPC fault, the referee <em>should</em> allow the game to begin. (This allows referees to work with non-payment-handling bookkeepers.)
+<p>
+<em>In-progress game records will have to expire eventually. I'm thinking the bookkeeper will ping the parlor at long intervals (an hour), and if the referee is dead, the game records gets wiped. It pings the parlor instead of the referee in anticipation of a future containing have "offline" games where the referee can shut down.</em>
+<p>
+<em>The player-not-responding/player-not-authorized responses include a list of players who can't play. The spec currently says that the referee should unready just those players. Is this okay? I see one weird case: the only unauthorized players is a bot, so the bot gets unreadied; but bots ready themselves promiscuously, so we get into a ready/unready spin cycle. Maybe the referee should always unready everybody.</em>
+<p>
+<H3>volity.record_game(dict <em>record</em>)</H3>
+
+<p>
+The argument structure and meaning of this <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> RPC will not change. However, the bookkeeper will do extra checking. The set of players listed in record.seats must match the in-progress game record for the sending referee. If it does, the game record gets stored. (The in-progress record gets deleted whether the call succeeds or fails.)
+<p>
+If the referee sends record_game() and gets a failure back, there isn't much it can do about it. The game is still over. (It can send a table message with volity.message().)
+<p>
+Failure arrays:
+<p>
+<DL >
+<dt>"game_record_missing"<dd> No game record exists for this referee.
+<dt>"player_mismatch"<dd> Game record does not match in-progress record. Second element is list of missing and extra players.
+</DL>
+<p>
+<H3>volity.game_player_authorized(str <em>parlor</em>, str <em>player</em>)</H3>
+
+<p>
+Ask the bookkeeper whether this player is authorized to play at this parlor. (The <em>parlor</em> is a full JID. The <em>player</em> may be bare or full, but the resource part is ignored.)
+<p>
+The bookkeeper must be careful about access control -- random Volity users are not allowed to check each others' subscription status! In general, a player can only check his own account. (That is, the RPC sender must bare-match the <em>player</em> argument.) There may be some administrative users authorized to use this call on anybody.
+<p>
+<em>Does that mean the </em>player<em> argument is redundant? Yes, but we may allow a future expansion where a referee checks the authorization status of a player seated at its table. For that reason, I'd prefer to specify both arguments. There's also the following special case:</em>
+<p>
+A special case: if <em>player</em> is the empty string, the call is legal (no matter who sends it). The results should reflect the authorization status of a nobody -- a hypothetical user with no credits and no subscriptions. Web services can use this form of the RPC to determine whether the parlor is free, subscription-only, or pay-per-game.
+<p>
+The result is a struct: 
+<p>
+<DL >
+<dt>status (string)<dd> the authorization value (see below).
+<dt>fee (int)<dd> The number of credits needed to play, if <em>status</em> is "fee" or "nofee".
+<dt>credits (int)<dd> the player's current credit level. (This field should only be present if the sender bare-matches <em>player</em>. If not -- even if the sender is the parlor -- <em>credits</em> should be absent.)
+<dt>url (string)<dd> refers to a web page where the player can go to buy credits or (if appropriate) subscribe to the game. (If there is no payment page, this field may be absent. This is reasonable if <em>status</em> is "free", but not recommended otherwise.)
+<dt>parlor (string)<dd> The parlor this authorization info refers to. This will be the same as the <em>parlor</em> argument of the RPC.
+<dt>options (boolean)<dd> There are more payment options for this game than this structure describes; see <em>url</em> for details. (If this field is absent, assume false.)
+</DL>
+<p>
+The <em>status</em> is one of the following values:
+<p>
+<DL >
+<dt>"free"<dd> the player can play this game for free.
+<dt>"auth"<dd> the player can play this game with no incremental cost. (He has a subscription or some other authorization to play.)
+<dt>"demo"<dd> the player can play this game with no incremental cost, due to a free trial.
+<dt>"unauth"<dd> the player cannot currently play this game.
+<dt>"fee"<dd> the player will be allowed to play, but he will be charged <em>fee</em> credits when the game begins. (I.e., the contents of the <em>fee</em> field.)
+<dt>"nofee"<dd> the player cannot currently play this game, because it would require <em>fee</em> credits, and he doesn't have them.
+</DL>
+<p>
+(If the <em>player</em> argument is the empty string, <em>status</em> will be "free", "unauth", or "nofee".)
+<p>
+The difference between "free" and "auth" is a matter of emphasis. "Free" means that the game is free for everybody; the client should not show any kind of payment UI. With "auth", the client will probably want to display a flag saying "You've paid for this game!" so that the player can feel smug.
+<p>
+Note that a "fee/nofee" result does not exclude the possibility that the player could avoid the per-game fee (say, by buying a subscription). It just means that, if the player starts a game right now, he will be charged <em>fee</em> credits.
+<p>
+<em>Possible future expansion: add optional auth_games and auth_ends fields to the struct. These would let the bookkeeper specify when the player's subscription (or demo period) ends, either by a count of games or a cutoff time.</em>
+<p>
+Like any RPC which is sent by the client, this conforms to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Replies" class=wikipagelink>RPC Replies</a> format: a successful reply will actually be an array <code>['volity.ok', struct]</code>. Since referees send this RPC also, they must be prepared to deal with this.
+<p>
+<H3>volity.game_player_reauthorized(str <em>player</em>, struct <em>values</em>)</H3>
+
+<p>
+If a player's authorization status changes, the bookkeeper will send this to each active client. The <em>values</em> argument will contain <em>credits</em> if the player bought or used credits. If the player subscribed to a game, the <em>status</em>, <em>fee</em>, and <em>parlor</em> fields will also be present.
+<p>
+<em>This allows a client to stay up-to-date when the player buys credits or subscriptions on the web site.</em>
+<p>
+<em>How does the bookkeeper know which clients are active? Any (full) JID which sent a game_player_authorized() should be considered active. The bookkeeper should keep each such JID updated, until an RPC to that JID fails; then it can be struck from the active list.</em>
+<p>
+<H3>volity.verify_game(str <em>referee</em>)</H3>
+
+<H3>volity.verify_game(str <em>referee</em>, int <em>fee</em>)</H3>
+
+<p>
+The bookkeeper sends this to each player at the beginning of the game. The argument is the referee's JID. The optional second argument is how much the player will be charged when the game begins.
+<p>
+The client should reply with success (True) if it is indeed seated and ready at a table with that referee. (And is willing to pay, if relevant.)
+<p>
+The willingness-to-pay should not require an interactive decision -- that would tie up the game-starting process. Instead, when the client joins a table, it will query the bookkeeper with game_parlor_authorized(). Based on the result, it may display a little panel above the seating chart. (Because players always look there, that's why.) This panel will be hidden for free games, or will say "You are subscribed", "You must subscribe to play", "This game costs N. [] I agree to pay."
+<p>
+When the game begins and verify_game() arrives, the client will refuse payment if the box is unchecked (or if the fee value doesn't match.)
+<p>
+<em>Note:</em> There is a race condition that clients must be wary of. If you send ready() to start a game, you will receive player_ready() from the referee and verify_game() from the bookkeeper. These may arrive in <em>either order</em>. Do not assume that player_ready() will arrive first.
+<p>
+<H3>volity.notify_game_record(str <em>record_ID</em>)</H3>
+
+<p>
+The bookkeeper sends this to each player involved in a game, when the game ends. (It should be prepared for some delivery errors, since some players may have logged off since the game began.) It does this after replying to the referee's record_game() RPC. The argument is a database ID which the client can use to retrieve and examine the game record.
+<p>
+(This allows players to keep an eye on tallied game results that affect their ELO ratings.)
+<p>
+</div>

@@ -1,0 +1,53 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: User Departure</TITLE>
+<META NAME='KEYWORDS' CONTENT='User_Departure'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=User+Departure">User Departure</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Games are delicate. To prevent their own untimely demise, most games need the continual participation of all their original players. Should one player stop playing before the game's done, the whole enterprise is usually ruined.
+<p>
+Sadly, the Internet is flaky, as are client applications and operating systems. Volity users will sometimes drop out of a game they're playing without really meaning to. In other cases, a luserly user might run away from a table rather than risk losing the game, leaving the other players in the lurch. In either case, without some sort of mechanism to preserve the game, the remaining users are left with nothing but frustration at having wasted their time.
+<p>
+This article proposes some recommendations for handling unexpected <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?User" class=wikipagelink>user</a> departures without causing the destruction of the whole game, mainly by proscribing automated <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> reactions.
+<p>
+For the purposes of this article, <em>user</em> means a Volity user who is seated and playing a game, and a user <em>leaving</em> literally means a table occupant setting its Jabber presence to "unavailable" within the MUC that underlies the table.
+<p>
+<H2>Overview</H2>
+
+<p>
+The referee pays attention to users leaving. If a seated player disconnects but then returns some time later, the referee restores its seat, no questions asked.
+<p>
+However, the referee considers the total abandonment of a non-eliminated seat "disruptive", and will note this when it happens. This serves to passively prompt the remaining players to decide on a course of action, which might include suspending or throwing the game, inviting bots to replace the player, or simply waiting for the missing player's return.
+<p>
+<H2>Nondisruptive departure</H2>
+
+<p>
+A referee considers a user's departure <em>disruptive</em> only if that user leaves its containing <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seats" class=wikipagelink>seat</a> empty as a result. If other active users remain within that seat, the referee does not need to react in any particular way.
+<p>
+Should that user return to the table while the seat remains occupied, the referee will quietly consider it seated and re-inserted into that role.
+<p>
+It is possible, in some games, that a seat will be <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Eliminated" class=wikipagelink>eliminated</a> from the game before the game is over. The referee makes this determination; an eliminated seat is one from which no further game decisions will be required. This is significant because departure from an eliminated seat is always nondisruptive. The referee does not need to take any action when an eliminated seat is empty.
+<p>
+<H2>Disruptive departure</H2>
+
+<p>
+If a user's departure leaves a (non-eliminated) seat devoid of users to control it, the referee considers it disruptive and changes its <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>discoverable state</a> accordingly.
+<p>
+No matter what the game state or the disruption level, if any "missing" player returns while the game is still on, all is forgiven. The referee automatically restores that player to its old seat, and blasts it with <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?State_Recovery" class=wikipagelink>state recovery</a> information (as it does with all who arrive at the table).
+<p>
+<H2>Player reactions</H2>
+
+<p>
+The fate of a disrupted game is up to its players. If a crucial player goes missing, the remaining players can discuss how long to wait, and whether they should <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Suspension" class=wikipagelink>suspend the game</a> in order to bring new players in, or invite a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a> to the table to fill the abandoned seat.
+<p>
+They can even decide to throw a game, if they don't think that it's worth continuing. This would happen by one player setting the <code>volity.kill_game</code> configuration variable, and then all seated players voting their readiness.
+</div>

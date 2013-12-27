@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: ProofOfConcept</TITLE>
+<META NAME='KEYWORDS' CONTENT='Proof, Of, Concept'/>
+<LINK REL="stylesheet" HREF="/web/20101130123759cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20101130123759/http://volity.org/wiki/index.cgi?back=ProofOfConcept">ProofOfConcept</a></h1><a href="/web/20101130123759/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>The original idea for the proof-of-concept piece involved releasing a text-only game client, but we've sense allowed mission creep to sweep us along to being satisfied only with a graphical client that people could actually use. So, we now we're looking forward to the <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?JavaClient" class=wikipagelink>JavaClient</a>.
+<p>
+The momentous event I thought the PoC<a href="/web/20101130123759/http://volity.org/wiki/index.cgi?action=edit&id=PoC" class=wikipageedit>?</a> would be has been replaced with the public release of the first chapter of the <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?VolityBook" class=wikipagelink>VolityBook</a>.
+<p>
+The software that this outline described eventually became real, in the form of the <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?Frivolity" class=wikipagelink>Frivolity</a> server system and the <a href="/web/20101130123759/http://volity.org/wiki/index.cgi?Friv" class=wikipagelink>Friv</a> text-based client.
+<p>
+<H3>Basic Outline (OLD)</H3>
+
+<p>
+- Create a game server
+<PRE >
+    - It should play a text-based guessing game.
+        - Rules: Game picks a number between 1 and 100. Players take
+          turns guessing the number; first correct guess wins. After
+          incorrect guesses, the game tells all players whether the
+          guess was too high or too low.
+        - All communication takes place over 'normal' chatting. Players
+          send their guesses to the game server as normal chat
+          messages. The server ignores chats from players if its not
+          their turn, and tries to parse it otherwise. (The chat
+          message should be just a number, in this case.) Likewise, the
+          server uses normal chatting to tell players about the game's
+          progress, though it will 'whisper' human-readable error
+          messages to individual users if it rejects or can't
+          understand their messages to it.
+    - The URI of this game is
+      &lt;<a href="/web/20101130123759/http://www.jmac.org/migs/100_guessing_game&gt">http://www.jmac.org/migs/100_guessing_game&gt</a>;
+    - It should implement the basic flow of a MIGS game.
+        - It responds to the Jabber-RPC call 'new_game' by starting a
+          conference on a server, sending presence to that conference,
+          and then inviting the player in. This will try sending a
+          'summon_player' RPC message to that player's client, and if
+          that fails, it will invite the player into the conference
+          through normal Jabbery means.
+        - When someone calls 'start_game' on it, it will determine if
+          the command came from sharing a conference with it, and if
+          so, start a game between all the players in that conference.
+          In the case of this particular server, the person who made
+          the start_game call gets to go first.
+        - Play continues until one of the following happens:
+            - Someone guesses the number. Game ends, and
+              victory-handling ensues (see below). The conference
+              remains, and players are free to send a new start_game
+              RPC call to the present server, if they wish.
+            - All players leave the conference. Game ends, and the
+              server leaves the conference too (which will destroy it,
+              as per normal Jabber behavior).
+                - Note: Different games should have different reactions
+                  to players leaving. It's OK for someone to leave the
+                  guessing game, so long as anyone is left, but it
+                  wouldn't be OK to leave a Chess game. So, consider
+                  implemententing an internal method on the game
+                  server, called whenever a player leaves, that looks
+                  at the new game status and determines whether or not
+                  to call it a wash, and if not, possibly updates the
+                  players on things (for example, sending out a new
+                  copy of the Risk board with all the retired player's
+                  armies now gone).
+    - It should handle player victories, and related record-keeping.
+        - When a player wins a game, the game server sends all the
+          players PGP-signed documents representing the game's record.
+</PRE>
+- Create a game client
+<PRE >
+    - This should be a very simple Jabber client.
+        - Chat-message send and receive
+        - Conference joining and exiting, and conference-level chatting
+        - Does not (yet) need rosters or anything.
+    - It should also be able to send and receive basic MIGS-protocol
+      RPC methods.
+        - Calls it can make
+            - new_game: sent to a game server JID, regardless of
+              presence. Request to "set up a new table". On success,
+              will result in summon_player being called back on the
+              client.
+            - start_game: sent to a game server JID with presence in a
+              conference that the client also has presence in. (Error
+              results if we're not sharing a conf with this JID.) It's
+              a request to start a new game in this conference, with
+              the present players. (Server sends back error if game is
+              in progress.)
+        - Calls it can receive
+            - summon_player: Sent from a game server sitting in a
+              conference. If necessary, includes, as an arg, the JID of
+              this conference. The client should respond by immediately
+              sending presence to this conference. (To the human
+              player, it will seem as if he made a request of a game
+              JID to play a game (via the new_game RPC method), and
+              *bamf* he immediately appears in a new game-conference
+              with the game server, waiting for other players to join.)
+    - It should allow viewing of players' games records (both this
+      player and other players').
+        - For this test run, we can simply display # of wins and # of
+          games played, even though game records can contain more info
+          than that.
+        - For a given player, victory records are grouped by game (the
+          canonical name of which are the games' URIs) and then
+          subgrouped by server.
+    - It should allow queries, via RPC, from other clients about its
+      game records.
+        - Idea: If called without arg, returns a list of of all game
+          URIs this player has records for. If called with game URI,
+          returns all records for that game.
+</PRE>
+</div>

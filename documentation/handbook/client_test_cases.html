@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Client Test Cases</TITLE>
+<META NAME='KEYWORDS' CONTENT='Client_Test_Cases'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Client+Test+Cases">Client Test Cases</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Things that a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Friv" class=wikipagelink>friv</a>, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>) should be able to do without choking:
+<p>
+(Maybe this is the same list as the compliant client features on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> page, but those are written like functional spec. Whereas this is my list of cases -- some common, some weird corners -- which we have to think about clients coping with.)
+<p>
+<UL >
+<li> Start a new game (table).
+<li> Reject RPCs coming from people who are not MUC members.
+<li> Reject RPCs coming from MUC members who are not the referee.
+<li> Join a table which is configuring. 
+<UL >
+<li> and show the other players and where they're currently sitting.
+<li> and display the current configuration, as chosen by the other players.
+</UL>
+<li> Change table configuration.
+<li> Sit. Stand. 
+<li> Provide non-confusing sit/stand UI...
+<UL >
+<li> in a game with a fixed number of seats.
+<li> in a game with a variable number of seats (like "2 to 4")
+<li> in a game with a variable number of seats (like "up to 20")
+<li> in a game with a variable number of seats (like "4 to 20")
+</UL>
+<li> Go ready. Go unready.
+<li> Go into an unready state because someone (maybe me) performed a configuration change.
+<li> Try to go ready in an invalid table configuration
+<UL >
+<li> and receive the referee's failure reply to ready()
+<li> and display it in the client's i18n.
+</UL>
+<li> Cope with your JID containing Unicode characters.
+<li> Cope with other players' JIDs containing Unicode characters.
+<li> See another player change his MUC nick.
+<UL >
+<li> without screwing up the displayed seating chart or anything.
+</UL>
+<li> Go ready and begin playing.
+<li> Watch a game begin while standing (becoming an observer).
+<li> Join an in-progress game (as an observer).
+<UL >
+<li> and display the current observable state.
+</UL>
+<li> Join an in-progress game which you are sitting at, within the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Timeout" class=wikipagelink>table timeout</a>.
+<UL >
+<li> and re-enter cleanly, picking up all of your game state and displaying it.
+</UL>
+</UL>
+<p>
+<H2>See Also</H2>
+
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_Test_Cases" class=wikipagelink>Referee test cases</a>
+<li> Client <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seating_UI" class=wikipagelink>Seating UI</a>
+</UL>
+</div>

@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Gamut Localization</TITLE>
+<META NAME='KEYWORDS' CONTENT='Gamut_Localization'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Gamut+Localization">Gamut Localization</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Eventually we plan to have full internationalization support for <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>. All controls, menus, and messages will be read from property bundles, so that new languages can easily be added.
+<p>
+(Internationalization for <em>games</em> is a separate matter. That is handled by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>. See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Localization" class=wikipagelink>localization</a>.)
+<p>
+Unfortunately, the core Volity developers are ignorant Americans; none of us are bilingual.
+<p>
+So we ask for help. Want to help add other languages? Easy it is, yes! Take a look at...
+<p>
+<UL >
+<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle.properties?view=markup">[Gamut: English resource bundle]</a> (<a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/*checkout*/volity/trunk/Javolin/properties/ResBundle.properties">[download]</a>)
+<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/TokenVolity.properties?view=markup">[Volity tokens: English resource bundle]</a> (<a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/*checkout*/volity/trunk/Javolin/properties/TokenVolity.properties">[download]</a>)
+</UL>
+<p>
+(There are two files because of the way the Gamut code is organized. Sorry -- it makes sense, really.)
+<p>
+Each file is simply a bunch of key-value pairs:
+<p>
+<PRE >
+  Menu_File=File
+  Menu_Chat=Chat
+  Menu_Game=Game
+</PRE>
+<p>
+...and so on. 
+<p>
+To add support for a new language, you just need to copy the files (the "download" link is easier) and translate each line. Don't change the part before the "=" sign -- that's the internal code name of the string. Just replace the part after the "=" with the equivalent in your language.
+<p>
+Then mail the result back to me (zarf@volity.com) or post it to the <a href="/web/20070802131051/http://www.volity.org/lists.html">[Javolin-dev mailing list]</a>. We'll stick it in the source, and the next release of Gamut will support the language.
+<p>
+(It's easiest if you attach the file to your message as a UTF-8 text file. Gamut is a Java application, so all <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Unicode" class=wikipagelink>Unicode</a> characters are legal... well, all the 16-bit ones, anyway.)
+<p>
+<H3>Updates</H3>
+
+<p>
+As Gamut continues to grow, we'll be adding more messages to it. Those will need localization too. (And more of the existing messages will be brought into the localization system. There are still a few of Gamut's dialog boxes and messages which are not listed in the resource files.)
+<p>
+So you will probably want to keep an eye on this page. As I add lines to the English file, I will update this page to note what's needed for other languages. 
+<p>
+<H3>Current Languages</H3>
+
+<p>
+<UL >
+<li> English
+<UL >
+<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle.properties?view=markup">[Gamut resource bundle]</a>
+<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/TokenVolity.properties?view=markup">[Volity token resource bundle]</a>
+</UL>
+<li> Spanish (thanks to Javier Diaz Reinoso)
+<UL >
+<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle_es.properties?view=markup">[Spanish resource bundle]</a> 
+<li> Volity token resource bundle -- not yet written
+</UL>
+<li> German (thanks to Gunther Schmidl)
+<UL >
+<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle_de.properties?view=markup">[German resource bundle]</a> 
+<li> Volity token resource bundle -- not yet written
+</UL>
+</UL>
+<p>
+<H3>Missing Lines</H3>
+
+<p>
+If you know the translation of one of these lines, please fill it in here on the Wiki!
+<p>
+<strong>Spanish:</strong>
+<p>
+<DL >
+<dt> Remove Bot<dd> ???
+<dt> has joined the table.<dd> ???
+<dt> has left the table.<dd> ???
+<dt> Sample text<dd> ???
+<dt> The table could not be contacted.<dd> ???
+<dt> The table could not be joined.<dd> ???
+<dt> The table could not be created.<dd> ???
+<dt> Cannot contact referee<dd> ???
+<dt> No table exists at this address.<dd> ???
+<dt> No game parlor exists at this address.<dd> ???
+<dt> This address ({0}) does not refer to a Volity game table.<dd> ???
+<dt> The nickname "{0}" is already in use at this table. Please choose another.<dd> ???
+<dt> This table is not supplying a ruleset.<dd> ???
+<dt> This table's ruleset is not a valid URI<dd> ???
+<dt> This table's ruleset has an invalid version number<dd> ???
+<dt> Unable to select a UI for this game.<dd> ???
+</DL>
+<p>
+<p>
+<strong>German:</strong>
+<p>
+<DL >
+<dt>&lt;new seat&gt; <em>or</em> &lt;new&gt; <dd> ??? <em>short enough to fit in seating panel</em>
+<dt>&lt;empty seat&gt; <em>or</em> &lt;empty&gt; <dd> ??? <em>short enough to fit in seating panel</em>
+</DL>
+</div>

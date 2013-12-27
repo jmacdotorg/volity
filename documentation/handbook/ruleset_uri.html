@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Ruleset URI</TITLE>
+<META NAME='KEYWORDS' CONTENT='Ruleset_URI'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Ruleset+URI">Ruleset URI</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Every Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a> has both an informal name which we humans know it by, and a globally unique <strong>ruleset URI</strong> that the Volity system uses whenever it needs to make an internal reference to that ruleset. For example, the ruleset we refer to in human language as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>rock, paper, scissors</a> is known to the Volity system as <code>http://volity.org/games/rps</code>. All ruleset URIs <em>must</em> be perfectly compliant with <a href="/web/20070802131051/http://www.ietf.org/rfc/rfc2396.txt">[Internet RFC-2396]</a>, the standard URI syntax rules.
+<p>
+As with URIs found throughout the world of Internet protocols, each ruleset URI serves multiple functions.
+<p>
+<UL >
+<li> Since a given URI is guaranteed to be unique across the entire Internet, assigning a URI to a Volity ruleset gives it a label and a namespace that is always unambigious. Volity uses rulesets in this manner for sub-applications such as the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>.
+<li> Thorough Volity designers will also have their rulesets' URIs serve double-duty as URLs pointing to Web pages describing the rulesets in detail.
+</UL>
+<p>
+<H2>Ruleset URIs in game records</H2>
+
+<p>
+Ruleset URIs are also a key component of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a>s, indicating the type of game that the rest of the record describes. However, because <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> can change what rules are active at a given <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>, effectively making the game played there slighty different. When preparing a game record, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> acknowledges this difference by appending a query string to the recorded ruleset URI, holding one or more key/value pairs for every configuration variable that the ruleset defines. The ruleset also defines the syntax for each part of the query string.
+<p>
+So, to continue the above example, the game record of an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPS" class=wikipagelink>RPS</a> game that allowed ties but was a best-of-three contest would claim a URI of <code>http://volity.org/games/rps?no_ties=0&amp;best_of=3</code>.
+<p>
+<em>Since URIs get compared string-wise, the referee will have to maintain a canonical order of key/value pairs.</em>
+</div>

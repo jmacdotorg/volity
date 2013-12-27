@@ -1,0 +1,44 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Dublin Core</TITLE>
+<META NAME='KEYWORDS' CONTENT='Dublin_Core'/>
+<LINK REL="stylesheet" HREF="/web/20070305215912cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Dublin+Core">Dublin Core</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Dublin Core is an open standard for labelling metadata.
+<p>
+Volity uses the DC vocabulary for some <a href="metadata.html" class=wikipagelink>metadata</a> in <a href="ui_file.html" class=wikipagelink>UI file</a>s -- common terms like title, creator, description and creation date.
+<p>
+(Volity-specific metadata such as <a href="version_matching.html" class=wikipagelink>version numbers</a> are not described via DC, but rather by <a href="volity_metadata_terms.html" class=wikipagelink>Volity-specific terms</a>.)
+<p>
+All DC element types are legal, but Volity pays special attention to:
+<p>
+<DL >
+<dt>title<dd> The title of the UI (or resource).
+<dt>description<dd> A longer explanation of the resource.
+<dt>created<dd> The date that the resource was created.
+<dt>modified<dd> The date that the resource was last modified.
+<dt>creator<dd> The name of the person who created the resource. (If more than one person was involved, you can use multiple creator elements.)
+<dt>language<dd> The language which this UI supports (as a <a href="/web/20070305215912/http://www.w3.org/WAI/ER/IG/ert/iso639.htm">[standard two-letter code]</a>). (If the UI supports more than one language, yoy can use multiple language elements.)
+</DL>
+<p>
+For human-readable text in a particular language (such as title and description elements), you can add a <code>xml:lang</code> attribute to specify what language the element is in. It is reasonable to use multiple elements with different language attributes.
+<p>
+See the example on the <a href="metadata.html" class=wikipagelink>metadata</a> page.
+<p>
+<H3>External Links</H3>
+
+<p>
+<UL >
+<li> <a href="/web/20070305215912/http://dublincore.org/">[Dublin Core web site]</a>
+<li> <a href="/web/20070305215912/http://dublincore.org/documents/dcmi-terms/">[Dublin Core Metadata Terms]</a>
+</UL>
+</div>

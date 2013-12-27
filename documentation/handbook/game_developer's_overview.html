@@ -1,0 +1,69 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Game Developer's Overview</TITLE>
+<META NAME='KEYWORDS' CONTENT='Game_Developer's_Overview'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Game+Developer's+Overview">Game Developer's Overview</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>So you have a game, and you want to implement it in Volity. 
+<p>
+This is an (extremely high-level) overview of what you need to do:
+<p>
+<UL >
+<li> Write a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a> document, which will define the game-specific API that the referee and UI file will need to use.
+<li> Write a game module, which will act as a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>.
+<li> Write a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>.
+<li> Once those are written, publish the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>, and run a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> that executes the game module.
+<li> Finally, register your parlor with the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity.Net" class=wikipagelink>volity.net</a> bookkeeper.
+</UL>
+<p>
+<H2>What you need</H2>
+
+<p>
+See the page about the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Development_Environment" class=wikipagelink>development environment</a> we recommend.
+<p>
+<H2>The game module</H2>
+
+<p>
+The game module is the "brain" of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>. The referee manages a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>; the game module is in charge of the game which gets played there.
+<p>
+You currently have two choices for writing a game module: Perl, and Python. For each language, there is a library which implements the Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>. 
+<p>
+There is also a "Game" class. (In Python, this is <code>volity.game.Game</code>; in Perl, it is <code>Volity::Game</code>.) Your actual task is to write a subclass of this class.
+<p>
+Right now, you have two language options for game module creation. Both include extensive documentation and examples.
+<p>
+<H3>Perl</H3>
+
+<p>
+<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jmac" class=wikipagelink>Jmac</a> maintains <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Frivolity" class=wikipagelink>Frivolity</a>, a set of libraries and programs that allow you to create and run parlors in Perl. The package includes a complete, working example of a Tic Tac Toe parlor, including sample UI and ruleset files (even though those aren't part of the game module creation process).
+<p>
+<H3>Python</H3>
+
+<p>
+<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Zarf" class=wikipagelink>Zarf</a> maintains Python software for creating and running parlors in the Python programming language. This software is available through <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Subversion" class=wikipagelink>Subversion</a>, as well as from <a href="/web/20070802131051/http://www.eblong.com/zarf/volity/index.html">[the Volity page of Zarf's website]</a>.
+<p>
+<p>
+<H2>The UI file</H2>
+
+<p>
+The UI file is, as the name implies, the user interface. It is displayed in a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> window. Whenever the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> announces a move, the UI updates itself to display the new game state. Whenever a player needs to make a move, the UI watches for his mouse-clicks and reports them to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>.
+<p>
+You currently have just one choice for writing a UI file: <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a>, with embedded <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript" class=wikipagelink>ECMAScript</a>. (That's the same as Javascript, really.)
+<p>
+The embedded script code can call various functions to get stuff done: see the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript_API" class=wikipagelink>ECMAScript API</a>.
+<p>
+A <a href="/web/20070802131051/http://volity.org/docs/ui-guide/ui-guide-html/guide.html">[thorough introduction and example]</a> is in the <a href="/web/20070802131051/http://volity.org/docs/">[developer documentation]</a>.
+<p>
+See also: <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Tricks" class=wikipagelink>SVG tricks</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Script_Tricks" class=wikipagelink>SVG script tricks</a>.
+<p>
+<em>Jmac wishes me to note that there is actually a second choice: plain text with embedded ECMAScript. This is the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Friv" class=wikipagelink>Friv</a> client. It exists purely as a protocol example right now -- it's horribly unfriendly and no player will want to use it. So you can ignore it.</em>
+</div>

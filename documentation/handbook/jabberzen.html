@@ -1,0 +1,51 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: JabberZen</TITLE>
+<META NAME='KEYWORDS' CONTENT='Jabber, Zen'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=JabberZen">JabberZen</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext><H2>The Zen of Jabber</H2>
+
+<p>
+<em>These are my (<a href="zarf.html" class=wikipagelink>Zarf</a>'s) notes to myself about the Jabber protocol. Feel free to improve.</em>
+<p>
+<a href="jabber.html" class=wikipagelink>Jabber</a> is a simple client-server communication protocol based on <a href="xml.html" class=wikipagelink>XML</a>. It doesn't quite transmit complete XML documents back and forth; there is an XML-style header, followed by an indefinite number of XML <em>stanzas</em>.
+<p>
+The Zen of Jabber, as I understand it, is to be very restrictive about syntax, but to also provide "sandboxes" -- well-specified areas of the syntax -- which have complete flexibility.
+<p>
+For example, the top-level XML stream allows just three kinds of stanzas: &lt;message&gt;, &lt;presence&gt;, and &lt;iq&gt;. The &lt;message&gt; tag contains information you are offering to a channel (or service or whatever). The &lt;presence&gt; tag contains information about you joining, leaving, or changing state. The &lt;iq&gt; ("info/query") tag contains queries to some other service, or a reply to such a query.
+<p>
+If you're defining a new Jabber protocol, you don't get to invent new top-level tags. You have to use those three, and decide which is appropriate at each point in the protocol. However, you do get to decide what goes <em>into</em> each stanza. The "sandboxing" works by putting a namespace attribute (xmlns="...") onto the lower-level tag that you are inventing. The namespace defines the rules by which that tag is interpreted. So you can invent a &lt;unionized&gt; message sub-element for your political-argument protocol, without interfering with the &lt;unionized&gt; element that Steve's molecular-model protocol uses.
+<p>
+(Okay, strained example. Sorry.)
+<p>
+Jabber also gets grumpy about the notion of inventing new attributes for existing tags. Don't do that. Instead, create child tags which have your namespace attribute.
+<p>
+Jabber is definitely against the idea of "free-form" tags. For example, an arbitrary key-value list might be represented as 
+<PRE >
+  &lt;list xmlns='yournamespace'&gt;
+    &lt;key1&gt;&lt;value1/&gt;&lt;key1&gt; &lt;key2&gt;&lt;value2/&gt;&lt;key2&gt;
+    ...
+  &lt;/list&gt;
+</PRE>
+But that would be unZen. Better to have a well-defined tag structure with arbitrary <em>data</em>:
+<PRE >
+  &lt;list xmlns='yournamespace'&gt;
+    &lt;field name='key1'&gt; &lt;value&gt;value1&lt;/value&gt; &lt;/field&gt; 
+    ... 
+  &lt;/list&gt;
+</PRE>
+<p>
+Always try to layer your protocol on top of the highest-layer existing protocol that fits. For example, Volity doesn't define new &lt;message&gt; or &lt;iq&gt; stanzas for game commands. Volity is built on <a href="jabber.html-RPC" class=wikipagelink>Jabber-RPC</a>, which uses &lt;iq&gt; in a regular way. (Specifically, &lt;iq&gt;&lt;/iq&gt; containing &lt;query xmlns='jabber:iq:rpc'&gt; child tags.)
+<p>
+So, in fact, you wouldn't want to use the &lt;list&gt; format I mentioned above for your key-value list. You'd want to use <a href="jabber_data_form.html" class=wikipagelink>Jabber Data Form</a>s, which are already in the spec.
+</div>

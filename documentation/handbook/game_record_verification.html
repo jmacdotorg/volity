@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Game Record Verification</TITLE>
+<META NAME='KEYWORDS' CONTENT='Game_Record_Verification'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Game+Record+Verification">Game Record Verification</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>This is a topic I've been ruminating about slowly for a while. (This page records ideas that I posted to the mailing list in January.)
+<p>
+We would like to assert that the <a href="game_record.html" class=wikipagelink>game record</a>s in the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>'s database
+are accurate -- that they correctly show which people played in which
+game, and who won.
+<p>
+The current system has a guard against player clients lying: a person is
+identified by a JID, and the Jabber server authenticates JID logins. So
+you can't play as someone else.
+<p>
+However, we have no guard against the referee lying. (And the system
+design is that anyone can run a referee.) Well, we have one guard: we
+track which referee <em>sent</em> a game record, so if we decide that a referee
+is fraudulent then we can purge its lies from the system. But that
+requires human intervention, both to detect the problem and to fix it. I'd
+like to see some mechanism where the player can be confident that no
+referee is telling lies about him.
+<p>
+My first cut at this: When the referee starts (or unsuspends) the game, it
+sends the player list (full JIDs) <em>to the bookkeeper</em>. The bookkeeper then
+dials back to each player, asking "Are you in a game at table XXX, referee
+YYY?" The player client replies "Yes!" (This is an autoreply, the player
+doesn't have to do anything.)
+<p>
+At this point the bookkeeper has a record that these players really are in
+this game. So when the final game record comes in, the bookkeeper can
+verify that, yes, the listed players exactly match the recorded list of 
+who was seated. (If the game was suspended
+and unsuspended, the bookkeeper accumulates the player lists, according to
+our standard rule.)
+<p>
+There's also the issue of whether the referee is correctly stating who
+won. Only the player can decide that, as far as I can tell. So we should
+be as transparent as possible. When the bookkeeper receives a game record,
+it should ping all the players listed in that record. (Or use Jabber
+pubsub, or something.) The client has a little window where it shows the
+last few game records that the bookkeeper sent it -- just showing the
+players in order of winningness. So you glance over and, yes, that's the
+game you just finished. If it doesn't appear, or if the ordering looks
+wrong, then you can thumbs-down the referee.
+<p>
+There are still holes in the scheme. (Say, a referee submits a game record
+very late -- like, a week late -- and with bad winner info, in hopes that
+all the players will have gone on vacation and not be checking their game
+histories. Okay, that's not a very interesting hole...)
+<p>
+<H3>Proposed RPCs</H3>
+
+<p>
+This is a two-part proposal. I think we need both parts eventually, but we can start with the simpler one.
+<p>
+<strong>Part one:</strong>
+<p>
+<PRE >
+  volity.game_recorded( ''RecordID'' )
+</PRE>
+<p>
+This is sent from the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> to every <a href="client.html" class=wikipagelink>client</a> when the bookkeeper receives a completed-game record. It should go to every client listed in the game record. The argument is a string which uniquely identifies the game record.
+<p>
+It's possible that some clients will have disconnected by the time the game ends. So the bookkeeper should tolerate (ignore) errors from the RPCs.
+<p>
+<PRE >
+  volity.get_game_record( ''RecordID'' )
+</PRE>
+<p>
+This may be sent by any client to the bookkeeper at any time. The bookkeeper should send back the desired record, or an error token if there is no such record.
+<p>
+<strong>Part two:</strong>
+<p>
+<PRE >
+  volity.game_participants( ''PlayerList'', ''isNewGame'' )
+</PRE>
+<p>
+The <a href="referee.html" class=wikipagelink>referee</a> sends this to <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> whenever it starts or unsuspends a game. The PlayerList is a list of (full) JIDs of seated players. The isNewGame flag is true for a game start, false for an unsuspend.
+<p>
+The bookkeeper must send <code>volity.check_participation(referee)</code> to every player on the list. If any of these RPCs fail or return False, the bookkeeper must return an error to the referee.
+<p>
+Assuming all the pings succeed, the bookkeeper should then create a new in-progress game record (if isNewGame is true) or add to it (if false). It should then return True back to the referee.
+<p>
+(If the bookkeeper receives two "start" calls from the same referee, with no intervening <code>volity.record_game</code>, it must wipe the existing record and return an error.)
+<p>
+If the referee gets an error back from this RPC, it should not allow the game to start/resume. It should send a groupchat message explaining that not all the players could be verified.
+<p>
+<PRE >
+  volity.check_participation( ''Referee'' )
+</PRE>
+<p>
+This is the RPC that the bookkeeper sends; see above. The argument is the full JID of the referee. The client will return True if it is sitting at that referee's table.
+<p>
+The final stage in this is to tie the parts together. When the bookkeeper receives a <code>volity.record_game</code> RPC, it should only accept it if it has an interim game record with matching players. If it does not, it should just return an error.
+<p>
+<em>Flaw: In part 1, the bookkeeper doesn't have any full player JIDs! The game record only contains bare JIDs. Part 2 solves this. Should we go straight to implementing both parts, or change the way volity.record_game works?</em>
+<p>
+</div>

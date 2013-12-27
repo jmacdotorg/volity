@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: SVG Scaling</TITLE>
+<META NAME='KEYWORDS' CONTENT='SVG_Scaling'/>
+<LINK REL="stylesheet" HREF="/web/20070731163318cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=SVG+Scaling">SVG Scaling</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>The nice thing about <a href="svg.html" class=wikipagelink>SVG</a> is that it can scale to fit your window. The annoying thing about SVG is that it can scale to fit your window in several different ways, and you have to pay attention to several different parameters to make it work right.
+<p>
+<H2>A Square, Scaling Interface</H2>
+
+<p>
+The most straightforward way to set up your SVG file is to define a view box, but no size.
+<p>
+<pre>
+  &lt;svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+      viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" &gt;
+    &lt;ellipse cx="50" cy="50" rx="50" ry="50" /&gt;
+  &lt;/svg&gt;
+</pre>
+<p>
+This defines a square viewbox whose coordinates range from 0,0 (top left) to 100,100 (bottom right). The size of a coordinate unit is not important. <a href="gamut.html" class=wikipagelink>Gamut</a> will draw this interface into the largest square that fits into the game window.
+<p>
+This interface contains just one element: an ellipse whose center is 50,50 -- the center of the square -- and whose vertical and horizontal radii are 50. So it will brush the borders of the viewbox on all four sides; it will in fact be a circle, the largest circle that fits in the window.
+<p>
+(If the game window is not square, you will get blank space to the left and right of the interface area -- or above and below, depending on whether the window is too wide or too tall. This is what the "xMidYMid" attribute does. The circle will remain circular.)
+<p>
+Note that the value 100 is a completely arbitrary choice. You could just as well define a viewBox of "0 0 5 5"; then the bottom right coordinate would be 5,5.
+<p>
+<H2>A Non-Square Interface</H2>
+
+<p>
+You can just as easily set your viewbox to be a rectangle.
+<p>
+<pre>
+  &lt;svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+      viewBox="0 0 200 100" preserveAspectRatio="xMidYMid" &gt;
+    &lt;ellipse cx="100" cy="50" rx="100" ry="50" /&gt;
+  &lt;/svg&gt;
+</pre>
+<p>
+This defines a rectangle twice as wide as it is high. Its coordinates range from 0,0 (top left) to 200,100 (bottom right). It contains an ellipse which will also be twice as wide as it is high.
+<p>
+Again, Gamut will draw this interface as large as it can while retaining the 2x1 aspect ratio, and still fitting in the game window. If the window is roughly square, then there will be blank space above and below the viewbox.
+<p>
+</div>

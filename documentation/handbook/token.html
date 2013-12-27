@@ -1,0 +1,47 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Token</TITLE>
+<META NAME='KEYWORDS' CONTENT='Token'/>
+<LINK REL="stylesheet" HREF="/web/20070303144229cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Token">Token</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>Translation tokens are a <a href="localization.html" class=wikipagelink>localization</a> mechanism.
+<p>
+When an <a href="rpc_replies.html" class=wikipagelink>RPC reply</a> wants to express something in natural language, it uses <strong>tokens</strong>. These are simply namespaced strings which are meant to be looked up by a <a href="client.html" class=wikipagelink>client</a> and translated into its human user's preferred language. The namespace defines where a <a href="client.html" class=wikipagelink>client</a> should go to seek a translation table. 
+<p>
+You typically translate a <em>list</em> of tokens, not just a single token. The first token in the list may have a translation which has interpolation points. (E.g., "The \1 is inside the \2.") The translator fills these points in with the translations of the following tokens. It is an error for the list to be too short. (E.g., in this example, there would have to be at least two tokens after the first.)
+<p>
+Interpolation points may occur out of order, or more than once. (A Yodaspeak translation of the token described above might be: "Within the \2 the \1 resides. Seek the \2, mmm?")
+<p>
+<H2>Namespaces</H2>
+
+<p>
+Tokens are namespaced, using the same dot notation that Volity's <a href="rpc_requests.html" class=wikipagelink>RPC Requests</a> use.
+<p>
+The first token in a list must have a namespace. Following tokens may omit the namespace; if a token lacks a dot, it is assumed to be in the same namespace as the first token.
+<p>
+The namespaces that Volity supports includes:
+<p>
+<DL >
+<dt>volity<dd>Tokens defined by the platform's core spec, and supported by every compliant client application.
+<dt>game<dd>Tokens defined by a particular ruleset. A compliant <a href="ui_file.html" class=wikipagelink>UI file</a> for that ruleset will contain <a href="localization_files.html" class=wikipagelink>localization files</a> which translate these tokens.
+<dt>seat<dd>Defined just like the "game" namespace, but the value is always a seat id.
+<dt>ui<dd>Defined and used within a <a href="ui_file.html" class=wikipagelink>UI file</a>. They are not specified by the ruleset, and the referee does not send them. Like the "game" and "seat" namespaces, the "ui" tokens are translated by <a href="localization_files.html" class=wikipagelink>localization files</a>. However, they are used only in UI <code>localize()</code> calls.
+<dt>literal<dd>The text after the "literal." is copied literally. (This text may include dots, backslashes, or other funny characters. There is no backslash-escaping, or any other kind.)
+</DL>
+<p>
+<H2>How are these tokens translated?</H2>
+
+<p>
+See <a href="rpc_replies.html" class=wikipagelink>RPC Replies</a> for a list of volity.* tokens, and their English translations.
+<p>
+The game.*, seat.*, and ui.* tokens are translated via <a href="localization_files.html" class=wikipagelink>localization files</a> loaded in from the game's <a href="ui_file.html" class=wikipagelink>UI file</a>.
+</div>

@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: RPC Replies</TITLE>
+<META NAME='KEYWORDS' CONTENT='RPC_Replies'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=RPC+Replies">RPC Replies</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>When responding to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> originating from <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s, Volity entities must format their responses as arrays, with the structure described on this page. This is because, when playing games, there are really two distinct levels of error that a client can make through RPC: either a malformed or mistimed request, which will result in a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Faults" class=wikipagelink>fault</a>, or a perfectly fine request that tries to make an illegal move of some sort, which will result in the return of a localizable RPC reply as described below.
+<p>
+Generally, other sorts of requests (usually between two automated entities, or from a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> to the client) should either return some expected value (according to the nature of the request) or throw a fault. In many cases (as with ref-to-client requests) the caller won't even pay particular attention to the return value.
+<p>
+<H2>Flags</H2>
+
+<p>
+The first member of the response array is a <strong>flag</strong> (a string) whose dot-delimited <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>namespace</a> signals it as being defined by either the core Volity platform or a specific ruleset. This first token basically describes the success of the original request. (The namespace of the flag is orthogonal to the namespace of the RPC request that's being replied to.)
+<p>
+A flag of <code>volity.ok</code> signals success. If the original request is returning a value, the second member of the array is this value (which may be of any Jabber-RPC type). An array beginning with <code>volity.ok</code> may not have more than two members.
+<p>
+A flag of <em>anything else</em> signals failure. Specifically, it means that, while the sender understood the original request well enough to not throw back an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Faults" class=wikipagelink>RPC fault</a>, it still wishes to signal a failure to carry out the request's instructions. Most commonly, this is due to a game player requesting the referee to make an illegal move. Arrays signalling failure may have any length (except zero). All array members must be strings, and will be interpreted as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>tokens</a>. When the client receives a failure array, it will display the localized failure message (and take no other action).
+<p>
+<H3>Core-defined flags</H3>
+
+<p>
+These are tokens of the volity namespace, and their English translations.
+<p>
+(Italicized comments are not translations; they are comments, explaining when the given token can occur.)
+<p>
+<DL >
+<dt>volity.ok<dd> <em>(Generic success -- what follows is data. This token has no translation, because only failures are translated.)</em>
+<dt>volity.unknown_token<dd> (Untranslatable message: \1) <em>(Can be generated client-side for unrecognized tokens.)</em>
+<dt>volity.invalid_seat<dd> (Invalid seat "\1")
+<dt>volity.offline<dd> The service has been disabled by the administrator.
+<dt>volity.no_seat<dd> No seats are available. <em>(The requester's sit() request was received but refused.)</em>
+<dt>volity.seat_not_available<dd> That seat is not available. <em>The sit() request is refused, because the requested seat is not part of the current game configuration.</em>
+<dt>volity.bad_config<dd> The game cannot begin, because the current table configuration is not allowed. <em>(The requester's ready() request was received but refused, because the table's current configuration can't support a new game.)</em>
+<dt>volity.empty_seats<dd> The game cannot begin, because not all required seats have players. <em>(The requester's ready() request was received but refused, because there are mandatory seats still empty.)</em>
+<dt>volity.referee_not_ready<dd> The referee is not yet ready to service requests.
+<dt>volity.game_in_progress<dd> The game is in progress.
+<dt>volity.game_not_in_progress<dd> The game has not yet started.
+<dt>volity.authorizing_in_progress<dd> The game is still authorizing.
+<dt>volity.jid_present<dd> The player \1 has already joined the table.
+<dt>volity.jid_not_present<dd> The player \1 has not joined the table.
+<dt>volity.jid_not_ready<dd> The player \1 is not yet ready to take part in the game. <em>(The player's client has joined, but hasn't sent its first send_state RPC yet. It's also possible that the named client is not a Volity client at all, but a plain Jabber MUC client.)</em>
+<dt>volity.not_seated<dd> You are not seated.
+<dt>volity.are_seated<dd> You are seated.
+<dt>volity.not_your_turn<dd> It's not your turn.
+<dt>volity.relay_failed<dd> Your message could not be delivered to \1. <em>(Used when the referee tries to send an invitation on behalf of a player.)</em>
+<dt>volity.no_bots_provided<dd> This game parlor does not provide bots.
+<dt>volity.bot_not_available<dd> That bot is not available.
+<dt>volity.not_bot<dd> The player \1 is not a bot.
+<dt>volity.bot_seated<dd> That bot is seated.
+<dt>volity.players_not_responding<dd> The following player(s) cannot be located by the bookkeeper: \1
+<dt>volity.players_not_authorized<dd> The following player(s) are not authorized to play: \1
+<dt>volity.game_record_conflict<dd> A game record already exists for this referee.
+<dt>volity.game_record_missing<dd> No game record exists for this referee.
+<dt>volity.prepare_game_failure<dd> The bookkeeper could not authorize this game: \1
+<dt>volity.unknown_uri<dd> The bookkeeper does not recognize the URI: \1
+<dt>volity.unknown_url<dd> The bookkeeper does not recognize the URL: \1
+</DL>
+<p>
+<H2>Data</H2>
+
+<p>
+The remaining members of the array are data that provide any additional return values (on success) or failure information (on failure).
+<p>
+In the latter case, to support internationalization, ruleset-defined responses will likely contain <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>token</a>s. In this case, the flag prompts the client to pass the flag itself, and all its data, to the UI file's <code>localize()</code> function.
+<p>
+<hr class=wikiline>
+<p>
+<em>Old stuff follows... will move or delete if the protocol defined above is generally accepted.</em>
+<p>
+The "volity." namespace of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> all define their own reply values and fault codes.
+<p>
+The "game." namespace is more of a problem, since the semantics are all game-specific. The game developer has to decide all the argument types, reply values, and fault codes.
+<p>
+My (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Zarf" class=wikipagelink>Zarf</a>'s) thesis is that <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> fault codes are not rich enough to be used for game-specific error messages. A fault contains an integer code and a string. (See the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML-RPC" class=wikipagelink>XML-RPC</a> spec.) Integers are a headache for everybody (player, UI file author, referee author) because you have to keep looking them up. Strings make good programming identifiers ("ENOTYOURMOVE", etc), but can't be presented to the user in the common case, because of i18n issues.
+<p>
+I figure we can use RPC faults to indicate <em>bugs</em> -- situations which a player will not see, if he's playing a well-written game with a well-written UI. We should <em>not</em> recommend using RPC faults to reject bad player moves. Instead, the referee should reject an illegal move by sending back either
+<p>
+<UL >
+<li> a (successful) RPC reply, with parameters indicating the game-specific problem, or
+<li> a (successful) RPC reply, followed by a new RPC announcing the problem.
+</UL>
+<p>
+Either way, the referee can include arbitrary information, instead of being limited to integer-and-one-string.
+<p>
+We can get away with <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Faults" class=wikipagelink>a short (fixed!) list of RPC faults</a>, because there aren't that many things that can go wrong with client-ref communication. The client's normal behavior for all of these would be to display a technical error message, including the RPC name and arguments that triggered the error. The player would then report it to the game developer. (Or, getting fancier, the game developer could scan referee logs for errors.)
+<p>
+(In all cases, an informational string can accompany the code. It doesn't have to be internationalized, because it's a message to the game developer, not the player.)
+<p>
+<em>See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Faults" class=wikipagelink>RPC faults</a> for said list.</em>
+<p>
+"Identity rejected" means the caller isn't a player of this game. That would be tested by common Volity::Game code, not game-developer-written referee code.
+<p>
+"Call illegal in this game state" is a generic fallback for "illegal move" or "not your move". As I said, it's better if the referee sends a game-specific RPC response or method for these situations. But it's still worth having the fault code, as a fallback.
+<p>
+<H2>External links</H2>
+
+<p>
+<a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0086.html">[JEP-0086: Error Condition Mappings]</a>
+</div>

@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Table</TITLE>
+<META NAME='KEYWORDS' CONTENT='Table'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Table">Table</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A Volity <strong>table</strong> is simply a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Multi-User_Chat" class=wikipagelink>multi-user chat</a> where a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game" class=wikipagelink>game</a> takes place. Participating in this chat is the game's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>, and all of its <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?User" class=wikipagelink>users</a>, whether they are actively <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>playing</a> or merely <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Observation" class=wikipagelink>observing</a>.
+<p>
+A table is created by a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> when it receives a <code>volity.new_table</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC request</a> from a user. Actually, the table's underlying MUC is literally created by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> that the server creates first. The referee then joins the table and invites the user who made the original request. That player is then free to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>configure the table</a>, and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Invitation" class=wikipagelink>invite</a> other users to join. The game will actually start when all users seated there declare <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Readiness" class=wikipagelink>readiness</a>.
+<p>
+Only one game at a time can happen at a table, so at any time the table has a basic status of being either in play, or idle.
+<p>
+<H2>Tables and MUC roles</H2>
+
+<p>
+At the MUC level, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> <em>always</em> possesses a role of "moderator" and an affilitation of "owner". Therefore, the referee can always be distinguished from the other uses by its unique affiliation.
+<p>
+The referee uses the Jabber-defined MUC protocol to adjust the roles of other users at the table:
+<UL >
+<li> Whenever it recognizes a user as actively playing the game (either at the start of the game or later on), it grants moderator privileges to that user.
+<li> When a user is no longer actively playing (either because the game ended or some other reason) it revokes moderator privileges, instead giving that user a MUC role of "participant".
+</UL>
+<p>
+As moderators, playing users have access to all the powers defined by the MUC protocol, including preventing observers from kibitzing (i.e. setting them to "visitor" and not "participant" roles) and booting and even locking out unpleasant users.
+We consider disagreements about the use of moderator privileges to be a strictly interuser problem, perhaps ultimately answerable to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a>.
+</div>

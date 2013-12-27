@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Volity Command Stub</TITLE>
+<META NAME='KEYWORDS' CONTENT='Volity_Command_Stub'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Volity+Command+Stub">Volity Command Stub</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A <strong>volity command stub</strong> is an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML" class=wikipagelink>XML</a>-based file containing instructions for an active <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client_Application" class=wikipagelink>client application</a>. Typically, it is generated from an external program such as the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity.Net_Game_Finder" class=wikipagelink>volity.net game finder</a>, and passed to a client such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a> by the user's operating system, which recognizes it as a volity file through its MIME type or filename extension.
+<p>
+<H2>Specifications</H2>
+
+<p>
+<H3>Encoding</H3>
+
+<p>
+A volity file is XML, and must follow XML's own encoding rules and practices. Therefore, the default encoding is utf-8.
+<p>
+<H3>Filename extension</H3>
+
+<p>
+A volity file MUST have an extension of <code>.volcom</code> . There are no other restrictions on the filename.
+<p>
+<H3>MIME type</H3>
+
+<p>
+A volity file MUST have a MIME type of <code>application/x-volity-command-stub</code> .
+<p>
+<H2>Document structure</H2>
+
+<p>
+Typically, a volity file contains a single instruction for the client. Currently we define only three types of instructions: create a new table at a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>, join an existing <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>, or join a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Lobby" class=wikipagelink>lobby</a>.
+<p>
+<H3>Table creation example</H3>
+
+<p>
+<PRE >
+    &lt;volity&gt;
+      &lt;create&gt;
+        &lt;parlor jid="rps@volity.net" /&gt;
+      &lt;/create&gt;
+    &lt;/volity&gt;
+</PRE>
+<p>
+<em>The tag name is likely to change to "create-table" in the near future.</em>
+<p>
+<H3>Table joining example</H3>
+
+<p>
+<PRE >
+    &lt;volity&gt;
+      &lt;join-table&gt;
+        &lt;table jid="12345678_12345@conference.volity.net" /&gt;
+       &lt;/join-table&gt;
+    &lt;/volity&gt;
+</PRE>
+<p>
+<H3>Lobby joining example</H3>
+
+<p>
+<PRE >
+    &lt;volity&gt;
+      &lt;join-lobby&gt;
+        &lt;muc jid="foo-lobby@conference.volity.net" /&gt;
+       &lt;/join-lobby&gt;
+    &lt;/volity&gt;
+</PRE>
+<p>
+<H2>URL Form</H2>
+
+<p>
+We find that it is inconvenient to use MIME types on a web site to trigger custom application behavior. (I.e., you are browsing volity.net in your regular web browser; you click on a game; Gamut starts up.) It is possible under MacOS<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=edit&id=MacOS" class=wikipageedit>?</a> and Windows, but it may be blocked by security rules.
+<p>
+Therefore, we need a new URL schema which serves the same purpose.
+<p>
+I suggest, in direct parallel with the XML examples above:
+<p>
+<PRE >
+  volity:rps@volity.net?create-table
+  volity:12345678_12345@conference.volity.net?join-table
+  volity:foo-lobby@conference.volity.net?join-lobby
+</PRE>
+<p>
+Note that the @ sign is legal in URLs, but many characters will have to be percent-encoded. <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Unicode" class=wikipagelink>Unicode</a> characters must be UTF-8-encoded and then percent-encoded.
+<p>
+The syntax of these URLs follows JEP-0147: <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0147.html">http://www.jabber.org/jeps/jep-0147.html</a>
+<p>
+<H2>See Also</H2>
+
+<p>
+<UL >
+<li> Volity command stub DTD <em>(There ain't one yet. Fairly important TODO! I'll get around to it soon. --<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jmac" class=wikipagelink>jmac</a>)</em>
+</UL>
+</div>

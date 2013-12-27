@@ -1,0 +1,57 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Volity Metadata Terms</TITLE>
+<META NAME='KEYWORDS' CONTENT='Volity_Metadata_Terms'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Volity+Metadata+Terms">Volity Metadata Terms</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>These are the terms which exist in the Volity vocabulary of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Metadata" class=wikipagelink>metadata</a>. (For other metadata vocabularies used in Volity files, see <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Dublin_Core" class=wikipagelink>Dublin Core</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Metadata_Terms" class=wikipagelink>game metadata terms</a>.)
+<p>
+The namespace of these terms is <code>http://volity.org/protocol/metadata</code>. We recommend that you use <code>volity:</code> as the XML namespace prefix, but this is not required.
+<p>
+<H3>Vocabulary</H3>
+
+<p>
+<strong>For both UI and resource files:</strong>
+<p>
+<DL >
+<dt>description-url<dd> The URL of a web page containing more information about the UI.
+<dt>version<dd> A number describing the UI or resource. (The actual UI package which contains this metadata. This is not the version of the ruleset or the referee.)
+<dt>requires-ecmascript-api<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version specification</a> of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript_API" class=wikipagelink>ECMAScript API</a> which this UI requires.
+<dt>requires-resource<dd> A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a> which this file requires. <em>(Yes, resource files may require other resource files.)</em> This may be followed by a fragment giving the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version specification</a> which is required.
+</DL>
+<p>
+<strong>For UI files:</strong>
+<p>
+<DL >
+<dt>ruleset<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>. This may be followed by a fragment giving the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version specification</a> which this UI requires. If the UI supports multiple rulesets, there should be multiple <code>ruleset</code> metadata lines (each with its own version spec).
+<dt>seat-color<dd> A color to associate with one seat. This should be a string of the form <em>seatid #color</em>, where <code>seatid</code> is a seat ID and <code>color</code> is a three- or six-digit hex string. (Thus: <code>"red #F00"</code> or <code>"italy#80FF00"</code>.) You should provide one <code>seat-color</code> entry for each seat (if it makes sense to color-code seats at all). Colors should be maximally saturated; white and black colors should be pure.
+</DL>
+<p>
+<strong>For resource files:</strong>
+<p>
+<DL >
+<dt>provides-resource<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a>. This may be followed by a fragment giving the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version number</a> which this resource provides.
+</DL>
+<p>
+<H3>Sample SVG Metadata Element</H3>
+
+<p>
+<PRE >
+  &lt;metadata
+    xmlns:volity="http://volity.org/protocol/metadata"&gt;
+    &lt;volity:description-url&gt;http://volity.org/games/glotz/ui/credits.html&lt;/volity:description-url&gt;
+    &lt;volity:ruleset&gt;http://volity.org/games/glotz#2.5,3-4&lt;/volity:ruleset&gt;
+    &lt;volity:version&gt;1.5.0&lt;/volity:version&gt;
+    &lt;volity:requires-ecmascript-api&gt;5&lt;/volity:requires-ecmascript-api&gt;
+  &lt;/metadata&gt;
+</PRE>
+</div>

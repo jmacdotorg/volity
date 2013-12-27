@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Seating UI</TITLE>
+<META NAME='KEYWORDS' CONTENT='Seating_UI'/>
+<LINK REL="stylesheet" HREF="/web/20070112044342cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Seating+UI">Seating UI</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>This describes the functional requirements for the client's <a href="seat.html" class=wikipagelink>seating</a> interface, as described on the mailing list and as implied by the referee's <a href="rpc_requests.html" class=wikipagelink>RPCs</a>.
+<p>
+When the client joins a <a href="table.html" class=wikipagelink>table</a> -- whether the game is in setup or active <a href="referee_states.html" class=wikipagelink>state</a> -- it first receives a volity.seat_list() RPC, listing all the seat IDs that are meaningful in the ruleset. The client may then receive a bunch of volity.player_sat() RPCs, indicating what players are in what seats. It may also receive a volity.required_seat_list(), containing a list of seats (a subset of seat_list) which are required for the game to begin.
+<p>
+(We don't currently have a guaranteed order for these RPCs, except that seat_list will come before required_seat_list. So it might be wise to pause for a second to accumulate information, rather that trying to refresh the UI for every RPC that arrives. There's also the question of presence information. The MUC host will send presence info for all players at the table, and this will <em>probably</em> arrive before any RPCs, but I'd hate to rely on that.)
+<p>
+The rule that the referee relies on when sending this info is: the client will display all the <em>required</em> seats, and all the seats which have players in them. It will not display non-required empty seats. 
+<p>
+Yes, this means that as players sit and stand, seats will appear and disappear from the list. This is appropriate for games like Fluxx, which have an arbitrary number of indistinguishable seats. It is <em>not</em> appropriate for games like Chess; therefore, a Chess referee will mark both its seats as required.
+<p>
+It is legal (but will be uncommon) for a referee to send additional required_seat_list() RPCs during configuration. This, too, can cause seats to appear and disappear. The new required seat list completely replaces the old list. (E.g., if you receive required_seat_list() with an empty list, then all seats become non-required.)
+<p>
+<em>(The use for this case would be a game where the number of seats is fixed, but varies with a game configuration variable. Uncommon, as I said.)</em>
+<p>
+<H2>UI Requirements</H2>
+
+<p>
+The UI provides these commands:
+<p>
+1: A big friendly "sit down" button. (Or menu option, or whatever. As long as it's prominent.) This sends volity.sit(selfjid). The referee will respond with a seat ID (indicating success), or a failure token message. If it succeeds, the referee will immediately follow up with a volity.player_sat(jid, seatid) RPC (broadcast to all players).
+<p>
+(Note that if this succeeds, it may return the ID of a previously empty, non-required seat -- that is, a seat not visible in the UI. Once the player sits in it, it will of course be necessary to display it.)
+<p>
+Typically, the referee will handle this case by seating you in an empty seat, up to the limit of the number of seats available in the game. If there are no empty seats, it is up to the referee whether to co-seat you in an occupied seat, or return a failure message.
+<p>
+In many games, it is sufficient for everybody to whack the "sit down" button to produce an acceptable configuration. However, if seats have a particular identity (as in Bridge) or if players want to share a seat, they will want to use a second command:
+<p>
+2: "Sit down in this particular seat". This sends volity.sit(selfjid, seatid). Again, the result will be either the seatid or a failure message.
+<p>
+The UI only needs to offer this option for currently-visible seats. (The referee has arranged matters so that a player will never want to sit in a specific non-displayed seat.)
+<p>
+<em>(The unspoken assumption with this model is this: Seats with specific game roles are mandatory. Optional seats are a homogenous, invisible pool, which the referee can hand out in response to volity.sit(jid) calls. A player may send volity.sit(jid, seat) -- for a specific seat -- in order to take a particular game role, or in order to share a seat with a friend. Thus, mandatory seats and occupied seats must be visible. Optional empty seats should be invisible, because the homogenous pool of them may be very large. So a Fluxx game may have 50 seats, but the UI won't show 50 boxes unless 50 people actually sit down to play.)</em>
+<p>
+3: There must also be a "stand up" command, which sends volity.stand(selfjid).
+<p>
+4: The UI may also offer commands to seat another player, or cause another player to stand up. The volity.sit() and volity.stand() RPCs permit passing another player's JID. This exists to allow an experienced player to assist newcomers, but it might turn out to be confusing or annoying in real life. We will see.
+<p>
+5: Finally, there must be a large and friendly "I'm ready" button. This should only be active when the player is seated.
+<p>
+<H2>UI appearance</H2>
+
+<p>
+The appearance of the UI will naturally vary between client implementations. However, what we're visualizing is a list of boxes representing the (visible) seats. Each box is labelled with the seat's name (you can get this through the translation mechanism), and contains a list of the players in that seat. (Might be an empty list, for an empty but required seat.) Below that is a larger box listing the unseated (observer) players at the table.
+</div>

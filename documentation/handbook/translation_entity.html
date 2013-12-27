@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Translation Entity</TITLE>
+<META NAME='KEYWORDS' CONTENT='Translation_Entity'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Translation+Entity">Translation Entity</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>When you are designing a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> in an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML" class=wikipagelink>XML</a> format -- such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a> -- you can localize your elements using XML entities.
+<p>
+Say we are writing an SVG UI, and we want to display the score. So we create some SVG boxes, and label them with:
+<p>
+<PRE >
+  &lt;text x="0" y="0" id="score"&gt;0&lt;/text&gt;
+  &lt;text x="0" y="10"&gt;Victory Points&lt;/text&gt;
+</PRE>
+<p>
+The first of these is fine; digits are readable by everybody. (We give the element an id so that your UI script code can change the text as the score changes.)
+<p>
+The second is not so great -- it's hardwired to English. We would like to set up the UI so that it can easily be extended for other languages.
+<p>
+<H2>Defining Translation Entities</H2>
+
+<p>
+To do this, make sure you have a <code>locale</code> directory in your UI package. This directory should have a subdirectory for each language you want to support: <code>locale/en</code> for English, <code>locale/de</code> for German, and so on. You can add these one at a time. For now, we'll start with English.
+<p>
+Create a file <code>locale/en/message.def</code>.
+<p>
+(In fact, this can have any name, as long as it's inside the <code>locale/en</code> directory. We will use <code>message.def</code> throughout this example.)
+<p>
+This file can contain any number of XML entity definitions. A definition would look like this:
+<p>
+<PRE >
+  &lt;!ENTITY vpoints "Victory Points"&gt;
+</PRE>
+<p>
+You should create one <code>message.def</code> file for each language you want to support. They must all define the same entities. The German one, then, would look like:
+<p>
+<PRE >
+  &lt;!ENTITY vpoints "Siegpunkt"&gt;
+</PRE>
+<p>
+<H2>The Magic Vollocp Header</H2>
+
+<p>
+In order to use these entities, your SVG file must undertake the proper ritual. That is to say, it must have define and invoke a magic URL in its DOCTYPE header.
+<p>
+We shall not go into the arcanities of how the ritual works. Just copy this:
+<p>
+<PRE >
+  &lt;?xml version="1.0"?&gt;
+  &lt;!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+    "<a href="/web/20070802131051/http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</a>" [
+  &lt;!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en,de#lang"&gt;
+  %localedef; %lang;
+  ]&gt;
+</PRE>
+<p>
+The two magical lines go inside square brackets at the end of the <code>&lt;!DOCTYPE&gt;</code> tag.
+<p>
+Ok, we'll go into <em>some</em> arcanities. You shall recognize the <code>message.def</code> part of the header; this is the name shared by the files you created in each <code>locale</code> subdirectory.
+<p>
+The <code>?en,de</code> part is the list of languages you support. This list <em>must</em> match the list of <code>locale</code> subdirectories which contain <code>message.def</code> files. In this case, we're declaring that <code>locale/en/message.def</code> and <code>locale/de/message.def</code> exist.
+<p>
+(By the way, the order of languages in your list is significant. If a player's client is set to some language you have not defined, it will default to the <em>first</em> language on your list.)
+<p>
+<H2>Using Translation Entities</H2>
+
+<p>
+Now that your files are in place and your header is set up, you can use the entities you've defined.
+<p>
+<PRE >
+  &lt;text x="0" y="0" id="score"&gt;0&lt;/text&gt;
+  &lt;text x="0" y="10"&gt;&amp;vpoints;&lt;/text&gt;
+</PRE>
+<p>
+The &amp;vpoints; entity works just like the HTML entities you're familiar with -- &amp;amp; and so on. When it appears in the SVG file, its equivalent text is substituted automatically. But because of the magic header, the client substitutes the text <em>according to the player's language preference</em>. If the player has set his Volity client to English, he'll see "Victory Points". If he's chosen German, he'll see "Siegpunkt" instead.
+<p>
+(If he's chosen any other language, he'll get "Victory Points". You've only defined two languages, and any other preference defaults to the first language on your list: English.)
+<p>
+<H2>Adding New Languages</H2>
+
+<p>
+Create a new <code>message.def</code> file -- say, <code>locale/fr/message.def</code>. 
+<p>
+Add the language code to the header line:
+<p>
+<PRE >
+  &lt;!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en,de,fr#lang"&gt;
+</PRE>
+<p>
+Presto, you have added support for a new language.
+<p>
+<H2>Loading Language-Specific SVG Files</H2>
+
+<p>
+Instead of defining XML entities, you can translate an entire SVG file, and then use this system to load SVG elements from it.
+<p>
+You do not translate the <code>main.svg</code> file. Instead, create a secondary file in <code>locale/en</code> -- say, <code>locale/en/objects.svg</code>.
+<p>
+Define appropriate elements in this file:
+<p>
+<PRE >
+  &lt;text x="0" y="10" id="scorelabel"&gt;Victory Points&lt;/text&gt;
+</PRE>
+<p>
+Then, for each other language you wish to support, create an appropriate translation. In <code>locale/de/objects.svg</code>, you would have:
+<p>
+<PRE >
+  &lt;text x="0" y="10" id="scorelabel"&gt;Siegpunkt&lt;/text&gt;
+</PRE>
+<p>
+...and so on. Again, each of these files must contain the same elements.
+<p>
+Once again, your <code>main.svg</code> UI file must contain the magic header. However, the various <code>objects.svg</code> files must <em>not</em> contain the magic header lines. Trust me on this.
+<p>
+Your <code>main.svg</code> can then import elements from the appropriate <code>objects.svg</code>, by doing this:
+<p>
+<PRE >
+  &lt;use xlink:href="locale/&amp;lang;/objects.svg#scorelabel" /&gt;
+</PRE>
+<p>
+This works because the &amp;lang; entity is defined to be the appropriate string -- <code>en</code>, <code>de</code>, etc -- according to the player's language preference. 
+<p>
+(Again, if he has chosen a language you do not support, he'll get the first language on your list. This is why it's critical that the <code>?en,de</code> part of the header list the languages that you actually support. If you leave one out, the player won't be able to see it, even if you have a <code>locale</code> subdirectory set up.)
+</div>

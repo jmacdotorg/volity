@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<HTML><HEAD>
+
+<script type="text/javascript" src="/static/js/analytics.js" ></script>
+<link type="text/css" rel="stylesheet" href="/static/css/banner-styles.css"/>
+
+
+
+<TITLE>Volity Wiki: Bot</TITLE>
+<META NAME='KEYWORDS' CONTENT='Bot'/>
+<LINK REL="stylesheet" HREF="/web/20070802131051cs_/http://www.volity.org/main.css">
+</HEAD><BODY BGCOLOR="white">
+
+
+<div class=wikiheader><h1><a href="back.html=Bot">Bot</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
+<hr class=wikilineheader></div><div class=wikitext>A <strong>bot</strong> is simply a program that acts like a <a href="player.html" class=wikipagelink>player</a>. In fact, it <em>is</em> a player, for all intents and purposes; just as with its human counterparts, every bot on the network requires its own, unique <a href="jabberid.html" class=wikipagelink>JabberID</a>, and accrues its own <a href="reputation_system.html" class=wikipagelink>reputation</a> and <a href="elo_score.html" class=wikipagelink>ELO score</a>s over time. 
+<p>
+(There is a problem with this: if two bots are running the same <em>program</em>, it would make more sense for them to share a reputation and game history. Unfortunately, there is no way to authenticate what algorithm a network entity is running -- you can only authenticate its JID. We can only suggest that if you run a bot program on several servers, you should have them all authenticate with the same JID (but different resource strings).)
+<p>
+Most bots you encounter will probably be of the <a href="retainer.html" class=wikipagelink>retainer</a> variety, automated opponents that <a href="parlor.html" class=wikipagelink>parlor</a>s can provide at the request of visiting human players. Less common are <a href="ronin.html" class=wikipagelink>ronin</a>, wandering programs that seek their own competition.
+<p>
+<H3>Bot-vs-Bot Games</H3>
+
+<p>
+A core principle of Volity is that Volity is for humans. Volity bots exist to play against humans. They should not waste resources by playing solely against each other. We particularly don't want bots to get into a loop where they start a game, play through it at superhuman speed, and then repeat the process before anyone can stop them.
+<p>
+However, humans do sometimes want to pit bots against each other. We permit this -- but only under human supervision.
+<p>
+What does this mean in practical terms? <em>A referee will not allow a game to start when only robots are seated.</em> (Same goes for resuming a suspended game.) The referee will reject ready() RPCs from a table in that configuration.
+<p>
+So to run a bot-on-bot game, you have to seat a bunch of bots at a table <em>and</em> sit down yourself. You can share a seat with a bot; it's okay if all the game moves are made by bots. But because a human is seated, the game won't start until that human hits the Ready button. That game may finish quickly, but the bots can't get into a loop of game after game after game.
+<p>
+(Jason points out that this confuses the <a href="elo.html" class=wikipagelink>ELO</a> ratings. You can't discover the relative playing strengths of bots by playing them against each other, because one of the game seats is a bot-and-human pair. That's true, but I am not worrying much about ELO policy here -- I think it's a higher level than table/referee management. Or you could handle it this way: play a tournament of fifty bot-on-bot games, where for half of them you share one bot's seat, and half of them you share the other bot's seat. You'll generate a lot of bot-and-human stats to ignore, but each bot will accumulate a pool of single-seat ratings with the correct win/loss ratio.)
+<p>
+<H2><a href="rpc_requests.html" class=wikipagelink>RPC Requests</a></H2>
+
+<p>
+A bot does not have to follow Volity RPC specifications. However, a <a href="retainer.html" class=wikipagelink>retainer</a> bot which is created by a <a href="bot_factory.html" class=wikipagelink>bot factory</a> must respond to the following RPC:
+<p>
+<H3>volity.leave_table()</H3>
+
+<p>
+Request that a bot leave the table and shut down. Only referees can make this request. (A player triggers this by sending volity.remove_bot() to the <a href="referee.html" class=wikipagelink>referee</a>.) A seated bot should reject this request.
+<p>
+<H2>See also</H2>
+
+<p>
+<a href="bot_api.html" class=wikipagelink>Bot API</a>
+</div>
