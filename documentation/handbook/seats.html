@@ -12,14 +12,13 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Seats">Seats</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext><strong>Seats</strong> are basically informational containers for <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a>s at a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>. Every player who is actually participating in the game at hand is in a seat. A seat will usually contain only one player acting alone, but <em>can</em> contain multiple players -- and it is this player-containing ability that makes them useful.
+<h1>Seats</h1><div class=wikitext><strong>Seats</strong> are basically informational containers for <a href="player.html" class=wikipagelink>player</a>s at a <a href="table.html" class=wikipagelink>table</a>. Every player who is actually participating in the game at hand is in a seat. A seat will usually contain only one player acting alone, but <em>can</em> contain multiple players -- and it is this player-containing ability that makes them useful.
 <p>
 A seat <em>acts as a single playing entity</em> during a game -- you can think of all the players sharing a seat as a sort of ad-hoc team. For example, a game of chess will <em>always</em> involve exactly two seats, but the "black" seat might contain one player while the "white" one contains five, all working together to defeat black. This does not mean that the white seat gets to move five times for every black move, or anything of the sort; it simply means that five people happen to be at the controls of white's pieces, but they must all still follow chess rules and (somehow) agree, once per turn, on a move to make.
 <p>
-Simialrly, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referees</a> always address game-specific <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> to <em>seats</em>, not individual players. This really just means that a referee will mirror all of its outgoing RPC requests to every player in the seat it wishes to address. 
+Simialrly, <a href="referee.html" class=wikipagelink>referees</a> always address game-specific <a href="rpc_requests.html" class=wikipagelink>RPC requests</a> to <em>seats</em>, not individual players. This really just means that a referee will mirror all of its outgoing RPC requests to every player in the seat it wishes to address. 
 <p>
-Players at tables but not in seats are actually <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Observation" class=wikipagelink>observers</a>.
+Players at tables but not in seats are actually <a href="game_observation.html" class=wikipagelink>observers</a>.
 <p>
 <H2>Seat properties</H2>
 
@@ -27,7 +26,7 @@ Players at tables but not in seats are actually <a href="/web/20070802131051/htt
 <H3>Identifier</H3>
 
 <p>
-Every seat has an <em>id</em>, a text string that serves as its primary identifier.  This string is not internationalized; it does not have to be human-readable. (The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> will have provisions for <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Tokens" class=wikipagelink>translating</a> seat IDs to the player's language.) However, it's good practice to make the IDs minimally readable: "black" and "white" for a Chess game, for example.
+Every seat has an <em>id</em>, a text string that serves as its primary identifier.  This string is not internationalized; it does not have to be human-readable. (The <a href="ui_file.html" class=wikipagelink>UI file</a> will have provisions for <a href="tokens.html" class=wikipagelink>translating</a> seat IDs to the player's language.) However, it's good practice to make the IDs minimally readable: "black" and "white" for a Chess game, for example.
 <p>
 The seat IDs are prescribed by the ruleset.
 <p>
@@ -46,9 +45,9 @@ A player can request to sit in a seat through the two different <code>sit</code>
 <p>
 The <code>stand</code> and <code>player_stood</code> calls are used when a player chooses to forego the whole business of seats and become a mere observer once more.
 <p>
-These calls can be called only before a game begins, or while a game is <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Suspension" class=wikipagelink>suspended</a>. Players' choosing their seats is considered a part of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> process, and all players must agree to the seating setup (by signaling <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Readiness" class=wikipagelink>readiness</a>) before the referee will start the game.
+These calls can be called only before a game begins, or while a game is <a href="game_suspension.html" class=wikipagelink>suspended</a>. Players' choosing their seats is considered a part of the <a href="table_configuration.html" class=wikipagelink>table configuration</a> process, and all players must agree to the seating setup (by signaling <a href="readiness.html" class=wikipagelink>readiness</a>) before the referee will start the game.
 <p>
-The exception is that, if a player leaves a seat (voluntarily or otherwise) <em>after a game starts</em>, the referee will continue to consider the departed player a part of that seat. That player can return to that one seat at any time afterwards. If the <em>sole</em> player in a seat leaves while a game is in progress, however, it introduces a potentially game-breaking situation. The referee enters <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?User_Departure" class=wikipagelink>user departure</a> mode in an attempt to save the game, or at least exit cleanly.
+The exception is that, if a player leaves a seat (voluntarily or otherwise) <em>after a game starts</em>, the referee will continue to consider the departed player a part of that seat. That player can return to that one seat at any time afterwards. If the <em>sole</em> player in a seat leaves while a game is in progress, however, it introduces a potentially game-breaking situation. The referee enters <a href="user_departure.html" class=wikipagelink>user departure</a> mode in an attempt to save the game, or at least exit cleanly.
 <p>
 <H3>Playing</H3>
 
@@ -60,7 +59,7 @@ The players should be aware of this, and perhaps work out a system amongst thems
 <H2>Rulesets and seats</H2>
 
 <p>
-A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset's</a> RPC requests should always make reference to <em>seats</em>, not individual <em>players</em>. For example, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Crazy_Eights" class=wikipagelink>crazy eights</a> ruleset defines a <code>game.player_played_card(player, card)</code> method, where the value of <em>player</em> is always the name of a seat. <em>Actually, at the time of this writing, it doesn't. But it will as soon as I get around to tweaking it. --<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jmac" class=wikipagelink>jmac</a></em>
+A <a href="ruleset.html" class=wikipagelink>ruleset's</a> RPC requests should always make reference to <em>seats</em>, not individual <em>players</em>. For example, the <a href="crazy_eights.html" class=wikipagelink>crazy eights</a> ruleset defines a <code>game.player_played_card(player, card)</code> method, where the value of <em>player</em> is always the name of a seat. <em>Actually, at the time of this writing, it doesn't. But it will as soon as I get around to tweaking it. --<a href="jmac.html" class=wikipagelink>jmac</a></em>
 <p>
 (Note that "player" can used as a synonym for "seat" when working at the ruleset level, just to keep things simple. For a ruleset, there simply is no distinction between seats and the actual players who make them up; each seat functions as a single player of the game.)
 <p>
@@ -85,6 +84,6 @@ An "advisor" bot could. This program would pay attention to the game from the pl
 <H3>Player Replacement</H3>
 
 <p>
-If a user has to leave (or <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?User_Departure" class=wikipagelink>vanishes unexpectedly</a>) then another user, either human or bot, can take its place. Even though one user might be controlling the player at a time in this case, it will still duly noted as a shared player in the final game record.
+If a user has to leave (or <a href="user_departure.html" class=wikipagelink>vanishes unexpectedly</a>) then another user, either human or bot, can take its place. Even though one user might be controlling the player at a time in this case, it will still duly noted as a shared player in the final game record.
 <p>
 </div>

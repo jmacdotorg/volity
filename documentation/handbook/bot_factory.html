@@ -12,10 +12,9 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Bot+Factory">Bot Factory</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>A bot factory is a Volity entity which creates and operates retainer <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a>s upon request.
+<h1>Bot Factory</h1><div class=wikitext>A bot factory is a Volity entity which creates and operates retainer <a href="bot.html" class=wikipagelink>bot</a>s upon request.
 <p>
-<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC Requests</a></H2>
+<H2><a href="rpc_requests.html" class=wikipagelink>RPC Requests</a></H2>
 
 <p>
 <H3>volity.new_bot (<em>URI</em>, <em>table</em>)</H3>
@@ -24,13 +23,13 @@
 Request a bot from this factory. The URI refers to a bot algorithm; the table is a MUC for the bot to join. (The bot can presume that the RPC's sender is the table's referee.) This returns the full JID of the bot, once the bot has successfully connected. If the URI is not one that the factory supports, this returns an error.
 <p>
 <UL >
-<li> Returns: the full <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> of the bot.
+<li> Returns: the full <a href="jid.html" class=wikipagelink>JID</a> of the bot.
 <li> Denial: volity.bot_not_available: The factory does not support the given URI.
 </UL>
 <p>
-The parlor may also respond to various <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Admin_RPC_Requests" class=wikipagelink>admin RPC requests</a>.
+The parlor may also respond to various <a href="admin_rpc_requests.html" class=wikipagelink>admin RPC requests</a>.
 <p>
-<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>Service Discovery</a> responses</H2>
+<H2><a href="service_discovery.html" class=wikipagelink>Service Discovery</a> responses</H2>
 
 <p>
 The disco#info of a bot factory looks like this:
@@ -43,7 +42,7 @@ The identity should have <strong>category</strong> "volity" and <strong>type</st
 <dt>ruleset-version<dd> Version number of the ruleset.
 <dt>description<dd> A headline describing the factory.
 <dt>website<dd> Human-browsable URL for the factory's website.
-<dt>visible<dd> 1 if the table is visible via the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>; 0 otherwise.
+<dt>visible<dd> 1 if the table is visible via the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>; 0 otherwise.
 <dt>contact-email<dd> Factory administrator contact.
 <dt>contact-jid<dd> Factory administrator contact.
 </DL>

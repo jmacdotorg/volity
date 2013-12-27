@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="back.html=Seating+UI">Seating UI</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>This describes the functional requirements for the client's <a href="seat.html" class=wikipagelink>seating</a> interface, as described on the mailing list and as implied by the referee's <a href="rpc_requests.html" class=wikipagelink>RPCs</a>.
+<h1>Seating UI</h1><div class=wikitext>This describes the functional requirements for the client's <a href="seat.html" class=wikipagelink>seating</a> interface, as described on the mailing list and as implied by the referee's <a href="rpc_requests.html" class=wikipagelink>RPCs</a>.
 <p>
 When the client joins a <a href="table.html" class=wikipagelink>table</a> -- whether the game is in setup or active <a href="referee_states.html" class=wikipagelink>state</a> -- it first receives a volity.seat_list() RPC, listing all the seat IDs that are meaningful in the ruleset. The client may then receive a bunch of volity.player_sat() RPCs, indicating what players are in what seats. It may also receive a volity.required_seat_list(), containing a list of seats (a subset of seat_list) which are required for the game to begin.
 <p>

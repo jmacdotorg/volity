@@ -12,14 +12,13 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Payment+Protocol">Payment Protocol</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>This is an extension of the "game record verification" idea (which I posted in January), because the requirements are similar. The point of game record verification was to prove to the bookkeeper that everyone who the referee says is in the game, is really in the game. Now we also want to prove to the bookkeeper that everyone who the referee says is in the game, has agreed to pay the fee for the game.
+<h1>Payment Protocol</h1><div class=wikitext>This is an extension of the "game record verification" idea (which I posted in January), because the requirements are similar. The point of game record verification was to prove to the bookkeeper that everyone who the referee says is in the game, is really in the game. Now we also want to prove to the bookkeeper that everyone who the referee says is in the game, has agreed to pay the fee for the game.
 <p>
-We also need to prove to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> that everyone in the game has paid the fee. (Or otherwise has permission -- subscription, free demo, free game, etc.)
+We also need to prove to the <a href="referee.html" class=wikipagelink>referee</a> that everyone in the game has paid the fee. (Or otherwise has permission -- subscription, free demo, free game, etc.)
 <p>
-Note that we can't fully trust either the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> or the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>. The client wants to duck out of paying. The referee wants to overcharge players, or charge non-players (because the parlor operator is the recipient of the money). So the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> (as Arbiter of Money) has to guard against both of these interests.
+Note that we can't fully trust either the <a href="client.html" class=wikipagelink>client</a> or the <a href="referee.html" class=wikipagelink>referee</a>. The client wants to duck out of paying. The referee wants to overcharge players, or charge non-players (because the parlor operator is the recipient of the money). So the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> (as Arbiter of Money) has to guard against both of these interests.
 <p>
-And a note on the open/closed source line: Obviously I'm setting this protocol up to serve [the Volity Network]<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=edit&id=The_Volity_Network" class=wikipageedit>?</a>. I'd like to make it flexible enough to work with any Volity bookkeeper -- even though other Volity bookkeepers are hypothetical, and money-charging ones even more so.
+And a note on the open/closed source line: Obviously I'm setting this protocol up to serve [the Volity Network]<a href="action=edit&id=the_volity_network.html" class=wikipageedit>?</a>. I'd like to make it flexible enough to work with any Volity bookkeeper -- even though other Volity bookkeepers are hypothetical, and money-charging ones even more so.
 <p>
 I imagine that we'll set up our (open-source) Perl bookkeeper package to use some kind of plugin for payment. What we ship will be a stub: no payment mechanism, all games are free. Then we'll write something for internal use, which attaches to our (non-open) micropayment and player database.
 <p>
@@ -31,7 +30,7 @@ The client/referee/bookkeeper protocol does not concern itself with currency. Th
 <H2>Referee States</H2>
 
 <p>
-When the game begins (or resumes), the referee will briefly move through a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States_New" class=wikipagelink>new referee state</a>, called <code>authorizing</code>. This is because the referee has to query the bookkeeper to see whether all the players are really present (and, for paid games, if they all agree to pay).
+When the game begins (or resumes), the referee will briefly move through a <a href="referee_states_new.html" class=wikipagelink>new referee state</a>, called <code>authorizing</code>. This is because the referee has to query the bookkeeper to see whether all the players are really present (and, for paid games, if they all agree to pay).
 <p>
 The new state is signalled by a new RPC sent to clients: volity.game_validation("authorizing"). In the <code>authorizing</code> state, clients are generally not allowed to do anything: sitting down, standing up, making game configuration requests.
 <p>
@@ -43,12 +42,12 @@ The new state is signalled by a new RPC sent to clients: volity.game_validation(
 <p>
 A new referee-to-client RPC. This is handled exactly the same as <em>tokens</em> in an RPC response: the client translates the token array and displays it in the table chat window.
 <p>
-<em>This is now implemented and documented on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> page.</em>
+<em>This is now implemented and documented on the <a href="client.html" class=wikipagelink>client</a> page.</em>
 <p>
 <H3>volity.game_validation(str <em>state</em>)</H3>
 
 <p>
-The referee has moved to the given <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States_New" class=wikipagelink>state</a>, which will be one of the strings <code>authorizing</code>, <code>setup</code>, <code>suspended</code>.
+The referee has moved to the given <a href="referee_states_new.html" class=wikipagelink>state</a>, which will be one of the strings <code>authorizing</code>, <code>setup</code>, <code>suspended</code>.
 <p>
 This call is only used when moving <em>from</em> one of those three states. (When a game ends or suspends, volity.end_game() or volity.suspend_game() is used.) The game_validation("authorizing") indicates that a game is beginning or resuming, but that the referee has to check for player validation. If all the validation succeeds, this will be followed by start_game() or resume_game(). If it fails, this will be followed by another game_validation() call, returning to the previous state.
 <p>
@@ -65,7 +64,7 @@ This call is where the bookkeeper actually ticks money off of players' accounts.
 <p>
 A prepare_game() at game-unsuspend time works exactly the same as at game-start time, except that players are being added to an existing in-progress game record. The bookkeeper must ping all listed players with verify_game() calls, but should only suck money from the players who were not already in the game record.
 <p>
-The RPC returns failure by returning a list (as opposed to boolean True). The first element of the list is a reason, possibly followed by more information. (This is similar to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Replies" class=wikipagelink>failure token</a> system, but not identical. Failure tokens only apply to RPCs that a client or bot sends.)
+The RPC returns failure by returning a list (as opposed to boolean True). The first element of the list is a reason, possibly followed by more information. (This is similar to the <a href="rpc_replies.html" class=wikipagelink>failure token</a> system, but not identical. Failure tokens only apply to RPCs that a client or bot sends.)
 <p>
 <DL >
 <dt>"players_not_responding"<dd> One or more players could not be reached by the volity.verify_game() RPC. Second element is list of offending players.
@@ -85,7 +84,7 @@ If the RPC returns an RPC fault, the referee <em>should</em> allow the game to b
 <H3>volity.record_game(dict <em>record</em>)</H3>
 
 <p>
-The argument structure and meaning of this <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> RPC will not change. However, the bookkeeper will do extra checking. The set of players listed in record.seats must match the in-progress game record for the sending referee. If it does, the game record gets stored. (The in-progress record gets deleted whether the call succeeds or fails.)
+The argument structure and meaning of this <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> RPC will not change. However, the bookkeeper will do extra checking. The set of players listed in record.seats must match the in-progress game record for the sending referee. If it does, the game record gets stored. (The in-progress record gets deleted whether the call succeeds or fails.)
 <p>
 If the referee sends record_game() and gets a failure back, there isn't much it can do about it. The game is still over. (It can send a table message with volity.message().)
 <p>
@@ -137,7 +136,7 @@ Note that a "fee/nofee" result does not exclude the possibility that the player 
 <p>
 <em>Possible future expansion: add optional auth_games and auth_ends fields to the struct. These would let the bookkeeper specify when the player's subscription (or demo period) ends, either by a count of games or a cutoff time.</em>
 <p>
-Like any RPC which is sent by the client, this conforms to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Replies" class=wikipagelink>RPC Replies</a> format: a successful reply will actually be an array <code>['volity.ok', struct]</code>. Since referees send this RPC also, they must be prepared to deal with this.
+Like any RPC which is sent by the client, this conforms to the <a href="rpc_replies.html" class=wikipagelink>RPC Replies</a> format: a successful reply will actually be an array <code>['volity.ok', struct]</code>. Since referees send this RPC also, they must be prepared to deal with this.
 <p>
 <H3>volity.game_player_reauthorized(str <em>player</em>, struct <em>values</em>)</H3>
 

@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="back.html=JabberZen">JabberZen</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext><H2>The Zen of Jabber</H2>
+<h1>JabberZen</h1><div class=wikitext><H2>The Zen of Jabber</H2>
 
 <p>
 <em>These are my (<a href="zarf.html" class=wikipagelink>Zarf</a>'s) notes to myself about the Jabber protocol. Feel free to improve.</em>
@@ -45,7 +44,7 @@ But that would be unZen. Better to have a well-defined tag structure with arbitr
   &lt;/list&gt;
 </PRE>
 <p>
-Always try to layer your protocol on top of the highest-layer existing protocol that fits. For example, Volity doesn't define new &lt;message&gt; or &lt;iq&gt; stanzas for game commands. Volity is built on <a href="jabber.html-RPC" class=wikipagelink>Jabber-RPC</a>, which uses &lt;iq&gt; in a regular way. (Specifically, &lt;iq&gt;&lt;/iq&gt; containing &lt;query xmlns='jabber:iq:rpc'&gt; child tags.)
+Always try to layer your protocol on top of the highest-layer existing protocol that fits. For example, Volity doesn't define new &lt;message&gt; or &lt;iq&gt; stanzas for game commands. Volity is built on <a href="jabber-rpc.html" class=wikipagelink>Jabber-RPC</a>, which uses &lt;iq&gt; in a regular way. (Specifically, &lt;iq&gt;&lt;/iq&gt; containing &lt;query xmlns='jabber:iq:rpc'&gt; child tags.)
 <p>
 So, in fact, you wouldn't want to use the &lt;list&gt; format I mentioned above for your key-value list. You'd want to use <a href="jabber_data_form.html" class=wikipagelink>Jabber Data Form</a>s, which are already in the spec.
 </div>

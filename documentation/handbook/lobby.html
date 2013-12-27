@@ -12,24 +12,23 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Lobby">Lobby</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>A <strong>lobby</strong> is a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Multi-User_Chat" class=wikipagelink>multi-user chat</a> dedicated to discussion of a specific <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a>, allowing players interested in that game to find one another and socialize outside of formal <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>s.
+<h1>Lobby</h1><div class=wikitext>A <strong>lobby</strong> is a <a href="multi-user_chat.html" class=wikipagelink>multi-user chat</a> dedicated to discussion of a specific <a href="ruleset.html" class=wikipagelink>ruleset</a>, allowing players interested in that game to find one another and socialize outside of formal <a href="table.html" class=wikipagelink>table</a>s.
 <p>
-There is nothing technologically special about a lobby; it's just an ordinary <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?MUC" class=wikipagelink>MUC</a>. However, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> knows about its location, and well-behaved <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> applications can easily guide players to a ruleset's lobby, with the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>'s help.
+There is nothing technologically special about a lobby; it's just an ordinary <a href="muc.html" class=wikipagelink>MUC</a>. However, the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> knows about its location, and well-behaved <a href="client.html" class=wikipagelink>client</a> applications can easily guide players to a ruleset's lobby, with the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>'s help.
 <p>
 <H2>Discovering lobbies</H2>
 
 <p>
-Any <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> that can use <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>service discovery</a> (which is to say, any <em>self-respecting</em> client) can easily discover a lobby's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a>. It need only send a disco items request to the bookkeeper, with a node comprising the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset's URI</a> followed by the string <code>|lobby</code>. (That's a "pipe" character, then the word "lobby".)
+Any <a href="client.html" class=wikipagelink>client</a> that can use <a href="service_discovery.html" class=wikipagelink>service discovery</a> (which is to say, any <em>self-respecting</em> client) can easily discover a lobby's <a href="jabberid.html" class=wikipagelink>JabberID</a>. It need only send a disco items request to the bookkeeper, with a node comprising the <a href="ruleset_uri.html" class=wikipagelink>ruleset's URI</a> followed by the string <code>|lobby</code>. (That's a "pipe" character, then the word "lobby".)
 <p>
 This will return a disco pointer to that lobby's MUC. The client can, if it wishes, send further disco info queries to the lobby's newly discovered JID learn still more information about it. (These subsequent queries would be handled by whatever Jabber conference server held the lobby, not the Volity bookkeeper.)
 <p>
-For example, to find the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>Rock, Paper, Scissors</a> lobby, a client would send a disco items request to <code>bookkeeper@volity.org</code>, node <code>http://volity.org/games/rps|lobby</code>.
+For example, to find the <a href="rock,_paper,_scissors.html" class=wikipagelink>Rock, Paper, Scissors</a> lobby, a client would send a disco items request to <code>bookkeeper@volity.org</code>, node <code>http://volity.org/games/rps|lobby</code>.
 <p>
 <H2>Recommended Use</H2>
 
 <p>
-Clients should make it easy for users to find and enter lobbies. Whenever a the user is in scope of a single ruleset, as when exploring one through the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Browser" class=wikipagelink>game browser</a>, the client should present a "one-click" method to enter that ruleset's lobby.
+Clients should make it easy for users to find and enter lobbies. Whenever a the user is in scope of a single ruleset, as when exploring one through the <a href="game_browser.html" class=wikipagelink>game browser</a>, the client should present a "one-click" method to enter that ruleset's lobby.
 <p>
 At this time, it's expected that any ruleset will have only one lobby, and it will probably exist in with a rather predictable naming scheme on volity.org's own Jabber servers. However, in the interest of future expansion and protocol changes, clients should query the bookkeeper to get lobbies' JIDs, rather than jump to conclusions.
 <p>
@@ -37,6 +36,6 @@ At this time, it's expected that any ruleset will have only one lobby, and it wi
 
 <p>
 <UL >
-<li> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a> is another piece of the Volity protocol that makes use of the bookkeeper's service discovery system.
+<li> The <a href="ui_finder.html" class=wikipagelink>UI finder</a> is another piece of the Volity protocol that makes use of the bookkeeper's service discovery system.
 </UL>
 </div>

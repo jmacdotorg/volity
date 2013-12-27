@@ -12,10 +12,9 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=UI+Finder">UI Finder</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext><em>This is a developing piece of the Volity protocol and is subject to change.</em>
+<h1>UI Finder</h1><div class=wikitext><em>This is a developing piece of the Volity protocol and is subject to change.</em>
 <p>
-The <strong>UI Finder</strong> is a system of of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>service discovery</a> ("disco") nodes spread across the bookkeeper and all the network's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s that help <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s find <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>s for games they wish to play.
+The <strong>UI Finder</strong> is a system of of <a href="service_discovery.html" class=wikipagelink>service discovery</a> ("parlor.html" class=wikipagelink>parlor</a>s that help <a href="client.html" class=wikipagelink>client</a>s find <a href="ui_file.html" class=wikipagelink>UI file</a>s for games they wish to play.
 <p>
 This documentation assumes knowledge of the shape and function of disco items and info requests and responses.
 <p>
@@ -25,9 +24,9 @@ This documentation assumes knowledge of the shape and function of disco items an
 <H2>Obtaining the server's ruleset</H2>
 
 <p>
-Before the client can ask the bookkeeper about some ruleset's UI files, it must first have that ruleset's URI in hand. If it doesn't already have this URI, it can obtain it from the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> to which its user wishes to connect. 
+Before the client can ask the bookkeeper about some ruleset's UI files, it must first have that ruleset's URI in hand. If it doesn't already have this URI, it can obtain it from the <a href="parlor.html" class=wikipagelink>parlor</a> to which its user wishes to connect. 
 <p>
-To do this, the client sends a disco info request to the parlor. The resulting disco information will include a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber_Data_Form" class=wikipagelink>jabber data form</a> (as allowed by Jabber JEP-0128), which will contain the following relevant fields (as well as a few others:
+To do this, the client sends a disco info request to the parlor. The resulting disco information will include a <a href="jabber_data_form.html" class=wikipagelink>jabber data form</a> (as allowed by Jabber JEP-0128), which will contain the following relevant fields (as well as a few others:
 <p>
 <DL >
 <dt>ruleset<dd>The URI of the ruleset that this server provides.
@@ -37,17 +36,17 @@ To do this, the client sends a disco info request to the parlor. The resulting d
 <H2>Getting UI file information from the bookkeeper</H2>
 
 <p>
-Once the ruleset URI is in hand, the client can follow up with some disco queries to the bookkeeper. First, it can get a list of all the available UI files for that ruleset. It sends a disco items request to the bookkeeper, with a node matching the ruleset URI, suffixed with "|uis". (That's a 'pipe' character in the front.) For instance, if a client wants to find <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>rock, paper, scissors</a> UI files, it sends a disco info request to <code>bookkeeper@volity.net/volity</code>, node <code>http://volity.org/games/rps|uis</code>. 
+Once the ruleset URI is in hand, the client can follow up with some disco queries to the bookkeeper. First, it can get a list of all the available UI files for that ruleset. It sends a disco items request to the bookkeeper, with a node matching the ruleset URI, suffixed with "rock,_paper,_scissors.html" class=wikipagelink>rock, paper, scissors</a> UI files, it sends a disco info request to <code>bookkeeper@volity.net/volity</code>, node <code>http://volity.org/games/rps|uis</code>. 
 <p>
-Each item returned will represent a single UI file that the bookkeeper knows about, located somewhere on the public Internet and accessible by URL. Indeed, each item is simply a pointer to another node in the bookkeeper's disco network, with a node matching the file's URL. The client can then send disco info requests to each of these nodes, receiving a response in every case of another [data form]<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=edit&id=Data_Form" class=wikipageedit>?</a> describing the file. It will contain the following pertinent fields:
+Each item returned will represent a single UI file that the bookkeeper knows about, located somewhere on the public Internet and accessible by URL. Indeed, each item is simply a pointer to another node in the bookkeeper's disco network, with a node matching the file's URL. The client can then send disco info requests to each of these nodes, receiving a response in every case of another [data form]<a href="action=edit&id=data_form.html" class=wikipageedit>?</a> describing the file. It will contain the following pertinent fields:
 <p>
 <DL >
-<dt>client-type<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client_Type" class=wikipagelink>client type</a> URIs that this file supports. Can be multiple values.
+<dt>client-type<dd> The <a href="client_type.html" class=wikipagelink>client type</a> URIs that this file supports. Can be multiple values.
 <dt>languages<dd> The two-letter codes for the languages this file supports. Can be multiple values.
 <dt>ruleset<dd> The ruleset URI that this file supports.
-<dt>reputation<dd> This file's ranking on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a>. As always, the higher the number, the more players have used and liked it.
+<dt>reputation<dd> This file's ranking on the <a href="reputation_system.html" class=wikipagelink>reputation system</a>. As always, the higher the number, the more players have used and liked it.
 <dt>contact-email<dd> The email address of the person responsible for this file.
-<dt>contact-jid<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a> of the person responsible for this file.
+<dt>contact-jid<dd> The <a href="jabberid.html" class=wikipagelink>JabberID</a> of the person responsible for this file.
 <dt>description<dd> A text description of this file. (A shorter name of the file can be found in the "name" attribute of the info response.)
 </DL>
 <p>
@@ -68,5 +67,5 @@ Once it has selected a single file to download, a client should be able to simpl
 <li> A single, uncompressed document that the client can immediately interpret.
 </UL>
 <p>
-In either case, the end result will be a single file suitable for immediate feeding to the client's UI interpreter. The nature and format of this file will differ according to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client_Type" class=wikipagelink>client type</a>. Text clients will end up with a simple ECMAScript file, for example, while SVG clients will have an SVG file. In this latter case, the file may (an indeed probably will) contain entity references pointing to external resources, allowing the UI file to load images, symbol libraries, and ECMAScript code libraries as needed.
+In either case, the end result will be a single file suitable for immediate feeding to the client's UI interpreter. The nature and format of this file will differ according to the <a href="client_type.html" class=wikipagelink>client type</a>. Text clients will end up with a simple ECMAScript file, for example, while SVG clients will have an SVG file. In this latter case, the file may (an indeed probably will) contain entity references pointing to external resources, allowing the UI file to load images, symbol libraries, and ECMAScript code libraries as needed.
 </div>

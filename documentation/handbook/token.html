@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="back.html=Token">Token</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Translation tokens are a <a href="localization.html" class=wikipagelink>localization</a> mechanism.
+<h1>Token</h1><div class=wikitext>Translation tokens are a <a href="localization.html" class=wikipagelink>localization</a> mechanism.
 <p>
 When an <a href="rpc_replies.html" class=wikipagelink>RPC reply</a> wants to express something in natural language, it uses <strong>tokens</strong>. These are simply namespaced strings which are meant to be looked up by a <a href="client.html" class=wikipagelink>client</a> and translated into its human user's preferred language. The namespace defines where a <a href="client.html" class=wikipagelink>client</a> should go to seek a translation table. 
 <p>
@@ -34,7 +33,7 @@ The namespaces that Volity supports includes:
 <dt>volity<dd>Tokens defined by the platform's core spec, and supported by every compliant client application.
 <dt>game<dd>Tokens defined by a particular ruleset. A compliant <a href="ui_file.html" class=wikipagelink>UI file</a> for that ruleset will contain <a href="localization_files.html" class=wikipagelink>localization files</a> which translate these tokens.
 <dt>seat<dd>Defined just like the "game" namespace, but the value is always a seat id.
-<dt>ui<dd>Defined and used within a <a href="ui_file.html" class=wikipagelink>UI file</a>. They are not specified by the ruleset, and the referee does not send them. Like the "game" and "seat" namespaces, the "ui" tokens are translated by <a href="localization_files.html" class=wikipagelink>localization files</a>. However, they are used only in UI <code>localize()</code> calls.
+<dt>ui<dd>Defined and used within a <a href="ui_file.html" class=wikipagelink>UI file</a>. They are not specified by the ruleset, and the referee does not send them. Like the "localization_files.html" class=wikipagelink>localization files</a>. However, they are used only in UI <code>localize()</code> calls.
 <dt>literal<dd>The text after the "literal." is copied literally. (This text may include dots, backslashes, or other funny characters. There is no backslash-escaping, or any other kind.)
 </DL>
 <p>

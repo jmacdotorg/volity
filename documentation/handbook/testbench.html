@@ -12,12 +12,11 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Testbench">Testbench</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Testbench is a Java application which allows you to display and test an SVG <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>. It does not communicate with a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> or with other players. Instead, Testbench creates a simulated environment, within which your UI file runs. You have direct control over the simulated referee which the UI "communicates" with; you can start and end games at will, with any number of simulated other players.
+<h1>Testbench</h1><div class=wikitext>Testbench is a Java application which allows you to display and test an SVG <a href="ui_file.html" class=wikipagelink>UI file</a>. It does not communicate with a <a href="referee.html" class=wikipagelink>referee</a> or with other players. Instead, Testbench creates a simulated environment, within which your UI file runs. You have direct control over the simulated referee which the UI "communicates" with; you can start and end games at will, with any number of simulated other players.
 <p>
 You can think of Testbench as an SVG viewer, with extra debugging features which are useful for Volity UI scripting. Alternatively, you can think of Testbench as Gamut with all the network code stripped out.
 <p>
-Download Testbench from the <a href="/web/20070802131051/http://www.volity.org/projects/gamut/releases/">[Volity release page]</a>.
+Download Testbench from the <a href="http://www.volity.org/projects/gamut/releases/">[Volity release page]</a>.
 <p>
 <H2>Running Testbench</H2>
 
@@ -36,7 +35,7 @@ You can also specify a UI file on the command line. Type
   java -jar Testbench.jar <em>UIFILE</em>
 </PRE>
 <p>
-...where <em>UIFILE</em> can be an SVG file, a directory containing UI data, or a Zip file containing such a directory. (See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_UI_File_Strategy" class=wikipagelink>SVG UI file strategy</a>.)
+...where <em>UIFILE</em> can be an SVG file, a directory containing UI data, or a Zip file containing such a directory. (See <a href="svg_ui_file_strategy.html" class=wikipagelink>SVG UI file strategy</a>.)
 <p>
 When you have selected a UI, you will see what looks like a Gamut window:
 <p>
@@ -51,11 +50,11 @@ The "Reload" menu command reloads the UI file, redisplays it, and starts the scr
 <p>
 Above the UI are "Start Game" / "End Game" buttons, and a pop-up menu. This is your control over the simulated referee.
 <p>
-(The contents of the pop-up menu are inferred from any <code>seattokens.xml</code> you have in your UI's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Localization_Files" class=wikipagelink>locale</a> directory. If you have no localization files, the menu will contain only "Unseated" -- you will have to type a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seat" class=wikipagelink>seat</a> ID into the pop-up field.)
+(The contents of the pop-up menu are inferred from any <code>seattokens.xml</code> you have in your UI's <a href="localization_files.html" class=wikipagelink>locale</a> directory. If you have no localization files, the menu will contain only "seat.html" class=wikipagelink>seat</a> ID into the pop-up field.)
 <p>
-When you start Testbench, the UI is displayed as if you had joined a new <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a>, in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>setup phase</a>. You are not seated.
+When you start Testbench, the UI is displayed as if you had joined a new <a href="table.html" class=wikipagelink>table</a>, in <a href="referee_states.html" class=wikipagelink>setup phase</a>. You are not seated.
 <p>
-If you select a seat in the pop-up menu and then press "Start Game", the UI will be sent messages as if its player had sat in that seat, and then witnessed the start of the game. If you leave the pop-up as "Unseated" and press "Start Game", the UI will witness the start of the game as an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Observation" class=wikipagelink>observer</a>.
+If you select a seat in the pop-up menu and then press "game_observation.html" class=wikipagelink>observer</a>.
 <p>
 <em>Future expansion: Add buttons for suspension/unsuspension. Prevent the "Start Game" button from being pressed twice in a row, as is currently possible. React to the pop-up seating menu immediately -- a player normally sits down well before the game starts.</em>
 <p>

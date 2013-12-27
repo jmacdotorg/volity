@@ -12,10 +12,9 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Running+Perl+Volity+On+OSX">Running Perl Volity On OSX</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Running the Perl Volity apps on Mac OS X 10.4
+<h1>Running Perl Volity On OSX</h1><div class=wikitext>Running the Perl Volity apps on Mac OS X 10.4
 <p>
-This is everything I (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Zarf" class=wikipagelink>Zarf</a>) had to do to get the server-perl and games-perl packages running on my Mac. The instructions should be pretty close for any Unix system, if you're willing to build Perl modules from source. (If not, see <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?FrivolityPerlPrereqs" class=wikipagelink>FrivolityPerlPrereqs</a>.)
+This is everything I (<a href="zarf.html" class=wikipagelink>Zarf</a>) had to do to get the server-perl and games-perl packages running on my Mac. The instructions should be pretty close for any Unix system, if you're willing to build Perl modules from source. (If not, see <a href="frivolityperlprereqs.html" class=wikipagelink>FrivolityPerlPrereqs</a>.)
 <p>
 This is not guaranteed to be a complete list, because I didn't start with a perfectly stock 10.4 install. I already had some Fink packages installed.
 <p>
@@ -74,12 +73,12 @@ Install these packages, in this order:
 <li> PXR::Node
 <li> RPC::XML (*)
 <li> Log::Log4perl
-<li> Data::<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JavaScript" class=wikipagelink>JavaScript</a>::Anon
+<li> Data::<a href="javascript.html" class=wikipagelink>JavaScript</a>::Anon
 <li> XML::Parser (**)
 <li> Class::Data::Inheritable
 <li> XML::SAX::Expat
 <li> XML::SAX::Expat::Incremental
-<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JavaScript" class=wikipagelink>JavaScript</a>::<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SpiderMonkey" class=wikipagelink>SpiderMonkey</a> (***)
+<li> <a href="javascript.html" class=wikipagelink>JavaScript</a>::<a href="spidermonkey.html" class=wikipagelink>SpiderMonkey</a> (***)
 </UL>
 <p>
 (* This failed for me at the testing stage ("make test"). I went ahead and installed anyway, and it hasn't blown up yet. To force the install, type (for example) <tt>force install LWP</tt>.)
@@ -94,14 +93,14 @@ Install these packages, in this order:
 </PRE>
 The <tt>look</tt> CPAN command starts a regular Unix shell in the source directory, so the following four lines are all at a shell prompt. <tt>/sw/lib</tt> and <tt>/sw/include</tt> are where Fink put the expat library.)
 <p>
-(*** <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SpiderMonkey" class=wikipagelink>SpiderMonkey</a> is its own pain in the butt. See below.)
+(*** <a href="spidermonkey.html" class=wikipagelink>SpiderMonkey</a> is its own pain in the butt. See below.)
 <p>
-<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SpiderMonkey" class=wikipagelink>SpiderMonkey</a></H2>
+<H2><a href="spidermonkey.html" class=wikipagelink>SpiderMonkey</a></H2>
 
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SpiderMonkey" class=wikipagelink>SpiderMonkey</a> is the Mozilla library that implements <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JavaScript" class=wikipagelink>JavaScript</a>. You have to fetch it from <a href="/web/20070802131051/http://www.mozilla.org/js/spidermonkey">http://www.mozilla.org/js/spidermonkey</a> and build and install it.
+<a href="http://www.mozilla.org/js/spidermonkey">http://www.mozilla.org/js/spidermonkey</a> and build and install it.
 <p>
-This would be easy, except that JavaScript-SpiderMonkey -- the Perl interface to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SpiderMonkey" class=wikipagelink>SpiderMonkey</a> -- is constructed weird. It wants the library in a particular place. Which is not a good place. I'm not even going to pretend that I found the right way to manage this. Here's my terrible way. First, get the source (<tt>js-1.5-rc6a.tar.gz</tt> as I write this). Then, from the command line (not CPAN), get a root shell:
+This would be easy, except that JavaScript-SpiderMonkey -- the Perl interface to <a href="spidermonkey.html" class=wikipagelink>SpiderMonkey</a> -- is constructed weird. It wants the library in a particular place. Which is not a good place. I'm not even going to pretend that I found the right way to manage this. Here's my terrible way. First, get the source (<tt>js-1.5-rc6a.tar.gz</tt> as I write this). Then, from the command line (not CPAN), get a root shell:
 <p>
 <pre>
    sudo sh
@@ -142,12 +141,12 @@ Right. Back to your root command shell. You should now be able to do:
    make install
 </PRE>
 <p>
-And then <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SpiderMonkey" class=wikipagelink>SpiderMonkey</a> will be installed, and you can go back to daydreaming about disemboweling whoever thought this was a good idea.
+And then <a href="spidermonkey.html" class=wikipagelink>SpiderMonkey</a> will be installed, and you can go back to daydreaming about disemboweling whoever thought this was a good idea.
 <p>
 <H2>Installing Volity</H2>
 
 <p>
-This is easier, because you can't use CPAN. Get these modules off the Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVN" class=wikipagelink>SVN</a>:
+This is easier, because you can't use CPAN. Get these modules off the Volity <a href="svn.html" class=wikipagelink>SVN</a>:
 <p>
 <UL >
 <li> server-perl
@@ -176,7 +175,7 @@ To start the server:
    /usr/local/volity/bin/volityd -u JABBERNAME -p PASSWORD -h JABBERHOST -g Volity::Game::RPS
 </PRE>
 <p>
-This starts a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RockPaperScissors" class=wikipagelink>RockPaperScissors</a> server using the Jabber ID JABBERNAME@JABBERHOST. Yes, you have to give the password on the command line.
+This starts a <a href="rockpaperscissors.html" class=wikipagelink>RockPaperScissors</a> server using the Jabber ID JABBERNAME@JABBERHOST. Yes, you have to give the password on the command line.
 <p>
 Now, in a different window:
 <p>

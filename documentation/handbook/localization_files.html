@@ -12,15 +12,14 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Localization+Files">Localization Files</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>There are few different mechanisms for localizing the UI for the user's language. They all depend on files in the game's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>. However, they use different files, in different formats.
+<h1>Localization Files</h1><div class=wikitext>There are few different mechanisms for localizing the UI for the user's language. They all depend on files in the game's <a href="ui_file.html" class=wikipagelink>UI file</a>. However, they use different files, in different formats.
 <p>
-All localization files live in subdirectories of the <code>locale</code> directory in the UI package. These subdirectories are named with standard two-letter <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Language_Code" class=wikipagelink>language code</a>s: <code>locale/en</code> for English, <code>locale/de</code> for German, etc.
+All localization files live in subdirectories of the <code>locale</code> directory in the UI package. These subdirectories are named with standard two-letter <a href="language_code.html" class=wikipagelink>language code</a>s: <code>locale/en</code> for English, <code>locale/de</code> for German, etc.
 <p>
 <H2>Elements in XML Interfaces</H2>
 
 <p>
-Displayed document in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML" class=wikipagelink>XML</a> formats (such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a>) can contain <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Translation_Entity" class=wikipagelink>translation entities</a>. See that link for the magic URL which loads these entity definitions.
+Displayed document in <a href="xml.html" class=wikipagelink>XML</a> formats (such as <a href="svg.html" class=wikipagelink>SVG</a>) can contain <a href="translation_entity.html" class=wikipagelink>translation entities</a>. See that link for the magic URL which loads these entity definitions.
 <p>
 These definitions are in standard XML DTD format:
 <p>
@@ -37,11 +36,11 @@ Given this definition, you could then create an SVG element such as:
 <H2>Tokens in RPC Replies and localize() Calls</H2>
 
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Tokens" class=wikipagelink>Tokens</a> in the <code>game</code>, <code>seat</code>, and <code>ui</code> namespaces are loaded from XML files in the game's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>.
+<a href="tokens.html" class=wikipagelink>Tokens</a> in the <code>game</code>, <code>seat</code>, and <code>ui</code> namespaces are loaded from XML files in the game's <a href="ui_file.html" class=wikipagelink>UI file</a>.
 <p>
-The client searches for files called <code>locale/LANG/gametokens.xml</code>, <code>locale/LANG/seattokens.xml</code>, and <code>locale/LANG/uitokens.xml</code>, where <code>LANG</code> is the two-letter <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Language_Code" class=wikipagelink>language code</a> of the client's current language setting. 
+The client searches for files called <code>locale/LANG/gametokens.xml</code>, <code>locale/LANG/seattokens.xml</code>, and <code>locale/LANG/uitokens.xml</code>, where <code>LANG</code> is the two-letter <a href="language_code.html" class=wikipagelink>language code</a> of the client's current language setting. 
 <p>
-If these files are absent (or if the UI file is not a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_UI_File_Strategy" class=wikipagelink>ZIP archive</a>), then the corresponding namespace cannot be translated into the corresponding language. The token will be translated with a string like "(Untranslatable message: game.token)".
+If these files are absent (or if the UI file is not a <a href="svg_ui_file_strategy.html" class=wikipagelink>ZIP archive</a>), then the corresponding namespace cannot be translated into the corresponding language. The token will be translated with a string like "(Untranslatable message: game.token)".
 <p>
 The format of these files, and no I don't have a DTD or schema but you can probably work out how it goes, is:
 <p>
@@ -63,7 +62,7 @@ The format of these files, and no I don't have a DTD or schema but you can proba
   &lt;/volitytokens&gt;
 </PRE>
 <p>
-You can put <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Unicode" class=wikipagelink>Unicode</a> characters in <code>value</code> tags by encoding them as UTF-8.
+You can put <a href="unicode.html" class=wikipagelink>Unicode</a> characters in <code>value</code> tags by encoding them as UTF-8.
 <p>
 Whitespace is <em>not</em> stripped within <code>key</code> and <code>value</code> tags. So don't do this:
 <p>

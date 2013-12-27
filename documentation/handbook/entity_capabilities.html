@@ -12,10 +12,9 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Entity+Capabilities">Entity Capabilities</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>All Volity entities (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s, the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>) should identify their Volity role using the JEP-0115 extension to the &lt;presence&gt; stanza.
+<h1>Entity Capabilities</h1><div class=wikitext>All Volity entities (<a href="referee.html" class=wikipagelink>referee</a>s, <a href="parlor.html" class=wikipagelink>parlor</a>s, <a href="client.html" class=wikipagelink>client</a>s, the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>) should identify their Volity role using the JEP-0115 extension to the &lt;presence&gt; stanza.
 <p>
-The &lt;c&gt; tag should have a <code>node</code> of <code>http://volity.org/protocol/caps</code>. The <code>ver</code> should be the Volity protocol version -- <code>1.0</code> at present. The <code>ext</code> should contain the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Role" class=wikipagelink>Volity role</a>, which will be one of:
+The &lt;c&gt; tag should have a <code>node</code> of <code>http://volity.org/protocol/caps</code>. The <code>ver</code> should be the Volity protocol version -- <code>1.0</code> at present. The <code>ext</code> should contain the <a href="volity_role.html" class=wikipagelink>Volity role</a>, which will be one of:
 <p>
 <UL >
 <li> parlor
@@ -48,7 +47,7 @@ JEP-0115 requires that the entity also respond to two disco#info nodes.
 <p>
 <code>http://volity.org/protocol/caps#1.0</code> -- must return the same reply as a disco#info query with no node. (The identity, features, and extended result must match.)
 <p>
-<code>http://volity.org/protocol/caps#ROLE</code> -- must return a &lt;feature&gt; with <code>var="http://volity.org/protocol/caps#ROLE"</code>. ROLE represents one of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Role" class=wikipagelink>Volity role</a> strings above. For example, the query
+<code>http://volity.org/protocol/caps#ROLE</code> -- must return a &lt;feature&gt; with <code>var="volity_role.html" class=wikipagelink>Volity role</a> strings above. For example, the query
 <p>
 <pre>
 &lt;iq xmlns="jabber:client"
@@ -80,6 +79,6 @@ JEP-0115 requires that the entity also respond to two disco#info nodes.
 
 <p>
 <UL >
-<li> <a href="/web/20070802131051/http://www.jabber.org/jeps/jep-0115.html">http://www.jabber.org/jeps/jep-0115.html</a>
+<li> <a href="http://www.jabber.org/jeps/jep-0115.html">http://www.jabber.org/jeps/jep-0115.html</a>
 </UL>
 </div>

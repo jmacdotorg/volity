@@ -12,12 +12,11 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Killing+Games">Killing Games</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>If players get tired of a game in mid-play, and want to abandon it, the easiest course is for them all to simply quit their Volity clients. (The referee will mark the game as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>abandoned</a>, and eventually suspend it, and then destroy it entirely if nobody is present at the table.)
+<h1>Killing Games</h1><div class=wikitext>If players get tired of a game in mid-play, and want to abandon it, the easiest course is for them all to simply quit their Volity clients. (The referee will mark the game as <a href="referee_states.html" class=wikipagelink>abandoned</a>, and eventually suspend it, and then destroy it entirely if nobody is present at the table.)
 <p>
 However, the players may want to kill the game in order to restart it. It should be convenient to do this without leaving the table or creating a new table.
 <p>
-Therefore, the referee accepts a volity.kill_game(boolean) <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC</a>. This is effectively a game configuration request which can only be used when the game is <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>suspended</a>. If this is set <code>true</code>, then when the game unsuspends, it will immediately terminate. The referee will then cycle back to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>setup</a> state.
+Therefore, the referee accepts a volity.kill_game(boolean) <a href="rpc_requests.html" class=wikipagelink>RPC</a>. This is effectively a game configuration request which can only be used when the game is <a href="referee_states.html" class=wikipagelink>suspended</a>. If this is set <code>true</code>, then when the game unsuspends, it will immediately terminate. The referee will then cycle back to the <a href="referee_states.html" class=wikipagelink>setup</a> state.
 <p>
 From the players' point of view, killing a game works like this:
 <p>

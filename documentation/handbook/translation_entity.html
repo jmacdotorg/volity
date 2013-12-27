@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Translation+Entity">Translation Entity</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>When you are designing a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> in an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML" class=wikipagelink>XML</a> format -- such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a> -- you can localize your elements using XML entities.
+<h1>Translation Entity</h1><div class=wikitext>When you are designing a <a href="ui_file.html" class=wikipagelink>UI file</a> in an <a href="xml.html" class=wikipagelink>XML</a> format -- such as <a href="svg.html" class=wikipagelink>SVG</a> -- you can localize your elements using XML entities.
 <p>
 Say we are writing an SVG UI, and we want to display the score. So we create some SVG boxes, and label them with:
 <p>
@@ -57,7 +56,7 @@ We shall not go into the arcanities of how the ritual works. Just copy this:
 <PRE >
   &lt;?xml version="1.0"?&gt;
   &lt;!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-    "<a href="/web/20070802131051/http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</a>" [
+    "<a href="http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</a>" [
   &lt;!ENTITY % localedef SYSTEM "vollocp://locale/message.def?en,de#lang"&gt;
   %localedef; %lang;
   ]&gt;

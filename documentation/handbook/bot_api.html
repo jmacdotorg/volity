@@ -12,30 +12,29 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Bot+API">Bot API</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext><H2>Algorithm URIs</H2>
+<h1>Bot API</h1><div class=wikitext><H2>Algorithm URIs</H2>
 
 <p>
-We would like to identify a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>bot</a> by its <em>algorithm</em> -- or, slightly more practically, by the code that implements it.
+We would like to identify a <a href="bot.html" class=wikipagelink>bot</a> by its <em>algorithm</em> -- or, slightly more practically, by the code that implements it.
 <p>
-Unfortunately, there is no way to reliably authenticate what algorithm a network entity is running. We can only authenticate <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a>s. Therefore, while a bot can advertise its algorithm in the form of a URI, it is (like a player) identified by a JID.
+Unfortunately, there is no way to reliably authenticate what algorithm a network entity is running. We can only authenticate <a href="jid.html" class=wikipagelink>JID</a>s. Therefore, while a bot can advertise its algorithm in the form of a URI, it is (like a player) identified by a JID.
 <p>
-An algorithm URI is chosen by whoever writes the bot code. Like a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a> URI, it should be a URL pointing at a web page for the program.
+An algorithm URI is chosen by whoever writes the bot code. Like a <a href="ruleset.html" class=wikipagelink>ruleset</a> URI, it should be a URL pointing at a web page for the program.
 <p>
 (It is still possible for multiple bots with the same algorithm to share a game history. To do this, they would have to connect with the same JID, albeit with different resource strings. This still requires that they all be operated by the same entity -- a common JID means a common Jabber password.)
 <p>
 <H2>Bot factories</H2>
 
 <p>
-The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot_Factory" class=wikipagelink>bot factory</a> is a new class of Volity entity. It sits on the Net, waiting for a request; when it gets one, it creates a bot, has it join the requested table, and plays a game. (It's analogous to a parlor, but instead of generating referees on demand, it generates bots.) A factory handles exactly one game (one ruleset), but it could support one or several bots (AI algorithms).
+The <a href="bot_factory.html" class=wikipagelink>bot factory</a> is a new class of Volity entity. It sits on the Net, waiting for a request; when it gets one, it creates a bot, has it join the requested table, and plays a game. (It's analogous to a parlor, but instead of generating referees on demand, it generates bots.) A factory handles exactly one game (one ruleset), but it could support one or several bots (AI algorithms).
 <p>
 <H2>Parlor support</H2>
 
 <p>
-A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> can be configured to run one or several bots itself. (This is how the first generation of bots worked, before bot factories were conceived.) 
+A <a href="parlor.html" class=wikipagelink>parlor</a> can be configured to run one or several bots itself. (This is how the first generation of bots worked, before bot factories were conceived.) 
 <p>
 A parlor can also (independently) be configured to offer access to some number of bot factories. Players on that parlor are, however, not limited to the listed factories. (A game client might be written to query the bookkeeper itself and look for bot factories registered with the given ruleset.) The parlor's list exists for the benefit of people who want to run parlors with associated bot factories.
 <p>
-We refer to these as "internal" and "external" bots. Both count as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Retainer" class=wikipagelink>retainer</a> bots, in the older classification. (A true <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ronin" class=wikipagelink>ronin</a> bot does not operate by these rules at all -- the Volity network treats it as an independent player.)
+We refer to these as "retainer.html" class=wikipagelink>retainer</a> bots, in the older classification. (A true <a href="ronin.html" class=wikipagelink>ronin</a> bot does not operate by these rules at all -- the Volity network treats it as an independent player.)
 <p>
 </div>

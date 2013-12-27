@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="back.html=UI+File+Gotchas">UI File Gotchas</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext><H2>The Four Sadnesses</H2>
+<h1>UI File Gotchas</h1><div class=wikitext><H2>The Four Sadnesses</H2>
 
 <p>
 <em>The above term was coined by <a href="zarf.html" class=wikipagelink>Zarf</a>.</em>
@@ -59,7 +58,7 @@ If it's completely absurd to keep the previous move highlighted -- say, if the w
 <p>
 In every game, the players will want a history of what's happened recently. (Particularly players who occasionally go to the bathroom or pop up a mail window while the game is in progress. That is, all of them.)
 <p>
-It is tempting to say "Look, we have a chat window! And a message() function in the <a href="ecmascript_api.html" class=wikipagelink>ECMAScript API</a>! We'll just print out moves as we go."
+It is tempting to say "ecmascript_api.html" class=wikipagelink>ECMAScript API</a>! We'll just print out moves as we go."
 <p>
 I won't say this is absolutely wrong; but it is a bad idea. Players want to see the last N player remarks <em>and</em> the last M moves. That is, chat should not scroll game moves off the screen, and game moves should not scroll chat off the screen.
 <p>
@@ -74,7 +73,7 @@ Setting things like 'style' and 'class' attributes on SVG elements via script, u
 <p>
 <em>I dunno. I've never had any trouble setting 'class'. I'd like to see an example of a file where setAttribute("class", value) doesn't work. --Z</em>
 <p>
-Fancy-schmancy methods of setting element attributes, specifically the <em>object[property]=</em> syntax used in libraries like [<a href="/web/20070802131051/http://prototype.conio.net/">[Prototype]</a>], seem not to be supported well in Batik. Relatedly, [<a href="/web/20070802131051/http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Guide:Creating_New_Objects:Using_Object_Initializers">[literal object notation]</a>] as a whole seems to be a lot more trouble than it's worth (it'll give you problems with using reserved words like 'class', for example - use 'class' as a string and you're fine, but the bare words used in object initializers will make Batik choke).
+Fancy-schmancy methods of setting element attributes, specifically the <em>object[property]=</em> syntax used in libraries like [<a href="http://prototype.conio.net/">[Prototype]</a>], seem not to be supported well in Batik. Relatedly, [<a href="http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Guide:Creating_New_Objects:Using_Object_Initializers">[literal object notation]</a>] as a whole seems to be a lot more trouble than it's worth (it'll give you problems with using reserved words like 'class', for example - use 'class' as a string and you're fine, but the bare words used in object initializers will make Batik choke).
 <p>
 When you're &lt;use&gt;ing elements from another document, be aware that the stylesheets specified in your base document will not apply initially.  They will take effect when you start to manipulate the bits of the DOM that involve those &lt;use&gt;d elements.  This can cause odd effects, like text in an included object suddenly changing size, or colours altering for no apparent reason.
 </div>

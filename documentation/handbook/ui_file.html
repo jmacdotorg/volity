@@ -12,32 +12,31 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=UI+File">UI File</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>A <strong>UI file</strong> is a document that implements a single, specific <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_API" class=wikipagelink>ruleset API</a> for a single, specific <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client_Type" class=wikipagelink>client type</a>. For example, one UI file might allow text-based clients (such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Friv" class=wikipagelink>Friv</a> to play <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Rock,_Paper,_Scissors" class=wikipagelink>rock, paper, scissors</a>, while another lets SVG clients (like <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>) play chess.
+<h1>UI File</h1><div class=wikitext>A <strong>UI file</strong> is a document that implements a single, specific <a href="ruleset_api.html" class=wikipagelink>ruleset API</a> for a single, specific <a href="client_type.html" class=wikipagelink>client type</a>. For example, one UI file might allow text-based clients (such as <a href="friv.html" class=wikipagelink>Friv</a> to play <a href="rock,_paper,_scissors.html" class=wikipagelink>rock, paper, scissors</a>, while another lets SVG clients (like <a href="gamut.html" class=wikipagelink>Gamut</a>) play chess.
 <p>
-Clients locate and download UI files through the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>.
+Clients locate and download UI files through the <a href="ui_finder.html" class=wikipagelink>UI finder</a>.
 <p>
-UI file logic is generally written in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript" class=wikipagelink>ECMAScript</a> according to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript_API" class=wikipagelink>ECMAScript API</a>.
+UI file logic is generally written in <a href="ecmascript.html" class=wikipagelink>ECMAScript</a> according to the <a href="ecmascript_api.html" class=wikipagelink>ECMAScript API</a>.
 <p>
 <H2>File Formats</H2>
 
 <p>
 Volity does not formally prescribe any particular file format for UI files. Through the UI finder's URI-based client identification system, the world of Volity UI files can theoretically embrace any computer language or document type.
 <p>
-Current volity development efforts, however, are focused heavily on <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a> UI files, <em>perhaps</em> supported with HTML files. See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_UI_File_Strategy" class=wikipagelink>SVG UI file strategy</a>, and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>.
+Current volity development efforts, however, are focused heavily on <a href="svg.html" class=wikipagelink>SVG</a> UI files, <em>perhaps</em> supported with HTML files. See <a href="svg_ui_file_strategy.html" class=wikipagelink>SVG UI file strategy</a>, and <a href="gamut.html" class=wikipagelink>Gamut</a>.
 <p>
-A UI format which encompasses multiple files should be packed as a ZIP file. See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_UI_File_Strategy" class=wikipagelink>SVG UI file strategy</a>. (The principles listed will likely be adapted to multifile UIs other than SVG, if we ever invent any.)
+A UI format which encompasses multiple files should be packed as a ZIP file. See <a href="svg_ui_file_strategy.html" class=wikipagelink>SVG UI file strategy</a>. (The principles listed will likely be adapted to multifile UIs other than SVG, if we ever invent any.)
 <p>
 <H2>Player UI customization</H2>
 
 <p>
 It is possible for a UI file to include external resources, chosen by the player. Canonical example: you create 52 pieces of art for a customized poker deck. You want to use this art in every Volity game that makes use of a poker deck. Ditto for Tarot decks, spiffy Icehouse pyramids, etc. You can also make a resource available for other people to use.
 <p>
-See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Pluggable_Resources" class=wikipagelink>pluggable resources</a> for more information.
+See <a href="pluggable_resources.html" class=wikipagelink>pluggable resources</a> for more information.
 <p>
 <em>Original proposal follows...</em>
 <p>
-The Volity notion to date is that the UI file is written by the game designer (who also writes the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>'s game code). If the game is to have multiple UI files (different languages, text vs graphical, cellphone display vs large screen) the game designer has to write all of them. Or other people can collaborate with the designer, but it's still essentially one person in charge of the whole effort.
+The Volity notion to date is that the UI file is written by the game designer (who also writes the <a href="referee.html" class=wikipagelink>referee</a>'s game code). If the game is to have multiple UI files (different languages, text vs graphical, cellphone display vs large screen) the game designer has to write all of them. Or other people can collaborate with the designer, but it's still essentially one person in charge of the whole effort.
 <p>
 However, it would be a shame if the player couldn't specify some aspects of the UI -- beyond simply choosing from a menu of UI files. Canonical example: you create 52 pieces of art for a customized poker deck. You want to use this art in every Volity game that makes use of a poker deck. Ditto for Tarot decks, spiffy Icehouse pyramids, etc.
 <p>

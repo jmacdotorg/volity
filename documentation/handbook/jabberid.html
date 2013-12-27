@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=JabberID">JabberID</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Every entity on a Jabber network -- and therefore, on Volity -- is uniquely identifiable by a <strong><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a></strong>, or JID. A <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a> takes the form
+<h1>JabberID</h1><div class=wikitext>Every entity on a Jabber network -- and therefore, on Volity -- is uniquely identifiable by a <strong><a href="jabberid.html" class=wikipagelink>JabberID</a></strong>, or JID. A <a href="jabberid.html" class=wikipagelink>JabberID</a> takes the form
 <p>
 <PRE >
  NODE@HOST/RESOURCE
@@ -27,9 +26,9 @@
 <p>
 Note that the <em>node</em> and <em>resource</em> parts are optional (but Jabber entities use all three parts). 
 <p>
-It's important to note that all automated Volity entities that expect unsolicited communication from other users -- namely, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s and the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> -- always have a resource string of <code>volity</code>. This allows users to contact them without having to figure out what resource to use.
+It's important to note that all automated Volity entities that expect unsolicited communication from other users -- namely, <a href="parlor.html" class=wikipagelink>parlor</a>s and the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> -- always have a resource string of <code>volity</code>. This allows users to contact them without having to figure out what resource to use.
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>Referee</a>s and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s generally have ugly, random-looking resource strings like <code>ref_3221_1136823991</code> or <code>JavolinBJKVWS</code>. (This allows the mechanisms behind these entities to reuse the same JID under different resource strings for separate tasks, such as parlors do when spawning off new <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s.)
+<a href="referee.html" class=wikipagelink>Referee</a>s and <a href="client.html" class=wikipagelink>client</a>s generally have ugly, random-looking resource strings like <code>ref_3221_1136823991</code> or <code>JavolinBJKVWS</code>. (This allows the mechanisms behind these entities to reuse the same JID under different resource strings for separate tasks, such as parlors do when spawning off new <a href="referee.html" class=wikipagelink>referee</a>s.)
 <p>
-The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ELO_Score" class=wikipagelink>ELO score</a> information stored by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> do not include resource strings. Players are referred to only by their bare JID (NODE@HOST). This ensure that even if you play Volity games from several clients, all your games redound to your credit.
+The <a href="game_record.html" class=wikipagelink>game record</a> and <a href="elo_score.html" class=wikipagelink>ELO score</a> information stored by the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> do not include resource strings. Players are referred to only by their bare JID (NODE@HOST). This ensure that even if you play Volity games from several clients, all your games redound to your credit.
 </div>

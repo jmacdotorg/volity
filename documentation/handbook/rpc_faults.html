@@ -12,10 +12,9 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=RPC+Faults">RPC Faults</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>When an entity on the Volity network gets an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC request</a> that it doesn't understand or accept <em>at the RPC level</em>, it replies with an RPC fault, sent back via the same <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> protocol that the request came in on, and re-using the request's <code>id</code> attribute.
+<h1>RPC Faults</h1><div class=wikitext>When an entity on the Volity network gets an <a href="rpc_requests.html" class=wikipagelink>RPC request</a> that it doesn't understand or accept <em>at the RPC level</em>, it replies with an RPC fault, sent back via the same <a href="jabber-rpc.html" class=wikipagelink>Jabber-RPC</a> protocol that the request came in on, and re-using the request's <code>id</code> attribute.
 <p>
-According to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?XML-RPC" class=wikipagelink>XML-RPC</a> spec, a fault consists of a numeric code and a simple text string. When generating faults, Volity implementations <em>should</em> use the text strings as written below, but implementors can adjust them to include more case-specific information if they see fit. On the other hand, implementations <em>must</em> use the numbers exactly as listed here, and (consequently) implementations that receive these RPC faults <em>must</em> parse them by their numeric codes, not by their text strings.
+According to the <a href="xml-rpc.html" class=wikipagelink>XML-RPC</a> spec, a fault consists of a numeric code and a simple text string. When generating faults, Volity implementations <em>should</em> use the text strings as written below, but implementors can adjust them to include more case-specific information if they see fit. On the other hand, implementations <em>must</em> use the numbers exactly as listed here, and (consequently) implementations that receive these RPC faults <em>must</em> parse them by their numeric codes, not by their text strings.
 <p>
 <H2>Volity's RPC faults</H2>
 
@@ -40,13 +39,13 @@ These faults can be used anywhere in Volity, in either the <code>volity</code> o
 <p>
 <DL >
 <dt>604<dd>Also "too many method parameters", I guess
-<dt>607<dd>Used by a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> to tell off someone who it doesn't recognize as a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a> of the current game, and yet seems to be sending game-specific requests.
+<dt>607<dd>Used by a <a href="referee.html" class=wikipagelink>referee</a> to tell off someone who it doesn't recognize as a <a href="player.html" class=wikipagelink>player</a> of the current game, and yet seems to be sending game-specific requests.
 <dt>608<dd>If referee code throws an uncaught exception, the Volity game class can return this.
-<dt>609<dd>A generic game-level error message. While <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a> implementations should use the ruleset's defined error requests whenever possible, it can use this fault as a fallback for player-generated errors that the ruleset doesn't account for.
+<dt>609<dd>A generic game-level error message. While <a href="ruleset.html" class=wikipagelink>ruleset</a> implementations should use the ruleset's defined error requests whenever possible, it can use this fault as a fallback for player-generated errors that the ruleset doesn't account for.
 </DL>
 <p>
 <H2>See Also</H2>
 
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Replies" class=wikipagelink>RPC replies</a>
+<a href="rpc_replies.html" class=wikipagelink>RPC replies</a>
 </div>

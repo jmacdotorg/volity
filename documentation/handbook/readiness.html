@@ -12,18 +12,17 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Readiness">Readiness</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>While waiting for the game to start, every <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?User" class=wikipagelink>user</a> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seats" class=wikipagelink>seated</a> at a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table" class=wikipagelink>table</a> possesses an attribute called <strong>readiness</strong>, reflecting whether or not that user has accepted the current <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> and is ready to begin playing the game <em>exactly as it stands now</em>. 
+<h1>Readiness</h1><div class=wikitext>While waiting for the game to start, every <a href="user.html" class=wikipagelink>user</a> <a href="seats.html" class=wikipagelink>seated</a> at a <a href="table.html" class=wikipagelink>table</a> possesses an attribute called <strong>readiness</strong>, reflecting whether or not that user has accepted the current <a href="table_configuration.html" class=wikipagelink>table configuration</a> and is ready to begin playing the game <em>exactly as it stands now</em>. 
 <p>
-If every user seated at the table signals readiness, and the referee is satisfied that all starting conditions for the table's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a> have been met, then it begins the game.
+If every user seated at the table signals readiness, and the referee is satisfied that all starting conditions for the table's <a href="ruleset.html" class=wikipagelink>ruleset</a> have been met, then it begins the game.
 <p>
 The attribute's value is a simple boolean; if set to truth, we say that the user is <em>ready</em>; otherwise, the user is <em>unready</em>.
 <p>
 The following events cause a given player to become <em>unready</em>:
 <UL >
 <li> The player sits.
-<li> The player sends a <code>volity.unready</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC request</a> to the referee (assuming no game is in progress).
-<li> <em>Any</em> player causes the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> to change.
+<li> The player sends a <code>volity.unready</code> <a href="rpc_requests.html" class=wikipagelink>RPC request</a> to the referee (assuming no game is in progress).
+<li> <em>Any</em> player causes the <a href="table_configuration.html" class=wikipagelink>table configuration</a> to change.
 <li> <em>Any</em> standing player sits, or a seated player changes seats. (Both types of events are signaled by a <code>player_sat</code> RPC call.)
 <li> <em>Any</em> seated player stands.
 <li> The game starts. (Technically, readiness doesn't matter while a game is in play. However, setting all users unready at a game's launch assures that they shall remain unready when the game ends, allowing the next game at this table to have its own setup phase.)
@@ -31,12 +30,12 @@ The following events cause a given player to become <em>unready</em>:
 <p>
 The following events cause a user to become <em>ready</em>:
 <UL >
-<li> The user sends a <code>volity.ready</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC request</a> to the referee (assuming no game is in progress).
+<li> The user sends a <code>volity.ready</code> <a href="rpc_requests.html" class=wikipagelink>RPC request</a> to the referee (assuming no game is in progress).
 <li> That's it, really. Readiness has to be rather deliberate.
 </UL>
 <p>
 <H2>Notes</H2>
 
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot" class=wikipagelink>Bot</a>s are usually programmed to declare their readiness to play as soon as they join a table, and automatically re-ready themselves should any event unready them.
+<a href="bot.html" class=wikipagelink>Bot</a>s are usually programmed to declare their readiness to play as soon as they join a table, and automatically re-ready themselves should any event unready them.
 </div>

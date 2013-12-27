@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Pluggable+Resources">Pluggable Resources</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>When you are designing an <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>, you may have a need for some abstract resource which is common to many different games. For example:
+<h1>Pluggable Resources</h1><div class=wikitext>When you are designing an <a href="svg.html" class=wikipagelink>SVG</a> <a href="ui_file.html" class=wikipagelink>UI file</a>, you may have a need for some abstract resource which is common to many different games. For example:
 <p>
 <UL >
 <li> A 52-card poker deck
@@ -31,10 +30,10 @@ Of course, you can always create art for a poker deck (or whatever) and embed it
 If a resource is available on the Web, you can link directly to it.
 <p>
 <PRE >
-  &lt;use xlink:href="<a href="/web/20070802131051/http://example.com/poker/deck.svg#ace_hearts">http://example.com/poker/deck.svg#ace_hearts</a>"&gt;
+  &lt;use xlink:href="<a href="http://example.com/poker/deck.svg#ace_hearts">http://example.com/poker/deck.svg#ace_hearts</a>"&gt;
 </PRE>
 <p>
-This loads the given URL (<code>http://example.com/poker/deck.svg</code>) and loads the element with <code>id="ace_hearts"</code>. (See <a href="/web/20070802131051/http://www.w3.org/TR/SVG/struct.html#UseElement">http://www.w3.org/TR/SVG/struct.html#UseElement</a> for more on the <code>&lt;use&gt;</code> tag in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG" class=wikipagelink>SVG</a>.)
+This loads the given URL (<code>http://example.com/poker/deck.svg</code>) and loads the element with <code>id="svg.html" class=wikipagelink>SVG</a>.)
 <p>
 To learn what elements are defined in an SVG file, you will have to either read through it, or find documentation for it. (But see "resource rulesets", below.)
 <p>
@@ -59,8 +58,8 @@ To make this work, you need magic in your SVG file's header:
 <PRE >
   &lt;?xml version="1.0"?&gt;
   &lt;!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
-    "<a href="/web/20070802131051/http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</a>" [
-  &lt;!ENTITY % deckdef SYSTEM "volresp://resource/deck.svg?<a href="/web/20070802131051/http://volity.org/resources/poker#deck">http://volity.org/resources/poker#deck</a>"&gt;
+    "<a href="http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</a>" [
+  &lt;!ENTITY % deckdef SYSTEM "volresp://resource/deck.svg?<a href="http://volity.org/resources/poker#deck">http://volity.org/resources/poker#deck</a>"&gt;
   %deckdef;
   ]&gt;
 </PRE>
@@ -71,9 +70,9 @@ The <code>deck.svg</code> part of the header refers to the internal resource you
 <p>
 The <code>#deck</code> part names an XML entity which will be defined.
 <p>
-The <code>http://volity.org/resources/poker</code> part is a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a>. It does <em>not</em> refer to an SVG file on the web. Rather, it's an abstract identifier for the <em>kind</em> of resource you want to load.
+The <code>http://volity.org/resources/poker</code> part is a <a href="resource_uri.html" class=wikipagelink>resource URI</a>. It does <em>not</em> refer to an SVG file on the web. Rather, it's an abstract identifier for the <em>kind</em> of resource you want to load.
 <p>
-(The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a> is analogous to the game <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>, which abstractly identifies a game. <code>http://volity.org/games/eights</code> is a URI identifying the game of Crazy Eights; <code>http://volity.org/resources/poker</code> is a URI identifying the notion of a poker deck, which you can play Crazy Eights and many other games with.)
+(The <a href="resource_uri.html" class=wikipagelink>resource URI</a> is analogous to the game <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>, which abstractly identifies a game. <code>http://volity.org/games/eights</code> is a URI identifying the game of Crazy Eights; <code>http://volity.org/resources/poker</code> is a URI identifying the notion of a poker deck, which you can play Crazy Eights and many other games with.)
 <p>
 When your UI is loaded, the client looks through the player's preferences to see if he's set one which matches your URI. (From the player's point of view, he's browsed the web to find his favorite poker deck, which he wants to use in all Volity card games.) If the player hasn't expressed a preference, the client goes with your default -- in this example, <code>deck.svg</code>.
 <p>
@@ -83,10 +82,10 @@ To load elements from the chosen deck, just do this:
   &lt;use xlink:href="&amp;deck;#ace_hearts"&gt;
 </PRE>
 <p>
-<H2>Reading <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Metadata" class=wikipagelink>Metadata</a> from a Player-Chosen Resource</H2>
+<H2>Reading <a href="metadata.html" class=wikipagelink>Metadata</a> from a Player-Chosen Resource</H2>
 
 <p>
-Your script code can call one of the <code>metadata.get</code> functions to extract metadata from a resource file. See the <code>metadata</code> section of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript_API" class=wikipagelink>ECMAScript API</a>.
+Your script code can call one of the <code>metadata.get</code> functions to extract metadata from a resource file. See the <code>metadata</code> section of the <a href="ecmascript_api.html" class=wikipagelink>ECMAScript API</a>.
 <p>
 <H2>Scripting in Resources</H2>
 

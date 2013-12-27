@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Version+Matching">Version Matching</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>We have several places in Volity where we'd like to ensure that two subsystems are following "the same protocol", in some sense:
+<h1>Version Matching</h1><div class=wikitext>We have several places in Volity where we'd like to ensure that two subsystems are following "the same protocol", in some sense:
 <p>
 <UL >
 <li> a UI file and a referee (matching the ruleset)
@@ -49,14 +48,14 @@ This leaves us with the determination that a referee PROVIDES a ruleset version 
 <li> The bit that REQUIRES may announce one or several protocol versions that it supports. This takes the form of a VERSION SPECIFICATION. (No version specification, or an empty one, means "this is compatible with all versions.")
 </UL>
 <p>
-On purely syntactic matters: we'd like both version <em>numbers</em> and version <em>specs</em> to be representable as simple strings. In fact, we'd like to be able to slap either one onto a URI as a fragment string, so that we can say that a Fluxx referee provides "<a href="/web/20070802131051/http://volity.org/games/fluxx#2.0">http://volity.org/games/fluxx#2.0</a>". (Not all version numbers will be versions <em>of a URI,</em> but many will be.)
+On purely syntactic matters: we'd like both version <em>numbers</em> and version <em>specs</em> to be representable as simple strings. In fact, we'd like to be able to slap either one onto a URI as a fragment string, so that we can say that a Fluxx referee provides "<a href="http://volity.org/games/fluxx#2.0">http://volity.org/games/fluxx#2.0</a>". (Not all version numbers will be versions <em>of a URI,</em> but many will be.)
 <p>
 Therefore, I am proposing the following (very pedantic) formats. Pardon my not-exactly-BNF definitions.
 <p>
 <H2>Spec</H2>
 
 <p>
-(Note: not all version numbers in the Volity universe have to follow this format. This is the Volity standard for version numbers that one software component wishes to use to validate its compatibility with another software component. Version numbers intended for human eyes, like <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>'s version number, may use or ignore this format.)
+(Note: not all version numbers in the Volity universe have to follow this format. This is the Volity standard for version numbers that one software component wishes to use to validate its compatibility with another software component. Version numbers intended for human eyes, like <a href="gamut.html" class=wikipagelink>Gamut</a>'s version number, may use or ignore this format.)
 <p>
 <PRE >
   VERSION-NUMBER: 

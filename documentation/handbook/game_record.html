@@ -12,19 +12,18 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="back.html=Game+Record">Game Record</a></h1><a href="homepage.html" class=wikipagelink>HomePage</a> | <a href="recentchanges.html" class=wikipagelink>RecentChanges</a> | <a href="action.html=editprefs">Preferences</a> | <a href="action.html=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>When a <a href="game.html" class=wikipagelink>game</a> ends, the <a href="referee.html" class=wikipagelink>referee</a> creates a <strong>game record</strong>, an information structure containing a summary of the game and its outcome. Unless the <a href="table.html" class=wikipagelink>table</a> has been <a href="table_configuration.html" class=wikipagelink>configured</a> not to do so, the referee then sends this record to the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>, which stores it permanently, updating the different <a href="player.html" class=wikipagelink>player</a>s' <a href="elo_score.html" class=wikipagelink>ELO score</a>s for the game's <a href="ruleset.html" class=wikipagelink>ruleset</a>.
+<h1>Game Record</h1><div class=wikitext>When a <a href="game.html" class=wikipagelink>game</a> ends, the <a href="referee.html" class=wikipagelink>referee</a> creates a <strong>game record</strong>, an information structure containing a summary of the game and its outcome. Unless the <a href="table.html" class=wikipagelink>table</a> has been <a href="table_configuration.html" class=wikipagelink>configured</a> not to do so, the referee then sends this record to the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>, which stores it permanently, updating the different <a href="player.html" class=wikipagelink>player</a>s' <a href="elo_score.html" class=wikipagelink>ELO score</a>s for the game's <a href="ruleset.html" class=wikipagelink>ruleset</a>.
 <p>
 <H2>Game record structure</H2>
 
 <p>
-A game record takes the shape of an <a href="xml.html-RPC" class=wikipagelink>XML-RPC</a> struct, and contains the following keys:
+A game record takes the shape of an <a href="xml-rpc.html" class=wikipagelink>XML-RPC</a> struct, and contains the following keys:
 <p>
 <H3>Required values</H3>
 
 <p>
 <DL >
-<dt>end_time<dd> The time at which this game ended, expressed in one of the <a href="/web/20070301123245/http://www.w3.org/TR/NOTE-datetime">[W3 standard date and time formats]</a>, e.g. 2006-07-16T19:20:30+01:00
+<dt>end_time<dd> The time at which this game ended, expressed in one of the <a href="http://www.w3.org/TR/NOTE-datetime">[W3 standard date and time formats]</a>, e.g. 2006-07-16T19:20:30+01:00
 </DL>
 <p>
 <DL >
@@ -47,7 +46,7 @@ A game record takes the shape of an <a href="xml.html-RPC" class=wikipagelink>XM
 
 <p>
 <DL >
-<dt>start_time<dd> The time at which this game began, expressed in one of the <a href="/web/20070301123245/http://www.w3.org/TR/NOTE-datetime">[W3 standard date and time formats]</a>, e.g. 2005-07-16T19:20:30+01:00
+<dt>start_time<dd> The time at which this game began, expressed in one of the <a href="http://www.w3.org/TR/NOTE-datetime">[W3 standard date and time formats]</a>, e.g. 2005-07-16T19:20:30+01:00
 </DL>
 <p>
 <DL >

@@ -12,10 +12,9 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Admin+RPC+Requests">Admin RPC Requests</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>These are additional <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> which an administrator might want to use. The idea is that a server (and its referees) would only accept these RPCs from a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> which (bare-)matched an "administrator JID", set at server startup time.
+<h1>Admin RPC Requests</h1><div class=wikitext>These are additional <a href="rpc_requests.html" class=wikipagelink>RPC requests</a> which an administrator might want to use. The idea is that a server (and its referees) would only accept these RPCs from a <a href="jid.html" class=wikipagelink>JID</a> which (bare-)matched an "administrator JID", set at server startup time.
 <p>
-These are not part of the Volity spec. However, they will be required for an administrator to manage parlors hosted on <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity.Net" class=wikipagelink>volity.net</a>. So the Perl and Python game libraries both support all of these RPCs.
+These are not part of the Volity spec. However, they will be required for an administrator to manage parlors hosted on <a href="volity.net.html" class=wikipagelink>volity.net</a>. So the Perl and Python game libraries both support all of these RPCs.
 <p>
 <em>Possible additions: admin.log_level, to change the logging level? Would have to have a rough correspondence between Perl and Python logging levels. Also a way for the web control panel to view logs.</em>
 <p>
@@ -50,7 +49,7 @@ These are not part of the Volity spec. However, they will be required for an adm
 <dt>admin.status()<dd> Return a struct of summary information.
 <DL >
 <dt>agentstate <em>string</em><dd> process activity state ("running" is normal operation)
-<dt>state <em>string</em><dd> the Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_State" class=wikipagelink>referee state</a>
+<dt>state <em>string</em><dd> the Volity <a href="referee_state.html" class=wikipagelink>referee state</a>
 <dt>players <em>int</em><dd> the number of players (including bots)
 <dt>bots <em>int</em><dd> the number of bots
 <dt>startup_time <em>string</em><dd> when this table was started

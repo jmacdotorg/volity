@@ -12,18 +12,17 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Gamut+Localization">Gamut Localization</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Eventually we plan to have full internationalization support for <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a>. All controls, menus, and messages will be read from property bundles, so that new languages can easily be added.
+<h1>Gamut Localization</h1><div class=wikitext>Eventually we plan to have full internationalization support for <a href="gamut.html" class=wikipagelink>Gamut</a>. All controls, menus, and messages will be read from property bundles, so that new languages can easily be added.
 <p>
-(Internationalization for <em>games</em> is a separate matter. That is handled by the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>. See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Localization" class=wikipagelink>localization</a>.)
+(Internationalization for <em>games</em> is a separate matter. That is handled by the <a href="ui_file.html" class=wikipagelink>UI file</a>. See <a href="localization.html" class=wikipagelink>localization</a>.)
 <p>
 Unfortunately, the core Volity developers are ignorant Americans; none of us are bilingual.
 <p>
 So we ask for help. Want to help add other languages? Easy it is, yes! Take a look at...
 <p>
 <UL >
-<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle.properties?view=markup">[Gamut: English resource bundle]</a> (<a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/*checkout*/volity/trunk/Javolin/properties/ResBundle.properties">[download]</a>)
-<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/TokenVolity.properties?view=markup">[Volity tokens: English resource bundle]</a> (<a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/*checkout*/volity/trunk/Javolin/properties/TokenVolity.properties">[download]</a>)
+<li> <a href="http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle.properties?view=markup">[Gamut: English resource bundle]</a> (<a href="http://svn.sourceforge.net/viewcvs.cgi/*checkout*/volity/trunk/Javolin/properties/ResBundle.properties">[download]</a>)
+<li> <a href="http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/TokenVolity.properties?view=markup">[Volity tokens: English resource bundle]</a> (<a href="http://svn.sourceforge.net/viewcvs.cgi/*checkout*/volity/trunk/Javolin/properties/TokenVolity.properties">[download]</a>)
 </UL>
 <p>
 (There are two files because of the way the Gamut code is organized. Sorry -- it makes sense, really.)
@@ -40,9 +39,9 @@ Each file is simply a bunch of key-value pairs:
 <p>
 To add support for a new language, you just need to copy the files (the "download" link is easier) and translate each line. Don't change the part before the "=" sign -- that's the internal code name of the string. Just replace the part after the "=" with the equivalent in your language.
 <p>
-Then mail the result back to me (zarf@volity.com) or post it to the <a href="/web/20070802131051/http://www.volity.org/lists.html">[Javolin-dev mailing list]</a>. We'll stick it in the source, and the next release of Gamut will support the language.
+Then mail the result back to me (zarf@volity.com) or post it to the <a href="http://www.volity.org/lists.html">[Javolin-dev mailing list]</a>. We'll stick it in the source, and the next release of Gamut will support the language.
 <p>
-(It's easiest if you attach the file to your message as a UTF-8 text file. Gamut is a Java application, so all <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Unicode" class=wikipagelink>Unicode</a> characters are legal... well, all the 16-bit ones, anyway.)
+(It's easiest if you attach the file to your message as a UTF-8 text file. Gamut is a Java application, so all <a href="unicode.html" class=wikipagelink>Unicode</a> characters are legal... well, all the 16-bit ones, anyway.)
 <p>
 <H3>Updates</H3>
 
@@ -57,17 +56,17 @@ So you will probably want to keep an eye on this page. As I add lines to the Eng
 <UL >
 <li> English
 <UL >
-<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle.properties?view=markup">[Gamut resource bundle]</a>
-<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/TokenVolity.properties?view=markup">[Volity token resource bundle]</a>
+<li> <a href="http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle.properties?view=markup">[Gamut resource bundle]</a>
+<li> <a href="http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/TokenVolity.properties?view=markup">[Volity token resource bundle]</a>
 </UL>
 <li> Spanish (thanks to Javier Diaz Reinoso)
 <UL >
-<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle_es.properties?view=markup">[Spanish resource bundle]</a> 
+<li> <a href="http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle_es.properties?view=markup">[Spanish resource bundle]</a> 
 <li> Volity token resource bundle -- not yet written
 </UL>
 <li> German (thanks to Gunther Schmidl)
 <UL >
-<li> <a href="/web/20070802131051/http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle_de.properties?view=markup">[German resource bundle]</a> 
+<li> <a href="http://svn.sourceforge.net/viewcvs.cgi/volity/trunk/Javolin/properties/ResBundle_de.properties?view=markup">[German resource bundle]</a> 
 <li> Volity token resource bundle -- not yet written
 </UL>
 </UL>

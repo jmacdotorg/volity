@@ -12,24 +12,23 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Game+Finder">Game Finder</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Volity's <strong>game finder</strong> allows players to quickly list and locate <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game" class=wikipagelink>game</a>s. Like the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>, it is a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>-hosted information directory that <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> applications access through <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>service discovery</a>.
+<h1>Game Finder</h1><div class=wikitext>Volity's <strong>game finder</strong> allows players to quickly list and locate <a href="game.html" class=wikipagelink>game</a>s. Like the <a href="ui_finder.html" class=wikipagelink>UI finder</a>, it is a <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>-hosted information directory that <a href="client.html" class=wikipagelink>client</a> applications access through <a href="service_discovery.html" class=wikipagelink>service discovery</a>.
 <p>
 Through the game finder, Volity users can use their client applications to:
 <UL >
-<li> Learn what games (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset" class=wikipagelink>ruleset</a>s, really) are available on the Volity network
+<li> Learn what games (<a href="ruleset.html" class=wikipagelink>ruleset</a>s, really) are available on the Volity network
 <li> Locate various network entities that support a given ruleset:
 <UL >
 <li> parlors
-<li> Active games (at least ones whose tables aren't <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>configured</a> to hide from the game browser)
-<li> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Lobby" class=wikipagelink>Lobbies</a>
+<li> Active games (at least ones whose tables aren't <a href="table_configuration.html" class=wikipagelink>configured</a> to hide from the game browser)
+<li> <a href="lobby.html" class=wikipagelink>Lobbies</a>
 </UL>
 </UL>
 <p>
 <H2>Discovering rulesets</H2>
 
 <p>
-Easy: send a disco items query to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a>, node <code>rulesets</code>. You'll get back a list of node pointers, one for every ruleset the bookkeeper knows about. (And, as it happens, each node will be exactly named after its ruleset's URI.)
+Easy: send a disco items query to the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a>, node <code>rulesets</code>. You'll get back a list of node pointers, one for every ruleset the bookkeeper knows about. (And, as it happens, each node will be exactly named after its ruleset's URI.)
 <p>
 Performing an info query on any of these nodes results in two fields <em>(note that they have no provisions for internationalization at this time)</em>:
 <DL >
@@ -39,7 +38,7 @@ Performing an info query on any of these nodes results in two fields <em>(note t
 <dt>homepage<dd> <em>Optional.</em> A URL leading to a Web page with more information about this ruleset, such as human-friendly rules.
 </DL>
 <p>
-<em><strong>NOTE:</strong> This solution is not very scalable. Should Volity succeed in becoming popular among game hackers, this list of registered rulesets could grow too long to manage (even if filtered by those who actually have the support of active parlors)! It will do for the nonce, but in the future, the bookkeeper might organize the list into subcategories or the like. I will handwavingly suggest that this future bookkeeper will compare protocol version numbers to know when </em>not<em> to do this for a backwards client. (<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jmac" class=wikipagelink>jmac</a>)</em>
+<em><strong>NOTE:</strong> This solution is not very scalable. Should Volity succeed in becoming popular among game hackers, this list of registered rulesets could grow too long to manage (even if filtered by those who actually have the support of active parlors)! It will do for the nonce, but in the future, the bookkeeper might organize the list into subcategories or the like. I will handwavingly suggest that this future bookkeeper will compare protocol version numbers to know when </em>not<em> to do this for a backwards client. (<a href="jmac.html" class=wikipagelink>jmac</a>)</em>
 <p>
 <H2>Discovering parlors</H2>
 
@@ -49,7 +48,7 @@ Perform a disco items query on one of those nodes, appending the string <code>|p
 Toss each node a disco info request to receive a short form with this field:
 <p>
 <DL >
-<dt>reputation<dd>This server's score on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a>. <em>Not yet implemented, though...</em>
+<dt>reputation<dd>This server's score on the <a href="reputation_system.html" class=wikipagelink>reputation system</a>. <em>Not yet implemented, though...</em>
 </DL>
 <p>
 For convenience, sending a disco items request to one of these nodes returns a pointer to the sever's actual JID, but since the node is a string that exactly matches the server's JID, a client can just use that information instead.
@@ -57,40 +56,40 @@ For convenience, sending a disco items request to one of these nodes returns a p
 Sending a disco info request to the parlor itself (via its real JID) results in a different data form, this time with the following fields:
 <p>
 <DL >
-<dt>ruleset<dd>This server's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>.
+<dt>ruleset<dd>This server's <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>.
 <dt>ruleset-version<dd>The version number of the ruleset which this server supports.
 <dt>description<dd>A human-readable description of this server. (Might be blank.)
 <dt>website<dd>A URL of a website holding more information about this server. (Might be blank.)
 <dt>volity-version<dd>The version number of the Volity platform which this server supports.
 </DL>
 <p>
-<em>Why is each parlor's information split across two separate locations: the bookkeeper, and the parlor itself?</em> While the parlor can describe itself adequately, it needs the bookkeeper to vouch separately for its quality and trustworthiness. As with every other facet of Volity's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a>, all reputation information comes directly from the bookkeeper.
+<em>Why is each parlor's information split across two separate locations: the bookkeeper, and the parlor itself?</em> While the parlor can describe itself adequately, it needs the bookkeeper to vouch separately for its quality and trustworthiness. As with every other facet of Volity's <a href="reputation_system.html" class=wikipagelink>reputation system</a>, all reputation information comes directly from the bookkeeper.
 <p>
 <H2>Discovering games (open tables)</H2>
 
 <p>
-Perform a disco items request on a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a> (not the bookkeeper), node <code>open_games</code>. You should get back a list of (possibly zero) pointers to referee JIDs.
+Perform a disco items request on a <a href="parlor.html" class=wikipagelink>parlor</a> (not the bookkeeper), node <code>open_games</code>. You should get back a list of (possibly zero) pointers to referee JIDs.
 <p>
-You can then send a disco info request to each of these <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s to receive a form with more information about its game:
+You can then send a disco info request to each of these <a href="referee.html" class=wikipagelink>referee</a>s to receive a form with more information about its game:
 <DL >
 <dt>parlor<dd>The JID of this referee's parlor. (Which you probably already know, at this point, but back-pointers are nice.)
 <dt>table<dd>The JID of this referee's table.
 <dt>afoot<dd> 1 if the game is in play, 0 otherwise.
-<dt>players<dd> The number of occupied <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seats" class=wikipagelink>seats</a> at the table.
+<dt>players<dd> The number of occupied <a href="seats.html" class=wikipagelink>seats</a> at the table.
 <dt>max-players<dd> How many seats this referee will allow.
-<dt>language<dd> The preferred human <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Language" class=wikipagelink>language</a> for this table, expressed as a two-letter <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Language_Code" class=wikipagelink>language code</a>.
+<dt>language<dd> The preferred human <a href="language.html" class=wikipagelink>language</a> for this table, expressed as a two-letter <a href="language_code.html" class=wikipagelink>language code</a>.
 <dt>recorded<dd> 1 if the referee is recording games on the bookkeeper; 0 otherwise.
-<dt>visible<dd> 1 if the table is visible to the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Finder" class=wikipagelink>game finder</a>; 0 otherwise.
+<dt>visible<dd> 1 if the table is visible to the <a href="game_finder.html" class=wikipagelink>game finder</a>; 0 otherwise.
 </DL>
 <p>
 <H2>Discovering lobbies</H2>
 
 <p>
-See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Lobby" class=wikipagelink>Lobby</a>.
+See <a href="lobby.html" class=wikipagelink>Lobby</a>.
 <p>
 <p>
 <H2>See Also</H2>
 
 <p>
-The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity.Net_Game_Finder" class=wikipagelink>volity.net game finder</a> is an example of implementing the game finder as a separate application from the game-playing <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>. It communicates with the client by downloading <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_File" class=wikipagelink>volity file</a>s and (through MIME or extension-based magic) letting the user's OS pass them to the client.
+The <a href="volity.net_game_finder.html" class=wikipagelink>volity.net game finder</a> is an example of implementing the game finder as a separate application from the game-playing <a href="client.html" class=wikipagelink>client</a>. It communicates with the client by downloading <a href="volity_file.html" class=wikipagelink>volity file</a>s and (through MIME or extension-based magic) letting the user's OS pass them to the client.
 </div>

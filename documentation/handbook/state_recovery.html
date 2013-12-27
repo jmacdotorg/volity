@@ -12,14 +12,13 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=State+Recovery">State Recovery</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Through game <strong>state recovery</strong>, a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a> can ask a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a> for a summary of a game's current state. 
+<h1>State Recovery</h1><div class=wikitext>Through game <strong>state recovery</strong>, a <a href="player.html" class=wikipagelink>player</a> can ask a <a href="referee.html" class=wikipagelink>referee</a> for a summary of a game's current state. 
 <p>
-To request recovery, the player's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a> sends a <code>volity.send_state</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC request</a> to the referee. If it judges that the player is qualified to receive such information (usually any player at the table qualifies), the referee reacts by calling some number of RPC requests back on the client. In total, the requests should give the receiving client enough information to build an accurate representation of the game's state <em>from that player's perspective</em>. 
+To request recovery, the player's <a href="client.html" class=wikipagelink>client</a> sends a <code>volity.send_state</code> <a href="rpc_requests.html" class=wikipagelink>RPC request</a> to the referee. If it judges that the player is qualified to receive such information (usually any player at the table qualifies), the referee reacts by calling some number of RPC requests back on the client. In total, the requests should give the receiving client enough information to build an accurate representation of the game's state <em>from that player's perspective</em>. 
 <p>
 The RPC sequence will begin with seating information: <code>volity.seat_list</code>, possibly <code>volity.required_seat_list</code>. There may then be some number of <code>volity.player_sat</code> RPCs, followed by some number of <code>volity.player_ready</code> RPCs, to convey the current seating/readiness arrangement. (The <code>player_ready</code> RPCs, if present, will be the last <code>volity</code>-namespace calls in the sequence.)
 <p>
-The sequence then continues with a description of the game configuration, and (if the game has already started) a description of the game's state. There's nothing special about these requests; each one is an ordinary <code>game</code>-namespaced request defined in the table's current <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_API" class=wikipagelink>ruleset API</a>.
+The sequence then continues with a description of the game configuration, and (if the game has already started) a description of the game's state. There's nothing special about these requests; each one is an ordinary <code>game</code>-namespaced request defined in the table's current <a href="ruleset_api.html" class=wikipagelink>ruleset API</a>.
 <p>
 For example, in a game of Chess, a recovery request would result in the client receiving RPC requests letting it know the positions of all the pieces on the board. In a Poker game, the client would be told about the size of the pot, how many chips each player held, and its own hand, and its opponents' hand sizes (but <em>not</em> the specific cards they hold; presumably, no methods would exist in the ruleset API to support that, anyway).
 <p>
@@ -36,7 +35,7 @@ Three additional, predefined calls bracket the recovery calls:
 <p>
 The typical use-case for a graphical client has it disabling its own automatic display refresh of the gameplay area once it receives the first call, and the reenabling it (with an additional redraw of that area) upon receipt of the second call.
 <p>
-It's worth noting that a client can request state <em>at any time</em> -- not just at the beginning of the game. This can be very useful for players who wander in after some <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Configuration" class=wikipagelink>table configuration</a> has already started to take place and need to know the current pregame settings, or for players who come in midgame simply to observe the play.
+It's worth noting that a client can request state <em>at any time</em> -- not just at the beginning of the game. This can be very useful for players who wander in after some <a href="table_configuration.html" class=wikipagelink>table configuration</a> has already started to take place and need to know the current pregame settings, or for players who come in midgame simply to observe the play.
 <p>
 <H2>The sending of the initial state</H2>
 

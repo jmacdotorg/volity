@@ -12,32 +12,31 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=Bookkeeper">Bookkeeper</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>The <strong>bookkeeper</strong> is the information center of a Volity network. It serves the following purposes:
+<h1>Bookkeeper</h1><div class=wikitext>The <strong>bookkeeper</strong> is the information center of a Volity network. It serves the following purposes:
 <p>
 <UL >
-<li> Storage of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a>s
-<li> Provider of a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Browser" class=wikipagelink>game browser</a>
-<li> Provider of a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_Finder" class=wikipagelink>UI finder</a>
-<li> Storage of the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a> for all the network's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Player" class=wikipagelink>player</a>s, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s, and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>s.
+<li> Storage of <a href="game_record.html" class=wikipagelink>game record</a>s
+<li> Provider of a <a href="game_browser.html" class=wikipagelink>game browser</a>
+<li> Provider of a <a href="ui_finder.html" class=wikipagelink>UI finder</a>
+<li> Storage of the <a href="reputation_system.html" class=wikipagelink>reputation system</a> for all the network's <a href="player.html" class=wikipagelink>player</a>s, <a href="parlor.html" class=wikipagelink>parlor</a>s, and <a href="ui_file.html" class=wikipagelink>UI file</a>s.
 </UL>
 <p>
 <H2>The bookkeeper at volity.net</H2>
 
 <p>
-The official Volity network, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?VolityNet" class=wikipagelink>VolityNet</a>, runs a bookkeeper of its own. As the nerve center of the largest free Volity network, it quite commonly used and information-rich, and sometimes refereed to as "the bookkeeper", as if it were the only one in existence, even though anyone can technically run a separate bookkeeper of their own. It is maintained by the Volity core development team, as a free service to the community.
+The official Volity network, <a href="volitynet.html" class=wikipagelink>VolityNet</a>, runs a bookkeeper of its own. As the nerve center of the largest free Volity network, it quite commonly used and information-rich, and sometimes refereed to as "the bookkeeper", as if it were the only one in existence, even though anyone can technically run a separate bookkeeper of their own. It is maintained by the Volity core development team, as a free service to the community.
 <p>
-Most Volity players and servers will probably only use this one bookkeeper, and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s should connect to it by default.
+Most Volity players and servers will probably only use this one bookkeeper, and <a href="client.html" class=wikipagelink>client</a>s should connect to it by default.
 <p>
-The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a> of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?VolityNet" class=wikipagelink>VolityNet</a>'s bookkeeper is:
+The <a href="jabberid.html" class=wikipagelink>JabberID</a> of <a href="volitynet.html" class=wikipagelink>VolityNet</a>'s bookkeeper is:
 <PRE >
  bookkeeper@volity.net/volity
 </PRE>
 <p>
-<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC Requests</a></H2>
+<H2><a href="rpc_requests.html" class=wikipagelink>RPC Requests</a></H2>
 
 <p>
-Right now, all the "stance" and "reputation" methods involve the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a>. In the arguments, <em>identifier</em> means either a JID (for players or parlors) or a URL (for <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>s).
+Right now, all the "reputation_system.html" class=wikipagelink>reputation system</a>. In the arguments, <em>identifier</em> means either a JID (for players or parlors) or a URL (for <a href="ui_file.html" class=wikipagelink>UI file</a>s).
 <p>
 <H3>volity.get_reputation ( <em>identifier</em> )</H3>
  
@@ -59,29 +58,29 @@ Requests <em>all</em> the stances recorded for the identified object. Returns an
 <p>
 A request to set the sending player's stance towards the identified object. Returns a fault if the provided stance is any value other than one of (-1, 0, 1), or if the sender hasn't played a game with the identified object (or, indeed, if the object appears to be the sending player). Otherwise, the bookkeeper updates its reputation database and returns truth.
 <p>
-<H3>volity.record_game ( <em><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a></em> )</H3>
+<H3>volity.record_game ( <em><a href="game_record.html" class=wikipagelink>game record</a></em> )</H3>
 
 <p>
-Record the outcome of a game. The argument is a struct which contains the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Winners_List" class=wikipagelink>winners list</a>, the timestamp of the game, and so on. See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Record" class=wikipagelink>game record</a> for the complete definition.
+Record the outcome of a game. The argument is a struct which contains the <a href="winners_list.html" class=wikipagelink>winners list</a>, the timestamp of the game, and so on. See <a href="game_record.html" class=wikipagelink>game record</a> for the complete definition.
 <p>
-This RPC may be sent only by <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>s.
+This RPC may be sent only by <a href="referee.html" class=wikipagelink>referee</a>s.
 <p>
 <H3>volity.get_rulesets ( )</H3>
 
 <p>
-Request a list of all the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>s that the bookkeeper knows about. <em>(Not scalable; we may change this.)</em>
+Request a list of all the <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>s that the bookkeeper knows about. <em>(Not scalable; we may change this.)</em>
 <p>
-<em>This appears not to work, as of 2007-03-17; use a disco#items query instead.  Although I can't be totally sure I'm not calling it wrong. -- Dankna<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=edit&id=Dankna" class=wikipageedit>?</a></em>
+<em>This appears not to work, as of 2007-03-17; use a disco#items query instead.  Although I can't be totally sure I'm not calling it wrong. -- Dankna<a href="action=edit&id=dankna.html" class=wikipageedit>?</a></em>
 <p>
 <H3>volity.get_ruleset_info ( <em>URI</em> )</H3>
 
 <p>
-Request information about the ruleset with the given <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>. The result is a struct; see the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> service discovery page for the fields this will contain.
+Request information about the ruleset with the given <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>. The result is a struct; see the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> service discovery page for the fields this will contain.
 <p>
 <H3>volity.get_uis ( <em>URI</em> )</H3>
 
 <p>
-Request a list of UIs which require the given ruleset URI. (Ruleset may include a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version number fragment</a>, in which case the UIs must match that version number.) The result is a list of URLs (a list of strings).
+Request a list of UIs which require the given ruleset URI. (Ruleset may include a <a href="version_matching.html" class=wikipagelink>version number fragment</a>, in which case the UIs must match that version number.) The result is a list of URLs (a list of strings).
 <p>
 <H3>volity.get_uis ( <em>URI</em>, <em>constraints</em> )</H3>
 
@@ -89,11 +88,11 @@ Request a list of UIs which require the given ruleset URI. (Ruleset may include 
 Same as above, but the additional constraints parameter allows the bookkeeper to filter the results. The constraints are a struct containing any or all of the following keys:
 <p>
 <DL >
-<dt>client-type<dd> only return UIs matching this <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client_Type" class=wikipagelink>client type</a> URI.
+<dt>client-type<dd> only return UIs matching this <a href="client_type.html" class=wikipagelink>client type</a> URI.
 <dt>ruleset-version<dd> only return UIs matching this ruleset version number. (Used if the ruleset parameter does not contain a version number fragment.)
-<dt>ecmascript-api<dd> only return UIs which match this version number. (See the "requires-ecmascript-api" field in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Metadata_Terms" class=wikipagelink>UI metadata</a>.)
+<dt>ecmascript-api<dd> only return UIs which match this version number. (See the "volity_metadata_terms.html" class=wikipagelink>UI metadata</a>.)
 <dt>language<dd> only return UIs which include this language.
-<dt>reputation<dd> only return UIs with this <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation</a> or better.
+<dt>reputation<dd> only return UIs with this <a href="reputation_system.html" class=wikipagelink>reputation</a> or better.
 </DL>
 <p>
 <em>Constraint list is subject to change.</em>
@@ -103,7 +102,7 @@ If the constraints struct contains several keys, the UI must match all of them. 
 <H3>volity.get_ui_info ( <em>URL</em> )</H3>
 
 <p>
-Request information about the UI with the given URL. The result is a struct; see the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bookkeeper" class=wikipagelink>bookkeeper</a> service discovery page for the fields this will contain.
+Request information about the UI with the given URL. The result is a struct; see the <a href="bookkeeper.html" class=wikipagelink>bookkeeper</a> service discovery page for the fields this will contain.
 <p>
 <H3>volity.get_ui_info ( <em>list</em> )</H3>
 
@@ -113,28 +112,28 @@ Batch form of get_ui_info(). The argument is a list of URLs; the result is a lis
 <H3>volity.get_parlors ( <em>URI</em> )</H3>
 
 <p>
-Returns a list of JID pointers to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s that support the given ruleset.
+Returns a list of JID pointers to <a href="parlor.html" class=wikipagelink>parlor</a>s that support the given ruleset.
 <p>
 <H3>volity.get_factories ( <em>URI</em> )</H3>
 
 <p>
-Returns a list of JID pointers to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Bot_Factory" class=wikipagelink>bot factories</a> that support the given ruleset.
+Returns a list of JID pointers to <a href="bot_factory.html" class=wikipagelink>bot factories</a> that support the given ruleset.
 <p>
 <H3>volity.get_lobbies ( <em>URI</em> )</H3>
 
 <p>
 <p>
-Returns a list of JID pointers to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Lobby" class=wikipagelink>chat lobbies</a> for the given ruleset.
+Returns a list of JID pointers to <a href="lobby.html" class=wikipagelink>chat lobbies</a> for the given ruleset.
 <p>
 <H3>volity.get_resource_uris ( )</H3>
 
 <p>
-Request a list of all the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a>s that the bookkeeper knows about. <em>(Not scalable; we may change this.)</em>
+Request a list of all the <a href="resource_uri.html" class=wikipagelink>resource URI</a>s that the bookkeeper knows about. <em>(Not scalable; we may change this.)</em>
 <p>
 <H3>volity.get_resources ( <em>URI</em> )</H3>
 
 <p>
-Request a list of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Pluggable_Resources" class=wikipagelink>resources</a> which provide the given <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a>. (Ruleset may include a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version spec fragment</a>, in which case the resource must match that spec.) The result is a list of URLs (a list of strings).
+Request a list of <a href="pluggable_resources.html" class=wikipagelink>resources</a> which provide the given <a href="resource_uri.html" class=wikipagelink>resource URI</a>. (Ruleset may include a <a href="version_matching.html" class=wikipagelink>version spec fragment</a>, in which case the resource must match that spec.) The result is a list of URLs (a list of strings).
 <p>
 <H3>volity.get_resources ( <em>URI</em>, <em>constraints</em> )</H3>
 
@@ -142,7 +141,7 @@ Request a list of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?
 Same as above, but with additional constraints:
 <p>
 <DL >
-<dt>resource-version<dd> only return resources matching this <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>ruleset version spec</a>. (Used if the ruleset parameter does not contain a version spec fragment.)
+<dt>resource-version<dd> only return resources matching this <a href="version_matching.html" class=wikipagelink>ruleset version spec</a>. (Used if the ruleset parameter does not contain a version spec fragment.)
 <dt>language<dd> only return resources which include this language.
 <dt>reputation<dd> only return resources with this reputation or better.
 </DL>
@@ -152,7 +151,7 @@ Same as above, but with additional constraints:
 <H3>volity.get_resource_info ( <em>URL</em> )</H3>
 
 <p>
-Request information about the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Pluggable_Resources" class=wikipagelink>resource</a> at the given URL. The result is a struct:
+Request information about the <a href="pluggable_resources.html" class=wikipagelink>resource</a> at the given URL. The result is a struct:
 <p>
 <UL >
 <li> provides-resource
@@ -169,7 +168,7 @@ Request information about the <a href="/web/20070802131051/http://volity.org/wik
 <p>
 Batch form of get_resource_info(). The argument is a list of URLs; the result is a list of structs.
 <p>
-<H2><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Service_Discovery" class=wikipagelink>Service Discovery</a> responses</H2>
+<H2><a href="service_discovery.html" class=wikipagelink>Service Discovery</a> responses</H2>
 
 <p>
 The bookkeeper holds a complex disco-response structure, organized by nodes. 
@@ -183,37 +182,37 @@ If queried without a node, the bookkeeper returns its own identity: <strong>cate
 <dt>volity-role<dd> The string <code>bookkeeper</code>.
 </DL>
 <p>
-If the requested node appears to be a URI, the bookkeeper matches it against known <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>s and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> URLs to generate an appropriate response form.
+If the requested node appears to be a URI, the bookkeeper matches it against known <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>s and <a href="ui_file.html" class=wikipagelink>UI file</a> URLs to generate an appropriate response form.
 <p>
-<H4>Node: [some <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>'s URL]</H4>
+<H4>Node: [some <a href="ui_file.html" class=wikipagelink>UI file</a>'s URL]</H4>
 
 <p>
 <DL >
-<dt>client-type<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client_Type" class=wikipagelink>client type</a> URIs that this file supports. Can be multiple values.
+<dt>client-type<dd> The <a href="client_type.html" class=wikipagelink>client type</a> URIs that this file supports. Can be multiple values.
 <dt>languages<dd> The two-letter codes for the languages this file supports. Can be multiple values.
 <dt>ruleset<dd> The ruleset URI that this file supports.
-<dt>reputation<dd> This file's ranking on the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Reputation_System" class=wikipagelink>reputation system</a>. As always, the higher the number, the more players have used and liked it.
+<dt>reputation<dd> This file's ranking on the <a href="reputation_system.html" class=wikipagelink>reputation system</a>. As always, the higher the number, the more players have used and liked it.
 <dt>contact-email<dd> The email address of the person responsible for this file.
-<dt>contact-jid<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JabberID" class=wikipagelink>JabberID</a> of the person responsible for this file.
+<dt>contact-jid<dd> The <a href="jabberid.html" class=wikipagelink>JabberID</a> of the person responsible for this file.
 <dt>description<dd> A text description of this file. (A shorter name of the file can be found in the "name" attribute of the info response.)
 </DL>
 <p>
-<H4>Node: [some <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>]</H4>
+<H4>Node: [some <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>]</H4>
 
 <p>
 <DL >
 <dt>description<dd> A prose description of the given ruleset URI.
 </DL>
 <p>
-The attached <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JEPs_That_Volity_Uses" class=wikipagelink>JEP-0128</a> form contains the following additional fields:
+The attached <a href="jeps_that_volity_uses.html" class=wikipagelink>JEP-0128</a> form contains the following additional fields:
 <p>
 <DL >
-<dt>server<dd>The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?JID" class=wikipagelink>JID</a> of this referee's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>.
+<dt>server<dd>The <a href="jid.html" class=wikipagelink>JID</a> of this referee's <a href="parlor.html" class=wikipagelink>parlor</a>.
 <dt>table<dd>The JID of this referee's table.
 <dt>afoot<dd> 1 if the game is in play (and therefore probably not joinable), 0 otherwise.
-<dt>players<dd> The number of occupied <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seats" class=wikipagelink>seats</a> at the table.
+<dt>players<dd> The number of occupied <a href="seats.html" class=wikipagelink>seats</a> at the table.
 <dt>max-players<dd> How many seats this referee will allow.
-<dt>language<dd> The preferred human <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Language" class=wikipagelink>language</a> for this table.
+<dt>language<dd> The preferred human <a href="language.html" class=wikipagelink>language</a> for this table.
 </DL>
 <p>
 <H3>Items</H3>
@@ -224,20 +223,20 @@ This is also entirely node-driven; the bookkeeper returns an empty list on disco
 <H4>Node: rulesets</H4>
 
 <p>
-Returns a list of JID/node combinations, each pointing at a node with more information about a ruleset. The JID is always the bookkeeper's own JID, and the node is a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>.
+Returns a list of JID/node combinations, each pointing at a node with more information about a ruleset. The JID is always the bookkeeper's own JID, and the node is a <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>.
 <p>
-<H4>Node: [some <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>]|parlors</H4>
+<H4>Node: [some <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>]|parlors</H4>
 
 <p>
-Returns a list of JID pointers to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Parlor" class=wikipagelink>parlor</a>s that support the given ruleset.
+Returns a list of JID pointers to <a href="parlor.html" class=wikipagelink>parlor</a>s that support the given ruleset.
 <p>
-<H4>Node: [some <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>]|uis</H4>
+<H4>Node: [some <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>]|uis</H4>
 
 <p>
-Returns a list of JID/node combinations, each pointing at a node with more information about a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>. The JID is always the bookkeeper's own JID, and the node is a UI file's URL.
+Returns a list of JID/node combinations, each pointing at a node with more information about a <a href="ui_file.html" class=wikipagelink>UI file</a>. The JID is always the bookkeeper's own JID, and the node is a UI file's URL.
 <p>
-<H4>Node: [some <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a>]|lobby</H4>
+<H4>Node: [some <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a>]|lobby</H4>
 
 <p>
-Returns a list of JID pointers to <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Lobby" class=wikipagelink>chat lobbies</a> for the given ruleset.
+Returns a list of JID pointers to <a href="lobby.html" class=wikipagelink>chat lobbies</a> for the given ruleset.
 </div>

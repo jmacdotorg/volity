@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=SVG+Tricks">SVG Tricks</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Here are some clever or useful things you can do in SVG.
+<h1>SVG Tricks</h1><div class=wikitext>Here are some clever or useful things you can do in SVG.
 <p>
 <H3>A basic SVG file</H3>
 
@@ -76,7 +75,7 @@ This contains a &lt;script&gt; segment (which contains only a comment); a &lt;de
 <p>
 Note that the SVG 1.1 file has a <code>DOCTYPE</code> header, but the SVG 1.2 file does not.
 <p>
-Another note: In SVG 1.2, the type for <code>&lt;script&gt;</code> elements is supposed to be <code>"application/ecmascript"</code>. However, <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Batik" class=wikipagelink>Batik</a> does not yet support this. (See <a href="/web/20070802131051/http://issues.apache.org/bugzilla/show_bug.cgi?id=35549">[Batik bug 35549]</a>.)
+Another note: In SVG 1.2, the type for <code>&lt;script&gt;</code> elements is supposed to be <code>"batik.html" class=wikipagelink>Batik</a> does not yet support this. (See <a href="http://issues.apache.org/bugzilla/show_bug.cgi?id=35549">[Batik bug 35549]</a>.)
 <p>
 <H3>Deciding what is displayed on top</H3>
 
@@ -201,7 +200,7 @@ The primary label is given by a <code>&lt;title&gt;</code> child element:
   &lt;/circle&gt;
 </PRE>
 <p>
-<a href="/web/20070802131051/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-1.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-1.png" alt="upload:svg-tricks-tooltip-1.png"></a>
+<a href="http://www.volity.org/wiki/uploads/svg-tricks-tooltip-1.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-1.png" alt="upload:svg-tricks-tooltip-1.png"></a>
 <p>
 A more descriptive label should be put in a <code>&lt;desc&gt;</code> child element:
 <p>
@@ -211,7 +210,7 @@ A more descriptive label should be put in a <code>&lt;desc&gt;</code> child elem
   &lt;/circle&gt;
 </PRE>
 <p>
-<a href="/web/20070802131051/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-2.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-2.png" alt="upload:svg-tricks-tooltip-2.png"></a>
+<a href="http://www.volity.org/wiki/uploads/svg-tricks-tooltip-2.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-2.png" alt="upload:svg-tricks-tooltip-2.png"></a>
 <p>
 It is legal to have both:
 <p>
@@ -222,7 +221,7 @@ It is legal to have both:
   &lt;/circle&gt;
 </PRE>
 <p>
-<a href="/web/20070802131051/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-3.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-3.png" alt="upload:svg-tricks-tooltip-3.png"></a>
+<a href="http://www.volity.org/wiki/uploads/svg-tricks-tooltip-3.png"><img src="/web/20070802131051im_/http://www.volity.org/wiki/uploads/svg-tricks-tooltip-3.png" alt="upload:svg-tricks-tooltip-3.png"></a>
 <p>
 Note that mouse hovering is considered to be a pointer event. If you have set <code>pointer-events="none"</code> on an element (see below), tooltips will not appear.
 <p>
@@ -290,10 +289,10 @@ However, if you do this, you'll be turning off pointer events for all your eleme
 <p>
 (This is not necessarily a bad strategy. You'll often have a lot of fiddly SVG objects, even in your buttons and clickable pieces. It saves time and complexity if just one element in each button -- the border shape -- is sensitive to pointer events. By turning them off in a top-level group, and then back on for specific elements, you can achieve this level of control.)
 <p>
-The valid <code>pointer-events</code> values are described in the <a href="/web/20070802131051/http://www.w3.org/TR/SVG/interact.html#PointerEventsProperty">[SVG spec]</a>. Most often you'll want to use <code>none</code> (no clicks), <code>all</code> (accept clicks inside the shape or on the border stroke), or <code>visible</code> (same as <code>all</code> when the object is <code>visibility="visible"</code>, but <code>none</code> when it's <code>visibility="hidden"</code>).
+The valid <code>pointer-events</code> values are described in the <a href="http://www.w3.org/TR/SVG/interact.html#PointerEventsProperty">[SVG spec]</a>. Most often you'll want to use <code>none</code> (no clicks), <code>all</code> (accept clicks inside the shape or on the border stroke), or <code>visible</code> (same as <code>all</code> when the object is <code>visibility="visible"</code>, but <code>none</code> when it's <code>visibility="hidden"</code>).
 <p>
 <H2>See also</H2>
 
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?SVG_Script_Tricks" class=wikipagelink>SVG Script Tricks</a>
+<a href="svg_script_tricks.html" class=wikipagelink>SVG Script Tricks</a>
 </div>

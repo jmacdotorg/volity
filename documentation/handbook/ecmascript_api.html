@@ -12,14 +12,13 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=ECMAScript+API">ECMAScript API</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>Volity <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Client" class=wikipagelink>client</a>s that use <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?ECMAScript" class=wikipagelink>ECMAScript</a> (such as <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Gamut" class=wikipagelink>Gamut</a> and <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Friv" class=wikipagelink>Friv</a>) need to provide several ES functions, objects and methods that <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a>s can call upon.
+<h1>ECMAScript API</h1><div class=wikitext>Volity <a href="client.html" class=wikipagelink>client</a>s that use <a href="ecmascript.html" class=wikipagelink>ECMAScript</a> (such as <a href="gamut.html" class=wikipagelink>Gamut</a> and <a href="friv.html" class=wikipagelink>Friv</a>) need to provide several ES functions, objects and methods that <a href="ui_file.html" class=wikipagelink>UI file</a>s can call upon.
 <p>
 The API is described by a version number. (The UI can read this version number from <code>info.version</code> -- see below. This may allow you to write UI code that runs on old interpreters.)
 <p>
-The UI should specify the API version (or versions) it requires in <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Metadata" class=wikipagelink>metadata</a>. This allows the interpreter to sort out which UIs will run upon it.
+The UI should specify the API version (or versions) it requires in <a href="metadata.html" class=wikipagelink>metadata</a>. This allows the interpreter to sort out which UIs will run upon it.
 <p>
-The version number follows the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Matching" class=wikipagelink>version matching</a> definition. A backwards-compatible change (such as adding a new info field or API function) will be noted by incrementing the minor version number. A compatibility-breaking change (like removing or changing the behavior of an API function) will be noted by incrementing the major version number.
+The version number follows the <a href="version_matching.html" class=wikipagelink>version matching</a> definition. A backwards-compatible change (such as adding a new info field or API function) will be noted by incrementing the minor version number. A compatibility-breaking change (like removing or changing the behavior of an API function) will be noted by incrementing the major version number.
 <p>
 This page describes API version 3.2.
 <p>
@@ -27,9 +26,9 @@ This page describes API version 3.2.
 
 <p>
 <DL >
-<dt>rpc ( <em>methodName</em> [ , <em>arg</em> , ... ] )<dd> Sends the RPC <em>methodName</em> (a string) to the table's <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>, with the given argument list.
-<dt>localize ( <em>token</em> [ , <em>token</em>, ... ] )<dd> Given one or more <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>token</a> strings, return a string localized to the client's current language. (The translations are provided by the client and by the UI file's own <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Localization_Files" class=wikipagelink>localization files</a>.)
-<dt>message ( <em>token</em> [ , <em>token</em>, ... ] )<dd> Given one or more <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>token</a> strings, print the localized string in the client's message stream.
+<dt>rpc ( <em>methodName</em> [ , <em>arg</em> , ... ] )<dd> Sends the RPC <em>methodName</em> (a string) to the table's <a href="referee.html" class=wikipagelink>referee</a>, with the given argument list.
+<dt>localize ( <em>token</em> [ , <em>token</em>, ... ] )<dd> Given one or more <a href="token.html" class=wikipagelink>token</a> strings, return a string localized to the client's current language. (The translations are provided by the client and by the UI file's own <a href="localization_files.html" class=wikipagelink>localization files</a>.)
+<dt>message ( <em>token</em> [ , <em>token</em>, ... ] )<dd> Given one or more <a href="token.html" class=wikipagelink>token</a> strings, print the localized string in the client's message stream.
 <dt>literalmessage ( <em>message</em> )<dd> Print the message in the client's message stream, without trying to translate it. This is a bad idea as a rule, but the rule has too many exceptions (like debugging) to not support this.
 <dt>audio ( <em>url</em> [ , <em>alt</em> ] )<dd> Create an audio object with the given URL and (optional) alternate text label. See below for the behavior of audio objects.
 <dt>seatmark ( ... )<dd> Adjust the marks which annotate the client's seating display. (The client may not be able to display such marks, in which case this function will do nothing.) The function takes various kinds of arguments: see below.
@@ -61,7 +60,7 @@ A call to the seatmark() function defines a new set of marks. (The state of the 
 <H3>volity</H3>
 
 <p>
-This is a blank object. The UI must add properties to it; these are used as function handlers for the <code>volity</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> which arrive from the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>.
+This is a blank object. The UI must add properties to it; these are used as function handlers for the <code>volity</code> <a href="rpc_requests.html" class=wikipagelink>RPC requests</a> which arrive from the <a href="referee.html" class=wikipagelink>referee</a>.
 <p>
 For example, if you added a <code>volity.start_game</code> property, it would be called when the game started.
 <p>
@@ -72,7 +71,7 @@ You do not have to assign a property for every <code>volity</code> RPC in the li
 <H3>game</H3>
 
 <p>
-This is a blank object. The UI must add properties to it; these are used as function handlers for the <code>game</code> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RPC_Requests" class=wikipagelink>RPC requests</a> which arrive from the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee" class=wikipagelink>referee</a>.
+This is a blank object. The UI must add properties to it; these are used as function handlers for the <code>game</code> <a href="rpc_requests.html" class=wikipagelink>RPC requests</a> which arrive from the <a href="referee.html" class=wikipagelink>referee</a>.
 <p>
 For example, if a <code>game.win(true)</code> RPC arrived, the client would look up the <code>game.win</code> property, and call it with one boolean argument (true). If the property was not found, or if it was not a function, this would be reported as an error back to the referee.
 <p>
@@ -86,14 +85,14 @@ This object contains fields holding meta-information about the table that can be
 Object properties:
 <p>
 <DL >
-<dt>version<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Version_Number" class=wikipagelink>version number</a> of the ECMAScript API which is available. 
+<dt>version<dd> The <a href="version_number.html" class=wikipagelink>version number</a> of the ECMAScript API which is available. 
 <dt>nickname<dd> The player's current Jabber MUC nickname.
-<dt>state<dd> The current game <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Referee_States" class=wikipagelink>state</a>, as a string: <code>setup</code>, <code>active</code>, or <code>suspended</code>. (The <code>disrupted</code> and <code>abandoned</code> states are not visible to the client -- they will appear as <code>active</code>.)
-<dt>recovery<dd> A boolean indicating whether the client is in the middle of a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?State_Recovery" class=wikipagelink>state recovery</a> burst. (Between receive_state() and state_sent().)
-<dt>seat<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seat" class=wikipagelink>seat</a> that the user occupies at this table. This is a Seat object (see below). If you are not seated, this field is null.
-<dt>allseats<dd> An array of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seat" class=wikipagelink>seats</a>, listing all the seats at the table. This includes unoccupied and optional seats.
-<dt>gameseats<dd> An array of <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Seat" class=wikipagelink>seats</a>, listing all the seats involved in the current game. If no game is in progress, this field is null.
-<dt>ruleset<dd> The <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Ruleset_URI" class=wikipagelink>ruleset URI</a> of the game being played.
+<dt>state<dd> The current game <a href="referee_states.html" class=wikipagelink>state</a>, as a string: <code>setup</code>, <code>active</code>, or <code>suspended</code>. (The <code>disrupted</code> and <code>abandoned</code> states are not visible to the client -- they will appear as <code>active</code>.)
+<dt>recovery<dd> A boolean indicating whether the client is in the middle of a <a href="state_recovery.html" class=wikipagelink>state recovery</a> burst. (Between receive_state() and state_sent().)
+<dt>seat<dd> The <a href="seat.html" class=wikipagelink>seat</a> that the user occupies at this table. This is a Seat object (see below). If you are not seated, this field is null.
+<dt>allseats<dd> An array of <a href="seat.html" class=wikipagelink>seats</a>, listing all the seats at the table. This includes unoccupied and optional seats.
+<dt>gameseats<dd> An array of <a href="seat.html" class=wikipagelink>seats</a>, listing all the seats involved in the current game. If no game is in progress, this field is null.
+<dt>ruleset<dd> The <a href="ruleset_uri.html" class=wikipagelink>ruleset URI</a> of the game being played.
 <dt>versionmatch(<em>version number</em>, <em>version spec</em>)<dd> Return a boolean indicating whether the given number matches the given spec.
 </DL>
 <p>
@@ -110,19 +109,19 @@ Your script code can call one of the following functions to extract metadata, ei
 <dt>metadata.getall(<em>URI</em>, <em>key</em>)<dd> Get a list of all the entries labelled <em>key</em>.
 </DL>
 <p>
-The <em>URI</em> is a <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Resource_URI" class=wikipagelink>resource URI</a> (see above). If null, undefined, or the empty string, this will return the metadata from the UI file itself.
+The <em>URI</em> is a <a href="resource_uri.html" class=wikipagelink>resource URI</a> (see above). If null, undefined, or the empty string, this will return the metadata from the UI file itself.
 <p>
-The <em>key</em> is a label, optionally preceded by a namespace and a period. (Rather like <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Token" class=wikipagelink>translation tokens</a>.) If you don't give a namespace, <code>game.</code> is assumed.
+The <em>key</em> is a label, optionally preceded by a namespace and a period. (Rather like <a href="token.html" class=wikipagelink>translation tokens</a>.) If you don't give a namespace, <code>game.</code> is assumed.
 <p>
 The namespaces for these keys are:
 <p>
 <DL >
-<dt>dc<dd> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Dublin_Core" class=wikipagelink>Dublin Core</a> (XML namespace "<a href="/web/20070802131051/http://purl.org/dc/elements/1.1/">http://purl.org/dc/elements/1.1/</a>")
-<dt>volity<dd> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Volity_Metadata_Terms" class=wikipagelink>Volity metadata terms</a> (XML namespace "<a href="/web/20070802131051/http://volity.org/protocol/metadata">http://volity.org/protocol/metadata</a>")
-<dt>game<dd> <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Game_Metadata_Terms" class=wikipagelink>Game metadata terms</a> (XML namespace "<a href="/web/20070802131051/http://volity.org/protocol/gamedata">http://volity.org/protocol/gamedata</a>")
+<dt>dc<dd> <a href="http://purl.org/dc/elements/1.1/">http://purl.org/dc/elements/1.1/</a>")
+<dt>volity<dd> <a href="http://volity.org/protocol/metadata">http://volity.org/protocol/metadata</a>")
+<dt>game<dd> <a href="http://volity.org/protocol/gamedata">http://volity.org/protocol/gamedata</a>")
 </DL>
 <p>
-Note that a namespace is not the same as an XML qualifier prefix. The call <code>metadata.get(</code><em>URI</em><code>, "dc.title")</code> will fetch the Dublin Core <code>title</code> entry, if there is one. This is conventionally specified in the <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?UI_File" class=wikipagelink>UI file</a> as a <code>&lt;dc:title&gt;</code> element, but this is not required -- the XML could assign any prefix to the "<a href="/web/20070802131051/http://purl.org/dc/elements/1.1/">http://purl.org/dc/elements/1.1/</a>" namespace.
+Note that a namespace is not the same as an XML qualifier prefix. The call <code>metadata.get(</code><em>URI</em><code>, "ui_file.html" class=wikipagelink>UI file</a> as a <code>&lt;dc:title&gt;</code> element, but this is not required -- the XML could assign any prefix to the "<a href="http://purl.org/dc/elements/1.1/">http://purl.org/dc/elements/1.1/</a>" namespace.
 <p>
 <H2>Classes</H2>
 

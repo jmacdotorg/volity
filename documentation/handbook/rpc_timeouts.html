@@ -12,8 +12,7 @@
 </HEAD><BODY BGCOLOR="white">
 
 
-<div class=wikiheader><h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?back=RPC+Timeouts">RPC Timeouts</a></h1><a href="/web/20070802131051/http://volity.org/wiki/index.cgi?HomePage" class=wikipagelink>HomePage</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?RecentChanges" class=wikipagelink>RecentChanges</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=editprefs">Preferences</a> | <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?action=upload">Upload</a><br>
-<hr class=wikilineheader></div><div class=wikitext>In general, a Volity entity should time out <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> calls after a short interval. (30 seconds is reasonable.) This can be implemented in the low-level Jabber communication code, so it applies to every RPC call.
+<h1>RPC Timeouts</h1><div class=wikitext>In general, a Volity entity should time out <a href="jabber-rpc.html" class=wikipagelink>Jabber-RPC</a> calls after a short interval. (30 seconds is reasonable.) This can be implemented in the low-level Jabber communication code, so it applies to every RPC call.
 <p>
 Timeout errors can be handled the same way as stanza errors or RPC faults. Most code that sends an RPC call does not care about the result, anyway.
 <p>
@@ -21,7 +20,7 @@ Timeout errors can be handled the same way as stanza errors or RPC faults. Most 
 <p>
 <strong>Original text of this page:</strong>
 <p>
-What is the policy on timeouts on <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Jabber-RPC" class=wikipagelink>Jabber-RPC</a> calls?
+What is the policy on timeouts on <a href="jabber-rpc.html" class=wikipagelink>Jabber-RPC</a> calls?
 <p>
 A distributed system (fancy word) will usually have some notion that if you send an RPC, and N seconds go by, the system assumes that the other end -- or the network in between -- is hung or dead. You "receive" an error reply back (actually generated on your end, of course).
 <p>
@@ -36,7 +35,7 @@ We have the Jabber server watching over us; we'll get presence notification if s
 <li> Players might walk away from the computer.
 </UL>
 <p>
-(This last case isn't a Jabber-RPC timeout, and it might seem dumb, but every extant referee is a resource load. We may want code in the parlor to abort a game if there's no activity on it for N hours. (Some server-configured interval.) (See <a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Timeout" class=wikipagelink>table timeouts</a> for this issue.)
+(This last case isn't a Jabber-RPC timeout, and it might seem dumb, but every extant referee is a resource load. We may want code in the parlor to abort a game if there's no activity on it for N hours. (Some server-configured interval.) (See <a href="table_timeout.html" class=wikipagelink>table timeouts</a> for this issue.)
 <p>
 I am willing to let the game author ignore these issues. The referee has a limited lifespan, and if there are some unresolved RPCs hanging around when the game ends, no biggie. (Although our low-level volity classes should be smart enough to free that memory.)
 <p>
@@ -45,5 +44,5 @@ The parlor, however, should have some policy about hung RPCs, hung games, etc.
 <H2>See Also</H2>
 
 <p>
-<a href="/web/20070802131051/http://volity.org/wiki/index.cgi?Table_Timeout" class=wikipagelink>Table timeouts</a>, a similar but tangential issue
+<a href="table_timeout.html" class=wikipagelink>Table timeouts</a>, a similar but tangential issue
 </div>
