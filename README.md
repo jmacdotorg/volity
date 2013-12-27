@@ -38,8 +38,6 @@ Directories found at the top level:
 
 * __smack-dev-2.0-vol__: A fork of [the Smack XMPP library for Java](http://www.igniterealtime.org/projects/smack/), containing some customizations that Gamut depends on.
 
-* __volity.net__: Source of the website that ran on www.volity.net between 2006 and 2011. It represented the web front-end of the Volity Network, implemented with Perl's [Mason](http://www.masonhq.com) framework (at least as it existed around 2006, pre-Poet). Perhaps the most important part exists in its `gamefinder` subdirectory, containing webpages that Gamut would access in order to allow players to browse and join available game parlors.
-
 * __web-client__: An experimental web-based Volity client ("WebGamut"), which never saw official release.
 
 ## License
