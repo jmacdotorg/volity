@@ -56,7 +56,11 @@ Other contributors to software and documentation in this repository include:
 
 * Phil Bordelon (<phil@lsu.edu>)
 
+* Roger Crew (<crew@cs.stanford.edu>)
+
 * Austin Henry (<ahenry@sf.net>)
+
+* Idoric (<idoric@free.fr>)
 
 * Dan Knapp (<dankna@accela.net>)
 
