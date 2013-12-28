@@ -30,7 +30,7 @@ Directories found at the top level:
 
 * __games-ui__: Volity user-interface bundles for all the games found in the previous two directories, as well as some test stuff. Everything has an SVG UI and some have a text UI as well.
 
-* __Javolin__: A Java-based game client for the Volity. Able to use games' SVG-based UI bundles.
+* __Javolin__: _Gamut_, A Java-based game client for the Volity. (It had the working title _Javolin_, and still uses that namespace.) Able to use games' SVG-based UI bundles.
 
 * __server-perl__: Implementation of a Volity parlor in Perl.
 
@@ -66,6 +66,6 @@ Other contributors to software and documentation in this repository include:
 
 * Doug Orleans (<dougorleans@gmail.com>)
 
-* Karl von Laudermann (<karlvonl@rcn.com>)
-
 * Bill Racicot (<sparkyalbatross@gmail.com>)
+
+* Karl von Laudermann (<karlvonl@rcn.com>)
