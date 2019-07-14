@@ -10,7 +10,7 @@ Every entity on a Volity network, both servers and players, exists atop a single
 
 Each parlor is a process running on a machine somewhere -- not necessarily alongside the network's bookkeeper, or any other parlor -- that knows how to play a single game. Parlors can be written by anyone with the gumption to do so, using any programming language they choose, so long as they stick to Volity's own communication protocol. They can then register themselves with any Volity bookkeeper open to new parlors, and that bookkeeper will then reveal to its players the availability of this parlor.
 
-The documentation folder in this repository contains a much deeper dive into all these components and how they all work together, and why it's cool. [You can browse the Volity Handbook (formerly the Volity Wiki) directly from this repository.](https://rawgithub.com/jmacdotorg/Volity/master/documentation/handbook/index.html)
+The documentation folder in this repository contains a much deeper dive into all these components and how they all work together, and why it's cool. [You can browse the Volity Handbook (formerly the Volity Wiki) directly from this repository.](http://jmacdotorg.github.io/volity/documentation/handbook/)
 
 Volity is in fact cool enough that some friends and I launched a startup around it in 2005, where we ran our own Volity network and licensed some commercial games to adapt for it, but it didn't work very well as a business and we shut it down a few years later. So here it is on GitHub! I hope it you find it interesting.
 
@@ -20,7 +20,7 @@ Directories found at the top level:
 
 * __bookeeper-perl__: Perl implemenentation of a Volity bookkeeper.
 
-* __documentation__: The `handbook` directory contains the static HTML remnants of what used to be Volity's official documentation wiki. It remains the best single reference for the Volity specification. (You can use raw-GitHub magic to [browse it online](https://rawgithub.com/jmacdotorg/Volity/master/documentation/handbook/index.html).) The other subdirs contain the book _Volity Developers' Guide_ (incomplete, but lays out some basics fairly well) and an article about creating Volity UI bundles.
+* __documentation__: The `handbook` directory contains the static HTML remnants of what used to be Volity's official documentation wiki. It remains the best single reference for the Volity specification. (You can use GitHub Pages to [browse it online](http://jmacdotorg.github.io/volity/documentation/handbook/).) The other subdirs contain the book _Volity Developers' Guide_ (incomplete, but lays out some basics fairly well) and an article about creating Volity UI bundles.
 
 * __dtd__: Contains the XML DTD document describing the grammar used by the game-record documents that parlors submit to bookkeepers after games wrap up.
 
